@@ -1,0 +1,161 @@
+{
+  "meta": {
+    "version": "1.0",
+    "description": "Configuration for the Shared Romance Sentence Renderer",
+    "supported_languages": ["it", "es", "fr", "pt", "ro"]
+  },
+  "languages": {
+    "it": {
+      "name": "Italian",
+      "articles": {
+        "m": {
+          "default": "un",
+          "s_impure": "uno",
+          "vowel": "un"
+        },
+        "f": {
+          "default": "una",
+          "vowel": "un'"
+        }
+      },
+      "morphology": {
+        "suffixes": [
+          {"ends_with": "tore", "replace_with": "trice"},
+          {"ends_with": "logo", "replace_with": "loga"},
+          {"ends_with": "o", "replace_with": "a"},
+          {"ends_with": "e", "replace_with": "a"}
+        ],
+        "irregulars": {
+          "poeta": "poetessa",
+          "duca": "duchessa",
+          "re": "regina",
+          "dio": "dea",
+          "eroe": "eroina",
+          "leone": "leonessa"
+        }
+      },
+      "phonetics": {
+        "impure_triggers": ["s_consonant", "z", "gn", "ps", "pn", "x", "y"],
+        "elision": true
+      },
+      "structure": "{name} è {article}{sep}{profession} {nationality}."
+    },
+    "es": {
+      "name": "Spanish",
+      "articles": {
+        "m": {
+          "default": "un",
+          "vowel": "un"
+        },
+        "f": {
+          "default": "una",
+          "stressed_a": "un"
+        }
+      },
+      "morphology": {
+        "suffixes": [
+          {"ends_with": "dor", "replace_with": "dora"},
+          {"ends_with": "o", "replace_with": "a"},
+          {"ends_with": "és", "replace_with": "esa"},
+          {"ends_with": "ín", "replace_with": "ina"}
+        ],
+        "irregulars": {
+          "actor": "actriz",
+          "rey": "reina",
+          "emperador": "emperatriz",
+          "héroe": "heroína",
+          "gallo": "gallina"
+        }
+      },
+      "phonetics": {
+        "stressed_a_words": ["agua", "hacha", "águila", "alma", "arte", "ave"],
+        "elision": false
+      },
+      "structure": "{name} es {article} {profession} {nationality}."
+    },
+    "fr": {
+      "name": "French",
+      "articles": {
+        "m": {
+          "default": "un",
+          "vowel": "un"
+        },
+        "f": {
+          "default": "une",
+          "vowel": "une"
+        }
+      },
+      "morphology": {
+        "suffixes": [
+          {"ends_with": "teur", "replace_with": "trice"},
+          {"ends_with": "eur", "replace_with": "euse"},
+          {"ends_with": "ien", "replace_with": "ienne"},
+          {"ends_with": "er", "replace_with": "ère"},
+          {"ends_with": "f", "replace_with": "ve"}
+        ],
+        "irregulars": {
+          "chanteur": "chanteuse",
+          "vendeur": "vendeuse",
+          "maître": "maîtresse",
+          "loup": "louve",
+          "homme": "femme"
+        }
+      },
+      "phonetics": {
+        "elision": false
+      },
+      "structure": "{name} est {article} {profession} {nationality}."
+    },
+    "pt": {
+      "name": "Portuguese",
+      "articles": {
+        "m": {
+          "default": "um"
+        },
+        "f": {
+          "default": "uma"
+        }
+      },
+      "morphology": {
+        "suffixes": [
+          {"ends_with": "or", "replace_with": "ora"},
+          {"ends_with": "ês", "replace_with": "esa"},
+          {"ends_with": "o", "replace_with": "a"},
+          {"ends_with": "ão", "replace_with": "oa"}
+        ],
+        "irregulars": {
+          "europeu": "europeia",
+          "judeu": "judia",
+          "réu": "ré",
+          "barão": "baronesa"
+        }
+      },
+      "phonetics": {
+        "elision": false
+      },
+      "structure": "{name} é {article} {profession} {nationality}."
+    },
+    "ro": {
+      "name": "Romanian",
+      "articles": {
+        "m": {
+          "default": "un"
+        },
+        "f": {
+          "default": "o"
+        }
+      },
+      "morphology": {
+        "suffixes": [
+          {"ends_with": "tor", "replace_with": "toare"},
+          {"ends_with": "u", "replace_with": "a"}
+        ],
+        "irregulars": {}
+      },
+      "phonetics": {
+        "elision": false
+      },
+      "structure": "{name} este {article} {profession} {nationality}."
+    }
+  }
+}

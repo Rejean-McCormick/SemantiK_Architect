@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "fa",
+    "family": "iranic"
+  },
+  "name": "Persian",
+  "syntax": {
+    "uses_ezafe": true,
+    "ezafe_connector": "-",
+    "indefinite_strategy": "suffix",
+    "has_gender": false
+  },
+  "phonetics": {
+    "vowels": "aeiou",
+    "silent_h_treatment": "vowel"
+  },
+  "morphology": {
+    "ezafe_vowel": "ye",
+    "ezafe_consonant": "e",
+    "indefinite_suffix": "i",
+    "gender_suffixes": [],
+    "irregulars": {}
+  },
+  "verbs": {
+    "copula": {
+      "default": "ast"
+    }
+  },
+  "structure": "{name} {predicate} {copula}."
+}

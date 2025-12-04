@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "de",
+    "family": "germanic"
+  },
+  "name": "German",
+  "articles": {
+    "indefinite": {
+      "m": "ein",
+      "f": "eine",
+      "n": "ein"
+    },
+    "definite": {
+      "m": "der",
+      "f": "die",
+      "n": "das",
+      "pl": "die"
+    }
+  },
+  "morphology": {
+    "generic_feminine_suffix": "in",
+    "gender_suffixes": [
+      { "ends_with": "er", "replace_with": "erin" },
+      { "ends_with": "en", "replace_with": "in" },
+      { "ends_with": "el", "replace_with": "elin" },
+      { "ends_with": "or", "replace_with": "orin" }
+    ],
+    "grammatical_gender_map": {
+      "in": "f",
+      "ung": "f",
+      "keit": "f",
+      "heit": "f",
+      "schaft": "f",
+      "chen": "n",
+      "lein": "n",
+      "er": "m",
+      "ling": "m",
+      "ismus": "m"
+    },
+    "irregulars": {
+      "arzt": "ärztin",
+      "koch": "köchin",
+      "anwalt": "anwältin",
+      "bauer": "bäuerin",
+      "graf": "gräfin",
+      "jude": "jüdin",
+      "franzose": "französin"
+    }
+  },
+  "adjectives": {
+    "inflects": true,
+    "indefinite_endings": {
+      "m": "er",
+      "f": "e",
+      "n": "es",
+      "pl": "e"
+    },
+    "definite_endings": {
+      "m": "e",
+      "f": "e",
+      "n": "e",
+      "pl": "en"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "present": "ist",
+      "past": "war"
+    }
+  },
+  "casing": {
+    "capitalize_nouns": true
+  },
+  "structure": "{name} {is_verb} {article} {nationality} {profession}."
+}

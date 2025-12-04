@@ -1,0 +1,17 @@
+# CORE QA & TESTING
+# -----------------
+pytest>=7.0.0            # Framework for running the automated test suites
+pandas>=1.5.0            # For efficient handling of large CSV test datasets
+
+# CODE QUALITY
+# ------------
+black>=23.0.0            # Auto-formatter for consistent, Wikimedia-friendly style
+flake8>=6.0.0            # Linter to catch syntax / style issues early
+mypy>=1.8.0              # (Optional) Static type checker for engines and constructions
+
+# AI INTEGRATION (OPTIONAL)
+# -------------------------
+# If you plan to hook 'test_suite_generator.py' directly to an LLM API
+# instead of copy-pasting prompts, uncomment one or more of these:
+# openai>=1.0.0          # OpenAI API client
+# anthropic>=0.3.0       # Anthropic API client

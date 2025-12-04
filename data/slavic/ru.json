@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "ru",
+    "family": "slavic"
+  },
+  "name": "Russian",
+  "articles": {
+    "exists": false
+  },
+  "morphology": {
+    "gender_inflection": {
+      "noun_suffixes": [
+        { "ends_with": "tel", "replace_with": "telnitsa" },
+        { "ends_with": "nik", "replace_with": "nitsa" },
+        { "ends_with": "ist", "replace_with": "istka" },
+        { "ends_with": "er", "replace_with": "ersha" }
+      ],
+      "adjective_suffixes": [
+        { "ends_with": "iy", "replace_with": "aya" },
+        { "ends_with": "oy", "replace_with": "aya" }
+      ]
+    },
+    "cases": {
+      "instrumental": {
+        "m": [
+          { "ends_with": "iy", "replace_with": "im" },
+          { "ends_with": "y", "replace_with": "ym" },
+          { "ends_with": "a", "replace_with": "oy" },
+          { "ends_with": "ia", "replace_with": "iey" },
+          { "ends_with": "e", "replace_with": "em" },
+          { "ends_with": "o", "replace_with": "om" },
+          { "ends_with": "k", "replace_with": "kom" },
+          { "ends_with": "t", "replace_with": "tom" },
+          { "ends_with": "r", "replace_with": "rom" },
+          { "ends_with": "n", "replace_with": "nom" },
+          { "ends_with": "l", "replace_with": "lom" },
+          { "ends_with": "s", "replace_with": "som" },
+          { "ends_with": "z", "replace_with": "zom" },
+          { "ends_with": "d", "replace_with": "dom" },
+          { "ends_with": "m", "replace_with": "mom" }
+        ],
+        "f": [
+          { "ends_with": "aya", "replace_with": "oy" },
+          { "ends_with": "ya", "replace_with": "yey" },
+          { "ends_with": "a", "replace_with": "oy" },
+          { "ends_with": "ka", "replace_with": "koy" },
+          { "ends_with": "sa", "replace_with": "soy" },
+          { "ends_with": "ta", "replace_with": "toy" }
+        ]
+      }
+    },
+    "irregulars": {
+      "poet": "poetessa",
+      "akter": "aktrisa",
+      "knyaz": "knyaginya",
+      "tsar": "tsaritsa",
+      "geroy": "geroina"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "default": "",
+      "male": "byl",
+      "female": "byla",
+      "neuter": "bylo",
+      "plural": "byli"
+    }
+  },
+  "syntax": {
+    "predicative_case": "instrumental",
+    "default_tense": "past"
+  },
+  "phonetics": {
+    "fleeting_vowels": ["ok", "ek"]
+  },
+  "structure": "{name} {verb} {nationality} {profession}."
+}

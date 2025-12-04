@@ -1,0 +1,291 @@
+"""
+JAPONIC MORPHOLOGY MODULE
+-------------------------
+
+Family-specific morphology and particle handling for Japonic languages
+(e.g. Japanese) within the layered architecture.
+
+This module focuses on:
+- Choosing the appropriate copula form (だ / です / である, etc.).
+- Providing topic/subject/genitive particles.
+- Handling spacing vs. no-spacing orthography.
+- Lightweight helpers to attach particles and normalize output.
+
+It intentionally does NOT hard-code any lexical morphology (e.g. how to
+turn "France" into "フランス人"). Those are considered lexicon/config
+decisions outside this family module.
+
+Public API (expected usage from constructions):
+
+    morph = JaponicMorphology(config)
+
+    topic_name = morph.attach_topic(name)
+    subj_name  = morph.attach_subject(name)
+
+    copula = morph.select_copula(style="formal")  # or None for default
+    text   = morph.normalize_whitespace(
+        f"{topic_name} {nationality} {profession}{copula}"
+    )
+
+The `config` dict is expected to follow the structure of `data/japonic/ja.json`:
+
+    {
+        "syntax": {
+            "style": "formal",
+            "use_spaces": false,
+            "punctuation": "。"
+        },
+        "particles": {
+            "topic": "は",
+            "genitive": "の",
+            "subject": "が"
+        },
+        "verbs": {
+            "copula": {
+                "plain": "だ",
+                "polite": "です",
+                "formal": "である",
+                "default": "である"
+            }
+        },
+        ...
+    }
+
+All lookups are defensive to allow partial/extended configs.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, Optional
+
+
+class JaponicMorphology:
+    """Family-specific morphology utilities for Japonic languages."""
+
+    def __init__(self, config: Dict[str, Any]) -> None:
+        """
+        Initialize the morphology helper with a Japonic language config.
+
+        Args:
+            config: Parsed JSON configuration for a specific Japonic language.
+        """
+        self.config = config or {}
+
+        self._syntax = self.config.get("syntax", {}) or {}
+        self._particles = self.config.get("particles", {}) or {}
+        self._copula_cfg = (
+            self.config.get("verbs", {})
+            .get("copula", {}) or {}
+        )
+
+    # ------------------------------------------------------------------
+    # Core configuration helpers
+    # ------------------------------------------------------------------
+    def default_style(self) -> str:
+        """
+        Return the default copula/style label for this language.
+
+        Falls back to "formal" if not explicitly configured.
+        """
+        style = self._syntax.get("style")
+        if isinstance(style, str) and style:
+            return style
+        return "formal"
+
+    def use_spaces(self) -> bool:
+        """
+        Whether this language prefers spaces between tokens.
+
+        Japanese default: False.
+        """
+        use_spaces = self._syntax.get("use_spaces")
+        if isinstance(use_spaces, bool):
+            return use_spaces
+        return False
+
+    def punctuation(self) -> str:
+        """
+        Sentence-final punctuation string.
+
+        Japanese default: "。"
+        """
+        punct = self._syntax.get("punctuation")
+        if isinstance(punct, str) and punct:
+            return punct
+        return "。"
+
+    # ------------------------------------------------------------------
+    # Particle selection
+    # ------------------------------------------------------------------
+    def topic_particle(self) -> str:
+        """Return the topic marker (e.g. 'は' in Japanese)."""
+        particle = self._particles.get("topic")
+        if isinstance(particle, str) and particle:
+            return particle
+        # Safe default if missing
+        return "は"
+
+    def subject_particle(self) -> str:
+        """Return the subject marker (e.g. 'が' in Japanese)."""
+        particle = self._particles.get("subject")
+        if isinstance(particle, str) and particle:
+            return particle
+        # Safe default if missing
+        return "が"
+
+    def genitive_particle(self) -> str:
+        """Return the genitive/possessive marker (e.g. 'の')."""
+        particle = self._particles.get("genitive")
+        if isinstance(particle, str) and particle:
+            return particle
+        # Safe default if missing
+        return "の"
+
+    # ------------------------------------------------------------------
+    # Copula selection
+    # ------------------------------------------------------------------
+    def select_copula(self, style: Optional[str] = None) -> str:
+        """
+        Select the appropriate copula form for the requested style.
+
+        Args:
+            style:
+                A style label such as "plain", "polite", or "formal".
+                If None, use the language's default style from syntax,
+                then fall back to "default" entry in the copula config.
+
+        Returns:
+            The copula string (e.g. "です", "だ", "である"), or an empty
+            string if no copula is used in that environment.
+        """
+        # Determine target style
+        style = style or self.default_style()
+
+        # Copula config may be:
+        #   { "plain": "だ", "polite": "です", "default": "である" }
+        # or more complex, but this implementation expects simple strings.
+        if not isinstance(self._copula_cfg, dict):
+            return ""
+
+        # Exact style match
+        candidate = self._copula_cfg.get(style)
+        if isinstance(candidate, str):
+            return candidate
+
+        # Fallback to 'default'
+        default = self._copula_cfg.get("default")
+        if isinstance(default, str):
+            return default
+
+        # Final fallback: no copula
+        return ""
+
+    # ------------------------------------------------------------------
+    # Attachment helpers
+    # ------------------------------------------------------------------
+    def attach_topic(self, np: str) -> str:
+        """
+        Attach the topic particle to a noun phrase.
+
+        Args:
+            np: A noun phrase (e.g. a name string).
+
+        Returns:
+            A string with the topic marker attached, respecting the
+            language's spacing configuration. For Japanese, this will
+            typically be "NPは" (no space).
+        """
+        topic = self.topic_particle()
+        if self.use_spaces():
+            return f"{np} {topic}"
+        return f"{np}{topic}"
+
+    def attach_subject(self, np: str) -> str:
+        """
+        Attach the subject particle to a noun phrase.
+
+        Args:
+            np: A noun phrase.
+
+        Returns:
+            NP + subject marker, respecting spacing configuration.
+        """
+        subj = self.subject_particle()
+        if self.use_spaces():
+            return f"{np} {subj}"
+        return f"{np}{subj}"
+
+    def attach_genitive(self, np_head: str, np_dependent: str) -> str:
+        """
+        Attach a dependent noun phrase using the genitive particle.
+
+        Example (Japanese):
+            np_dependent = "フランス"
+            np_head      = "物理学者"
+            -> "フランスの物理学者"
+
+        Args:
+            np_head: The head noun phrase (the thing being described).
+            np_dependent: The dependent noun phrase (owner/origin/affiliation).
+
+        Returns:
+            A combined NP using the genitive particle.
+        """
+        gen = self.genitive_particle()
+        if self.use_spaces():
+            # For languages that want spaces, keep them explicit.
+            return f"{np_dependent} {gen} {np_head}"
+        # For Japanese-style, no spaces.
+        return f"{np_dependent}{gen}{np_head}"
+
+    # ------------------------------------------------------------------
+    # Whitespace / final normalization
+    # ------------------------------------------------------------------
+    def normalize_whitespace(self, text: str) -> str:
+        """
+        Normalize whitespace according to the language's spacing rules.
+
+        - If `use_spaces` is False, all spaces are removed.
+        - Otherwise, multiple spaces collapse to a single space and
+          leading/trailing spaces are trimmed.
+
+        Args:
+            text: Raw rendered string with arbitrary spaces.
+
+        Returns:
+            Normalized string.
+        """
+        if not isinstance(text, str):
+            return ""
+
+        if not self.use_spaces():
+            # Remove all ASCII spaces; this is sufficient for our use case.
+            no_spaces = text.replace(" ", "")
+            return no_spaces
+
+        # Collapse multiple spaces into one and strip edges.
+        parts = text.split()
+        return " ".join(parts)
+
+    def finalize_sentence(self, text: str) -> str:
+        """
+        Apply whitespace normalization and ensure final punctuation.
+
+        Args:
+            text: Sentence body, possibly missing punctuation.
+
+        Returns:
+            A fully normalized sentence, ending with the configured
+            punctuation mark exactly once.
+        """
+        base = self.normalize_whitespace(text)
+
+        punct = self.punctuation()
+        if not punct:
+            return base
+
+        # If it already ends with the punctuation, don't duplicate.
+        if base.endswith(punct):
+            return base
+
+        return f"{base}{punct}"

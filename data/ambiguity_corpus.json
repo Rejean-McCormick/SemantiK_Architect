@@ -1,0 +1,292 @@
+{
+  "meta": {
+    "version": "1.0",
+    "description": "Stress Test Corpus for Abstract Wikipedia: Winograd Schemas and Idioms",
+    "target_languages": ["fr", "hu", "sw", "es", "de"],
+    "total_count": 40
+  },
+  "winograd_schemas": [
+    {
+      "id": "WS_001",
+      "source_text": "The trophy would not fit in the brown suitcase because it was too big.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "The pronoun 'it' refers to the 'trophy'. If the sentence ended 'because it was too small', 'it' would refer to the suitcase.",
+      "target_failure_check": "In French, does the pronoun match the gender of 'trophy' (le trophée - M) or 'suitcase' (la valise - F)?"
+    },
+    {
+      "id": "WS_002",
+      "source_text": "The town councilors refused to give the demonstrators a permit because they feared violence.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'They' refers to the 'councilors'. If the word was 'advocated' instead of 'feared', 'they' would refer to the 'demonstrators'.",
+      "target_failure_check": "Does the translation imply the councilors were the ones afraid, or the demonstrators?"
+    },
+    {
+      "id": "WS_003",
+      "source_text": "The large ball crashed right through the table because it was made of styrofoam.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'table' (styrofoam is weak). If the sentence read 'made of steel', 'it' would refer to the ball.",
+      "target_failure_check": "In Portuguese, does 'it' match the gender of 'table' (mesa - F) or 'ball' (bola - F)?"
+    },
+    {
+      "id": "WS_004",
+      "source_text": "John could not see the stage with Billy in front of him because he is so short.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'He' refers to John. If the sentence ended 'because he is so tall', 'he' would refer to Billy.",
+      "target_failure_check": "Does the translation explicitly link the attribute of 'shortness' to John?"
+    },
+    {
+      "id": "WS_005",
+      "source_text": "The delivery truck zoomed by the school bus because it was going so fast.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'truck'. If it ended 'going so slow', 'it' would refer to the 'bus'.",
+      "target_failure_check": "Identify the subject of the verb 'going'. Is it the truck or the bus?"
+    },
+    {
+      "id": "WS_006",
+      "source_text": "Frank felt crushed when his longtime rival Bill won the award because he had worked so hard for it.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'He' refers to Frank (the loser who worked hard). Context implies the emotional crush comes from the effort.",
+      "target_failure_check": "Does the translation attribute the hard work to Frank?"
+    },
+    {
+      "id": "WS_007",
+      "source_text": "The man couldn't lift his son because he was so weak.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'He' refers to the 'man'. If it ended 'because he was so heavy', 'he' would refer to the 'son'.",
+      "target_failure_check": "Does the adjective 'weak' modify the father or the son?"
+    },
+    {
+      "id": "WS_008",
+      "source_text": "I poured water from the bottle into the cup until it was full.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'cup'. If it read 'until it was empty', 'it' would refer to the 'bottle'.",
+      "target_failure_check": "In Spanish, does the adjective 'full' (lleno/llena) agree with 'cup' (taza - F) or 'bottle' (botella - F)?"
+    },
+    {
+      "id": "WS_009",
+      "source_text": "The lawyer asked the witness a question, but he was reluctant to answer it.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'He' refers to the 'witness'. Lawyers ask; witnesses answer.",
+      "target_failure_check": "Does the translation identify the 'witness' as the reluctant party?"
+    },
+    {
+      "id": "WS_010",
+      "source_text": "The painting looked out of place in the room because it was too modern.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'painting'. If it read 'too old-fashioned', it could refer to the room contextually, but here 'it' is the painting.",
+      "target_failure_check": "In French, does 'it' agree with 'painting' (peinture - F) or 'room' (pièce - F)?"
+    },
+    {
+      "id": "WS_011",
+      "source_text": "The firemen arrived after the police because they were coming from far away.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'They' refers to the 'firemen' (the late arrivers).",
+      "target_failure_check": "Does the translation attribute the distance to the firemen?"
+    },
+    {
+      "id": "WS_012",
+      "source_text": "Paul tried to call George on the phone, but he wasn't successful.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'He' refers to Paul (the one trying).",
+      "target_failure_check": "Does the translation imply Paul failed, or that George wasn't successful at something else?"
+    },
+    {
+      "id": "WS_013",
+      "source_text": "The dog chased the cat up the tree because it was terrified.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'cat'. If it read 'because it was aggressive', 'it' would refer to the 'dog'.",
+      "target_failure_check": "Does the adjective 'terrified' apply to the cat?"
+    },
+    {
+      "id": "WS_014",
+      "source_text": "The sack of potatoes was heavier than the bag of flour, so I carried it first.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'sack of potatoes'.",
+      "target_failure_check": "In a language where sack and bag have different genders, which one is the object pronoun?"
+    },
+    {
+      "id": "WS_015",
+      "source_text": "The sculpture rolled off the shelf because it wasn't anchored.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'sculpture'. If it read 'because it was tilted', 'it' would refer to the 'shelf'.",
+      "target_failure_check": "Does the translation apply 'not anchored' to the sculpture?"
+    },
+    {
+      "id": "WS_016",
+      "source_text": "The older students bullied the younger ones because they were cruel.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'They' refers to the 'older students'.",
+      "target_failure_check": "Does the translation attribute cruelty to the older students?"
+    },
+    {
+      "id": "WS_017",
+      "source_text": "The customer complained to the waiter because he had brought the wrong soup.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'He' refers to the 'waiter'.",
+      "target_failure_check": "Does the translation clearly identify who brought the soup?"
+    },
+    {
+      "id": "WS_018",
+      "source_text": "Sam pulled on the door handle but it wouldn't budge.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'door' (or the handle, contextually tied).",
+      "target_failure_check": "In German, door is Tür (F) and handle is griff (M). Which gender is used?"
+    },
+    {
+      "id": "WS_019",
+      "source_text": "I put the heavy cake in the refrigerator because it was melting.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'cake'. Refrigerators don't melt.",
+      "target_failure_check": "Does the translation say the cake is melting?"
+    },
+    {
+      "id": "WS_020",
+      "source_text": "The bee landed on the flower because it had pollen.",
+      "ambiguity_type": "Winograd",
+      "trap_explanation": "'It' refers to the 'flower'.",
+      "target_failure_check": "Does the translation attribute the possession of pollen to the flower?"
+    }
+  ],
+  "idioms": [
+    {
+      "id": "ID_001",
+      "source_text": "The project manager decided to bite the bullet and fire the consultant.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "'Bite the bullet' means to endure a painful experience, not to bite ammunition.",
+      "target_failure_check": "Does the translation mention teeth or metal? If so, it failed."
+    },
+    {
+      "id": "ID_002",
+      "source_text": "After the argument, she gave him the cold shoulder.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "'Cold shoulder' means to ignore someone, not a temperature-related body part.",
+      "target_failure_check": "Does the translation mention temperature (cold) or anatomy (shoulder) literally?"
+    },
+    {
+      "id": "ID_003",
+      "source_text": "It is raining cats and dogs outside.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Means it is raining very heavily. No animals involved.",
+      "target_failure_check": "Does the translation mention animals?"
+    },
+    {
+      "id": "ID_004",
+      "source_text": "Don't spill the beans about the surprise party.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "'Spill the beans' means to reveal a secret.",
+      "target_failure_check": "Does the translation involve legumes or dropping food?"
+    },
+    {
+      "id": "ID_005",
+      "source_text": "He kicked the bucket last night.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Euphemism for dying.",
+      "target_failure_check": "Does the translation involve a pail or a foot action?"
+    },
+    {
+      "id": "ID_006",
+      "source_text": "That physics exam was a piece of cake.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Means it was very easy.",
+      "target_failure_check": "Does the translation mention dessert or food?"
+    },
+    {
+      "id": "ID_007",
+      "source_text": "We need to address the elephant in the room.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "An obvious problem that people are avoiding discussing.",
+      "target_failure_check": "Does the translation mention a large mammal?"
+    },
+    {
+      "id": "ID_008",
+      "source_text": "Stop beating around the bush and tell me the truth.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Means to delay or avoid getting to the point.",
+      "target_failure_check": "Does the translation mention plants or hitting something?"
+    },
+    {
+      "id": "ID_009",
+      "source_text": "He is the black sheep of the family.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "A disreputable or odd member of a group.",
+      "target_failure_check": "Does the translation mention the color black or farm animals?"
+    },
+    {
+      "id": "ID_010",
+      "source_text": "I'm feeling under the weather today.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Feeling sick or unwell.",
+      "target_failure_check": "Does the translation talk about meteorology or being beneath something?"
+    },
+    {
+      "id": "ID_011",
+      "source_text": "You are barking up the wrong tree.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Accusing the wrong person or pursuing a mistaken line of thought.",
+      "target_failure_check": "Does the translation mention dogs or trees?"
+    },
+    {
+      "id": "ID_012",
+      "source_text": "It costs an arm and a leg.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "It is very expensive.",
+      "target_failure_check": "Does the translation mention body parts or surgery?"
+    },
+    {
+      "id": "ID_013",
+      "source_text": "Let's call it a day.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Stop working for the present time.",
+      "target_failure_check": "Does the translation literally mean 'name it a day'?"
+    },
+    {
+      "id": "ID_014",
+      "source_text": "He let the cat out of the bag.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "He revealed a secret.",
+      "target_failure_check": "Does the translation mention a feline or a sack?"
+    },
+    {
+      "id": "ID_015",
+      "source_text": "Don't put all your eggs in one basket.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Don't risk everything on a single venture.",
+      "target_failure_check": "Does the translation mention farming, eggs, or baskets?"
+    },
+    {
+      "id": "ID_016",
+      "source_text": "She missed the boat on the crypto investment.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "She was too late to take an opportunity.",
+      "target_failure_check": "Does the translation mention water transport?"
+    },
+    {
+      "id": "ID_017",
+      "source_text": "That happens once in a blue moon.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Very rarely.",
+      "target_failure_check": "Does the translation mention the color or the moon?"
+    },
+    {
+      "id": "ID_018",
+      "source_text": "He jumped on the bandwagon when the team started winning.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Joined a popular trend or activity.",
+      "target_failure_check": "Does the translation mention a wagon or jumping?"
+    },
+    {
+      "id": "ID_019",
+      "source_text": "I'm going to hit the sack.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "Go to sleep.",
+      "target_failure_check": "Does the translation involve physical violence against a bag?"
+    },
+    {
+      "id": "ID_020",
+      "source_text": "The ball is in your court now.",
+      "ambiguity_type": "Idiom",
+      "trap_explanation": "It is your turn to take action.",
+      "target_failure_check": "Does the translation mention sports or tennis?"
+    }
+  ]
+}

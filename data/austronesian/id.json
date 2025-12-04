@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "id",
+    "family": "austronesian"
+  },
+  "name": "Indonesian",
+  "syntax": {
+    "personal_article": "",
+    "adjective_order": "post"
+  },
+  "morphology": {
+    "gender_inflection": false,
+    "plural_strategy": "full_reduplication",
+    "irregulars": {
+      "putra": "putri",
+      "mahasiswa": "mahasiswi",
+      "dewa": "dewi",
+      "pemuda": "pemudi"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "default": "adalah"
+    }
+  },
+  "structure": "{name} {copula} {profession} {nationality}."
+}

@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "cy",
+    "family": "celtic"
+  },
+  "name": "Welsh",
+  "syntax": {
+    "predicative_particle": "yn",
+    "particle_mutation": "soft_predicative",
+    "fem_adj_mutation": "soft"
+  },
+  "mutations": {
+    "rules": {
+      "soft": {
+        "p": "b", "t": "d", "c": "g",
+        "b": "f", "d": "dd", "g": "",
+        "ll": "l", "m": "f", "rh": "r"
+      },
+      "soft_predicative": {
+        "p": "b", "t": "d", "c": "g",
+        "b": "f", "d": "dd", "g": "",
+        "m": "f"
+      },
+      "nasal": {
+        "p": "mh", "t": "nh", "c": "ngh",
+        "b": "m", "d": "n", "g": "ng"
+      },
+      "aspirate": {
+        "p": "ph", "t": "th", "c": "ch"
+      }
+    }
+  },
+  "morphology": {
+    "default_fem_suffix": "es",
+    "gender_suffixes": [
+      { "ends_with": "wr", "replace_with": "wraig" },
+      { "ends_with": "yn", "replace_with": "en" },
+      { "ends_with": "o", "replace_with": "awes" }
+    ],
+    "irregulars": {
+      "brenin": "brenhines",
+      "tad": "mam",
+      "brawd": "chwaer",
+      "ewythr": "modryb",
+      "athro": "athrawes",
+      "actor": "actores"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "present": "Mae",
+      "past": "Oedd",
+      "default": "Mae"
+    }
+  },
+  "structure": "{copula} {name} {particle} {profession} {nationality}."
+}

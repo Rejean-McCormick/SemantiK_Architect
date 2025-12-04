@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "ko",
+    "family": "koreanic"
+  },
+  "name": "Korean",
+  "syntax": {
+    "speech_level": "plain",
+    "punctuation": "."
+  },
+  "particles": {
+    "topic": {
+      "consonant": "eun",
+      "vowel": "neun"
+    },
+    "subject": {
+      "consonant": "i",
+      "vowel": "ga"
+    },
+    "object": {
+      "consonant": "eul",
+      "vowel": "reul"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "plain": {
+        "consonant": "ida",
+        "vowel": "da"
+      },
+      "polite": {
+        "consonant": "ieyo",
+        "vowel": "yeyo"
+      },
+      "formal": "imnida",
+      "default": {
+        "consonant": "ida",
+        "vowel": "da"
+      }
+    }
+  },
+  "structure": "{name}{topic} {nationality} {profession}{copula}."
+}

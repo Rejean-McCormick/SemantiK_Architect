@@ -1,0 +1,221 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Architect Lexicon Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "$ref": "#/definitions/LexiconMeta"
+    },
+    "_meta": {
+      "$ref": "#/definitions/LexiconMeta"
+    },
+    "professions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/ProfessionEntry"
+      }
+    },
+    "nationalities": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/NationalityEntry"
+      }
+    },
+    "titles": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/TitleEntry"
+      }
+    },
+    "honours": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/HonourEntry"
+      }
+    },
+    "entries": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/BaseLexicalEntry"
+      }
+    },
+    "name_templates": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/NameTemplate"
+      }
+    }
+  },
+  "anyOf": [
+    { "required": ["meta"] },
+    { "required": ["_meta"] }
+  ],
+  "definitions": {
+    "LexiconMeta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "BCP-47-like language code, e.g. 'en', 'fr', 'sw'."
+        },
+        "family": {
+          "type": ["string", "null"],
+          "description": "Optional language family label, e.g. 'romance'."
+        },
+        "version": {
+          "type": ["string", "null"],
+          "description": "Free-form version tag."
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Human-readable description of the lexicon."
+        }
+      },
+      "required": ["language"]
+    },
+    "FormsMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Mapping from inflectional keys (e.g. 'm.sg', 'pl') to surface forms."
+    },
+    "BaseLexicalEntry": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Stable key within the lexicon."
+        },
+        "lemma": {
+          "type": "string",
+          "description": "Canonical lemma in the target language."
+        },
+        "pos": {
+          "type": "string",
+          "description": "Part-of-speech label, e.g. 'NOUN', 'ADJ', 'TITLE'."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code (should match meta.language)."
+        },
+        "sense": {
+          "type": ["string", "null"],
+          "description": "Optional semantic sense label, e.g. 'profession'."
+        },
+        "human": {
+          "type": ["boolean", "null"],
+          "description": "Whether the lemma denotes a human."
+        },
+        "gender": {
+          "type": ["string", "null"],
+          "description": "Grammatical gender of the default form, if any."
+        },
+        "default_number": {
+          "type": ["string", "null"],
+          "description": "Default grammatical number, e.g. 'sg', 'pl'."
+        },
+        "default_formality": {
+          "type": ["string", "null"],
+          "description": "Default register/formality, e.g. 'neutral'."
+        },
+        "wikidata_qid": {
+          "type": ["string", "null"],
+          "description": "Optional Wikidata Q-ID for the concept."
+        },
+        "forms": {
+          "$ref": "#/definitions/FormsMap"
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arbitrary extra metadata."
+        }
+      },
+      "required": ["key", "lemma", "pos", "language"]
+    },
+    "ProfessionEntry": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseLexicalEntry" }
+      ]
+    },
+    "NationalityEntry": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseLexicalEntry" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "adjective": {
+              "type": ["string", "null"],
+              "description": "Adjectival form, e.g. 'Polish'."
+            },
+            "demonym": {
+              "type": ["string", "null"],
+              "description": "Noun for person of this nationality."
+            },
+            "country_name": {
+              "type": ["string", "null"],
+              "description": "Localized country name."
+            }
+          }
+        }
+      ]
+    },
+    "TitleEntry": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseLexicalEntry" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "position": {
+              "type": ["string", "null"],
+              "description": "Position relative to name, e.g. 'pre_name', 'post_name'."
+            }
+          }
+        }
+      ]
+    },
+    "HonourEntry": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "short_label": {
+          "type": ["string", "null"]
+        },
+        "wikidata_qid": {
+          "type": ["string", "null"]
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["key", "label"]
+    },
+    "NameTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string",
+          "description": "Python-style format string, e.g. '{given} {family}'."
+        }
+      },
+      "required": ["key", "template"]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "bn",
+    "family": "indo_aryan"
+  },
+  "name": "Bengali",
+  "syntax": {
+    "noun_gender_agreement": true,
+    "adjective_gender_agreement": false,
+    "punctuation": "।"
+  },
+  "morphology": {
+    "suffixes": [
+      { "ends_with": "ok", "replace_with": "ika" },
+      { "ends_with": "o", "replace_with": "i" },
+      { "ends_with": "a", "replace_with": "i" }
+    ],
+    "irregulars": {
+      "raja": "rani",
+      "neta": "netri",
+      "abhineta": "abhinetri",
+      "kobi": "mohila kobi"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "zero_copula_in_present": true,
+      "default": "",
+      "present": "",
+      "past": "chilen",
+      "formal": "holen"
+    }
+  },
+  "structure": "{name} {nationality} {profession} {copula}."
+}

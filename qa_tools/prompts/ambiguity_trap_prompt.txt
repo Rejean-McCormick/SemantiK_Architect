@@ -1,0 +1,48 @@
+You are a computational linguist specializing in Machine Translation failures.
+
+I need a dataset of "Ambiguity Traps" to stress-test an Abstract Wikipedia notation system.
+These are sentences that are easy for humans to understand but difficult for machines to translate without deep semantic understanding or context.
+
+Please generate 20 examples in valid JSON format.
+
+Categories Needed:
+
+Winograd Schemas (10 examples): Sentences containing a pronoun (it/they/he/she) that is ambiguous grammatically but clear semantically.
+
+Example: "The trophy didn't fit in the suitcase because it was too big." (It = Trophy) vs "because it was too small." (It = Suitcase).
+
+Why it matters: In languages with gendered nouns (French, Italian), translating "it" requires knowing the specific antecedent.
+
+Idioms (10 examples): English phrases that lose meaning if translated literally.
+
+Example: "Kick the bucket."
+
+Why it matters: The abstract notation must represent the concept (Dying), not the words.
+
+JSON Structure:
+
+Return a single JSON object with a list called "traps". Each entry must have:
+
+id: Unique ID (e.g., "TRAP_01").
+
+source_text: The English sentence.
+
+ambiguity_type: "Winograd" or "Idiom".
+
+trap_explanation: A brief explanation of why a literal translation fails (e.g., "Target language must choose gender for 'it', but 'trophy' is M and 'suitcase' is F").
+
+target_failure_check: A specific question to ask a human evaluator to check if the translation is correct (e.g., "Does the pronoun agree with 'trophy'?").
+
+Output Format:
+
+{
+  "traps": [
+    {
+      "id": "TRAP_01",
+      "source_text": "...",
+      "ambiguity_type": "...",
+      "trap_explanation": "...",
+      "target_failure_check": "..."
+    }
+  ]
+}

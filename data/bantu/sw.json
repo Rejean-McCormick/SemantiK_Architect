@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "sw",
+    "family": "bantu"
+  },
+  "name": "Swahili",
+  "syntax": {
+    "default_human_class": "1",
+    "default_tense": "present",
+    "adjective_order": "post"
+  },
+  "morphology": {
+    "prefixes": {
+      "1": "m",
+      "2": "wa",
+      "3": "m",
+      "4": "mi",
+      "5": "ji",
+      "6": "ma",
+      "7": "ki",
+      "8": "vi",
+      "9": "n",
+      "10": "n"
+    },
+    "adjective_prefixes": {
+      "1": "m",
+      "2": "wa",
+      "3": "m",
+      "4": "mi",
+      "5": "l",
+      "6": "ma",
+      "7": "ki",
+      "8": "vi",
+      "9": "n",
+      "10": "n"
+    },
+    "vowel_harmony": {
+      "m": "mw",
+      "wa": "w",
+      "ki": "ch",
+      "vi": "vy"
+    },
+    "irregulars": {
+      "baba": "baba",
+      "mama": "mama",
+      "rafiki": "rafiki",
+      "kiongozi": "kiongozi"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "default": "ni",
+      "1": "yu",
+      "2": "wa"
+    }
+  },
+  "structure": "{name} {copula} {profession} {nationality}."
+}

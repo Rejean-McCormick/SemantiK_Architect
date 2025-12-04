@@ -1,0 +1,23 @@
+# Large Wikidata / lexeme dumps are not tracked in git
+
+# Common dump formats
+*.json
+*.jsonl
+*.ndjson
+*.ttl
+*.nt
+*.rdf
+*.gz
+*.bz2
+*.xz
+*.zip
+*.7z
+
+# Any temporary processing artefacts
+*.tmp
+*.bak
+*.log
+
+# Allow the README and this .gitignore to be tracked
+!README.md
+!.gitignore

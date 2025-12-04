@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "es",
+    "family": "romance"
+  },
+  "name": "Spanish",
+  "articles": {
+    "m": {
+      "default": "un",
+      "vowel": "un"
+    },
+    "f": {
+      "default": "una",
+      "stressed_a": "un"
+    }
+  },
+  "morphology": {
+    "suffixes": [
+      { "ends_with": "dor", "replace_with": "dora" },
+      { "ends_with": "tor", "replace_with": "tora" },
+      { "ends_with": "o", "replace_with": "a" },
+      { "ends_with": "és", "replace_with": "esa" },
+      { "ends_with": "ín", "replace_with": "ina" },
+      { "ends_with": "án", "replace_with": "ana" }
+    ],
+    "irregulars": {
+      "actor": "actriz",
+      "rey": "reina",
+      "emperador": "emperatriz",
+      "héroe": "heroína",
+      "gallo": "gallina",
+      "príncipe": "princesa",
+      "poeta": "poetisa",
+      "profeta": "profetisa",
+      "sacerdote": "sacerdotisa",
+      "conde": "condesa",
+      "duque": "duquesa",
+      "abad": "abadesa"
+    }
+  },
+  "phonetics": {
+    "stressed_a_words": [
+      "agua", "hacha", "águila", "alma", "arte", "ave", "hambre", "aula", "arma"
+    ],
+    "elision": false
+  },
+  "structure": "{name} es {article} {profession} {nationality}."
+}

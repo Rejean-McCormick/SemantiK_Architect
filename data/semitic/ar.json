@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "ar",
+    "family": "semitic"
+  },
+  "name": "Arabic",
+  "articles": {
+    "definite_prefix": "al-",
+    "definite_suffix": "",
+    "indefinite_prefix": "",
+    "indefinite_suffix": ""
+  },
+  "morphology": {
+    "default_fem_suffix": "a",
+    "gender_inflection": [
+      { "ends_with": "i", "replace_with": "iyya" },
+      { "ends_with": "y", "replace_with": "iyya" }
+    ],
+    "irregulars": {
+      "ab": "umm",
+      "akh": "ukht",
+      "ibn": "ibna",
+      "walad": "bint",
+      "rajul": "imra'a"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "present_copula": {
+        "male": "",
+        "female": "",
+        "default": ""
+      },
+      "past_copula": {
+        "male": "kana",
+        "female": "kanat",
+        "default": "kana"
+      }
+    }
+  },
+  "phonetics": {
+    "sun_letters": ["t", "th", "d", "dh", "r", "z", "s", "sh", "s", "d", "t", "z", "l", "n"]
+  },
+  "syntax": {
+    "default_tense": "present",
+    "adjective_order": "post"
+  },
+  "structure": "{name} {copula} {profession} {nationality}."
+}

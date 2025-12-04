@@ -1,0 +1,64 @@
+You are a Senior Computational Linguist specializing in Cross-Lingual Semantics and Machine Translation failures.
+
+I am building an "Abstract Wikipedia" system that translates abstract concepts into 15 different language families (Romance, Slavic, Bantu, Agglutinative, etc.). I need a dataset of "Ambiguity Traps" to prove where simple literal translation fails.
+
+Please generate 30 high-quality linguistic traps in valid JSON format.
+
+The Categories
+
+Winograd Schemas (Pronoun Ambiguity):
+Sentences where a pronoun ("it", "they", "he") refers to one noun, but changing one word makes it refer to another.
+
+Target: Languages with Gender (Romance/Semitic) or Noun Classes (Bantu).
+
+Example: "The trophy didn't fit in the suitcase because it was too big." (It = Trophy).
+
+Polysemy (Word Sense Disambiguation):
+Sentences using words with multiple distinct meanings.
+
+Target: All languages.
+
+Example: "The crane flew over the construction site." (Bird vs Machine).
+
+Idioms & Metaphors:
+Phrases that lose meaning if translated literally word-for-word.
+
+Target: Agglutinative/Isolating languages where concepts map differently.
+
+Example: "Kick the bucket" (Die) vs "Hit the sack" (Sleep).
+
+JSON Output Format
+
+Please return a single JSON object with a list called traps.
+
+{
+  "traps": [
+    {
+      "id": "TRAP_001",
+      "category": "Winograd",
+      "source_text": "The town councilors refused to give the demonstrators a permit because they feared violence.",
+      "intended_meaning": "'They' refers to the Councilors.",
+      "trap_explanation": "If translated to Swahili (Bantu), both groups are Class 2 (People), so the ambiguity persists. If translated to French (Romance), gender agreement might fail if 'Councilors' is mixed gender and 'Demonstrators' is female-dominant.",
+      "verification_question": "Does the translation attribute the fear to the Councilors?"
+    },
+    {
+      "id": "TRAP_002",
+      "category": "Polysemy",
+      "source_text": "I deposited money on the bank of the river.",
+      "intended_meaning": "'Bank' refers to the land alongside a river, not a financial institution.",
+      "trap_explanation": "In French, 'Bank' (Finance) is 'Banque', but 'Bank' (River) is 'Rive'. A bad translation uses 'Banque'.",
+      "verification_question": "Does the translation use the word for river edge?"
+    }
+  ]
+}
+
+
+Requirements
+
+Generate 10 Winograd Schemas.
+
+Generate 10 Polysemy examples.
+
+Generate 10 Idioms.
+
+Ensure the trap_explanation mentions specific language families where possible (e.g., "In Slavic languages, the case marking might be incorrect...").

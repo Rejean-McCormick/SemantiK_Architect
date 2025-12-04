@@ -1,0 +1,125 @@
+[build-system]
+requires = ["setuptools>=65.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "abstract-wiki-architect"
+version = "0.1.0"
+description = "An industrial-scale, data-driven NLG toolkit for Abstract Wikipedia."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Abstract Wiki Architect Contributors" }
+]
+
+# Core library is pure Python; engines/constructions depend only on stdlib.
+# Heavy / optional integrations (QA, LLMs, Wikidata) live in extras below.
+dependencies = []
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Text Processing :: Linguistic",
+  "Intended Audience :: Developers"
+]
+
+[project.optional-dependencies]
+# Development & QA tooling
+dev = [
+  "pytest>=7.0.0",
+  "pandas>=1.5.0",
+  "black>=23.0.0",
+  "flake8>=6.0.0",
+  "mypy>=1.8.0"
+]
+
+qa = [
+  "pytest>=7.0.0",
+  "pandas>=1.5.0"
+]
+
+lint = [
+  "black>=23.0.0",
+  "flake8>=6.0.0",
+  "mypy>=1.8.0"
+]
+
+# Optional LLM integration for test_suite_generator, ambiguity corpus, etc.
+llm = [
+  "openai>=1.0.0",
+  "anthropic>=0.3.0"
+]
+
+# Optional Wikidata / HTTP integration for lexicon builders.
+wikidata = [
+  "requests>=2.31.0"
+]
+
+[project.scripts]
+nlg-cli = "nlg.cli_frontend:main"
+lexicon-cli = "lexicon.cli:main"
+
+[project.urls]
+Homepage = "https://example.com/abstract-wiki-architect"
+Source = "https://example.com/abstract-wiki-architect/repo"
+Issues = "https://example.com/abstract-wiki-architect/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+# This will pick up any directories with __init__.py:
+# e.g. constructions, morphology, engines, qa_tools, utils, lexicon,
+# semantics, discourse, etc.
+
+# -------------------------
+# Tool configuration
+# -------------------------
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+exclude = '''
+/(
+  \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = [
+  "E203",  # whitespace before ':', conflicts with black
+  "W503"   # line break before binary operator, conflicts with black
+]
+exclude = [
+  ".git",
+  "__pycache__",
+  "build",
+  "dist",
+  ".venv"
+]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+exclude = [
+  "build",
+  "dist",
+  ".venv"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["qa", "qa_tools"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-ra"

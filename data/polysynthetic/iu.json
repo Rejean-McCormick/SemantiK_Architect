@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "iu",
+    "family": "polysynthetic"
+  },
+  "name": "Inuktitut",
+  "phonetics": {
+    "char_types": {
+      "a": "vowel",
+      "i": "vowel",
+      "u": "vowel",
+      "k": "velar",
+      "q": "uvular",
+      "t": "dental"
+    }
+  },
+  "morphology": {
+    "verbalizers": {
+      "copula": {
+        "variants": {
+          "default": "u",
+          "vowel": "u",
+          "velar": "u",
+          "uvular": "u"
+        },
+        "deletion": ["k", "q"]
+      }
+    },
+    "person_markers": {
+      "3sg": {
+        "variants": {
+          "default": "juq",
+          "dental": "tuq",
+          "velar": "juq",
+          "uvular": "juq"
+        }
+      }
+    },
+    "derivation": {
+      "origin": {
+        "variants": {
+          "default": "miutaq"
+        },
+        "deletion": ["k", "q"]
+      }
+    }
+  },
+  "structure": "{name} {predicate}."
+}

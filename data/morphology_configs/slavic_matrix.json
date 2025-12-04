@@ -1,0 +1,109 @@
+{
+  "ru": {
+    "language_name": "Russian",
+    "morphology": {
+      "genders": ["m", "f", "n"],
+      "numbers": ["sg", "pl"],
+      "cases": ["nom", "gen", "dat", "acc", "ins", "loc"],
+      "adjective_paradigms": {
+        "nationality": {
+          "nom": {
+            "m_sg": "ый",
+            "f_sg": "ая",
+            "n_sg": "ое",
+            "pl": "ые"
+          },
+          "gen": {
+            "m_sg": "ого",
+            "f_sg": "ой",
+            "n_sg": "ого",
+            "pl": "ых"
+          }
+        },
+        "nationality_soft": {
+          "nom": {
+            "m_sg": "ий",
+            "f_sg": "яя",
+            "n_sg": "ее",
+            "pl": "ие"
+          },
+          "gen": {
+            "m_sg": "его",
+            "f_sg": "ей",
+            "n_sg": "его",
+            "pl": "их"
+          }
+        }
+      },
+      "defaults": {
+        "nationality_paradigm": "nationality",
+        "nationality_case": "nom",
+        "profession_case": "nom",
+        "profession_number": "sg",
+        "subject_case": "nom"
+      }
+    }
+  },
+  "pl": {
+    "language_name": "Polish",
+    "morphology": {
+      "genders": ["m", "f", "n"],
+      "numbers": ["sg", "pl"],
+      "cases": ["nom", "gen", "dat", "acc", "inst", "loc", "voc"],
+      "adjective_paradigms": {
+        "nationality": {
+          "nom": {
+            "m_sg": "y",
+            "f_sg": "a",
+            "n_sg": "e",
+            "pl": "y"
+          },
+          "gen": {
+            "m_sg": "ego",
+            "f_sg": "ej",
+            "n_sg": "ego",
+            "pl": "ych"
+          }
+        },
+        "nationality_soft": {
+          "nom": {
+            "m_sg": "i",
+            "f_sg": "a",
+            "n_sg": "ie",
+            "pl": "ie"
+          },
+          "gen": {
+            "m_sg": "iego",
+            "f_sg": "iej",
+            "n_sg": "iego",
+            "pl": "ich"
+          }
+        }
+      },
+      "defaults": {
+        "nationality_paradigm": "nationality",
+        "nationality_case": "nom",
+        "profession_case": "nom",
+        "profession_number": "sg",
+        "subject_case": "nom"
+      }
+    }
+  },
+  "cs": {
+    "language_name": "Czech",
+    "morphology": {
+      "genders": ["m", "f", "n"],
+      "numbers": ["sg", "pl"],
+      "cases": ["nom", "gen", "dat", "acc", "voc", "loc", "ins"],
+      "adjective_paradigms": {
+        "nationality": {
+          "nom": {
+            "m_sg": "ý",
+            "f_sg": "á",
+            "n_sg": "é",
+            "pl": "í"
+          },
+          "gen": {
+            "m_sg": "ého",
+            "f_sg": "é",
+            "n_s_

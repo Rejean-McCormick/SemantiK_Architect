@@ -1,0 +1,264 @@
+{
+  "_meta": {
+    "family": "romance",
+    "version": 1,
+    "description": "Shared Romance Grammar Matrix used by the prototype shared_romance_engine.",
+    "notes": "Each language payload provides articles, gender/number morphology, and simple phonological triggers."
+  },
+  "languages": {
+    "it": {
+      "name": "Italian",
+      "articles": {
+        "definite": {
+          "masc_sg": {
+            "before_vowel": "l'",
+            "before_impure_s_or_z": "lo",
+            "default": "il"
+          },
+          "fem_sg": {
+            "before_vowel": "l'",
+            "default": "la"
+          },
+          "masc_pl": {
+            "before_impure_s_or_z": "gli",
+            "before_vowel": "gli",
+            "default": "i"
+          },
+          "fem_pl": {
+            "default": "le"
+          }
+        },
+        "indefinite": {
+          "masc_sg": {
+            "before_impure_s_or_z": "uno",
+            "default": "un"
+          },
+          "fem_sg": {
+            "before_vowel": "un'",
+            "default": "una"
+          }
+        }
+      },
+      "morphology": {
+        "gender_from_lemma": {
+          "default": "masc",
+          "suffix_rules": [
+            { "pattern": "a$", "gender": "fem" },
+            { "pattern": "trice$", "gender": "fem" },
+            { "pattern": "essa$", "gender": "fem" }
+          ]
+        },
+        "masc_to_fem": [
+          { "from": "ore$", "to": "rice" },
+          { "from": "tore$", "to": "trice" },
+          { "from": "o$", "to": "a" }
+        ],
+        "plural_from_singular": [
+          { "from": "o$", "to": "i" },
+          { "from": "a$", "to": "e" },
+          { "from": "e$", "to": "i" }
+        ]
+      },
+      "phonology": {
+        "impure_s_clusters": ["sp", "st", "sc", "sg", "sb", "sf", "sm", "sn"],
+        "z_clusters": ["z"],
+        "vowel_initial_letters": ["a", "e", "i", "o", "u", "à", "è", "é", "ì", "ò", "ù"]
+      },
+      "syntax": {
+        "adjective_position": "post",
+        "nationality_as_adjective": true
+      }
+    },
+    "es": {
+      "name": "Spanish",
+      "articles": {
+        "definite": {
+          "masc_sg": { "default": "el" },
+          "fem_sg": { "default": "la" },
+          "masc_pl": { "default": "los" },
+          "fem_pl": { "default": "las" }
+        },
+        "indefinite": {
+          "masc_sg": { "default": "un" },
+          "fem_sg": { "default": "una" },
+          "masc_pl": { "default": "unos" },
+          "fem_pl": { "default": "unas" }
+        }
+      },
+      "morphology": {
+        "gender_from_lemma": {
+          "default": "masc",
+          "suffix_rules": [
+            { "pattern": "a$", "gender": "fem" },
+            { "pattern": "ción$", "gender": "fem" },
+            { "pattern": "sión$", "gender": "fem" },
+            { "pattern": "dad$", "gender": "fem" }
+          ]
+        },
+        "masc_to_fem": [
+          { "from": "o$", "to": "a" },
+          { "from": "or$", "to": "ora" },
+          { "from": "án$", "to": "ana" }
+        ],
+        "plural_from_singular": [
+          { "from": "[aeiouáéíóú]$", "to": "\\0s" },
+          { "from": "[^aeiouáéíóú]$", "to": "\\0es" }
+        ]
+      },
+      "phonology": {
+        "vowel_initial_letters": ["a", "e", "i", "o", "u", "á", "é", "í", "ó", "ú"],
+        "hiato_articles": {
+          "fem_sg_def_before_stressed_a": "el"
+        }
+      },
+      "syntax": {
+        "adjective_position": "post",
+        "nationality_as_adjective": true
+      }
+    },
+    "fr": {
+      "name": "French",
+      "articles": {
+        "definite": {
+          "masc_sg": {
+            "before_vowel_or_h_muet": "l'",
+            "default": "le"
+          },
+          "fem_sg": {
+            "before_vowel_or_h_muet": "l'",
+            "default": "la"
+          },
+          "masc_pl": { "default": "les" },
+          "fem_pl": { "default": "les" }
+        },
+        "indefinite": {
+          "masc_sg": { "default": "un" },
+          "fem_sg": { "default": "une" },
+          "masc_pl": { "default": "des" },
+          "fem_pl": { "default": "des" }
+        }
+      },
+      "morphology": {
+        "gender_from_lemma": {
+          "default": "masc",
+          "suffix_rules": [
+            { "pattern": "euse$", "gender": "fem" },
+            { "pattern": "trice$", "gender": "fem" },
+            { "pattern": "tion$", "gender": "fem" }
+          ]
+        },
+        "masc_to_fem": [
+          { "from": "eur$", "to": "euse" },
+          { "from": "teur$", "to": "trice" },
+          { "from": "ien$", "to": "ienne" },
+          { "from": "on$", "to": "onne" },
+          { "from": "el$", "to": "elle" }
+        ],
+        "plural_from_singular": [
+          { "from": "al$", "to": "aux" },
+          { "from": "ail$", "to": "aux" },
+          { "from": "$", "to": "s" }
+        ]
+      },
+      "phonology": {
+        "vowel_initial_letters": ["a", "e", "i", "o", "u", "y", "à", "â", "é", "è", "ê", "ë", "î", "ï", "ô", "ù", "û", "ü"],
+        "h_muet_initials": ["h"],
+        "elision_articles": ["le", "la", "de", "que", "je", "me", "te", "se", "ne"]
+      },
+      "syntax": {
+        "adjective_position": "post",
+        "adjective_position_exceptions": ["grand", "petit", "jeune", "vieux", "beau", "nouveau"],
+        "nationality_as_adjective": true
+      }
+    },
+    "pt": {
+      "name": "Portuguese",
+      "articles": {
+        "definite": {
+          "masc_sg": { "default": "o" },
+          "fem_sg": { "default": "a" },
+          "masc_pl": { "default": "os" },
+          "fem_pl": { "default": "as" }
+        },
+        "indefinite": {
+          "masc_sg": { "default": "um" },
+          "fem_sg": { "default": "uma" },
+          "masc_pl": { "default": "uns" },
+          "fem_pl": { "default": "umas" }
+        }
+      },
+      "morphology": {
+        "gender_from_lemma": {
+          "default": "masc",
+          "suffix_rules": [
+            { "pattern": "a$", "gender": "fem" },
+            { "pattern": "ção$", "gender": "fem" },
+            { "pattern": "dade$", "gender": "fem" }
+          ]
+        },
+        "masc_to_fem": [
+          { "from": "o$", "to": "a" },
+          { "from": "or$", "to": "ora" },
+          { "from": "ês$", "to": "esa" }
+        ],
+        "plural_from_singular": [
+          { "from": "[aeiou]$", "to": "\\0s" },
+          { "from": "m$", "to": "ns" },
+          { "from": "l$", "to": "is" },
+          { "from": "$", "to": "es" }
+        ]
+      },
+      "phonology": {
+        "vowel_initial_letters": ["a", "e", "i", "o", "u", "á", "â", "ã", "é", "ê", "í", "ó", "ô", "õ", "ú"]
+      },
+      "syntax": {
+        "adjective_position": "post",
+        "nationality_as_adjective": true
+      }
+    },
+    "ro": {
+      "name": "Romanian",
+      "articles": {
+        "definite": {
+          "postposed": true,
+          "masc_sg": { "default": "-ul" },
+          "fem_sg": { "default": "-a" },
+          "masc_pl": { "default": "-ii" },
+          "fem_pl": { "default": "-le" }
+        },
+        "indefinite": {
+          "masc_sg": { "default": "un" },
+          "fem_sg": { "default": "o" },
+          "masc_pl": { "default": "niște" },
+          "fem_pl": { "default": "niște" }
+        }
+      },
+      "morphology": {
+        "gender_from_lemma": {
+          "default": "masc",
+          "suffix_rules": [
+            { "pattern": "ă$", "gender": "fem" },
+            { "pattern": "ție$", "gender": "fem" }
+          ]
+        },
+        "masc_to_fem": [
+          { "from": "ian$", "to": "iană" },
+          { "from": "an$", "to": "ană" }
+        ],
+        "plural_from_singular": [
+          { "from": "ă$", "to": "e" },
+          { "from": "e$", "to": "e" },
+          { "from": "u$", "to": "i" },
+          { "from": "$", "to": "i" }
+        ]
+      },
+      "phonology": {
+        "vowel_initial_letters": ["a", "e", "i", "o", "u", "ă", "â", "î"]
+      },
+      "syntax": {
+        "adjective_position": "post",
+        "nationality_as_adjective": true
+      }
+    }
+  }
+}

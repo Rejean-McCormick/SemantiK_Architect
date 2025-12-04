@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "ml",
+    "family": "dravidian"
+  },
+  "name": "Malayalam",
+  "syntax": {
+    "copula_type": "zero",
+    "inflect_adjectives": false,
+    "punctuation": "."
+  },
+  "morphology": {
+    "gender_suffixes": [
+      { "ends_with": "karan", "replace_with": "kari" },
+      { "ends_with": "an", "replace_with": "i" },
+      { "ends_with": "an", "replace_with": "a" }
+    ],
+    "irregulars": {
+      "raja": "rani",
+      "neta": "netri",
+      "pithavu": "mathavu",
+      "makan": "makal"
+    },
+    "default_fem_suffix": "i"
+  },
+  "verbs": {
+    "copula": {
+      "default": "",
+      "present": "",
+      "past": "aayirunnu"
+    }
+  },
+  "structure": "{name} {nationality} {profession} {copula}."
+}

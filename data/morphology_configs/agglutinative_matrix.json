@@ -1,0 +1,125 @@
+{
+  "_meta": {
+    "name": "Agglutinative Morphology Matrix",
+    "version": "1.0.0",
+    "description": "Shared, data-driven configuration for agglutinative morphology (e.g. Turkish, Hungarian, Finnish). This file provides vowel harmony groups and suffix sets (plural, copula, question, tense) that a generic agglutinative engine can use to build words by stacking suffixes with the correct front/back allomorphs.",
+    "notes": "The engine is expected to: (1) inspect the last vowel of the stem; (2) choose the suffix variant from 'front' or 'back'; (3) insert buffer consonants when needed; (4) follow the slot order defined per language."
+  },
+  "languages": {
+    "tr": {
+      "description": "Turkish-style 2-way vowel harmony with plural, copula, question, and past tense suffix sets.",
+      "vowel_harmony": {
+        "front_vowels": ["e", "i", "ö", "ü"],
+        "back_vowels": ["a", "ı", "o", "u"]
+      },
+      "buffer_consonants": {
+        "after_vowel": "y",
+        "after_consonant": ""
+      },
+      "suffix_order": {
+        "nominal_predicate": ["plural", "copula_3sg"],
+        "nominal_predicate_plural_subject": ["plural", "copula_3pl"],
+        "yes_no_question": ["plural", "copula_3sg", "question"],
+        "yes_no_question_plural_subject": ["plural", "copula_3pl", "question"],
+        "past_nominal_predicate": ["plural", "past_copula_3sg"],
+        "past_nominal_predicate_plural_subject": ["plural", "past_copula_3pl"]
+      },
+      "suffixes": {
+        "plural": {
+          "type": "number",
+          "front": "ler",
+          "back": "lar"
+        },
+        "copula_3sg": {
+          "type": "copula",
+          "front": "dir",
+          "back": "dır"
+        },
+        "copula_3pl": {
+          "type": "copula",
+          "front": "dirler",
+          "back": "dırlar"
+        },
+        "past_copula_3sg": {
+          "type": "copula_past",
+          "front": "di",
+          "back": "dı"
+        },
+        "past_copula_3pl": {
+          "type": "copula_past",
+          "front": "diler",
+          "back": "dılar"
+        },
+        "question": {
+          "type": "question",
+          "front": "mi",
+          "back": "mı"
+        }
+      }
+    },
+    "hu": {
+      "description": "Hungarian-style vowel harmony with plural, copula, and possessive-like person marking for simple NPs used as predicates.",
+      "vowel_harmony": {
+        "front_vowels": ["e", "é", "i", "í", "ö", "ő", "ü", "ű"],
+        "back_vowels": ["a", "á", "o", "ó", "u", "ú"]
+      },
+      "buffer_consonants": {
+        "after_vowel": "",
+        "after_consonant": ""
+      },
+      "suffix_order": {
+        "nominal_predicate": ["plural", "copula_3sg"],
+        "nominal_predicate_plural_subject": ["plural", "copula_3pl"]
+      },
+      "suffixes": {
+        "plural": {
+          "type": "number",
+          "front": "k",
+          "back": "k"
+        },
+        "copula_3sg": {
+          "type": "copula",
+          "front": "",
+          "back": ""
+        },
+        "copula_3pl": {
+          "type": "copula",
+          "front": "k",
+          "back": "k"
+        }
+      }
+    },
+    "fi": {
+      "description": "Finnish-style agglutinative morphology without classic front/back allomorphs for the slots we care about (plural, copula). Plural and copula are modeled as simple concatenative suffixes.",
+      "vowel_harmony": {
+        "front_vowels": ["y", "ä", "ö"],
+        "back_vowels": ["a", "o", "u"]
+      },
+      "buffer_consonants": {
+        "after_vowel": "",
+        "after_consonant": ""
+      },
+      "suffix_order": {
+        "nominal_predicate": ["plural", "copula_3sg"],
+        "nominal_predicate_plural_subject": ["plural", "copula_3pl"]
+      },
+      "suffixes": {
+        "plural": {
+          "type": "number",
+          "front": "t",
+          "back": "t"
+        },
+        "copula_3sg": {
+          "type": "copula",
+          "front": " on",
+          "back": " on"
+        },
+        "copula_3pl": {
+          "type": "copula",
+          "front": " ovat",
+          "back": " ovat"
+        }
+      }
+    }
+  }
+}

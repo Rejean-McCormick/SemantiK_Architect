@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "tr",
+    "family": "agglutinative"
+  },
+  "name": "Turkish",
+  "phonetics": {
+    "vowels": "aeıioöuüAEIİOÖUÜ",
+    "default_vowel": "a",
+    "harmony_groups": {
+      "back": ["a", "ı", "o", "u"],
+      "front": ["e", "i", "ö", "ü"],
+      "back_unrounded": ["a", "ı"],
+      "front_unrounded": ["e", "i"],
+      "back_rounded": ["o", "u"],
+      "front_rounded": ["ö", "ü"]
+    }
+  },
+  "morphology": {
+    "suffixes": {
+      "plural": {
+        "back": "lar",
+        "front": "ler",
+        "default": "lar"
+      },
+      "copula": {
+        "back_unrounded": "dır",
+        "front_unrounded": "dir",
+        "back_rounded": "dur",
+        "front_rounded": "dür",
+        "default": "dır"
+      },
+      "question": {
+        "back_unrounded": "mı",
+        "front_unrounded": "mi",
+        "back_rounded": "mu",
+        "front_rounded": "mü",
+        "default": "mı"
+      }
+    }
+  },
+  "structure": "{name} {nationality} {profession}."
+}
