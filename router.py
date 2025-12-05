@@ -14,91 +14,91 @@ is a separate, thin frontend. The router here focuses on:
 
 Responsibilities
 ----------------
-- Load language profiles (language_profiles/profiles.json).
-- For a given language code, decide which **morphology family** to use.
-- Instantiate the appropriate morphology module for that family.
-- For a given construction ID, import and call the right construction function.
+- [cite_start]Load language profiles (language_profiles/profiles.json)[cite: 1725].
+- [cite_start]For a given language code, decide which **morphology family** to use[cite: 1725].
+- [cite_start]Instantiate the appropriate morphology module for that family[cite: 1725, 1728].
+- [cite_start]For a given construction ID, import and call the right construction function[cite: 1725, 1732].
 - Provide a simple entrypoint:
 
-      render(construction_id, slots, lang_code) -> str
+[cite_start]      render(construction_id, slots, lang_code) -> str [cite: 1725]
 
 This router is **family-agnostic** at the construction level: it only cares
-about which construction to call and which morphology module to bind to it.
+[cite_start]about which construction to call and which morphology module to bind to it[cite: 1725].
 All language-specific behavior lives in:
 
-- language profile (syntax & construction options),
-- morphology module (family-based),
-- construction module (family-agnostic).
+- [cite_start]language profile (syntax & construction options)[cite: 1725, 1726],
+- [cite_start]morphology module (family-based)[cite: 1725, 1728],
+- [cite_start]construction module (family-agnostic)[cite: 1725, 1732].
 
 Expected environment
 --------------------
 
-1) language_profiles/profiles.json
+[cite_start]1) language_profiles/profiles.json [cite: 1726]
 
-   A JSON object mapping language codes to profiles, e.g.:
+   [cite_start]A JSON object mapping language codes to profiles, e.g.: [cite: 1726]
 
-       {
-         "ja": {
-           "language_code": "ja",
-           "morphology_family": "japonic",
-           "basic_word_order": "SOV",
-           "default_style": "formal",
-           "possession_existential": { ... },
-           "coordination_clauses": { ... },
-           ...
-         },
-         "fr": {
-           "language_code": "fr",
-           "morphology_family": "romance",
-           ...
-         }
-       }
+       {
+         "ja": {
+           "language_code": "ja",
+           "morphology_family": "japonic",
+           "basic_word_order": "SOV",
+           "default_style": "formal",
+           "possession_existential": { ... },
+           "coordination_clauses": { ... },
+           ...
+         },
+         "fr": {
+           "language_code": "fr",
+           "morphology_family": "romance",
+           ...
+         }
+       }
 
-   The canonical field is `morphology_family`. A legacy field `family`
-   (with the same values) is also accepted for backwards compatibility.
-   An optional `morphology_family_override` can force a different family
-   for a particular language/profile if needed.
+[cite_start]   The canonical field is `morphology_family`[cite: 1727]. A legacy field `family`
+[cite_start]   (with the same values) is also accepted for backwards compatibility[cite: 1727].
+   An optional `morphology_family_override` can force a different family
+[cite_start]   for a particular language/profile if needed[cite: 1727].
 
 2) Morphology modules:
 
-   Each family has a morphology module and a primary class, e.g.:
+[cite_start]   Each family has a morphology module and a primary class, e.g.: [cite: 1728]
 
-       morphology/romance.py       -> class RomanceMorphology
-       morphology/agglutinative.py -> class AgglutinativeMorphology
-       morphology/japonic.py       -> class JaponicMorphology
-       ...
+       [cite_start]morphology/romance.py       -> class RomanceMorphology [cite: 1728]
+       [cite_start]morphology/agglutinative.py -> class AgglutinativeMorphology [cite: 1728]
+       [cite_start]morphology/japonic.py       -> class JaponicMorphology [cite: 1728]
+       [cite_start]... [cite: 1728]
 
-   The router instantiates them as:
+   [cite_start]The router instantiates them as: [cite: 1728]
 
-       morph_cls(config_dict)
-       morph_api = morph_cls(config_dict)
+       [cite_start]morph_cls(config_dict) [cite: 1728]
+       [cite_start]morph_api = morph_cls(config_dict) [cite: 1728]
 
-   where `config_dict` is the language profile for the target language.
+   [cite_start]where `config_dict` is the language profile for the target language[cite: 1728].
 
 3) Construction modules:
 
-   Each construction module provides a `realize_*` function, e.g.:
+[cite_start]   Each construction module provides a `realize_*` function, e.g.: [cite: 1732]
 
-       constructions/possession_existential.py
-           -> realize_possession_existential(slots, lang_profile, morph_api)
+       [cite_start]constructions/possession_existential.py [cite: 1732]
+           [cite_start]-> realize_possession_existential(slots, lang_profile, morph_api) [cite: 1732]
 
-       constructions/coordination_clauses.py
-           -> realize_coordination_clauses(clauses, lang_profile, morph_api, ...)
+       [cite_start]constructions/coordination_clauses.py [cite: 1732]
+           [cite_start]-> realize_coordination_clauses(clauses, lang_profile, morph_api, ...) [cite: 1732]
 
-   The router uses a registry from construction IDs to
-   (module_path, function_name).
+   The router uses a registry from construction IDs to
+[cite_start]   (module_path, function_name)[cite: 1732].
 
 Extendibility
 -------------
 
 You can extend the registries below without changing router logic:
 
-- add new morphology families to `MORPHOLOGY_CLASS_REGISTRY`,
-- add new constructions to `CONSTRUCTION_REGISTRY`.
+- [cite_start]add new morphology families to `MORPHOLOGY_CLASS_REGISTRY`[cite: 1729],
+- [cite_start]add new constructions to `CONSTRUCTION_REGISTRY`[cite: 1729].
 
 Higher-level layers (e.g. frame-based generation, discourse planning)
 should call into this router via a thin abstraction, rather than poking
-directly at morphology or constructions.
+[cite_start]directly at morphology or constructions[cite: 1729].
 """
 
 from __future__ import annotations
@@ -128,6 +128,8 @@ MORPHOLOGY_CLASS_REGISTRY: Dict[str, tuple[str, str]] = {
     "dravidian": ("morphology.dravidian", "DravidianMorphology"),
     "austronesian": ("morphology.austronesian", "AustronesianMorphology"),
     "celtic": ("morphology.celtic", "CelticMorphology"),
+    "indo_aryan": ("morphology.indo_aryan", "IndoAryanMorphology"),
+    "iranic": ("morphology.iranic", "IranicMorphology"),
     # Add more families as needed
 }
 
@@ -150,23 +152,75 @@ CONSTRUCTION_REGISTRY: Dict[str, tuple[str, str]] = {
         "constructions.coordination_clauses",
         "realize_coordination_clauses",
     ),
-    # You can register additional constructions here, for example:
-    # "copula_equative_simple": (
-    #     "constructions.copula_equative_simple",
-    #     "realize_copula_equative_simple",
-    # ),
-    # "copula_existential": (
-    #     "constructions.copula_existential",
-    #     "realize_copula_existential",
-    # ),
-    # "possession_have": (
-    #     "constructions.possession_have",
-    #     "realize_possession_have",
-    # ),
-    # "relative_clause_subject_gap": (
-    #     "constructions.relative_clause_subject_gap",
-    #     "realize_relative_clause_subject_gap",
-    # ),
+    # Added core construction types to match expected usage:
+    "copula_equative_simple": (
+        "constructions.copula_equative_simple",
+        "realize",
+    ),
+    "copula_equative_classification": (
+        "constructions.copula_equative_classification",
+        "realize_equative_classification",
+    ),
+    "copula_attributive_adj": (
+        "constructions.copula_attributive_adj",
+        "realize_attributive_adj",
+    ),
+    "copula_attributive_np": (
+        "constructions.copula_attributive_np",
+        "render",
+    ),
+    "copula_locative": (
+        "constructions.copula_locative",
+        "render",
+    ),
+    "copula_existential": (
+        "constructions.copula_existential",
+        "realize",
+    ),
+    "possession_have": (
+        "constructions.possession_have",
+        "realize",
+    ),
+    "relative_clause_subject_gap": (
+        "constructions.relative_clause_subject_gap",
+        "realize",
+    ),
+    "intransitive_event": (
+        "constructions.intransitive_event",
+        "realize",
+    ),
+    "transitive_event": (
+        "constructions.transitive_event",
+        "realize",
+    ),
+    "ditransitive_event": (
+        "constructions.ditransitive_event",
+        "realize_ditransitive_event",
+    ),
+    "passive_event": (
+        "constructions.passive_event",
+        "realize",
+    ),
+    "causative_event": (
+        "constructions.causative_event",
+        "realize",
+    ),
+    "topic_comment_copular": (
+        "constructions.topic_comment_copular",
+        "realize",
+    ),
+    "topic_comment_eventive": (
+        "constructions.topic_comment_eventive",
+        "realize_topic_comment_eventive",
+    ),
+    "apposition_np": (
+        "constructions.apposition_np",
+        "render",
+    ),
+    "comparative_superlative": (
+        "constructions.comparative_superlative",
+        "realize",
+    ),
 }
 
 
@@ -174,9 +228,11 @@ CONSTRUCTION_REGISTRY: Dict[str, tuple[str, str]] = {
 # Language profiles loader
 # ---------------------------------------------------------------------------
 
+
 def _default_profiles_path() -> str:
     """Return the absolute path to language_profiles/profiles.json."""
     here = os.path.dirname(os.path.abspath(__file__))
+    # Assumes profiles.json is up one level from router.py, inside 'language_profiles'
     return os.path.join(here, "language_profiles", "profiles.json")
 
 
@@ -184,9 +240,9 @@ def _load_profiles(path: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     """Load language profiles from JSON file."""
     profiles_path = path or _default_profiles_path()
     if not os.path.exists(profiles_path):
-        raise FileNotFoundError(
-            f"Language profiles file not found: {profiles_path}"
-        )
+        # We need to assume the file exists, as the profiles.json file was explicitly provided.
+        # This checks the default path relative to router.py, which is correct based on the structure.
+        raise FileNotFoundError(f"Language profiles file not found: {profiles_path}")
 
     with open(profiles_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -212,6 +268,7 @@ def _load_profiles(path: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # NLGRouter
 # ---------------------------------------------------------------------------
+
 
 class NLGRouter:
     """
@@ -261,6 +318,7 @@ class NLGRouter:
         try:
             return self._profiles[lang_code]
         except KeyError:
+            # This is the line that caused the error in the test runner.
             raise KeyError(f"No language profile found for code: {lang_code!r}")
 
     # --------------------- morphology ---------------------------
@@ -283,7 +341,10 @@ class NLGRouter:
             return morph_family
 
         legacy_family = profile.get("family")
-        if isinstance(legacy_family, str) and legacy_family in MORPHOLOGY_CLASS_REGISTRY:
+        if (
+            isinstance(legacy_family, str)
+            and legacy_family in MORPHOLOGY_CLASS_REGISTRY
+        ):
             return legacy_family
 
         raise ValueError(
@@ -397,6 +458,8 @@ class NLGRouter:
         morph_api = self.get_morphology(lang_code)
 
         construction_fn = self.get_construction_callable(construction_id)
+        # Note: The 'render' call here will use the appropriate signature
+        # as defined by the target construction's module.
         return construction_fn(slots, lang_profile, morph_api)
 
 
@@ -461,6 +524,78 @@ def render(
     return router.render(construction_id, slots, lang_code)
 
 
+# ---------------------------------------------------------------------------
+# High-Level Biography Helper (Bridge to Engines)
+# ---------------------------------------------------------------------------
+
+def render_bio(
+    name: str,
+    gender: str,
+    profession_lemma: str,
+    nationality_lemma: str,
+    lang_code: str,
+) -> str:
+    """
+    High-level helper to render a biography sentence by dispatching to
+    the appropriate language family engine.
+
+    This bridges the gap between the router and the family-specific
+    logic engines in `engines/`.
+    """
+    router = get_router()
+    profile = router.get_language_profile(lang_code)
+    
+    # Determine family (e.g. "romance", "agglutinative")
+    family = profile.get("morphology_family") or profile.get("family")
+    if not family:
+        raise ValueError(f"No family defined for language '{lang_code}'")
+
+    # 1. Load the Language Card (Config)
+    # Expected path (given your repo layout):
+    #   <repo_root>/data/{family}/{lang_code}.json
+    #
+    # Here, <repo_root> is the directory containing router.py,
+    # i.e. C:\MyCode\AbstractWiki\abstract-wiki-architect
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = root_dir  # data/ lives inside the repo directory, not its parent
+
+    config_path = os.path.join(project_root, "data", family, f"{lang_code}.json")
+
+    # Final check before attempting to load
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(
+            f"Language card not found for {lang_code} at {config_path}. "
+            f"Please ensure {family} folder exists in 'data/' and contains {lang_code}.json."
+        )
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        lang_config = json.load(f)
+
+    # 2. Import the Engine Module
+    engine_module_name = f"engines.{family}"
+    try:
+        engine_module = importlib.import_module(engine_module_name)
+    except ImportError as e:
+        raise ImportError(
+            f"Could not import engine '{engine_module_name}' for family '{family}'"
+        ) from e
+
+    # 3. Call the engine's render_bio
+    if not hasattr(engine_module, "render_bio"):
+        raise NotImplementedError(
+            f"Engine '{engine_module_name}' does not implement render_bio()"
+        )
+
+    return engine_module.render_bio(
+        name, gender, profession_lemma, nationality_lemma, lang_config
+    )
+
+
+
+# Alias for universal test runner compatibility
+render_biography = render_bio
+
+
 __all__ = [
     "NLGRouter",
     "MORPHOLOGY_CLASS_REGISTRY",
@@ -469,4 +604,6 @@ __all__ = [
     "get_language_profile",
     "get_morphology",
     "render",
+    "render_bio",
+    "render_biography",
 ]

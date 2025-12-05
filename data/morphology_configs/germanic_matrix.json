@@ -12,7 +12,7 @@
       "genitive_strategy": "of_phrase",
       "relative_clause_position": "postnominal",
       "relative_marker": "that",
-      "bio_default_tense": "past"
+      "bio_default_tense": "present"
     },
     "articles": {
       "definite": {
@@ -114,13 +114,7 @@
       }
     },
     "phonology": {
-      "a_an_vowel_set": [
-        "a",
-        "e",
-        "i",
-        "o",
-        "u"
-      ]
+      "a_an_vowel_set": ["a", "e", "i", "o", "u"]
     }
   },
   "de": {
@@ -136,7 +130,7 @@
       "adjective_position": "pre",
       "relative_clause_position": "postnominal",
       "relative_marker": "die",
-      "bio_default_tense": "past"
+      "bio_default_tense": "present"
     },
     "articles": {
       "definite": {
@@ -152,11 +146,7 @@
       }
     },
     "nouns": {
-      "genders": [
-        "masc",
-        "fem",
-        "neut"
-      ],
+      "genders": ["masc", "fem", "neut"],
       "plural_rules": [
         {
           "ends_with": "e",
@@ -231,7 +221,7 @@
       "adjective_position": "pre",
       "relative_clause_position": "postnominal",
       "relative_marker": "die",
-      "bio_default_tense": "past"
+      "bio_default_tense": "present"
     },
     "articles": {
       "definite": {
@@ -280,7 +270,7 @@
       "adjective_position": "pre",
       "relative_clause_position": "postnominal",
       "relative_marker": "som",
-      "bio_default_tense": "past"
+      "bio_default_tense": "present"
     },
     "articles": {
       "definite_suffix": true,
@@ -315,7 +305,7 @@
       "adjective_position": "pre",
       "relative_clause_position": "postnominal",
       "relative_marker": "som",
-      "bio_default_tense": "past"
+      "bio_default_tense": "present"
     },
     "articles": {
       "definite_suffix": true,
@@ -350,7 +340,7 @@
       "adjective_position": "pre",
       "relative_clause_position": "postnominal",
       "relative_marker": "som",
-      "bio_default_tense": "past"
+      "bio_default_tense": "present"
     },
     "articles": {
       "definite_suffix": true,

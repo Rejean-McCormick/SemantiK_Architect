@@ -68,17 +68,11 @@ class AgglutinativeMorphology:
 
     @property
     def _vowels(self) -> str:
-        return (
-            self.config.get("phonetics", {}).get("vowels")
-            or "aeiouAEIOU"
-        )
+        return self.config.get("phonetics", {}).get("vowels") or "aeiouAEIOU"
 
     @property
     def _default_vowel(self) -> str:
-        return (
-            self.config.get("phonetics", {}).get("default_vowel")
-            or "a"
-        )
+        return self.config.get("phonetics", {}).get("default_vowel") or "a"
 
     @property
     def _harmony_groups(self) -> Dict[str, Iterable[str]]:

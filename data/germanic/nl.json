@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "nl",
+    "family": "germanic"
+  },
+  "name": "Dutch",
+  "articles": {
+    "indefinite": {
+      "m": "een",
+      "f": "een",
+      "n": "een",
+      "pl": ""
+    },
+    "definite": {
+      "m": "de",
+      "f": "de",
+      "n": "het",
+      "pl": "de"
+    }
+  },
+  "morphology": {
+    "generic_feminine_suffix": "e",
+    "gender_suffixes": [
+      { "ends_with": "er", "replace_with": "ster" },
+      { "ends_with": "eur", "replace_with": "rice" },
+      { "ends_with": "ent", "replace_with": "ente" },
+      { "ends_with": "man", "replace_with": "vrouw" }
+    ],
+    "grammatical_gender_map": {
+      "ing": "f",
+      "ij": "f",
+      "heid": "f",
+      "teit": "f",
+      "a": "f",
+      "nis": "f",
+      "st": "f",
+      "schap": "n",
+      "dom": "n",
+      "isme": "n",
+      "ment": "n",
+      "sel": "n",
+      "um": "n",
+      "je": "n",
+      "pje": "n",
+      "tje": "n"
+    },
+    "irregulars": {
+      "koning": "koningin",
+      "god": "godin",
+      "hertog": "hertogin",
+      "graaf": "gravin",
+      "prins": "prinses",
+      "dichter": "dichteres",
+      "leraar": "lerares",
+      "directeur": "directrice",
+      "secretaris": "secretaresse",
+      "advocaat": "advocate"
+    }
+  },
+  "adjectives": {
+    "inflects": true,
+    "indefinite_endings": {
+      "m": "e",
+      "f": "e",
+      "n": "",
+      "pl": "e"
+    },
+    "definite_endings": {
+      "m": "e",
+      "f": "e",
+      "n": "e",
+      "pl": "e"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "present": "is",
+      "past": "was"
+    }
+  },
+  "casing": {
+    "capitalize_nouns": false
+  },
+  "structure": "{name} {is_verb} {article} {nationality} {profession}."
+}

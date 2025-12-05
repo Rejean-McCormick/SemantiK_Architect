@@ -88,8 +88,8 @@ LANG_COLUMN_CANDIDATES = [
 ]
 
 # Input columns for a typical biographical sentence
-NAME_COLUMN_CANDIDATES = ["NAME", "name"]
-GENDER_COLUMN_CANDIDATES = ["GENDER", "gender"]
+NAME_COLUMN_CANDIDATES = ["NAME", "name", "Name"]
+GENDER_COLUMN_CANDIDATES = ["GENDER", "gender", "Gender", "Gender (Male/Female)"]
 PROF_COLUMN_CANDIDATES = [
     "PROFESSION_LEMMA",
     "profession_lemma",
@@ -132,6 +132,16 @@ def _first_present(row: pd.Series, candidates: List[str]) -> Optional[Any]:
     for key in candidates:
         if key in row and not pd.isna(row[key]) and str(row[key]).strip() != "":
             return row[key]
+    return None
+
+
+def _find_val_by_prefix(row: pd.Series, prefix: str) -> Optional[Any]:
+    """Find value in first column starting with prefix."""
+    for col in row.index:
+        if str(col).startswith(prefix):
+             val = row[col]
+             if not pd.isna(val) and str(val).strip() != "":
+                 return val
     return None
 
 
@@ -181,8 +191,14 @@ def compute_output_from_row(row: pd.Series, lang_code: str) -> str:
 
     name = _first_present(row, NAME_COLUMN_CANDIDATES)
     gender = _first_present(row, GENDER_COLUMN_CANDIDATES)
+    
     prof = _first_present(row, PROF_COLUMN_CANDIDATES)
+    if prof is None:
+        prof = _find_val_by_prefix(row, "Profession_Lemma")
+
     nat = _first_present(row, NAT_COLUMN_CANDIDATES)
+    if nat is None:
+        nat = _find_val_by_prefix(row, "Nationality_Lemma")
 
     if name is None or gender is None or prof is None or nat is None:
         raise ValueError(
@@ -193,8 +209,11 @@ def compute_output_from_row(row: pd.Series, lang_code: str) -> str:
     # Convert to str to avoid pandas NA / float surprises
     name_str = str(name)
     gender_str = str(gender)
-    prof_str = str(prof)
-    nat_str = str(nat)
+    
+    # Clean placeholder brackets from generator if present (e.g. "[Actor]" -> "Actor")
+    prof_str = str(prof).replace("[", "").replace("]", "")
+    nat_str = str(nat).replace("[", "").replace("]", "")
+    
     lang_str = str(lang_code)
 
     # Call the main entrypoint
@@ -227,8 +246,7 @@ def find_dataset_dir(explicit: Optional[str] = None) -> str:
 
     raise FileNotFoundError(
         "No generated_datasets directory found.\n"
-        "Tried:\n"
-        + "\n".join(f"  - {p}" for p in DEFAULT_DATASET_DIR_CANDIDATES)
+        "Tried:\n" + "\n".join(f"  - {p}" for p in DEFAULT_DATASET_DIR_CANDIDATES)
     )
 
 
@@ -450,7 +468,9 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     for path in files:
         print(f"Processing: {os.path.basename(path)}")
-        file_results, file_warnings = run_tests_on_file(path, allowed_langs=allowed_langs)
+        file_results, file_warnings = run_tests_on_file(
+            path, allowed_langs=allowed_langs
+        )
         all_results.extend(file_results)
         all_warnings.extend(file_warnings)
 

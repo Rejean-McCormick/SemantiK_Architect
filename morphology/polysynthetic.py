@@ -81,7 +81,7 @@ Downstream code is expected to:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional
 
 Person = Literal["1", "2", "3"]
 Number = Literal["sg", "pl"]
@@ -259,10 +259,19 @@ def _orthographic_cleanup(word: str, orth_cfg: Dict[str, Any]) -> str:
     for ch in word:
         if chars:
             prev = chars[-1]
-            if merge_double_vowels and prev == ch and prev.lower() in "aeiouàèìòùáéíóúâêîôû":
+            if (
+                merge_double_vowels
+                and prev == ch
+                and prev.lower() in "aeiouàèìòùáéíóúâêîôû"
+            ):
                 # Skip this vowel (simple collapsing of VV → V)
                 continue
-            if merge_double_consonants and prev == ch and prev.isalpha() and prev.lower() not in "aeiou":
+            if (
+                merge_double_consonants
+                and prev == ch
+                and prev.isalpha()
+                and prev.lower() not in "aeiou"
+            ):
                 # Skip this consonant (simple CC → C)
                 continue
         chars.append(ch)
@@ -330,7 +339,9 @@ def build_polysynthetic_verb(
 
     # 1. Agreement prefixes (subject, object, etc.)
     if subject_features:
-        subj_prefix = _select_agreement_prefix("subject", subject_features, agreement_cfg)
+        subj_prefix = _select_agreement_prefix(
+            "subject", subject_features, agreement_cfg
+        )
         if subj_prefix:
             prefixes.append(subj_prefix)
 

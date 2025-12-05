@@ -51,7 +51,7 @@ import os
 import shutil
 import sys
 from glob import glob
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 # ---------------------------------------------------------------------------
 # Project root & logging
@@ -109,7 +109,9 @@ def _infer_language_from_filename(path: str) -> Optional[str]:
     return stem or None
 
 
-def _ensure_meta_block(data: Dict[str, Any], path: str, target_version: str) -> Dict[str, Any]:
+def _ensure_meta_block(
+    data: Dict[str, Any], path: str, target_version: str
+) -> Dict[str, Any]:
     """
     Ensure that the top-level object has a `meta` block, not just `_meta`,
     and that it has a `language` field at minimum.
@@ -130,10 +132,14 @@ def _ensure_meta_block(data: Dict[str, Any], path: str, target_version: str) -> 
     if "language" not in meta or not meta.get("language"):
         inferred = _infer_language_from_filename(path)
         if inferred:
-            log.info("  - meta.language missing; inferring '%s' from filename.", inferred)
+            log.info(
+                "  - meta.language missing; inferring '%s' from filename.", inferred
+            )
             meta["language"] = inferred
         else:
-            log.warning("  - Could not infer language for %s; meta.language stays unset.", path)
+            log.warning(
+                "  - Could not infer language for %s; meta.language stays unset.", path
+            )
 
     # Bump version
     old_version = meta.get("version")
@@ -212,7 +218,9 @@ def _migrate_sections(
         log.info("  - Normalizing section '%s' (%d entries)", section, len(entries))
         for key, entry in entries.items():
             if not isinstance(entry, dict):
-                log.warning("    • Skipping non-dict entry under '%s[%s]'", section, key)
+                log.warning(
+                    "    • Skipping non-dict entry under '%s[%s]'", section, key
+                )
                 continue
             _ensure_base_entry_fields(
                 entry=entry,
@@ -240,7 +248,9 @@ def _migrate_sections(
     # name_templates: ensure key
     templates = data.get("name_templates")
     if isinstance(templates, dict):
-        log.info("  - Normalizing section 'name_templates' (%d entries)", len(templates))
+        log.info(
+            "  - Normalizing section 'name_templates' (%d entries)", len(templates)
+        )
         for key, entry in templates.items():
             if not isinstance(entry, dict):
                 log.warning("    • Skipping non-dict template '%s'", key)

@@ -155,15 +155,21 @@ class JaponicMorphology:
 
         self._lexicon: Dict[str, Any] = self.config.get("lexicon", {}) or {}
         self._noun_lexicon: Dict[str, str] = (
-            self._lexicon.get("nouns", {}) if isinstance(self._lexicon.get("nouns"), dict) else {}
+            self._lexicon.get("nouns", {})
+            if isinstance(self._lexicon.get("nouns"), dict)
+            else {}
         )
 
         self._verbs: Dict[str, Any] = self.config.get("verbs", {}) or {}
         self._copula_cfg: Dict[str, Any] = (
-            self._verbs.get("copula", {}) if isinstance(self._verbs.get("copula"), dict) else {}
+            self._verbs.get("copula", {})
+            if isinstance(self._verbs.get("copula"), dict)
+            else {}
         )
         self._verb_lexicon: Dict[str, Any] = (
-            self._verbs.get("lexicon", {}) if isinstance(self._verbs.get("lexicon"), dict) else {}
+            self._verbs.get("lexicon", {})
+            if isinstance(self._verbs.get("lexicon"), dict)
+            else {}
         )
 
     # ------------------------------------------------------------------ #
@@ -264,7 +270,9 @@ class JaponicMorphology:
         # Final fallback: empty (no copula)
         return ""
 
-    def _select_verb_from_entry(self, entry: Dict[str, Any], features: Dict[str, Any]) -> str:
+    def _select_verb_from_entry(
+        self, entry: Dict[str, Any], features: Dict[str, Any]
+    ) -> str:
         """
         Given a verb entry and a feature bundle, pick the best surface form.
 
@@ -377,11 +385,7 @@ class JaponicMorphology:
         if isinstance(surface, str) and surface:
             base = surface
         else:
-            lemma = (
-                concept.get("lemma")
-                or concept.get("name")
-                or concept.get("label")
-            )
+            lemma = concept.get("lemma") or concept.get("name") or concept.get("label")
             base = self._lookup_noun_surface(_as_str(lemma))
 
         # Genitive chain if owner present

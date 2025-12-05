@@ -69,6 +69,7 @@ CONSTRUCTION_IDS: List[str] = [
 # I/O helpers
 # --------------------------------------------------------------------------- #
 
+
 def load_language_profiles(path: str) -> Dict[str, Any]:
     """
     Load language profiles from a JSON file.
@@ -180,6 +181,7 @@ def write_csv(path: str, rows: List[Dict[str, str]]) -> None:
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(

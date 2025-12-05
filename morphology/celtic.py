@@ -17,278 +17,277 @@ Everything is driven by configuration so that individual languages can
 encode as much or as little morphology as needed.
 """
 
-from typing import Dict, Any, Optional
+from __future__ import annotations
+from typing import Dict, Any, Optional, List
 
-Config = Dict[str, Any]
 
-
-# ---------------------------------------------------------------------------
-# Generic helpers
-# ---------------------------------------------------------------------------
-
-def _apply_suffix_rules(word: str, rules: Any) -> str:
+class CelticMorphology:
     """
-    Apply the first matching suffix replacement rule to `word`.
-
-    Rules are expected to be a list of dicts:
-      [{ "ends_with": "...", "replace_with": "..." }, ...]
+    Morphology engine for Celtic languages.
     """
-    if not isinstance(rules, list):
+
+    def __init__(self, config: Dict[str, Any]) -> None:
+        self.config = config
+        self._morph = config.get("morphology", {})
+        self._mutations = self._morph.get("mutations", {})
+        self._syntax = config.get("syntax", {})
+        self._verbs = config.get("verbs", {})
+
+    # ---------------------------------------------------------------------------
+    # Generic helpers
+    # ---------------------------------------------------------------------------
+
+    def _apply_suffix_rules(self, word: str, rules: Any) -> str:
+        """
+        Apply the first matching suffix replacement rule to `word`.
+
+        Rules are expected to be a list of dicts:
+        [{ "ends_with": "...", "replace_with": "..." }, ...]
+        """
+        if not isinstance(rules, list):
+            return word
+
+        # Match longer endings first
+        sorted_rules = sorted(
+            rules,
+            key=lambda r: len(r.get("ends_with", "")),
+            reverse=True,
+        )
+
+        for rule in sorted_rules:
+            end = rule.get("ends_with", "")
+            repl = rule.get("replace_with", "")
+            if end and word.endswith(end):
+                stem = word[: -len(end)]
+                return stem + repl
+
         return word
 
-    # Match longer endings first
-    sorted_rules = sorted(
-        rules,
-        key=lambda r: len(r.get("ends_with", "")),
-        reverse=True,
-    )
+    def _apply_initial_mutation(self, word: str, mutation_rules: Any) -> str:
+        """
+        Apply an initial consonant mutation to `word` according to `mutation_rules`.
 
-    for rule in sorted_rules:
-        end = rule.get("ends_with", "")
-        repl = rule.get("replace_with", "")
-        if end and word.endswith(end):
-            stem = word[:-len(end)]
-            return stem + repl
+        `mutation_rules` is expected to be a list of dicts:
+        [{ "from": "p", "to": "ph" }, { "from": "c", "to": "ch" }, ...]
 
-    return word
+        The function matches the longest prefix first, so it can handle
+        multi-letter clusters like "gw" or "bh".
+        """
+        if not isinstance(mutation_rules, list):
+            return word
 
+        word = (word or "").strip()
+        if not word:
+            return word
 
-def _apply_initial_mutation(word: str, mutation_rules: Any) -> str:
-    """
-    Apply an initial consonant mutation to `word` according to `mutation_rules`.
+        # Sort by length of "from" to prefer longer clusters
+        sorted_rules = sorted(
+            mutation_rules,
+            key=lambda r: len(r.get("from", "")),
+            reverse=True,
+        )
 
-    `mutation_rules` is expected to be a list of dicts:
-      [{ "from": "p", "to": "ph" }, { "from": "c", "to": "ch" }, ...]
+        for rule in sorted_rules:
+            src = rule.get("from", "")
+            dst = rule.get("to", "")
+            if src and word.startswith(src):
+                return dst + word[len(src) :]
 
-    The function matches the longest prefix first, so it can handle
-    multi-letter clusters like "gw" or "bh".
-    """
-    if not isinstance(mutation_rules, list):
         return word
 
-    word = (word or "").strip()
-    if not word:
-        return word
+    def apply_mutation(self, word: str, mutation_name: Optional[str]) -> str:
+        """
+        Apply a named initial mutation to `word` (e.g. 'soft', 'lenition', 'eclipsis').
 
-    # Sort by length of "from" to prefer longer clusters
-    sorted_rules = sorted(
-        mutation_rules,
-        key=lambda r: len(r.get("from", "")),
-        reverse=True,
-    )
+        The config is expected to contain:
+        config['morphology']['mutations'][mutation_name] -> list of rules
 
-    for rule in sorted_rules:
-        src = rule.get("from", "")
-        dst = rule.get("to", "")
-        if src and word.startswith(src):
-            return dst + word[len(src):]
+        If mutation_name is None, empty, or not configured, the word is returned unchanged.
+        """
+        word = (word or "").strip()
+        if not word:
+            return word
 
-    return word
+        if not mutation_name:
+            return word
 
+        rules = self._mutations.get(mutation_name)
 
-def apply_mutation(word: str, mutation_name: Optional[str], config: Config) -> str:
-    """
-    Apply a named initial mutation to `word` (e.g. 'soft', 'lenition', 'eclipsis').
+        if not rules:
+            return word
 
-    The config is expected to contain:
-      config['morphology']['mutations'][mutation_name] -> list of rules
+        return self._apply_initial_mutation(word, rules)
 
-    If mutation_name is None, empty, or not configured, the word is returned unchanged.
-    """
-    word = (word or "").strip()
-    if not word:
-        return word
+    # ---------------------------------------------------------------------------
+    # Gender derivation (if applicable)
+    # ---------------------------------------------------------------------------
 
-    if not mutation_name:
-        return word
+    def genderize_noun(self, lemma: str, gender: str) -> str:
+        """
+        Return the nominative form of a profession/role noun for the given natural gender.
 
-    morph = config.get("morphology", {})
-    mutations = morph.get("mutations", {})
-    rules = mutations.get(mutation_name)
+        Many Celtic languages do NOT regularly derive feminine forms via suffixes,
+        so often this simply returns the lemma.
 
-    if not rules:
-        return word
+        The config can override this with:
+        config['morphology']['gender_inflection']['noun_suffixes'] -> rules
+        config['morphology']['irregulars'] -> {lemma: feminine_form}
+        """
+        lemma = (lemma or "").strip()
+        gender = (gender or "").lower().strip()
 
-    return _apply_initial_mutation(word, rules)
+        # Only try to change form for female if rules/irregulars are defined.
+        if gender != "female":
+            return lemma
 
+        irregulars = self._morph.get("irregulars", {})
 
-# ---------------------------------------------------------------------------
-# Gender derivation (if applicable)
-# ---------------------------------------------------------------------------
+        if lemma in irregulars:
+            return irregulars[lemma]
 
-def genderize_noun(lemma: str, gender: str, config: Config) -> str:
-    """
-    Return the nominative form of a profession/role noun for the given natural gender.
+        noun_rules = self._morph.get("gender_inflection", {}).get("noun_suffixes", [])
+        if noun_rules:
+            return self._apply_suffix_rules(lemma, noun_rules)
 
-    Many Celtic languages do NOT regularly derive feminine forms via suffixes,
-    so often this simply returns the lemma.
-
-    The config can override this with:
-      config['morphology']['gender_inflection']['noun_suffixes'] -> rules
-      config['morphology']['irregulars'] -> {lemma: feminine_form}
-    """
-    lemma = (lemma or "").strip()
-    gender = (gender or "").lower().strip()
-
-    # Only try to change form for female if rules/irregulars are defined.
-    if gender != "female":
+        # Default: no change
         return lemma
 
-    morph = config.get("morphology", {})
-    irregulars = morph.get("irregulars", {})
+    def genderize_adjective(self, lemma: str, gender: str) -> str:
+        """
+        Return the nominative form of a nationality adjective for the given natural gender.
 
-    if lemma in irregulars:
-        return irregulars[lemma]
+        Many Celtic languages do not mark gender on adjectives, but some may.
+        The config can specify:
+        config['morphology']['gender_inflection']['adjective_suffixes'] -> rules
+        config['morphology']['irregulars'] -> {lemma: feminine_form}
+        """
+        lemma = (lemma or "").strip()
+        gender = (gender or "").lower().strip()
 
-    noun_rules = morph.get("gender_inflection", {}).get("noun_suffixes", [])
-    if noun_rules:
-        return _apply_suffix_rules(lemma, noun_rules)
+        if gender != "female":
+            return lemma
 
-    # Default: no change
-    return lemma
+        irregulars = self._morph.get("irregulars", {})
 
+        if lemma in irregulars:
+            return irregulars[lemma]
 
-def genderize_adjective(lemma: str, gender: str, config: Config) -> str:
-    """
-    Return the nominative form of a nationality adjective for the given natural gender.
+        adj_rules = self._morph.get("gender_inflection", {}).get("adjective_suffixes", [])
+        if adj_rules:
+            return self._apply_suffix_rules(lemma, adj_rules)
 
-    Many Celtic languages do not mark gender on adjectives, but some may.
-    The config can specify:
-      config['morphology']['gender_inflection']['adjective_suffixes'] -> rules
-      config['morphology']['irregulars'] -> {lemma: feminine_form}
-    """
-    lemma = (lemma or "").strip()
-    gender = (gender or "").lower().strip()
-
-    if gender != "female":
         return lemma
 
-    morph = config.get("morphology", {})
-    irregulars = morph.get("irregulars", {})
+    # ---------------------------------------------------------------------------
+    # Copula selection
+    # ---------------------------------------------------------------------------
 
-    if lemma in irregulars:
-        return irregulars[lemma]
+    def select_copula(
+        self,
+        tense: str,
+        person: int,
+        number: str,
+    ) -> str:
+        """
+        Select the correct copula form for the given tense/person/number.
 
-    adj_rules = morph.get("gender_inflection", {}).get("adjective_suffixes", [])
-    if adj_rules:
-        return _apply_suffix_rules(lemma, adj_rules)
+        The config is expected to contain:
 
-    return lemma
+        config['verbs']['copula'] = {
+            "present": {
+            "1sg": "...",
+            "2sg": "...",
+            "3sg": "...",
+            "1pl": "...",
+            "2pl": "...",
+            "3pl": "...",
+            "default": "..."
+            },
+            "past": { ... },
+            ...
+        }
 
+        The `number` should be 'sg' or 'pl'.
+        If the specific form is missing, falls back to 'default' for that tense,
+        and finally to an empty string.
+        """
+        copula_cfg = self._verbs.get("copula", {})
 
-# ---------------------------------------------------------------------------
-# Copula selection
-# ---------------------------------------------------------------------------
+        tense = (tense or "present").lower().strip()
+        number = (number or "sg").lower().strip()
 
-def select_copula(
-    tense: str,
-    person: int,
-    number: str,
-    config: Config,
-) -> str:
-    """
-    Select the correct copula form for the given tense/person/number.
+        person_key = f"{person}{number}"  # e.g. "3sg"
+        tense_map = copula_cfg.get(tense, {})
 
-    The config is expected to contain:
+        if not isinstance(tense_map, dict):
+            return ""
 
-      config['verbs']['copula'] = {
-        "present": {
-          "1sg": "...",
-          "2sg": "...",
-          "3sg": "...",
-          "1pl": "...",
-          "2pl": "...",
-          "3pl": "...",
-          "default": "..."
-        },
-        "past": { ... },
-        ...
-      }
+        form = tense_map.get(person_key)
+        if form is not None:
+            return form
 
-    The `number` should be 'sg' or 'pl'.
-    If the specific form is missing, falls back to 'default' for that tense,
-    and finally to an empty string.
-    """
-    verbs = config.get("verbs", {})
-    copula_cfg = verbs.get("copula", {})
+        # Fallback to tense-level default if present
+        return tense_map.get("default", "")
 
-    tense = (tense or "present").lower().strip()
-    number = (number or "sg").lower().strip()
+    # ---------------------------------------------------------------------------
+    # High-level helper for a typical biographical predicate
+    # ---------------------------------------------------------------------------
 
-    person_key = f"{person}{number}"  # e.g. "3sg"
-    tense_map = copula_cfg.get(tense, {})
+    def render_simple_bio_predicates(
+        self,
+        prof_lemma: str,
+        nat_lemma: str,
+        gender: str,
+    ) -> Dict[str, str]:
+        """
+        Convenience function for biographical sentences in Celtic languages.
 
-    if not isinstance(tense_map, dict):
-        return ""
+        Tasks:
 
-    form = tense_map.get(person_key)
-    if form is not None:
-        return form
+        1. Derive gender-appropriate nominative forms for:
+            - profession (noun)
+            - nationality (adjective or noun)
+        2. Apply predicative initial mutations as configured:
+            - e.g. soft mutation after a feminine noun, or after 'yn' in Welsh.
+        3. Select a default copula form for a simple 3sg statement.
 
-    # Fallback to tense-level default if present
-    return tense_map.get("default", "")
+        The config may contain:
 
+        config['syntax'] = {
+            "bio_tense": "present" | "past" | ...,
+            "predicative_mutation_profession": "soft" | "lenition" | null,
+            "predicative_mutation_nationality": "soft" | "lenition" | null
+        }
 
-# ---------------------------------------------------------------------------
-# High-level helper for a typical biographical predicate
-# ---------------------------------------------------------------------------
+        Returns a dict:
 
-def inflect_bio_predicate(
-    prof_lemma: str,
-    nat_lemma: str,
-    gender: str,
-    config: Config,
-) -> Dict[str, str]:
-    """
-    Convenience function for biographical sentences in Celtic languages.
+        {
+            "profession": <mutated_profession>,
+            "nationality": <mutated_nationality>,
+            "copula": <copula_form>,
+            "tense": <tense_used>
+        }
+        """
+        gender_norm = (gender or "").lower().strip()
 
-    Tasks:
+        bio_tense = self._syntax.get("bio_tense", "present")
+        mut_prof = self._syntax.get("predicative_mutation_profession")
+        mut_nat = self._syntax.get("predicative_mutation_nationality")
 
-    1. Derive gender-appropriate nominative forms for:
-         - profession (noun)
-         - nationality (adjective or noun)
-    2. Apply predicative initial mutations as configured:
-         - e.g. soft mutation after a feminine noun, or after 'yn' in Welsh.
-    3. Select a default copula form for a simple 3sg statement.
+        # 1. Nominative / base forms by gender
+        prof_nom = self.genderize_noun(prof_lemma, gender_norm)
+        nat_nom = self.genderize_adjective(nat_lemma, gender_norm)
 
-    The config may contain:
+        # 2. Apply initial mutations if configured
+        prof_inf = self.apply_mutation(prof_nom, mut_prof)
+        nat_inf = self.apply_mutation(nat_nom, mut_nat)
 
-      config['syntax'] = {
-        "bio_tense": "present" | "past" | ...,
-        "predicative_mutation_profession": "soft" | "lenition" | null,
-        "predicative_mutation_nationality": "soft" | "lenition" | null
-      }
+        # 3. Copula (3rd person singular is typical for bios: "he/she is/was")
+        copula = self.select_copula(bio_tense, person=3, number="sg")
 
-    Returns a dict:
-
-      {
-        "profession": <mutated_profession>,
-        "nationality": <mutated_nationality>,
-        "copula": <copula_form>,
-        "tense": <tense_used>
-      }
-    """
-    gender_norm = (gender or "").lower().strip()
-    syntax = config.get("syntax", {})
-
-    bio_tense = syntax.get("bio_tense", "present")
-    mut_prof = syntax.get("predicative_mutation_profession")
-    mut_nat = syntax.get("predicative_mutation_nationality")
-
-    # 1. Nominative / base forms by gender
-    prof_nom = genderize_noun(prof_lemma, gender_norm, config)
-    nat_nom = genderize_adjective(nat_lemma, gender_norm, config)
-
-    # 2. Apply initial mutations if configured
-    prof_inf = apply_mutation(prof_nom, mut_prof, config)
-    nat_inf = apply_mutation(nat_nom, mut_nat, config)
-
-    # 3. Copula (3rd person singular is typical for bios: "he/she is/was")
-    copula = select_copula(bio_tense, person=3, number="sg", config=config)
-
-    return {
-        "profession": prof_inf,
-        "nationality": nat_inf,
-        "copula": copula,
-        "tense": bio_tense,
-    }
+        return {
+            "profession": prof_inf,
+            "nationality": nat_inf,
+            "copula": copula,
+            "tense": bio_tense,
+        }

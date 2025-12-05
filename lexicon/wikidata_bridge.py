@@ -22,7 +22,7 @@ Design goals
 Typical usage (offline)
 =======================
 
-In `utils/build_lexicon_from_wikidata.py` you might do:
+In `utils/build_lexicon_from_wikidata.py` you might do::
 
     from pathlib import Path
     from lexicon.wikidata_bridge import build_lexemes_from_lexeme_dump
@@ -31,7 +31,8 @@ In `utils/build_lexicon_from_wikidata.py` you might do:
     dump_path = Path("data/raw_wikidata/lexemes_dump.json.gz")
     lexemes = build_lexemes_from_lexeme_dump(lang, dump_path)
 
-    # Convert to your local JSON schema and save under data/lexicon/en_lexicon.json
+    # Convert to your local JSON schema and save under
+    # data/lexicon/en_lexicon.json
 
 We deliberately keep this module generic; how you group / label the
 lexemes (professions vs nationalities vs general nouns) is up to the
@@ -43,7 +44,7 @@ from __future__ import annotations
 import gzip
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Mapping, Optional
+from typing import Any, Dict, Iterator, Mapping, Optional
 
 from .index import Lexeme
 
@@ -81,13 +82,15 @@ def _iter_json_records(path: Path) -> Iterator[Mapping[str, Any]]:
             try:
                 obj = json.loads(line)
             except json.JSONDecodeError:
-                # If the file is a single giant JSON array, restart and parse once.
+                # If the file is a single giant JSON array,
+                # restart and parse once.
                 f.seek(0)
                 try:
                     data = json.load(f)
                 except json.JSONDecodeError as e:
                     raise ValueError(
-                        f"Failed to parse Wikidata dump as JSON or NDJSON: {path}"
+                        "Failed to parse Wikidata dump as JSON or NDJSON: "
+                        f"{path}"
                     ) from e
 
                 if isinstance(data, list):
@@ -131,19 +134,19 @@ def _get_lemma_for_lang(
     """
     Extract a lemma string for a given language code from a Lexeme record.
 
-    Wikidata Lexeme structure for lemmas is typically:
+    Wikidata Lexeme structure for lemmas is typically::
 
         {
           "lemmas": {
             "en": { "value": "physicist", "language": "en" },
-            "fr": { "value": "physicien", "language": "fr" },
-            ...
+            "fr": { "value": "physicien", "language": "fr" }
           }
         }
 
     This function:
-        - looks for an exact match on `lang_code`,
-        - falls back to the primary subtag (e.g. "en" for "en-GB").
+
+      - looks for an exact match on `lang_code`,
+      - falls back to the primary subtag (e.g. "en" for "en-GB").
     """
     lemmas = record.get("lemmas")
     if not isinstance(lemmas, dict):
@@ -175,18 +178,18 @@ def _get_first_gloss_for_lang(
     """
     Extract the first sense gloss for a given language, if any.
 
-    Lexeme senses are typically represented as:
+    Lexeme senses are typically represented as::
 
         "senses": [
           {
             "id": "L1234-S1",
             "glosses": {
-              "en": { "value": "person who does physics", "language": "en" },
-              ...
-            },
-            ...
-          },
-          ...
+              "en": {
+                "value": "person who does physics",
+                "language": "en"
+              }
+            }
+          }
         ]
     """
     senses = record.get("senses")
@@ -236,9 +239,12 @@ def lexeme_from_wikidata_record(
         lang_code:
             Target language code (e.g. "en", "fr", "ja").
         lexical_category_map:
-            Optional mapping from Wikidata lexical category ID to coarse
-            POS (e.g. {"Q1084": "NOUN"}). If not provided, pos is left
-            as None.
+            Optional mapping from Wikidata lexical category ID to
+            coarse POS, for example::
+
+                {"Q1084": "NOUN"}  # noun
+
+            If not provided, `pos` is left as None.
 
     Returns:
         A `Lexeme` or None if the record does not have an appropriate
@@ -254,7 +260,8 @@ def lexeme_from_wikidata_record(
     # Wikidata Lexeme IDs look like "L1234"
     lexeme_id = str(record.get("id") or "")
 
-    # lexicalCategory may be something like {"entity-type": "item", "id": "Q1084"}
+    # lexicalCategory may be something like
+    # {"entity-type": "item", "id": "Q1084"}
     lexical_category = record.get("lexicalCategory")
     pos: Optional[str] = None
     if isinstance(lexical_category, dict):
@@ -275,8 +282,8 @@ def lexeme_from_wikidata_record(
     if gloss and "sense" not in data:
         data["sense"] = gloss
 
-    # For now we use the lemma as key; callers can choose to rename
-    # keys or disambiguate if necessary.
+    # For now we use the lemma as key; callers can choose to rename keys
+    # or disambiguate if necessary.
     key = lemma
 
     return Lexeme(
@@ -308,19 +315,23 @@ def build_lexemes_from_lexeme_dump(
             gzipped (ending in `.gz`).
         lexical_category_map:
             Optional mapping from Wikidata lexical categories to coarse
-            POS tags. Example:
+            POS tags.
+
+            Example::
+
                 {
                     "Q1084": "NOUN",   # noun
                     "Q24905": "VERB",  # verb
                 }
+
         limit:
             Optional maximum number of lexemes to extract (for testing).
 
     Returns:
-        Dict: { key -> Lexeme }
+        Dict[str, Lexeme]: mapping of key -> Lexeme.
 
-        Keys are by default the lemma string; post-processing code can
-        re-key this dict if needed (e.g. to avoid collisions).
+        Keys are by default the lemma string. Post-processing code can
+        re-key this dict if needed (for example, to avoid collisions).
     """
     lexemes: Dict[str, Lexeme] = {}
     count = 0

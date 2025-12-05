@@ -30,6 +30,7 @@ from typing import Any, Dict, List, Protocol, Optional
 # Types for abstract inputs / outputs
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ClauseInput:
     """
@@ -52,6 +53,7 @@ class ClauseInput:
         "topic": "SUBJ",
       }
     """
+
     roles: Dict[str, Any] = field(default_factory=dict)
     features: Dict[str, Any] = field(default_factory=dict)
 
@@ -65,6 +67,7 @@ class ClauseOutput:
     - `text`: the final string after token joining (e.g. with spaces / language-specific rules).
     - `metadata`: optional extra info (focus positions, alignment between tokens and roles, etc.).
     """
+
     tokens: List[str] = field(default_factory=list)
     text: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -73,6 +76,7 @@ class ClauseOutput:
 # ---------------------------------------------------------------------------
 # Morphology interface
 # ---------------------------------------------------------------------------
+
 
 class MorphologyAPI(Protocol):
     """
@@ -117,6 +121,7 @@ class MorphologyAPI(Protocol):
 # ---------------------------------------------------------------------------
 # Base Construction class
 # ---------------------------------------------------------------------------
+
 
 class Construction(ABC):
     """
@@ -164,6 +169,7 @@ class Construction(ABC):
 # ---------------------------------------------------------------------------
 # Convenience helpers
 # ---------------------------------------------------------------------------
+
 
 def get_role(
     abstract: ClauseInput,

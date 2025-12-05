@@ -56,7 +56,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-from utils.logging_setup import get_logger, init_logging  # type: ignore
+from utils.logging_setup import get_logger, init_logging  # type: ignore  # noqa: E402
 
 LEXICON_DIR = os.path.join(PROJECT_ROOT, "data", "lexicon")
 QA_DIR = os.path.join(PROJECT_ROOT, "qa")
@@ -118,7 +118,7 @@ def _collect_snapshots(files: List[str]) -> Dict[str, List[str]]:
     return snapshots
 
 
-def _render_python_literal(obj, indent: int = 0) -> str:
+def _render_python_literal(obj: object, indent: int = 4) -> str:
     """
     Render Python literals (dict/list/str) in a reasonably pretty way
     for embedding in the generated test file.
@@ -128,7 +128,7 @@ def _render_python_literal(obj, indent: int = 0) -> str:
     """
     # We rely on json.dumps for simple, deterministic literal formatting.
     # For our purposes (strings, lists, dicts with simple keys) this is fine.
-    return json.dumps(obj, ensure_ascii=False, indent=4)
+    return json.dumps(obj, ensure_ascii=False, indent=indent)
 
 
 def _write_test_module(snapshots: Dict[str, List[str]], out_path: str) -> None:
@@ -153,6 +153,7 @@ you should re-run the generator:
     python qa_tools/generate_lexicon_regression_tests.py
 \"\"\"
 
+
 from __future__ import annotations
 
 import json
@@ -165,11 +166,11 @@ LEXICON_DIR = os.path.join(PROJECT_ROOT, "data", "lexicon")
 
 
 # Snapshot of lemma keys per lexicon file (basename → sorted lemma list)
-SNAPSHOTS = \\
+SNAPSHOTS = \
 """
 
     body = _render_python_literal(snapshots, indent=4)
-    tests = f"""
+    tests = """
 
 @pytest.mark.parametrize("filename", sorted(SNAPSHOTS.keys()))
 def test_lexicon_lemma_inventory_is_stable(filename: str) -> None:
@@ -178,9 +179,9 @@ def test_lexicon_lemma_inventory_is_stable(filename: str) -> None:
     This guards against unintended changes in lexicon inventories.
     If you intended to change the lexicon, regenerate this file by
     running `qa_tools/generate_lexicon_regression_tests.py`.
-    \"\"\"
+    \"\"\"  # noqa: D401
     path = os.path.join(LEXICON_DIR, filename)
-    assert os.path.isfile(path), f"Lexicon file not found: {{path}}"
+    assert os.path.isfile(path), f"Lexicon file not found: {path}"
 
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -193,9 +194,9 @@ def test_lexicon_lemma_inventory_is_stable(filename: str) -> None:
 
     expected = SNAPSHOTS[filename]
     assert current == expected, (
-        f"Lexicon lemma inventory changed for {{filename}}.\\n"
-        f"  Expected: {{len(expected)}} lemmas\\n"
-        f"  Current:  {{len(current)}} lemmas\\n"
+        f"Lexicon lemma inventory changed for {filename}.\\n"
+        f"  Expected: {len(expected)} lemmas\\n"
+        f"  Current:  {len(current)} lemmas\\n"
         "If this change was intentional, regenerate the regression tests."
     )
 """

@@ -4,124 +4,90 @@
     "morphology_family": "germanic",
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
-    "copula": {
-      "lemma": "be"
-    },
-    "comparative": {
-      "template": "{comparee} {copula} {degree_word} {adj} {than_word} {standard}",
-      "template_no_standard": "{comparee} {copula} {degree_word} {adj}",
-      "degree_word": "more",
-      "than_word": "than"
-    },
-    "superlative": {
-      "template": "{comparee} {copula} {superlative_word} {adj} {domain}",
-      "template_no_domain": "{comparee} {copula} {superlative_word} {adj}",
-      "superlative_word": "the most"
-    }
+    "copula": { "lemma": "be" }
   },
-
   "fr": {
     "language_code": "fr",
     "morphology_family": "romance",
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
-    "copula": {
-      "lemma": "être"
-    },
-    "comparative": {
-      "template": "{comparee} {copula} {degree_word} {adj} {than_word} {standard}",
-      "template_no_standard": "{comparee} {copula} {degree_word} {adj}",
-      "degree_word": "plus",
-      "than_word": "que"
-    },
-    "superlative": {
-      "template": "{comparee} {copula} {superlative_word} {adj} {domain}",
-      "template_no_domain": "{comparee} {copula} {superlative_word} {adj}",
-      "superlative_word": "le plus"
-    }
+    "copula": { "lemma": "être" }
   },
-
+  "it": {
+    "language_code": "it",
+    "morphology_family": "romance",
+    "basic_word_order": "SVO",
+    "intransitive_adverb_position": "sentence_final",
+    "copula": { "lemma": "essere" }
+  },
+  "es": {
+    "language_code": "es",
+    "morphology_family": "romance",
+    "basic_word_order": "SVO",
+    "intransitive_adverb_position": "sentence_final",
+    "copula": { "lemma": "ser" }
+  },
+  "pt": {
+    "language_code": "pt",
+    "morphology_family": "romance",
+    "basic_word_order": "SVO",
+    "intransitive_adverb_position": "sentence_final",
+    "copula": { "lemma": "ser" }
+  },
+  "ro": {
+    "language_code": "ro",
+    "morphology_family": "romance",
+    "basic_word_order": "SVO",
+    "intransitive_adverb_position": "sentence_final",
+    "copula": { "lemma": "fi" }
+  },
   "ja": {
     "language_code": "ja",
     "morphology_family": "japonic",
     "basic_word_order": "SOV",
     "intransitive_adverb_position": "sentence_final",
-    "copula": {
-      "lemma": "da"
-    },
-    "comparative": {
-      "template": "{standard} {than_word} {comparee} {degree_word} {adj} {copula}",
-      "template_no_standard": "{comparee} {degree_word} {adj} {copula}",
-      "degree_word": "もっと",
-      "than_word": "より"
-    },
-    "superlative": {
-      "template": "{domain} で {comparee} が {superlative_word} {adj} {copula}",
-      "template_no_domain": "{comparee} が {superlative_word} {adj} {copula}",
-      "superlative_word": "最も"
-    }
+    "copula": { "lemma": "da" }
   },
-
   "sw": {
     "language_code": "sw",
     "morphology_family": "bantu",
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
-    "copula": {
-      "lemma": "kuwa"
-    },
-    "comparative": {
-      "template": "{comparee} {copula} {degree_word} {adj} {than_word} {standard}",
-      "template_no_standard": "{comparee} {copula} {degree_word} {adj}",
-      "degree_word": "zaidi",
-      "than_word": "kuliko"
-    },
-    "superlative": {
-      "template": "{comparee} {copula} {superlative_word} {adj} {domain}",
-      "template_no_domain": "{comparee} {copula} {superlative_word} {adj}",
-      "superlative_word": "zaidi"
-    }
+    "copula": { "lemma": "kuwa" }
   },
-
   "ko": {
     "language_code": "ko",
     "morphology_family": "koreanic",
     "basic_word_order": "SOV",
     "intransitive_adverb_position": "sentence_final",
-    "copula": {
-      "lemma": "이다"
-    },
-    "comparative": {
-      "template": "{standard}{than_word} {comparee} {degree_word} {adj}{copula}",
-      "template_no_standard": "{comparee} {degree_word} {adj}{copula}",
-      "degree_word": "더",
-      "than_word": "보다"
-    },
-    "superlative": {
-      "template": "{domain}에서 {comparee}가 {superlative_word} {adj}{copula}",
-      "template_no_domain": "{comparee}가 {superlative_word} {adj}{copula}",
-      "superlative_word": "가장"
-    }
+    "copula": { "lemma": "이다" }
   },
-
   "tr": {
     "language_code": "tr",
     "morphology_family": "agglutinative",
     "basic_word_order": "SOV",
     "intransitive_adverb_position": "sentence_final",
-    "copula": {
-      "lemma": "ol"
-    },
-    "comparative": {
-      "template": "{standard}{than_word} {comparee} {degree_word} {adj}{copula}",
-      "template_no_standard": "{comparee} {degree_word} {adj}{copula}",
-      "degree_word": "daha",
-      "than_word": "-den daha"
-    },
-    "superlative": {
-      "template": "{domain} içinde {comparee} en {adj}{copula}",
-      "template_no_domain": "{comparee} en {adj}{copula}",
-      "superlative_word": "en"
-    }
+    "copula": { "lemma": "ol" }
+  },
+  "de": {
+    "language_code": "de",
+    "morphology_family": "germanic",
+    "basic_word_order": "SVO",
+    "intransitive_adverb_position": "sentence_final",
+    "copula": { "lemma": "sein" }
+  },
+  "hi": {
+    "language_code": "hi",
+    "morphology_family": "indo_aryan",
+    "basic_word_order": "SOV",
+    "intransitive_adverb_position": "sentence_final",
+    "copula": { "lemma": "hona" }
+  },
+  "ru": {
+    "language_code": "ru",
+    "morphology_family": "slavic",
+    "basic_word_order": "SVO",
+    "intransitive_adverb_position": "sentence_final",
+    "copula": { "lemma": "byt" }
   }
 }

@@ -20,7 +20,7 @@ Input schema (LOCAL MODE, recommended)
 Each record should contain at least:
 
     {
-        "id": "Q7186",                       # Wikidata QID (or any stable id)
+        "id": "Q7186",                        # Wikidata QID (or any stable id)
         "label": "Marie Curie",             # Display name
         "gender": "female",                 # 'male' / 'female' / 'other'
         "profession_lemmas": ["physicist"],
@@ -94,7 +94,7 @@ import random
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 
 from router import render_bio
 from utils.logging_setup import get_logger
@@ -409,7 +409,9 @@ def evaluate_persons(
         for lang in langs:
             # Choose a primary profession/nationality if available.
             prof_lemma = person.profession_lemmas[0] if person.profession_lemmas else ""
-            nat_lemma = person.nationality_lemmas[0] if person.nationality_lemmas else ""
+            nat_lemma = (
+                person.nationality_lemmas[0] if person.nationality_lemmas else ""
+            )
 
             output = ""
             rendered = False

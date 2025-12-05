@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "cs",
+    "family": "slavic"
+  },
+  "name": "Czech",
+  "articles": {
+    "exists": false
+  },
+  "morphology": {
+    "gender_inflection": {
+      "noun_suffixes": [
+        { "ends_with": "log", "replace_with": "ložka" },
+        { "ends_with": "tel", "replace_with": "telka" },
+        { "ends_with": "ník", "replace_with": "nice" },
+        { "ends_with": "dce", "replace_with": "dkyně" },
+        { "ends_with": "ec", "replace_with": "kyně" },
+        { "ends_with": "r", "replace_with": "rka" },
+        { "ends_with": "k", "replace_with": "ka" }
+      ],
+      "adjective_suffixes": [
+        { "ends_with": "ý", "replace_with": "á" },
+        { "ends_with": "í", "replace_with": "í" }
+      ]
+    },
+    "cases": {
+      "instrumental": {
+        "m": [
+          { "ends_with": "a", "replace_with": "ou" },
+          { "ends_with": "e", "replace_with": "em" },
+          { "ends_with": "o", "replace_with": "em" },
+          { "ends_with": "í", "replace_with": "ím" },
+          { "ends_with": "ý", "replace_with": "ým" },
+          { "ends_with": "ec", "replace_with": "cem" },
+          { "ends_with": "el", "replace_with": "lem" },
+          { "ends_with": "ek", "replace_with": "kem" },
+          { "ends_with": "", "replace_with": "em" }
+        ],
+        "f": [
+          { "ends_with": "a", "replace_with": "ou" },
+          { "ends_with": "e", "replace_with": "í" },
+          { "ends_with": "í", "replace_with": "í" },
+          { "ends_with": "á", "replace_with": "ou" }
+        ]
+      }
+    },
+    "irregulars": {
+      "vědec": "vědkyně",
+      "básník": "básnířka",
+      "král": "královna",
+      "hrdina": "hrdinka"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "default": "",
+      "male": "byl",
+      "female": "byla",
+      "neuter": "bylo",
+      "plural": "byli"
+    }
+  },
+  "syntax": {
+    "predicative_case": "instrumental",
+    "default_tense": "past"
+  },
+  "phonetics": {
+    "fleeting_vowels": ["ec", "ek", "el"]
+  },
+  "structure": "{name} {verb} {nationality} {profession}."
+}

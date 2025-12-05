@@ -140,9 +140,11 @@ def _copula_is_zero(tense: str, lang_profile: Dict[str, Any]) -> bool:
 
     You can extend this logic as needed (e.g. conditional, future, etc.).
     """
-    cop_cfg = (lang_profile.get("copula") or {}) if isinstance(
-        lang_profile.get("copula"), dict
-    ) else {}
+    cop_cfg = (
+        (lang_profile.get("copula") or {})
+        if isinstance(lang_profile.get("copula"), dict)
+        else {}
+    )
 
     if tense == "present":
         return bool(cop_cfg.get("present_zero", False))
@@ -159,9 +161,11 @@ def _get_order(lang_profile: Dict[str, Any], copula_zero: bool) -> str:
 
     If a zero-copula is enforced, we can simplify "S-COP-PRED" → "S-PRED".
     """
-    cop_cfg = (lang_profile.get("copula") or {}) if isinstance(
-        lang_profile.get("copula"), dict
-    ) else {}
+    cop_cfg = (
+        (lang_profile.get("copula") or {})
+        if isinstance(lang_profile.get("copula"), dict)
+        else {}
+    )
 
     order = cop_cfg.get("order") or "S-COP-PRED"
     order = str(order).upper().replace(" ", "")

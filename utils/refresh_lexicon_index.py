@@ -57,8 +57,8 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-from lexicon.normalization import normalize_for_lookup  # type: ignore
-from utils.logging_setup import get_logger, init_logging  # type: ignore
+from lexicon.normalization import normalize_for_lookup  # type: ignore  # noqa: E402
+from utils.logging_setup import get_logger, init_logging  # type: ignore  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

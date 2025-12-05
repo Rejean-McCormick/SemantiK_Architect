@@ -138,15 +138,11 @@ def normalize_nlg_call(z_call: Dict[str, Any]) -> Tuple[str, Dict[str, Any], str
         ValueError / TypeError if required fields are missing or malformed.
     """
     if not isinstance(z_call, dict):
-        raise TypeError(
-            f"Expected top-level dict for z_call, got {type(z_call)}"
-        )
+        raise TypeError(f"Expected top-level dict for z_call, got {type(z_call)}")
 
     plain: Dict[str, Any] = unwrap_recursive(z_call)
 
-    construction_id = _pick_first(
-        plain, "construction_id", "construction", "template"
-    )
+    construction_id = _pick_first(plain, "construction_id", "construction", "template")
     lang_code = _pick_first(plain, "lang_code", "language", "lang")
     slots = _pick_first(plain, "slots", "arguments", "args")
 
@@ -165,9 +161,7 @@ def normalize_nlg_call(z_call: Dict[str, Any]) -> Tuple[str, Dict[str, Any], str
         slots = {}
 
     if not isinstance(slots, dict):
-        raise TypeError(
-            f"'slots' must be a dict after unwrapping, got {type(slots)}"
-        )
+        raise TypeError(f"'slots' must be a dict after unwrapping, got {type(slots)}")
 
     return str(construction_id), slots, str(lang_code)
 

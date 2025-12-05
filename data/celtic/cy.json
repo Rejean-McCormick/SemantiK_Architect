@@ -13,21 +13,37 @@
   "mutations": {
     "rules": {
       "soft": {
-        "p": "b", "t": "d", "c": "g",
-        "b": "f", "d": "dd", "g": "",
-        "ll": "l", "m": "f", "rh": "r"
+        "p": "b",
+        "t": "d",
+        "c": "g",
+        "b": "f",
+        "d": "dd",
+        "g": "",
+        "ll": "l",
+        "m": "f",
+        "rh": "r"
       },
       "soft_predicative": {
-        "p": "b", "t": "d", "c": "g",
-        "b": "f", "d": "dd", "g": "",
+        "p": "b",
+        "t": "d",
+        "c": "g",
+        "b": "f",
+        "d": "dd",
+        "g": "",
         "m": "f"
       },
       "nasal": {
-        "p": "mh", "t": "nh", "c": "ngh",
-        "b": "m", "d": "n", "g": "ng"
+        "p": "mh",
+        "t": "nh",
+        "c": "ngh",
+        "b": "m",
+        "d": "n",
+        "g": "ng"
       },
       "aspirate": {
-        "p": "ph", "t": "th", "c": "ch"
+        "p": "ph",
+        "t": "th",
+        "c": "ch"
       }
     }
   },

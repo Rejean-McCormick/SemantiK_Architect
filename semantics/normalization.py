@@ -26,7 +26,7 @@ you a stable, minimal contract so that:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 try:
     # Preferred: use the project’s Wikifunctions mock if available
@@ -354,7 +354,9 @@ def normalize_bio_semantics(
             or raw.get("K4")
         )
 
-        lang_code = _lower_ascii(raw.get("language") or raw.get("lang") or raw.get("K5"))
+        lang_code = _lower_ascii(
+            raw.get("language") or raw.get("lang") or raw.get("K5")
+        )
         if not lang_code:
             lang_code = _lower_ascii(default_lang)
 

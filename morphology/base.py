@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass, field
-from typing import Any, Dict, Mapping, MutableMapping, Optional, Type
+from typing import Any, Dict, Mapping, Optional, Type
 
 
 # ---------------------------------------------------------------------------
@@ -38,14 +38,14 @@ class MorphRequest:
         lemma:
             Dictionary form of the word (e.g. "physicien", "be", "discover").
         pos:
-            Part of speech tag (e.g. "NOUN", "VERB", "ADJ").
-            The exact tagset is up to the caller, but should be consistent
-            across the system.
+            Part of speech tag (e.g. "NOUN", "VERB", "ADJ"). The exact
+            tagset is up to the caller, but should be consistent across
+            the system.
         features:
             Morphosyntactic features (number, gender, case, tense, etc.).
         language_code:
-            ISO language code (e.g. "fr", "tr"). Engines may or may not need
-            this, but it is useful for logging and debugging.
+            ISO language code (e.g. "fr", "tr"). Engines may or may not
+            need this, but it is useful for logging and debugging.
     """
 
     lemma: str
@@ -102,8 +102,9 @@ class MorphologyEngine(abc.ABC):
     Slavic, Agglutinative, etc.) and parameterised by a per-language
     configuration dictionary.
 
-    Subclasses must implement `inflect()`. They may also add family-specific
-    helper methods (e.g. for vowel harmony, case selection).
+    Subclasses must implement `inflect()`. They may also add
+    family-specific helper methods (e.g. for vowel harmony, case
+    selection).
     """
 
     #: Language family identifier, e.g. "romance", "slavic".
@@ -124,8 +125,9 @@ class MorphologyEngine(abc.ABC):
             - Use irregular dictionaries and pattern rules from `self.config`.
             - Raise MorphologyError if they truly cannot produce a form.
 
-        Implementations are free to add engine-specific keys in `request.features`
-        and to populate `MorphResult.debug` with rule trace information.
+        Implementations are free to add engine-specific keys in
+        `request.features` and to populate `MorphResult.debug` with rule
+        trace information.
         """
         raise NotImplementedError
 
@@ -141,8 +143,11 @@ class MorphologyEngine(abc.ABC):
         Convenience method when only the surface string is needed.
 
         Example:
-            engine.inflect_simple("physicien", "NOUN",
-                                  {"number": "sg", "gender": "f"})
+            engine.inflect_simple(
+                "physicien",
+                "NOUN",
+                {"number": "sg", "gender": "f"},
+            )
         """
         req = MorphRequest(
             lemma=lemma,
@@ -167,7 +172,8 @@ Example keys: "romance", "slavic", "agglutinative".
 
 def register_engine(family: str):
     """
-    Class decorator to register a MorphologyEngine subclass under a family name.
+    Class decorator to register a MorphologyEngine subclass under a
+    family name.
 
     Usage:
 
@@ -175,8 +181,8 @@ def register_engine(family: str):
         class RomanceMorphology(MorphologyEngine):
             ...
 
-    After registration, `create_engine("romance", "fr", config)` will construct
-    the appropriate engine instance.
+    After registration, `create_engine("romance", "fr", config)` will
+    construct the appropriate engine instance.
     """
 
     def decorator(cls: Type[MorphologyEngine]) -> Type[MorphologyEngine]:
@@ -220,7 +226,9 @@ def create_engine(
     try:
         cls = ENGINE_REGISTRY[family]
     except KeyError as exc:
-        raise KeyError(f"No morphology engine registered for family '{family}'") from exc
+        raise KeyError(
+            f"No morphology engine registered for family '{family}'"
+        ) from exc
 
     return cls(language_code=language_code, config=config)
 

@@ -246,10 +246,12 @@ def main(argv: List[str] | None = None) -> None:
 
     for lang, files in sorted(lang_files.items()):
         lemmas = load_lemmas_from_files(files)
-        pos_counts, human_nouns, nationality_adjs, total_lemmas = compute_stats_for_lang(
-            lang, lemmas
+        pos_counts, human_nouns, nationality_adjs, total_lemmas = (
+            compute_stats_for_lang(lang, lemmas)
         )
-        print_stats(lang, files, pos_counts, human_nouns, nationality_adjs, total_lemmas)
+        print_stats(
+            lang, files, pos_counts, human_nouns, nationality_adjs, total_lemmas
+        )
 
     print("")  # final newline
 

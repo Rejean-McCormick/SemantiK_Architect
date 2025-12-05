@@ -98,8 +98,10 @@ def _is_dump_wrapper(obj: Any) -> bool:
     Heuristic: return True if this looks like a standard Wikidata dump
     wrapper object (with a top-level 'entities' field).
     """
-    return isinstance(obj, dict) and "entities" in obj and isinstance(
-        obj["entities"], dict
+    return (
+        isinstance(obj, dict)
+        and "entities" in obj
+        and isinstance(obj["entities"], dict)
     )
 
 
@@ -260,9 +262,7 @@ def _build_lexeme_entry(
         "category": "lexeme",
         "human": False,
         "gender": "none",
-        "forms": {
-            "default": lemma
-        },
+        "forms": {"default": lemma},
         "features": {},
         "qid": qid,
     }

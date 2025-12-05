@@ -2,34 +2,27 @@
 nlg/cli_frontend.py
 
 Command-line interface for the high-level NLG frontend API.
-
-Typical usage:
-
-    nlg-cli generate \
-        --lang fr \
-        --frame-type bio \
-        --input path/to/frame.json \
-        --max-sentences 2 \
-        --register neutral \
-        --debug
-
-The CLI:
-
-- Reads a JSON frame from a file (or stdin).
-- Ensures a frame_type is set (CLI flag or JSON field).
-- Forwards the frame to nlg.api.generate with optional GenerationOptions.
-- Prints the realized text to stdout, and optional debug info to stderr.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from nlg.api import generate, GenerationOptions  # Assumed to exist
+# --- BOOTSTRAP: Add project root to sys.path ---
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(_current_dir)
+if _project_root not in sys.path:
+    sys.path.append(_project_root)
+# -----------------------------------------------
+
+from nlg.api import generate, GenerationOptions
+from semantics.normalization import normalize_bio_semantics
+from semantics.types import BioFrame, Entity
 
 
 # ---------------------------------------------------------------------------
@@ -116,8 +109,6 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 def _load_json(path: Optional[str]) -> Dict[str, Any]:
     """
     Load a JSON object from a file or stdin.
-
-    If path is None or '-', read from stdin.
     """
     if not path or path == "-":
         raw = sys.stdin.read()
@@ -138,12 +129,6 @@ def _load_json(path: Optional[str]) -> Dict[str, Any]:
 def _ensure_frame_type(payload: Dict[str, Any], frame_type_arg: Optional[str]) -> None:
     """
     Ensure that the payload has a 'frame_type' key.
-
-    Precedence:
-        1. --frame-type argument
-        2. existing 'frame_type' field in JSON
-
-    If neither is available, exit with an error.
     """
     if frame_type_arg:
         payload.setdefault("frame_type", frame_type_arg)
@@ -167,6 +152,30 @@ def _build_generation_options(args: argparse.Namespace) -> GenerationOptions:
     )
 
 
+def _convert_to_bio_frame(normalized_semantics) -> BioFrame:
+    """
+    Convert the normalized BioSemantics object into a BioFrame
+    that the engine expects.
+    """
+    # Create the Entity object
+    entity = Entity(
+        name=normalized_semantics.name,
+        gender=normalized_semantics.gender,
+        human=True  # Bios are usually human
+    )
+    
+    # Create lists for lemmas (BioSemantics has strings, BioFrame expects lists)
+    prof_lemmas = [normalized_semantics.profession_lemma] if normalized_semantics.profession_lemma else []
+    nat_lemmas = [normalized_semantics.nationality_lemma] if normalized_semantics.nationality_lemma else []
+    
+    return BioFrame(
+        main_entity=entity,
+        primary_profession_lemmas=prof_lemmas,
+        nationality_lemmas=nat_lemmas,
+        extra=normalized_semantics.extra
+    )
+
+
 # ---------------------------------------------------------------------------
 # Command handlers
 # ---------------------------------------------------------------------------
@@ -179,17 +188,33 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     payload = _load_json(args.input)
     _ensure_frame_type(payload, args.frame_type)
 
+    # Normalize input based on frame type
+    frame_type = payload.get("frame_type")
+    
+    if frame_type == "bio":
+        # 1. Normalize raw JSON to BioSemantics
+        semantics = normalize_bio_semantics(payload)
+        # 2. Convert BioSemantics to BioFrame (required by the API/Engine)
+        frame = _convert_to_bio_frame(semantics)
+    else:
+        # Fallback for other types
+        frame = payload
+
     options = _build_generation_options(args)
 
     result = generate(
         lang=args.lang,
-        frame=payload,
+        frame=frame,
         options=options,
         debug=args.debug,
     )
 
     # Main output: realized text
-    print(result.text)
+    if result.text:
+        print(result.text)
+    else:
+        # If empty, print a warning to stderr so we know something happened
+        print("[No output generated]", file=sys.stderr)
 
     # Optional debug output to stderr
     if args.debug and getattr(result, "debug_info", None) is not None:

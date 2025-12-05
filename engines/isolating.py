@@ -3,123 +3,69 @@ ISOLATING LANGUAGE ENGINE
 -------------------------
 A data-driven renderer for Isolating/Analytic languages (ZH, VI, TH).
 
-Key features distinguished from Inflectional languages:
-1. No Morphology: Words do not change form (no plurals, no gender suffixes).
-2. Classifiers: Nouns require specific counter words (e.g., 'yi ge ren').
-3. Particles: Tense/Aspect is handled by separate particles (e.g., 'le', 'da').
-4. Strict Word Order: SVO is rigid.
+This module orchestrates the generation of sentences by:
+1. Delegating morphology (NP construction, classifiers) to `morphology.isolating`.
+2. Handling sentence structure and assembly.
 """
+
+from morphology.isolating import IsolatingMorphology
+
 
 def render_bio(name, gender, prof_lemma, nat_lemma, config):
     """
-    Main Entry Point.
-    
+    Main Entry Point for Isolating Biographies.
+
     Args:
         name (str): The subject's name.
         gender (str): 'Male' or 'Female' (Used for pronoun selection, not inflection).
         prof_lemma (str): Profession (Invariant root).
         nat_lemma (str): Nationality (Invariant root).
         config (dict): The JSON configuration card.
-    
+
     Returns:
         str: The constructed sentence.
     """
-    
-    # 1. Normalize Inputs
-    # Isolating languages don't usually have "lemmas" vs "inflected forms",
-    # but we strip whitespace just in case.
-    prof = prof_lemma.strip()
-    nat = nat_lemma.strip()
-    
-    structure = config.get('structure', "{name} {copula} {nationality} {profession}.")
-    
-    # =================================================================
-    # HELPER 1: The Copula (Verb 'To Be')
-    # =================================================================
-    # Chinese: 'shì' (是)
-    # Vietnamese: 'là'
-    # Thai: 'pen' (เป็น)
-    
-    def get_copula():
-        verbs = config.get('verbs', {})
-        # Isolating languages usually have a single invariant copula
-        return verbs.get('copula', {}).get('default', "")
+    # 1. Initialize Morphology Engine
+    morph = IsolatingMorphology(config)
 
-    copula = get_copula()
+    # 2. Build Predicate NP
+    # This handles:
+    # - Adjective ordering (Nationality + Profession vs Profession + Nationality)
+    # - Classifiers and Indefinite Articles (e.g., "yi ge ...")
+    pred_features = {
+        "adjectives": [nat_lemma],  # Nationality treated as adjective modifier
+        "is_human": True,           # Biographies imply human subjects
+        "number": "sg",
+        "definiteness": "indef"     # Predicates are typically indefinite ("is a...")
+    }
+    
+    predicate_np = morph.realize_noun_phrase(prof_lemma, pred_features)
 
-    # =================================================================
-    # HELPER 2: Classifiers (The Hard Part)
-    # =================================================================
-    # In "X is a Y", isolating languages often require "X is [ONE] [CLASSIFIER] Y".
-    # e.g. "He is a teacher" -> "Ta shi yi **ge** laoshi" (He is one unit teacher).
-    
-    def apply_classifier(noun_phrase):
-        # Check if the config requires a classifier for indefinite predicative nouns
-        syntax = config.get('syntax', {})
-        if not syntax.get('requires_classifier_in_predicate', False):
-            return noun_phrase
-            
-        # Get the default classifier for people
-        # config['classifiers']['person'] -> "gè" (Chinese) / "người" (Vietnamese)
-        classifiers = config.get('classifiers', {})
-        person_classifier = classifiers.get('person', '')
-        
-        # Get the word for "One" or "A"
-        # config['articles']['indefinite'] -> "yī" (Chinese) / "một" (Vietnamese)
-        article = config.get('articles', {}).get('indefinite', '')
-        
-        if article and person_classifier:
-            # Result: "yi ge" + " " + "laoshi"
-            return f"{article} {person_classifier} {noun_phrase}"
-            
-        return noun_phrase
+    # 3. Get Copula
+    # Isolating languages usually have an invariant copula defined in config
+    copula = config.get("verbs", {}).get("copula", {}).get("default", "")
 
-    # =================================================================
-    # HELPER 3: Noun Phrase Construction
-    # =================================================================
-    # We combine Nationality + Profession.
-    # Chinese: [Nationality] [Profession] (Meiguo ren)
-    # Vietnamese: [Profession] [Nationality] (Nguoi My)
-    
-    def build_noun_phrase():
-        order = config.get('syntax', {}).get('adjective_order', 'pre') # 'pre' or 'post'
-        
-        if order == 'pre':
-            # Adjective before Noun (Chinese/English style)
-            # "Meiguo" + " " + "Kexuejia"
-            return f"{nat} {prof}"
-        else:
-            # Noun before Adjective (Vietnamese/Thai style)
-            # "Nha khoa hoc" + " " + "My"
-            return f"{prof} {nat}"
+    # 4. Assembly
+    # Default structure: "{name} {copula} {predicate}."
+    # Note: We generally prefer using {predicate} here because the morphology layer
+    # has already combined the profession and nationality correctly.
+    structure = config.get("structure", "{name} {copula} {predicate}.")
 
-    # Build the core Noun Phrase (e.g. "American Scientist")
-    np = build_noun_phrase()
-    
-    # Apply the Classifier/Article wrapper to the whole NP
-    # "yī gè [American Scientist]"
-    final_predicate = apply_classifier(np)
-
-    # =================================================================
-    # 4. ASSEMBLY
-    # =================================================================
-    
-    # Template: "{name} {copula} {predicate}."
-    # We override the default structure if the config provides one that uses {predicate}
-    # instead of separate {profession} {nationality} tags, because word order was handled above.
-    
+    # If the structure uses old-style split tags, we try to support them strictly
+    # by stripping particles from the predicate, but it's safer to rely on {predicate}.
     if "{predicate}" in structure:
         sentence = structure.replace("{name}", name)
         sentence = sentence.replace("{copula}", copula)
-        sentence = sentence.replace("{predicate}", final_predicate)
+        sentence = sentence.replace("{predicate}", predicate_np)
     else:
-        # Fallback for simple templates
+        # Fallback: If template forces split tags (e.g. "{profession} {nationality}"),
+        # we use raw lemmas, losing the classifier logic. This is a fallback.
         sentence = structure.replace("{name}", name)
         sentence = sentence.replace("{copula}", copula)
-        sentence = sentence.replace("{profession}", prof) # Raw
-        sentence = sentence.replace("{nationality}", nat) # Raw
-    
-    # Cleanup
+        sentence = sentence.replace("{profession}", prof_lemma)
+        sentence = sentence.replace("{nationality}", nat_lemma)
+
+    # Cleanup extra spaces
     sentence = " ".join(sentence.split())
-    
+
     return sentence

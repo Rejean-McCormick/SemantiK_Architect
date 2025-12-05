@@ -14,8 +14,6 @@ layer:
 
 from __future__ import annotations
 
-import pytest
-
 from lexicon.types import (
     Lexicon,
     LexiconMeta,
@@ -23,7 +21,7 @@ from lexicon.types import (
     NationalityEntry,
     BaseLexicalEntry,
 )
-from lexicon.index import LexiconIndex  # to be implemented to match these tests
+from lexicon.index import LexiconIndex
 
 
 def make_minimal_lexicon_it() -> Lexicon:
@@ -118,7 +116,7 @@ def test_profession_lookup_by_lemma_and_key() -> None:
     phys2 = index.lookup_profession("FISICO")
     assert phys2 is phys
 
-    # By key (which here is same as lemma, but index should handle both)
+    # By key (here same as lemma, but index should handle both)
     phys3 = index.lookup_profession("fisico")
     assert phys3 is phys
 

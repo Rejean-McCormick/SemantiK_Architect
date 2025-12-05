@@ -145,7 +145,9 @@ def get_copula_suffix(
     )
 
 
-def attach_copula(predicate_word: str, config: Dict[str, Any], level: str | None = None) -> str:
+def attach_copula(
+    predicate_word: str, config: Dict[str, Any], level: str | None = None
+) -> str:
     """
     Convenience helper: return predicate_word + appropriate copula suffix.
     """

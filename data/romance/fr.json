@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "fr",
+    "family": "romance"
+  },
+  "name": "French",
+  "articles": {
+    "m": {
+      "default": "un",
+      "vowel": "un"
+    },
+    "f": {
+      "default": "une",
+      "vowel": "une"
+    }
+  },
+  "morphology": {
+    "suffixes": [
+      { "ends_with": "teur", "replace_with": "trice" },
+      { "ends_with": "eur", "replace_with": "euse" },
+      { "ends_with": "ien", "replace_with": "ienne" },
+      { "ends_with": "er", "replace_with": "ère" },
+      { "ends_with": "f", "replace_with": "ve" },
+      { "ends_with": "ais", "replace_with": "aise" },
+      { "ends_with": "ois", "replace_with": "oise" },
+      { "ends_with": "ain", "replace_with": "aine" },
+      { "ends_with": "ant", "replace_with": "ante" },
+      { "ends_with": "ol", "replace_with": "ole" }
+    ],
+    "irregulars": {
+      "acteur": "actrice",
+      "chanteur": "chanteuse",
+      "maître": "maîtresse",
+      "homme": "femme",
+      "roi": "reine",
+      "docteur": "docteure"
+    }
+  },
+  "phonetics": {
+    "elision": true
+  },
+  "structure": "{name} est {article}{sep}{profession} {nationality}."
+}

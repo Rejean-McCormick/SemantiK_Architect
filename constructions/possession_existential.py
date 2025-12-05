@@ -66,7 +66,7 @@ only forwards them unchanged.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 def _get_possession_cfg(lang_profile: Dict[str, Any]) -> Dict[str, Any]:

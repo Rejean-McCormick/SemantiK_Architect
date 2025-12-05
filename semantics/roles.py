@@ -45,17 +45,17 @@ from typing import Any, Dict, Iterable, Mapping
 # ---------------------------------------------------------------------------
 
 # Core syntactic / semantic arguments
-SUBJ = "SUBJ"          # syntactic subject (often maps to AGENT or EXPERIENCER)
-OBJ = "OBJ"            # direct object (PATIENT/THEME)
-IOBJ = "IOBJ"          # indirect object (RECIPIENT/BENEFICIARY)
+SUBJ = "SUBJ"  # syntactic subject (often maps to AGENT or EXPERIENCER)
+OBJ = "OBJ"  # direct object (PATIENT/THEME)
+IOBJ = "IOBJ"  # indirect object (RECIPIENT/BENEFICIARY)
 
-AGENT = "AGENT"        # doer / initiator
-PATIENT = "PATIENT"    # undergoer / affected participant
-EXPERIENCER = "EXP"    # experiencer of a mental state
-THEME = "THEME"        # moved/located entity (when distinct from PATIENT)
-RECIPIENT = "RECIP"    # receiver in transfer events
+AGENT = "AGENT"  # doer / initiator
+PATIENT = "PATIENT"  # undergoer / affected participant
+EXPERIENCER = "EXP"  # experiencer of a mental state
+THEME = "THEME"  # moved/located entity (when distinct from PATIENT)
+RECIPIENT = "RECIP"  # receiver in transfer events
 BENEFICIARY = "BENEF"  # beneficiary of an action
-INSTRUMENT = "INSTR"   # instrument / means
+INSTRUMENT = "INSTR"  # instrument / means
 
 # Local / oblique roles
 LOCATION = "LOC"
@@ -71,20 +71,20 @@ TIME = "TIME"
 # Possession / attribution
 POSSESSOR = "POSS"
 POSSESSED = "POSS_OBJ"
-ATTRIBUTE = "ATTR"     # property / attribute (e.g. profession, nationality)
+ATTRIBUTE = "ATTR"  # property / attribute (e.g. profession, nationality)
 
 # Comparative / scalar structure
-COMPARANDUM = "COMP_BASE"    # entity being compared (X in "X is taller than Y")
-STANDARD = "COMP_STD"        # standard of comparison (Y in "X is taller than Y")
-DOMAIN = "COMP_DOMAIN"       # domain set ("in her field", "among physicists")
+COMPARANDUM = "COMP_BASE"  # entity being compared (X in "X is taller than Y")
+STANDARD = "COMP_STD"  # standard of comparison (Y in "X is taller than Y")
+DOMAIN = "COMP_DOMAIN"  # domain set ("in her field", "among physicists")
 
 # Copular / predicative roles
-COP_SUBJ = "COP_SUBJ"        # subject of copula (often same as SUBJ)
-COP_PRED = "COP_PRED"        # predicate nominal/adjective
+COP_SUBJ = "COP_SUBJ"  # subject of copula (often same as SUBJ)
+COP_PRED = "COP_PRED"  # predicate nominal/adjective
 
 # Relative clauses
-REL_HEAD = "REL_HEAD"        # head noun of the relative clause
-REL_RESTRICTOR = "REL_RESTR" # clause that restricts the head
+REL_HEAD = "REL_HEAD"  # head noun of the relative clause
+REL_RESTRICTOR = "REL_RESTR"  # clause that restricts the head
 
 # Information structure
 TOPIC = "TOPIC"
@@ -180,7 +180,6 @@ _ROLE_ALIASES: Dict[str, str] = {
     "o": OBJ,
     "iobj": IOBJ,
     "indirect_object": IOBJ,
-
     # Semantic arguments
     "agent": AGENT,
     "a": AGENT,
@@ -195,7 +194,6 @@ _ROLE_ALIASES: Dict[str, str] = {
     "benefactive": BENEFICIARY,
     "instrument": INSTRUMENT,
     "inst": INSTRUMENT,
-
     # Locatives / obliques
     "loc": LOCATION,
     "location": LOCATION,
@@ -213,7 +211,6 @@ _ROLE_ALIASES: Dict[str, str] = {
     "extent": EXTENT,
     "time": TIME,
     "temporal": TIME,
-
     # Possession / attribution
     "possessor": POSSESSOR,
     "owner": POSSESSOR,
@@ -222,7 +219,6 @@ _ROLE_ALIASES: Dict[str, str] = {
     "attribute": ATTRIBUTE,
     "property": ATTRIBUTE,
     "role": ATTRIBUTE,  # e.g. profession/nationality, often rendered as predicate
-
     # Comparative
     "comparandum": COMPARANDUM,
     "comp_base": COMPARANDUM,
@@ -230,19 +226,16 @@ _ROLE_ALIASES: Dict[str, str] = {
     "comp_standard": STANDARD,
     "domain": DOMAIN,
     "comp_domain": DOMAIN,
-
     # Copular
     "cop_subj": COP_SUBJ,
     "cop_subject": COP_SUBJ,
     "cop_pred": COP_PRED,
     "cop_predicate": COP_PRED,
-
     # Relative
     "rel_head": REL_HEAD,
     "relative_head": REL_HEAD,
     "rel_restrictor": REL_RESTRICTOR,
     "relative_clause": REL_RESTRICTOR,
-
     # Information structure / discourse
     "topic": TOPIC,
     "focus": FOCUS,
@@ -257,6 +250,7 @@ _ROLE_ALIASES: Dict[str, str] = {
 # ---------------------------------------------------------------------------
 # Public helpers
 # ---------------------------------------------------------------------------
+
 
 def canonical_role(label: str) -> str:
     """

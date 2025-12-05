@@ -61,7 +61,9 @@ class IntransitiveEventConstruction(BaseConstruction):
     ) -> str:
         subject_surface = self._realize_subject(slots.get("subject"), morph_api)
         verb_surface = self._realize_verb(slots, subject_surface, morph_api)
-        adverb_surfaces = self._realize_adverbials(slots.get("adverbials", []), morph_api)
+        adverb_surfaces = self._realize_adverbials(
+            slots.get("adverbials", []), morph_api
+        )
 
         basic_word_order = lang_profile.get("basic_word_order", "SVO")
         adv_position = lang_profile.get("intransitive_adverb_position", "after_verb")

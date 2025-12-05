@@ -1,697 +1,147 @@
-{
-  "family": "romance",
-  "version": "1.0",
-  "languages": {
-    "fr": {
-      "language_code": "fr",
-      "name": "French",
-      "articles": {
-        "definite": {
-          "m": {
-            "sg": "le",
-            "pl": "les"
-          },
-          "f": {
-            "sg": "la",
-            "pl": "les"
-          }
-        },
-        "indefinite": {
-          "m": {
-            "sg": "un",
-            "pl": "des"
-          },
-          "f": {
-            "sg": "une",
-            "pl": "des"
-          }
-        },
-        "elision": {
-          "enabled": true,
-          "vowel_onset_chars": ["a", "e", "i", "o", "u", "y", "h"],
-          "definite_singular_forms": ["le", "la"],
-          "elided_form": "l'"
+"""
+TRANSITIVE_EVENT CONSTRUCTION
+-----------------------------
+
+Language-agnostic clause pattern for transitive events (Subject-Verb-Object).
+
+Examples:
+    - "Marie Curie discovered radium." (SVO)
+    - "Marie Curie radium discovered." (SOV - e.g. Japanese/Turkish)
+    - "Discovered Marie Curie radium." (VSO - e.g. Celtic)
+
+This construction handles:
+- Realizing the Subject NP.
+- Realizing the Object NP (with appropriate case marking via morph_api).
+- Realizing the Verb (tense/aspect/polarity).
+- Linearizing tokens based on `lang_profile["basic_word_order"]`.
+"""
+
+from typing import Any, Dict, List, Optional, Union
+
+from .base import BaseConstruction
+
+NPInput = Union[str, Dict[str, Any]]
+
+
+class TransitiveEventConstruction(BaseConstruction):
+    """
+    Core transitive-event construction.
+
+    Expected slots:
+        slots = {
+            "subject": NPInput,       # required
+            "object": NPInput,        # required
+            "verb_lemma": str,        # required
+            "tense": str,             # optional (default: "present")
+            "aspect": str,            # optional
+            "polarity": str,          # optional
+            "voice": str              # optional (default: "active")
         }
-      },
-      "nouns": {
-        "gender_by_suffix": [
-          { "suffix": "tion", "gender": "f" },
-          { "suffix": "sion", "gender": "f" },
-          { "suffix": "té", "gender": "f" },
-          { "suffix": "ette", "gender": "f" },
-          { "suffix": "ure", "gender": "f" },
-          { "suffix": "age", "gender": "m" },
-          { "suffix": "isme", "gender": "m" },
-          { "suffix": "ment", "gender": "m" },
-          { "suffix": "oir", "gender": "m" },
-          { "suffix": "eau", "gender": "m" },
-          { "suffix": "e", "gender": "f", "default": true }
-        ],
-        "pluralization": {
-          "rules": [
-            {
-              "id": "al_aux",
-              "if_endswith": "al",
-              "replace_suffix": "aux"
-            },
-            {
-              "id": "eau_x",
-              "if_endswith": "eau",
-              "add": "x"
-            },
-            {
-              "id": "eu_x",
-              "if_endswith": "eu",
-              "add": "x"
-            },
-            {
-              "id": "x_s_z_invariant",
-              "if_endswith_one_of": ["x", "s", "z"],
-              "keep": true
-            },
-            {
-              "id": "default_add_s",
-              "default": true,
-              "add": "s"
-            }
-          ]
-        },
-        "feminization": {
-          "rules": [
-            {
-              "id": "eur_euse",
-              "if_endswith": "eur",
-              "replace_suffix": "euse"
-            },
-            {
-              "id": "ien_ienne",
-              "if_endswith": "ien",
-              "replace_suffix": "ienne"
-            },
-            {
-              "id": "teur_trice",
-              "if_endswith": "teur",
-              "replace_suffix": "trice"
-            },
-            {
-              "id": "on_onne",
-              "if_endswith": "on",
-              "add": "ne"
-            },
-            {
-              "id": "en_enne",
-              "if_endswith": "en",
-              "add": "ne"
-            },
-            {
-              "id": "default_add_e",
-              "default": true,
-              "add": "e"
-            }
-          ]
+
+    Language Profile keys used:
+        - "basic_word_order": "SVO" | "SOV" | "VSO" | "VOS" | "OVS" | "OSV"
+    """
+
+    id: str = "TRANSITIVE_EVENT"
+
+    def realize(
+        self,
+        slots: Dict[str, Any],
+        lang_profile: Dict[str, Any],
+        morph_api: Any,
+    ) -> str:
+        # 1. Realize Core Arguments
+        subject_surface = self._realize_np(
+            slots.get("subject"), "subject", morph_api
+        )
+        object_surface = self._realize_np(
+            slots.get("object"), "object", morph_api
+        )
+
+        # 2. Realize Verb
+        # We pass the subject surface or features if the morph engine needs
+        # to handle agreement (though standard engine APIs typically take
+        # features explicitly).
+        verb_surface = self._realize_verb(slots, morph_api)
+
+        # 3. Determine Word Order
+        order = lang_profile.get("basic_word_order", "SVO").upper()
+        tokens: List[str] = []
+
+        if order == "SVO":
+            tokens = [subject_surface, verb_surface, object_surface]
+        elif order == "SOV":
+            tokens = [subject_surface, object_surface, verb_surface]
+        elif order == "VSO":
+            tokens = [verb_surface, subject_surface, object_surface]
+        elif order == "VOS":
+            tokens = [verb_surface, object_surface, subject_surface]
+        elif order == "OVS":
+            tokens = [object_surface, verb_surface, subject_surface]
+        elif order == "OSV":
+            tokens = [object_surface, subject_surface, verb_surface]
+        else:
+            # Default fallback
+            tokens = [subject_surface, verb_surface, object_surface]
+
+        # 4. Join and Return
+        # Filter out empty strings (e.g. if subject is dropped/pro-drop)
+        return " ".join(t for t in tokens if t)
+
+    # ------------------------------------------------------------------ #
+    # Helpers
+    # ------------------------------------------------------------------ #
+
+    def _realize_np(
+        self,
+        np_spec: Optional[NPInput],
+        role: str,
+        morph_api: Any
+    ) -> str:
+        if not np_spec:
+            return ""
+
+        if isinstance(np_spec, str):
+            return np_spec
+
+        if isinstance(np_spec, dict):
+            # Inject the semantic role (subject vs object) so the engine
+            # can apply case (Accusative, etc.) if needed.
+            features = np_spec.copy()
+            # If features are nested in a 'features' key, update that instead
+            if "features" in features and isinstance(features["features"], dict):
+                features["features"]["role"] = role
+            else:
+                features["role"] = role
+
+            if hasattr(morph_api, "realize_np"):
+                return morph_api.realize_np(features)
+
+            # Fallback
+            lemma = np_spec.get("lemma") or np_spec.get("surface") or ""
+            return str(lemma)
+
+        return str(np_spec)
+
+    def _realize_verb(
+        self,
+        slots: Dict[str, Any],
+        morph_api: Any,
+    ) -> str:
+        verb_lemma = slots.get("verb_lemma", "")
+        if not verb_lemma:
+            return ""
+
+        features: Dict[str, Any] = {
+            "tense": slots.get("tense", "present"),
+            "aspect": slots.get("aspect", "simple"),
+            "polarity": slots.get("polarity", "positive"),
+            "voice": slots.get("voice", "active"),
+            # In a full implementation, you might copy subject features here
+            # for agreement (person/number/gender).
         }
-      },
-      "adjectives": {
-        "position": "postnominal_default",
-        "feminization_rules": [
-          {
-            "id": "eux_euse",
-            "if_endswith": "eux",
-            "replace_suffix": "euse"
-          },
-          {
-            "id": "if_endswith_er_ere",
-            "if_endswith": "er",
-            "replace_suffix": "ère"
-          },
-          {
-            "id": "if_endswith_en_enne",
-            "if_endswith": "en",
-            "add": "ne"
-          },
-          {
-            "id": "default_add_e",
-            "default": true,
-            "add": "e"
-          }
-        ],
-        "pluralization_rules": [
-          {
-            "id": "x_s_z_invariant",
-            "if_endswith_one_of": ["x", "s", "z"],
-            "keep": true
-          },
-          {
-            "id": "default_add_s",
-            "default": true,
-            "add": "s"
-          }
-        ]
-      },
-      "phonology": {
-        "impure_s_onset": {
-          "enabled": true,
-          "patterns": ["sp", "st", "sc", "sk"]
-        }
-      },
-      "order": {
-        "basic_word_order": "SVO",
-        "adverbial_position": "final",
-        "adjective_position": {
-          "default": "postnominal",
-          "exceptions_pre": ["grand", "petit", "jeune", "vieux", "beau", "joli", "bon", "mauvais"]
-        }
-      },
-      "lexicon": {
-        "irregular_nouns": {
-          "oeil": {
-            "gender": "m",
-            "number=sg": "oeil",
-            "number=pl": "yeux"
-          },
-          "pays": {
-            "gender": "m",
-            "number=sg": "pays",
-            "number=pl": "pays"
-          }
-        },
-        "irregular_adjectives": {
-          "beau": {
-            "base": "beau",
-            "masc_sg": "beau",
-            "masc_sg_before_vowel": "bel",
-            "fem_sg": "belle",
-            "masc_pl": "beaux",
-            "fem_pl": "belles"
-          }
-        }
-      }
-    },
-    "it": {
-      "language_code": "it",
-      "name": "Italian",
-      "articles": {
-        "definite": {
-          "m": {
-            "sg": {
-              "default": "il",
-              "before_vowel": "l'",
-              "before_z_s_impure": "lo"
-            },
-            "pl": {
-              "default": "i",
-              "before_vowel": "gli",
-              "before_z_s_impure": "gli"
-            }
-          },
-          "f": {
-            "sg": {
-              "default": "la",
-              "before_vowel": "l'"
-            },
-            "pl": {
-              "default": "le"
-            }
-          }
-        },
-        "indefinite": {
-          "m": {
-            "sg": {
-              "default": "un",
-              "before_z_s_impure": "uno"
-            }
-          },
-          "f": {
-            "sg": {
-              "default": "una",
-              "before_vowel": "un'"
-            }
-          }
-        },
-        "z_s_impure_onset": {
-          "enabled": true,
-          "patterns": ["z", "s", "ps", "gn", "x"]
-        }
-      },
-      "nouns": {
-        "gender_by_suffix": [
-          { "suffix": "a", "gender": "f" },
-          { "suffix": "o", "gender": "m" },
-          { "suffix": "e", "gender": "m" }
-        ],
-        "pluralization": {
-          "rules": [
-            {
-              "id": "o_to_i",
-              "if_endswith": "o",
-              "replace_suffix": "i"
-            },
-            {
-              "id": "a_to_e",
-              "if_endswith": "a",
-              "replace_suffix": "e"
-            },
-            {
-              "id": "e_to_i",
-              "if_endswith": "e",
-              "replace_suffix": "i"
-            },
-            {
-              "id": "accented_invariant",
-              "if_endswith_one_of": ["à", "è", "é", "ì", "ò", "ù"],
-              "keep": true
-            },
-            {
-              "id": "consonant_invariant",
-              "if_final_is_consonant": true,
-              "keep": true
-            }
-          ]
-        },
-        "feminization": {
-          "rules": [
-            {
-              "id": "ore_trice",
-              "if_endswith": "ore",
-              "replace_suffix": "trice"
-            },
-            {
-              "id": "ore_ora",
-              "if_endswith": "ore_alt",
-              "replace_suffix": "ora"
-            },
-            {
-              "id": "o_a",
-              "if_endswith": "o",
-              "replace_suffix": "a"
-            },
-            {
-              "id": "default",
-              "default": true,
-              "add": "a"
-            }
-          ]
-        }
-      },
-      "adjectives": {
-        "position": "postnominal_default",
-        "classes": {
-          "2_class": {
-            "o_to_i_a_to_e": true
-          },
-          "1_class": {
-            "e_to_i": true
-          }
-        },
-        "feminization_rules": [
-          {
-            "id": "o_to_a",
-            "if_endswith": "o",
-            "replace_suffix": "a"
-          },
-          {
-            "id": "e_invariant_fem",
-            "if_endswith": "e",
-            "keep": true
-          }
-        ],
-        "pluralization_rules": [
-          {
-            "id": "adj_o_to_i",
-            "if_endswith": "o",
-            "replace_suffix": "i"
-          },
-          {
-            "id": "adj_a_to_e",
-            "if_endswith": "a",
-            "replace_suffix": "e"
-          },
-          {
-            "id": "adj_e_to_i",
-            "if_endswith": "e",
-            "replace_suffix": "i"
-          }
-        ]
-      },
-      "phonology": {
-        "z_s_impure": {
-          "enabled": true,
-          "patterns": ["z", "s", "ps", "gn", "x"]
-        }
-      },
-      "order": {
-        "basic_word_order": "SVO",
-        "adverbial_position": "final",
-        "adjective_position": {
-          "default": "postnominal",
-          "stylistic_pre": true
-        }
-      },
-      "lexicon": {
-        "irregular_nouns": {
-          "uomo": {
-            "gender": "m",
-            "number=sg": "uomo",
-            "number=pl": "uomini"
-          },
-          "braccio": {
-            "gender": "m",
-            "number=sg": "braccio",
-            "number=pl": "braccia"
-          }
-        }
-      }
-    },
-    "es": {
-      "language_code": "es",
-      "name": "Spanish",
-      "articles": {
-        "definite": {
-          "m": {
-            "sg": "el",
-            "pl": "los"
-          },
-          "f": {
-            "sg": "la",
-            "pl": "las"
-          }
-        },
-        "indefinite": {
-          "m": {
-            "sg": "un",
-            "pl": "unos"
-          },
-          "f": {
-            "sg": "una",
-            "pl": "unas"
-          }
-        },
-        "a_to_ha_tonic": {
-          "enabled": true,
-          "trigger_vowels": ["a"],
-          "special_nouns": ["águila", "agua", "alma"]
-        }
-      },
-      "nouns": {
-        "gender_by_suffix": [
-          { "suffix": "a", "gender": "f" },
-          { "suffix": "o", "gender": "m" },
-          { "suffix": "dad", "gender": "f" },
-          { "suffix": "ción", "gender": "f" },
-          { "suffix": "tud", "gender": "f" },
-          { "suffix": "ma", "gender": "m" }
-        ],
-        "pluralization": {
-          "rules": [
-            {
-              "id": "vowel_add_s",
-              "if_final_is_vowel": true,
-              "add": "s"
-            },
-            {
-              "id": "z_to_ces",
-              "if_endswith": "z",
-              "replace_suffix": "ces"
-            },
-            {
-              "id": "consonant_add_es",
-              "if_final_is_consonant": true,
-              "add": "es"
-            }
-          ]
-        },
-        "feminization": {
-          "rules": [
-            {
-              "id": "o_to_a",
-              "if_endswith": "o",
-              "replace_suffix": "a"
-            },
-            {
-              "id": "or_ora",
-              "if_endswith": "or",
-              "add": "a"
-            },
-            {
-              "id": "án_ana",
-              "if_endswith": "án",
-              "replace_suffix": "ana"
-            },
-            {
-              "id": "default_add_a",
-              "default": true,
-              "add": "a"
-            }
-          ]
-        }
-      },
-      "adjectives": {
-        "position": "postnominal_default",
-        "feminization_rules": [
-          {
-            "id": "adj_o_to_a",
-            "if_endswith": "o",
-            "replace_suffix": "a"
-          },
-          {
-            "id": "adj_e_invariant_fem",
-            "if_endswith": "e",
-            "keep": true
-          }
-        ],
-        "pluralization_rules": [
-          {
-            "id": "adj_vowel_add_s",
-            "if_final_is_vowel": true,
-            "add": "s"
-          },
-          {
-            "id": "adj_consonant_add_es",
-            "if_final_is_consonant": true,
-            "add": "es"
-          }
-        ]
-      },
-      "phonology": {
-        "unstressed_vowel_drop": {
-          "enabled": false
-        }
-      },
-      "order": {
-        "basic_word_order": "SVO",
-        "adverbial_position": "final",
-        "adjective_position": {
-          "default": "postnominal",
-          "semantic_pre_for": ["grande", "pobre", "antiguo"]
-        }
-      },
-      "lexicon": {
-        "irregular_nouns": {
-          "mano": {
-            "gender": "f",
-            "number=sg": "mano",
-            "number=pl": "manos"
-          }
-        }
-      }
-    },
-    "pt": {
-      "language_code": "pt",
-      "name": "Portuguese",
-      "articles": {
-        "definite": {
-          "m": {
-            "sg": "o",
-            "pl": "os"
-          },
-          "f": {
-            "sg": "a",
-            "pl": "as"
-          }
-        },
-        "indefinite": {
-          "m": {
-            "sg": "um",
-            "pl": "uns"
-          },
-          "f": {
-            "sg": "uma",
-            "pl": "umas"
-          }
-        }
-      },
-      "nouns": {
-        "gender_by_suffix": [
-          { "suffix": "o", "gender": "m" },
-          { "suffix": "a", "gender": "f" },
-          { "suffix": "dade", "gender": "f" },
-          { "suffix": "ção", "gender": "f" }
-        ],
-        "pluralization": {
-          "rules": [
-            {
-              "id": "vowel_add_s",
-              "if_final_is_vowel": true,
-              "add": "s"
-            },
-            {
-              "id": "m_to_ns",
-              "if_endswith": "m",
-              "replace_suffix": "ns"
-            },
-            {
-              "id": "l_to_is",
-              "if_endswith": "l",
-              "replace_suffix": "is"
-            }
-          ]
-        },
-        "feminization": {
-          "rules": [
-            {
-              "id": "o_to_a",
-              "if_endswith": "o",
-              "replace_suffix": "a"
-            },
-            {
-              "id": "or_ora",
-              "if_endswith": "or",
-              "add": "a"
-            },
-            {
-              "id": "default",
-              "default": true,
-              "add": "a"
-            }
-          ]
-        }
-      },
-      "adjectives": {
-        "position": "postnominal_default",
-        "feminization_rules": [
-          {
-            "id": "adj_o_to_a",
-            "if_endswith": "o",
-            "replace_suffix": "a"
-          },
-          {
-            "id": "adj_e_invariant_fem",
-            "if_endswith": "e",
-            "keep": true
-          }
-        ],
-        "pluralization_rules": [
-          {
-            "id": "adj_vowel_add_s",
-            "if_final_is_vowel": true,
-            "add": "s"
-          },
-          {
-            "id": "adj_m_to_ns",
-            "if_endswith": "m",
-            "replace_suffix": "ns"
-          }
-        ]
-      },
-      "phonology": {
-        "nasal_vowels": {
-          "enabled": true
-        }
-      },
-      "order": {
-        "basic_word_order": "SVO",
-        "adverbial_position": "final"
-      },
-      "lexicon": {
-        "irregular_nouns": {}
-      }
-    },
-    "ro": {
-      "language_code": "ro",
-      "name": "Romanian",
-      "articles": {
-        "definite": {
-          "m": {
-            "sg_suffix": "ul",
-            "pl_suffix": "i"
-          },
-          "f": {
-            "sg_suffix": "a",
-            "pl_suffix": "le"
-          },
-          "n": {
-            "sg_suffix": "ul",
-            "pl_suffix": "e"
-          }
-        },
-        "indefinite": {
-          "m": {
-            "sg": "un",
-            "pl": "niște"
-          },
-          "f": {
-            "sg": "o",
-            "pl": "niște"
-          }
-        },
-        "definite_is_enclitic": true
-      },
-      "nouns": {
-        "gender_by_suffix": [
-          { "suffix": "ă", "gender": "f" },
-          { "suffix": "a", "gender": "f" },
-          { "suffix": "e", "gender": "f" },
-          { "suffix": "e", "gender": "n" },
-          { "suffix": "u", "gender": "m" }
-        ],
-        "pluralization": {
-          "rules": [
-            {
-              "id": "a_to_e",
-              "if_endswith": "ă",
-              "replace_suffix": "e"
-            },
-            {
-              "id": "e_to_e",
-              "if_endswith": "e",
-              "keep": true
-            },
-            {
-              "id": "generic_i",
-              "default": true,
-              "add": "i"
-            }
-          ]
-        },
-        "feminization": {
-          "rules": [
-            {
-              "id": "generic_add_ă",
-              "default": true,
-              "add": "ă"
-            }
-          ]
-        }
-      },
-      "adjectives": {
-        "position": "postnominal_default",
-        "agreement": {
-          "gender": true,
-          "number": true
-        }
-      },
-      "phonology": {
-        "palatalization": {
-          "enabled": false
-        }
-      },
-      "order": {
-        "basic_word_order": "SVO",
-        "adverbial_position": "final"
-      },
-      "lexicon": {
-        "irregular_nouns": {}
-      }
-    }
-  }
-}
+
+        if hasattr(morph_api, "realize_verb"):
+            return morph_api.realize_verb(verb_lemma, features)
+
+        return verb_lemma

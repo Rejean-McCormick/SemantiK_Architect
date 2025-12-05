@@ -138,8 +138,8 @@ def test_lexicon_schema_has_no_errors() -> None:
         if error_messages:
             problems.extend(error_messages)
 
-    assert not problems, (
-        "Lexicon schema validation failed:\n  - " + "\n  - ".join(problems)
+    assert not problems, "Lexicon schema validation failed:\n  - " + "\n  - ".join(
+        problems
     )
 
 

@@ -31,17 +31,18 @@ indexing or dataclass implementation. They just verify that:
 from __future__ import annotations
 
 import os
+
 import pytest
-
-# Project root: one level above qa/
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LEXICON_DIR = os.path.join(PROJECT_ROOT, "data", "lexicon")
-
 
 # Import config + loader from the lexicon package.
 # These modules are expected to exist in the project.
 from lexicon.config import LexiconConfig, set_config  # type: ignore[import-not-found]
 from lexicon.loader import load_lexicon  # type: ignore[import-not-found]
+
+
+# Project root: one level above qa/
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LEXICON_DIR = os.path.join(PROJECT_ROOT, "data", "lexicon")
 
 
 @pytest.fixture(autouse=True)

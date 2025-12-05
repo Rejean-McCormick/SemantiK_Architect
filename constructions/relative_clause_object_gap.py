@@ -94,18 +94,13 @@ def _get_rc_obj_gap_cfg(lang_profile: Dict[str, Any]) -> Dict[str, Any]:
     return {
         # pre- vs post-nominal RC
         "position": cfg.get("position", "postnominal"),  # or "prenominal"
-
         # roles for morphology
         "head_role": cfg.get("head_role", "rc_head"),
         "rel_subject_role": cfg.get("rel_subject_role", "rc_subject"),
-
         # relative marker strategy
         "relative_marker_type": cfg.get("relative_marker_type", "particle"),
         "relative_particle": cfg.get("relative_particle", "that"),
-        "relative_pronoun_role": cfg.get(
-            "relative_pronoun_role", "rel_pronoun_obj"
-        ),
-
+        "relative_pronoun_role": cfg.get("relative_pronoun_role", "rel_pronoun_obj"),
         # internal order inside the relative clause
         "internal_word_order": cfg.get(
             "internal_word_order",

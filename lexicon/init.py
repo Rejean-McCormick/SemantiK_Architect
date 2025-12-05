@@ -50,8 +50,8 @@ from __future__ import annotations
 from typing import Optional, Any
 
 from .types import Lexeme, Sense, Form  # type: ignore[import-not-found]
-from .loader import load_lexicon        # type: ignore[import-not-found]
-from .index import (                    # type: ignore[import-not-found]
+from .loader import load_lexicon  # type: ignore[import-not-found]
+from .index import (  # type: ignore[import-not-found]
     LexiconIndex,
     get_index,
 )

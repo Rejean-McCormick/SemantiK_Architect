@@ -51,9 +51,7 @@ from typing import Optional
 _INITIALIZED = False
 
 # Default format and date format
-DEFAULT_LOG_FORMAT = (
-    "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
+DEFAULT_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 DEFAULT_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
@@ -106,7 +104,9 @@ def init_logging(
 
     # Console handler (stderr)
     console_handler = logging.StreamHandler()
-    console_handler.setFormatter(logging.Formatter(DEFAULT_LOG_FORMAT, DEFAULT_DATE_FORMAT))
+    console_handler.setFormatter(
+        logging.Formatter(DEFAULT_LOG_FORMAT, DEFAULT_DATE_FORMAT)
+    )
     handlers.append(console_handler)
 
     # Optional file handler
@@ -114,7 +114,9 @@ def init_logging(
         if not filename:
             filename = "abstract_wiki.log"
         file_handler = logging.FileHandler(filename, encoding="utf-8")
-        file_handler.setFormatter(logging.Formatter(DEFAULT_LOG_FORMAT, DEFAULT_DATE_FORMAT))
+        file_handler.setFormatter(
+            logging.Formatter(DEFAULT_LOG_FORMAT, DEFAULT_DATE_FORMAT)
+        )
         handlers.append(file_handler)
 
     # Use basicConfig with our custom handlers

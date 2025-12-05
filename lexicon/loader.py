@@ -93,7 +93,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from lexicon.config import get_config
 
@@ -178,7 +178,9 @@ def _load_raw_json(path: Path) -> Dict[str, Any]:
     return data
 
 
-def _extract_lemmas_from_simple_schema(raw: Mapping[str, Any]) -> Optional[Dict[str, Dict[str, Any]]]:
+def _extract_lemmas_from_simple_schema(
+    raw: Mapping[str, Any],
+) -> Optional[Dict[str, Dict[str, Any]]]:
     """
     Handle the simple schema:
 
@@ -307,7 +309,9 @@ def _build_lemmas_from_entries(entries: Mapping[str, Any]) -> Dict[str, Dict[str
     return lemmas
 
 
-def _extract_lemmas_from_raw(lang_code: str, raw: Mapping[str, Any]) -> Dict[str, Dict[str, Any]]:
+def _extract_lemmas_from_raw(
+    lang_code: str, raw: Mapping[str, Any]
+) -> Dict[str, Dict[str, Any]]:
     """
     Given a raw lexicon JSON payload, extract a lemma → feature dict.
 
@@ -365,6 +369,28 @@ def load_lexicon(lang_code: str) -> Dict[str, Dict[str, Any]]:
     return _extract_lemmas_from_raw(lang_code, raw)
 
 
+def available_languages() -> List[str]:
+    """
+    Return a sorted list of language codes for which a lexicon file exists.
+
+    Scans the configured lexicon directory for files named `*_lexicon.json`.
+    """
+    lex_dir = _lexicon_dir()
+    if not lex_dir.is_dir():
+        return []
+
+    langs = []
+    # Use glob to find matching files
+    for path in lex_dir.glob("*_lexicon.json"):
+        if path.is_file():
+            # Extract lang code from filename: "fr_lexicon.json" -> "fr"
+            code = path.name.replace("_lexicon.json", "")
+            if code:
+                langs.append(code)
+    return sorted(langs)
+
+
 __all__ = [
     "load_lexicon",
+    "available_languages",
 ]

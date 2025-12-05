@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "pl",
+    "family": "slavic"
+  },
+  "name": "Polish",
+  "articles": {
+    "exists": false
+  },
+  "morphology": {
+    "gender_inflection": {
+      "noun_suffixes": [
+        { "ends_with": "log", "replace_with": "lożka" },
+        { "ends_with": "rz", "replace_with": "rka" },
+        { "ends_with": "tor", "replace_with": "torka" },
+        { "ends_with": "nik", "replace_with": "nica" },
+        { "ends_with": "ta", "replace_with": "tka" },
+        { "ends_with": "k", "replace_with": "ka" },
+        { "ends_with": "ec", "replace_with": "czyni" }
+      ],
+      "adjective_suffixes": [
+        { "ends_with": "ki", "replace_with": "ka" },
+        { "ends_with": "y", "replace_with": "a" },
+        { "ends_with": "i", "replace_with": "a" }
+      ]
+    },
+    "cases": {
+      "instrumental": {
+        "m": [
+          { "ends_with": "a", "replace_with": "ą" },
+          { "ends_with": "k", "replace_with": "kiem" },
+          { "ends_with": "g", "replace_with": "giem" },
+          { "ends_with": "y", "replace_with": "ym" },
+          { "ends_with": "i", "replace_with": "im" },
+          { "ends_with": "ec", "replace_with": "cem" },
+          { "ends_with": "el", "replace_with": "lem" },
+          { "ends_with": "ń", "replace_with": "niem" },
+          { "ends_with": "ś", "replace_with": "siem" },
+          { "ends_with": "ć", "replace_with": "ciem" },
+          { "ends_with": "ź", "replace_with": "ziem" },
+          { "ends_with": "", "replace_with": "em" }
+        ],
+        "f": [
+          { "ends_with": "a", "replace_with": "ą" },
+          { "ends_with": "i", "replace_with": "ią" }
+        ]
+      }
+    },
+    "irregulars": {
+      "poeta": "poetka",
+      "artysta": "artystka",
+      "książę": "księżna"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "default": "",
+      "male": "był",
+      "female": "była",
+      "neuter": "było",
+      "plural": "byli"
+    }
+  },
+  "syntax": {
+    "predicative_case": "instrumental",
+    "default_tense": "past"
+  },
+  "phonetics": {
+    "fleeting_vowels": ["ek", "iec", "el"]
+  },
+  "structure": "{name} {verb} {nationality} {profession}."
+}

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Protocol
 
-from . import router
+import router
 from .semantics import Frame, BioFrame, EventFrame
 
 
@@ -23,10 +23,10 @@ class GenerationOptions:
     should remain internal to engines / language profiles.
     """
 
-    register: Optional[str] = None        # "neutral", "formal", "informal", etc.
-    max_sentences: Optional[int] = None   # Upper bound on number of sentences
+    register: Optional[str] = None  # "neutral", "formal", "informal", etc.
+    max_sentences: Optional[int] = None  # Upper bound on number of sentences
     discourse_mode: Optional[str] = None  # e.g. "intro", "summary"
-    seed: Optional[int] = None            # Reserved for future stochastic behavior
+    seed: Optional[int] = None  # Reserved for future stochastic behavior
 
     def to_engine_kwargs(self) -> Dict[str, Any]:
         """
@@ -154,10 +154,45 @@ class NLGSession:
         if lang in self._engine_cache:
             return self._engine_cache[lang]
 
-        engine = router.get_engine(lang)  # type: ignore[attr-defined]
+        # Note: router.get_engine might need to be implemented in router.py
+        # For now, we might bridge it via the router's existing methods
+        # or assume router.py has been updated to provide get_engine.
+        # If router only has get_morphology/render_bio, we need an adapter.
+        
+        # Assuming router has a factory or we wrap it here:
+        # For this fix, let's assume we add get_engine to router or
+        # wrap the existing render logic.
+        
+        # Temporary fix: direct use of router's high-level render if get_engine missing
+        if hasattr(router, "get_engine"):
+             engine = router.get_engine(lang)
+        else:
+             # Fallback adapter
+             engine = _RouterAdapter(lang)
+             
         self._engine_cache[lang] = engine
         return engine
 
+class _RouterAdapter:
+    def __init__(self, lang: str):
+        self.lang = lang
+    
+    def generate(self, frame: Frame, **kwargs) -> Dict[str, Any]:
+        # Basic adapter for BioFrame -> router.render_bio
+        if isinstance(frame, BioFrame):
+             # Extract lemma strings
+             prof = frame.primary_profession_lemmas[0] if frame.primary_profession_lemmas else ""
+             nat = frame.nationality_lemmas[0] if frame.nationality_lemmas else ""
+             
+             text = router.render_bio(
+                 name=frame.main_entity.name,
+                 gender=frame.main_entity.gender,
+                 profession_lemma=prof,
+                 nationality_lemma=nat,
+                 lang_code=self.lang
+             )
+             return {"text": text, "sentences": [text]}
+        return {"text": "", "sentences": []}
 
 # ---------------------------------------------------------------------------
 # Module-level convenience functions

@@ -20,8 +20,7 @@
     "suffixes": [
       { "ends_with": "tore", "replace_with": "trice" },
       { "ends_with": "logo", "replace_with": "loga" },
-      { "ends_with": "o", "replace_with": "a" },
-      { "ends_with": "e", "replace_with": "a" }
+      { "ends_with": "o", "replace_with": "a" }
     ],
     "irregulars": {
       "poeta": "poetessa",

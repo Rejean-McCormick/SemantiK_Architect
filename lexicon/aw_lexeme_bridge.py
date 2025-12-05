@@ -46,8 +46,7 @@ the mapping in this module accordingly.
 
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 
 from lexicon.types import Lexeme, Sense, Form  # type: ignore
 from utils.wikifunctions_api_mock import unwrap_recursive  # type: ignore
@@ -117,8 +116,14 @@ def _sense_from_raw(raw: Any) -> Sense:
         single = raw.get("gloss")
         if isinstance(single, dict):
             # e.g. {"lang": "en", "text": "physicist"}
-            lang = _safe_str(_get_first(single, ["lang", "language", "code"]), default="")
-            txt = _safe_str(_get_first(single, ["text", "value", "label"]), default="")
+            lang = _safe_str(
+                _get_first(single, ["lang", "language", "code"]),
+                default="",
+            )
+            txt = _safe_str(
+                _get_first(single, ["text", "value", "label"]),
+                default="",
+            )
             if lang and txt:
                 glosses[lang] = txt
         elif isinstance(single, str):
@@ -215,10 +220,25 @@ def lexeme_from_z_object(z_lexeme: Any) -> Lexeme:
             extra={"source": raw},
         )
 
-    lex_id = _safe_str(_get_first(raw, ["id", "lexemeId", "lexeme_id", "ZID"]), default="") or None
-    language = _safe_str(_get_first(raw, ["language", "lang", "lexemeLanguage"]), default="")
-    lemma = _safe_str(_get_first(raw, ["lemma", "lemmaForm", "baseForm"]), default="")
-    pos = _safe_str(_get_first(raw, ["pos", "partOfSpeech", "lexemePos"]), default="")
+    lex_id = (
+        _safe_str(
+            _get_first(raw, ["id", "lexemeId", "lexeme_id", "ZID"]),
+            default="",
+        )
+        or None
+    )
+    language = _safe_str(
+        _get_first(raw, ["language", "lang", "lexemeLanguage"]),
+        default="",
+    )
+    lemma = _safe_str(
+        _get_first(raw, ["lemma", "lemmaForm", "baseForm"]),
+        default="",
+    )
+    pos = _safe_str(
+        _get_first(raw, ["pos", "partOfSpeech", "lexemePos"]),
+        default="",
+    )
 
     # Senses
     raw_senses = (
@@ -278,7 +298,10 @@ def lexemes_from_z_list(z_list: Iterable[Any]) -> List[Lexeme]:
                 pos="",
                 forms=[],
                 senses=[],
-                extra={"error": str(e), "source": unwrap_recursive(item)},
+                extra={
+                    "error": str(e),
+                    "source": unwrap_recursive(item),
+                },
             )
         lexemes.append(lex)
     return lexemes

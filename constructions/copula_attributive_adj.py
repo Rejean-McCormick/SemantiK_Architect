@@ -175,8 +175,8 @@ def realize_attributive_adj(
     # ---------------------------------------------------------------------
     adj_features: Dict[str, Any] = {
         "role": "predicate_adj",
-        "gender": slots.subject_gender,   # often agrees with subject
-        "number": slots.subject_number,   # often agrees with subject
+        "gender": slots.subject_gender,  # often agrees with subject
+        "number": slots.subject_number,  # often agrees with subject
         "degree": slots.degree,
     }
     adj_features.update(slots.extra_adj_features)

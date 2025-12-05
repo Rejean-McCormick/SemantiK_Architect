@@ -99,8 +99,10 @@ def load_matrix(matrix_path: Optional[str] = None) -> Dict[str, Any]:
         sys.exit(1)
 
     if "languages" not in data or not isinstance(data["languages"], dict):
-        print(f"❌ Error: Matrix file at '{matrix_path}' "
-              f"does not contain a 'languages' dictionary.")
+        print(
+            f"❌ Error: Matrix file at '{matrix_path}' "
+            f"does not contain a 'languages' dictionary."
+        )
         sys.exit(1)
 
     return data
@@ -109,6 +111,7 @@ def load_matrix(matrix_path: Optional[str] = None) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Core operations
 # ---------------------------------------------------------------------------
+
 
 def list_languages(matrix_data: Dict[str, Any]) -> None:
     """
@@ -149,10 +152,11 @@ def extract_config(lang_code: str, matrix_data: Dict[str, Any]) -> None:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Extract per-language configuration chunks "
-                    "from the Romance Grammar Matrix."
+        "from the Romance Grammar Matrix."
     )
     parser.add_argument(
         "lang_code",
@@ -165,7 +169,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         dest="matrix_path",
         default=None,
         help="Explicit path to the matrix JSON file. "
-             "If omitted, a default Romance matrix path is used.",
+        "If omitted, a default Romance matrix path is used.",
     )
     parser.add_argument(
         "--list",
@@ -194,7 +198,9 @@ def main(argv: Optional[List[str]] = None) -> None:
         print("       python utils/config_extractor.py --list")
         print("\nExamples:")
         print("  python utils/config_extractor.py it")
-        print("  python utils/config_extractor.py --matrix data/morphology_configs/romance_grammar_matrix.json es")
+        print(
+            "  python utils/config_extractor.py --matrix data/morphology_configs/romance_grammar_matrix.json es"
+        )
         return
 
     extract_config(args.lang_code, matrix_data)

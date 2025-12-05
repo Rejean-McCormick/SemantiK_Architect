@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "he",
+    "family": "semitic"
+  },
+  "name": "Hebrew",
+  "articles": {
+    "definite_prefix": "ha-",
+    "definite_suffix": "",
+    "indefinite_prefix": "",
+    "indefinite_suffix": ""
+  },
+  "morphology": {
+    "default_fem_suffix": "a",
+    "gender_inflection": [
+      { "ends_with": "i", "replace_with": "it" },
+      { "ends_with": "er", "replace_with": "eret" },
+      { "ends_with": "on", "replace_with": "ona" },
+      { "ends_with": "an", "replace_with": "anit" }
+    ],
+    "irregulars": {
+      "ish": "isha",
+      "ben": "bat",
+      "yeled": "yalda",
+      "melekh": "malka",
+      "moreh": "morah"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "present_copula": {
+        "male": "hu",
+        "female": "hi",
+        "default": ""
+      },
+      "past_copula": {
+        "male": "haya",
+        "female": "hayta",
+        "default": "haya"
+      }
+    }
+  },
+  "phonetics": {
+    "gutturals": ["a", "h", "kh", "r", "e"]
+  },
+  "syntax": {
+    "default_tense": "present",
+    "adjective_order": "post"
+  },
+  "structure": "{name} {copula} {profession} {nationality}."
+}

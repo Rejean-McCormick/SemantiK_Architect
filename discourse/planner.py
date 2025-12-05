@@ -106,9 +106,9 @@ class PlannedSentence:
 
 # Default order for biography-oriented frame types
 BIO_FRAME_ORDER: List[str] = [
-    "definition",              # core identity: "X is a Y"
-    "biographical-definition", # alias / more specific label
-    "birth",                   # "X was born in Y in YEAR"
+    "definition",  # core identity: "X is a Y"
+    "biographical-definition",  # alias / more specific label
+    "birth",  # "X was born in Y in YEAR"
     "education",
     "career",
     "achievement",

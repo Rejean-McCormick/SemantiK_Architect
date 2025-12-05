@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "sv",
+    "family": "germanic"
+  },
+  "name": "Swedish",
+  "articles": {
+    "indefinite": {
+      "m": "en",
+      "f": "en",
+      "n": "ett",
+      "pl": ""
+    }
+  },
+  "morphology": {
+    "generic_feminine_suffix": "inna",
+    "gender_suffixes": [
+      { "ends_with": "are", "replace_with": "erska" },
+      { "ends_with": "or", "replace_with": "ris" }
+    ],
+    "grammatical_gender_map": {
+      "hus": "n",
+      "bord": "n",
+      "barn": "n"
+    },
+    "irregulars": {
+      "skådespelare": "skådespelerska",
+      "författare": "författarinna",
+      "lärare": "lärarinna",
+      "kung": "drottning",
+      "prins": "prinsessa"
+    }
+  },
+  "adjectives": {
+    "inflects": true,
+    "indefinite_endings": {
+      "m": "",
+      "f": "",
+      "n": "t",
+      "pl": "a"
+    },
+    "definite_endings": {
+      "m": "a",
+      "f": "a",
+      "n": "a",
+      "pl": "a"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "present": {
+        "default": "är"
+      },
+      "past": {
+        "default": "var"
+      }
+    }
+  },
+  "casing": {
+    "capitalize_nouns": false
+  },
+  "structure": "{name} {is_verb} {article} {nationality} {profession}."
+}

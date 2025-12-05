@@ -10,7 +10,7 @@ definiteness markers, etc.) lives in the per-language config rather than
 in hard-coded rules.
 
 Expected (but not strictly required) config shape
------------------------------------------------
+-------------------------------------------------
 
 config = {
     "irregular": {
@@ -51,7 +51,12 @@ config = {
         "VERB": [
             {
                 "id": "perfect_3sgm",
-                "when": {"tense": "past", "person": "3", "number": "sg", "gender": "m"},
+                "when": {
+                    "tense": "past",
+                    "person": "3",
+                    "number": "sg",
+                    "gender": "m",
+                },
                 "template": "C1aC2aC3a"
             }
         ]
@@ -70,16 +75,23 @@ config = {
                 {
                     "id": "nunation_nom",
                     "form": "un",
-                    "when": {"case": "nom", "definiteness": "indef"}
+                    "when": {
+                        "case": "nom",
+                        "definiteness": "indef",
+                    }
                 }
             ]
         }
     },
 
     "orthography": {
-        # Optional tweaks at the very end, e.g. assimilation of /l/ to sun letters.
+        # Optional tweaks at the very end,
+        # e.g. assimilation of /l/ to sun letters.
         # This is applied as a final post-processing step.
-        "sun_letters": ["t", "th", "d", "dh", "r", "z", "s", "sh", "ṣ", "ḍ", "ṭ", "ẓ", "l", "n"],
+        "sun_letters": [
+            "t", "th", "d", "dh", "r", "z", "s", "sh",
+            "ṣ", "ḍ", "ṭ", "ẓ", "l", "n",
+        ],
         "definite_article": "al-",
         "apply_sun_assimilation": True
     }
@@ -88,8 +100,7 @@ config = {
 
 from __future__ import annotations
 
-from dataclasses import asdict
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Tuple
 
 from .base import (
     FeatureDict,
@@ -133,16 +144,18 @@ def _match_conditions(when: Mapping[str, str], features: FeatureDict) -> bool:
 def _select_best_pattern(
     patterns: List[Mapping[str, Any]],
     features: FeatureDict,
-) -> Optional[Mapping[str, Any]]:
+) -> Mapping[str, Any] | None:
     """
     Choose the best matching pattern from a list, based on 'when' constraints.
 
     Scoring:
-        - Only patterns whose 'when' constraints are fully satisfied are considered.
-        - Among those, the pattern with the largest number of constraints wins.
+        - Only patterns whose 'when' constraints are fully satisfied
+          are considered.
+        - Among those, the pattern with the largest number of
+          constraints wins.
         - If there is a tie, the first in the list wins.
     """
-    best: Optional[Mapping[str, Any]] = None
+    best: Mapping[str, Any] | None = None
     best_score = -1
 
     for pattern in patterns:
@@ -167,7 +180,9 @@ def _extract_root(lemma: str, config: Mapping[str, Any]) -> str:
     For a simple three-radical system, this can be just "ktb", which will
     then be split into ['k', 't', 'b'].
     """
-    lemma_roots: Mapping[str, str] = config.get("lemma_roots", {})  # type: ignore[assignment]
+    lemma_roots: Mapping[str, str] = config.get(
+        "lemma_roots", {}
+    )  # type: ignore[assignment]
     return lemma_roots.get(lemma, lemma)
 
 
@@ -175,21 +190,21 @@ def _fill_template(template: str, root: str) -> str:
     """
     Fill a root-and-pattern template.
 
-    Expected placeholders in `template` are "C1", "C2", "C3", "C4". The `root`
-    string is interpreted as a sequence of radicals; for a 3-radical root this
-    could be "ktb" → C1='k', C2='t', C3='b'.
+    Expected placeholders in `template` are "C1", "C2", "C3", "C4".
+    The `root` string is interpreted as a sequence of radicals; for a
+    3-radical root this could be "ktb" → C1='k', C2='t', C3='b'.
 
-    The function is deliberately simple and does not attempt to handle complex
-    orthographic issues (gemination markers, long vowels, etc.) – those belong
-    either in the config or in higher layers.
+    The function is deliberately simple and does not attempt to handle
+    complex orthographic issues (gemination markers, long vowels, etc.).
+    Those belong either in the config or in higher layers.
     """
     radicals: List[str] = list(root)
     if not radicals:
         return template
 
-    # Allow underspecified roots; missing radicals will just be ignored.
+    # Allow underspecified roots; missing radicals are ignored.
     for i, radical in enumerate(radicals[:4]):
-        placeholder = f"C{i+1}"
+        placeholder = f"C{i + 1}"
         template = template.replace(placeholder, radical)
 
     return template
@@ -210,18 +225,34 @@ def _apply_affixes(
         "affixes": {
             "NOUN": {
                 "prefixes": [
-                    {"id": "def_article", "form": "al-", "when": {"definiteness": "def"}}
+                    {
+                        "id": "def_article",
+                        "form": "al-",
+                        "when": {"definiteness": "def"},
+                    }
                 ],
                 "suffixes": [
-                    {"id": "nunation_nom", "form": "un", "when": {"case": "nom", "definiteness": "indef"}}
+                    {
+                        "id": "nunation_nom",
+                        "form": "un",
+                        "when": {
+                            "case": "nom",
+                            "definiteness": "indef",
+                        },
+                    }
                 ]
             }
         }
 
-    Multiple prefixes/suffixes can fire; they are applied in the order given.
+    Multiple prefixes/suffixes can fire; they are applied in the given
+    order.
     """
-    affixes_cfg: Mapping[str, Any] = config.get("affixes", {})  # type: ignore[assignment]
-    pos_cfg: Mapping[str, Any] = affixes_cfg.get(pos, {})  # type: ignore[assignment]
+    affixes_cfg: Mapping[str, Any] = config.get(
+        "affixes", {}
+    )  # type: ignore[assignment]
+    pos_cfg: Mapping[str, Any] = affixes_cfg.get(
+        pos, {}
+    )  # type: ignore[assignment]
 
     applied: List[str] = []
     surface = stem
@@ -250,14 +281,21 @@ def _apply_affixes(
     return surface
 
 
-def _apply_orthography(surface: str, config: Mapping[str, Any], debug: Dict[str, Any]) -> str:
+def _apply_orthography(
+    surface: str,
+    config: Mapping[str, Any],
+    debug: Dict[str, Any],
+) -> str:
     """
     Optional final orthographic post-processing.
 
-    For example, assimilation of the definite article 'al-' to sun letters
-    in Arabic. This is left intentionally simple and controlled by config.
+    For example, assimilation of the definite article 'al-' to sun
+    letters in Arabic. This is left intentionally simple and controlled
+    by config.
     """
-    ortho: Mapping[str, Any] = config.get("orthography", {})  # type: ignore[assignment]
+    ortho: Mapping[str, Any] = config.get(
+        "orthography", {}
+    )  # type: ignore[assignment]
     if not ortho:
         return surface
 
@@ -269,26 +307,27 @@ def _apply_orthography(surface: str, config: Mapping[str, Any], debug: Dict[str,
 
     if surface.startswith(article):
         # naive: check the next character (or digraph) and assimilate /l/
-        remainder = surface[len(article):]
+        remainder = surface[len(article) :]
         if not remainder:
             return surface
 
-        # Check first one or two characters to approximate digraphs like "sh".
+        # Check first one or two characters to approximate digraphs
+        # like "sh".
         first_two = remainder[:2]
         first_one = remainder[0]
 
-        target_letter: Optional[str] = None
+        target_letter: str | None = None
         if first_two in sun_letters:
             target_letter = first_two
         elif first_one in sun_letters:
             target_letter = first_one
 
         if target_letter:
-            # Replace 'l' with the following consonant; for simplicity we just
-            # double the consonant and drop 'l'.
+            # Replace 'l' with the following consonant; for simplicity
+            # we just double the consonant and drop 'l'.
             # "al+sh" -> "ashsh...", "al+s" -> "ass..."
             debug["sun_assimilation"] = {"letter": target_letter}
-            surface = "a" + target_letter + remainder  # e.g. "ashshams"
+            surface = "a" + target_letter + remainder
 
     return surface
 
@@ -298,8 +337,8 @@ class SemiticMorphologyEngine(MorphologyEngine):
     """
     Generic root-and-pattern morphology engine for Semitic languages.
 
-    Behaviour is almost entirely driven by the supplied `config` dict; the
-    engine itself only provides generic mechanisms:
+    Behaviour is almost entirely driven by the supplied `config` dict;
+    the engine itself only provides generic mechanisms:
 
         1. Check for irregular forms.
         2. Resolve lemma → root.
@@ -308,8 +347,8 @@ class SemiticMorphologyEngine(MorphologyEngine):
         5. Apply affixes (prefixes/suffixes).
         6. Apply final orthographic tweaks.
 
-    This is designed to be *good enough* for structured NLG in Abstract
-    Wikipedia style, not to be a full-fledged morphological analyser.
+    This is designed to be "good enough" for structured NLG in an
+    Abstract-Wikipedia-style setting, not a full morphological analyser.
     """
 
     def inflect(self, request: MorphRequest) -> MorphResult:
@@ -342,10 +381,11 @@ class SemiticMorphologyEngine(MorphologyEngine):
         # 3. Pattern selection
         pattern = self._select_pattern(request, debug)
         if pattern is None:
-            # As a fallback, just return lemma + minimal info
             raise MorphologyError(
-                f"No suitable pattern found for lemma='{request.lemma}', "
-                f"pos='{request.pos}', features={dict(request.features)}"
+                "No suitable pattern found for "
+                f"lemma='{request.lemma}', "
+                f"pos='{request.pos}', "
+                f"features={dict(request.features)}",
             )
 
         template: str = pattern.get("template", request.lemma)
@@ -360,7 +400,13 @@ class SemiticMorphologyEngine(MorphologyEngine):
         debug["stem"] = stem
 
         # 5. Affixes
-        surface = _apply_affixes(stem, request.pos, request.features, self.config, debug)
+        surface = _apply_affixes(
+            stem,
+            request.pos,
+            request.features,
+            self.config,
+            debug,
+        )
 
         # 6. Orthography
         surface = _apply_orthography(surface, self.config, debug)
@@ -378,7 +424,11 @@ class SemiticMorphologyEngine(MorphologyEngine):
     # Helper methods                                                     #
     # ------------------------------------------------------------------ #
 
-    def _lookup_irregular(self, request: MorphRequest, debug: Dict[str, Any]) -> Optional[str]:
+    def _lookup_irregular(
+        self,
+        request: MorphRequest,
+        debug: Dict[str, Any],
+    ) -> str | None:
         """
         Look up an irregular form in `config["irregular"][pos][lemma]`.
 
@@ -404,12 +454,18 @@ class SemiticMorphologyEngine(MorphologyEngine):
                 }
             }
 
-        In case of multiple matches, the most specific key (with most feature
-        constraints) wins.
+        In case of multiple matches, the most specific key (with most
+        feature constraints) wins.
         """
-        irregular_cfg: Mapping[str, Any] = self.config.get("irregular", {})  # type: ignore[assignment]
-        pos_dict: Mapping[str, Any] = irregular_cfg.get(request.pos, {})  # type: ignore[assignment]
-        lemma_dict: Mapping[str, Any] = pos_dict.get(request.lemma, {})  # type: ignore[assignment]
+        irregular_cfg: Mapping[str, Any] = self.config.get(
+            "irregular", {}
+        )  # type: ignore[assignment]
+        pos_dict: Mapping[str, Any] = irregular_cfg.get(
+            request.pos, {}
+        )  # type: ignore[assignment]
+        lemma_dict: Mapping[str, Any] = pos_dict.get(
+            request.lemma, {}
+        )  # type: ignore[assignment]
 
         if not lemma_dict:
             return None
@@ -427,24 +483,27 @@ class SemiticMorphologyEngine(MorphologyEngine):
 
         # Generate subsets with decreasing size
         for r in range(len(items), 0, -1):
-            # simple combinations; for efficiency we could short-circuit early,
-            # but the sets are small in practice.
-            def _combinations(seq, r):
-                if r == 0:
-                    yield ()
-                    return
-                if len(seq) < r:
-                    return
-                first, *rest = seq
-                # with first
-                for tail in _combinations(rest, r - 1):
-                    yield (first, *tail)
-                # without first
-                for tail in _combinations(rest, r):
-                    yield tail
 
-            for subset in _combinations(items, r):
-                subsets.append(subset)
+            def _combinations(
+                seq: List[Tuple[str, str]],
+                r_size: int,
+            ) -> List[Tuple[Tuple[str, str], ...]]:
+                result: List[Tuple[Tuple[str, str], ...]] = []
+
+                def _recurse(
+                    start: int,
+                    path: Tuple[Tuple[str, str], ...],
+                ) -> None:
+                    if len(path) == r_size:
+                        result.append(path)
+                        return
+                    for i in range(start, len(seq)):
+                        _recurse(i + 1, path + (seq[i],))
+
+                _recurse(0, ())
+                return result
+
+            subsets.extend(_combinations(items, r))
             if subsets:
                 break  # we only need the largest size
 
@@ -465,15 +524,23 @@ class SemiticMorphologyEngine(MorphologyEngine):
         self,
         request: MorphRequest,
         debug: Dict[str, Any],
-    ) -> Optional[Mapping[str, Any]]:
+    ) -> Mapping[str, Any] | None:
         """
         Select a root-and-pattern template from `config["patterns"][pos]`.
         """
-        patterns_cfg: Mapping[str, Any] = self.config.get("patterns", {})  # type: ignore[assignment]
-        pos_patterns: List[Mapping[str, Any]] = patterns_cfg.get(request.pos, [])  # type: ignore[assignment]
+        patterns_cfg: Mapping[str, Any] = self.config.get(
+            "patterns", {}
+        )  # type: ignore[assignment]
+        pos_patterns: List[Mapping[str, Any]] = patterns_cfg.get(
+            request.pos, []
+        )  # type: ignore[assignment]
 
         if not pos_patterns:
-            debug["pattern"] = {"error": f"no patterns configured for pos '{request.pos}'"}
+            debug["pattern"] = {
+                "error": (
+                    f"no patterns configured for pos '{request.pos}'"
+                )
+            }
             return None
 
         pattern = _select_best_pattern(pos_patterns, request.features)

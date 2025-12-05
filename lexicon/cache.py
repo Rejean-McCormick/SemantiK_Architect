@@ -41,7 +41,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, List, Optional
 
 from .loader import load_lexicon  # type: ignore[import-not-found]
-from .index import LexiconIndex   # type: ignore[import-not-found]
+from .index import LexiconIndex  # type: ignore[import-not-found]
 
 
 # ---------------------------------------------------------------------------

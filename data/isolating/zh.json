@@ -1,267 +1,39 @@
-"""
-ISOLATING MORPHOLOGY MODULE
----------------------------
-Minimal morphology layer for isolating / analytic languages
-(e.g. Mandarin Chinese).
-
-Responsibilities:
-- Realize simple noun phrases with:
-  - Optional numeral + classifier (e.g. "yī gè xuéshēng").
-  - Optional plural particle (e.g. "xuéshēngmen").
-- Realize possessive NPs using a possessive particle (e.g. "Mǎlì de lǎoshī").
-
-This module does NOT:
-- Choose global word order (that is the construction layer's job).
-- Handle tense, aspect, or sentence-final particles (those belong to the
-  construction / verb layer).
-
-Configuration expectations (typical example for zh):
-
 {
+  "meta": {
+    "version": "1.0",
+    "language": "zh",
+    "family": "isolating"
+  },
+  "name": "Chinese",
+  "syntax": {
+    "use_spaces": false,
+    "requires_classifier": true,
+    "requires_classifier_in_predicate": true,
+    "adjective_order": "pre",
+    "verbal_pattern": "neg_tam_verb"
+  },
   "articles": {
     "indefinite": "yī"
   },
-  "syntax": {
-    "adjective_order": "pre",
-    "requires_classifier_in_predicate": true
-  },
   "classifiers": {
-    "person": "gè",
     "default": "gè",
+    "person": "gè",
     "honorific": "wèi"
   },
   "particles": {
     "plural": "men",
     "possession": "de",
-    "completed": "le"
-  }
+    "negation": "bù",
+    "tam": {
+      "past": "le",
+      "prog": "zài",
+      "future": "jiāng"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "default": "shì"
+    }
+  },
+  "structure": "{name} {copula} {predicate}."
 }
-"""
-
-from typing import Any, Dict, Optional
-
-
-def _get_config(path: str, config: Dict[str, Any], default: Any = None) -> Any:
-    """
-    Safe nested getter: "particles.plural" -> config["particles"]["plural"].
-    """
-    node: Any = config
-    for key in path.split("."):
-        if not isinstance(node, dict) or key not in node:
-            return default
-        node = node[key]
-    return node
-
-
-def _select_classifier(
-    features: Dict[str, Any],
-    config: Dict[str, Any],
-) -> Optional[str]:
-    """
-    Select an appropriate classifier based on semantic hints.
-
-    Feature hints (all optional):
-    - classifier_type: explicit classifier key (e.g. "person", "honorific").
-    - is_human: bool
-    - honorific: bool
-    """
-    classifiers = _get_config("classifiers", config, {}) or {}
-    if not classifiers:
-        return None
-
-    # 1. Explicit override
-    explicit = features.get("classifier_type")
-    if explicit and explicit in classifiers:
-        return classifiers[explicit]
-
-    # 2. Honorific human
-    if features.get("honorific") and "honorific" in classifiers:
-        return classifiers["honorific"]
-
-    # 3. Generic person
-    if features.get("is_human") and "person" in classifiers:
-        return classifiers["person"]
-
-    # 4. Default fallback
-    if "default" in classifiers:
-        return classifiers["default"]
-
-    # No classifier found
-    return None
-
-
-def realize_noun(
-    lemma: str,
-    features: Optional[Dict[str, Any]],
-    config: Dict[str, Any],
-) -> str:
-    """
-    Realize a noun phrase in an isolating language.
-
-    Args:
-        lemma:
-            Base form of the noun (e.g. "学生", "xuéshēng").
-        features:
-            Optional dictionary of features. Common keys:
-            - number: "sg" | "pl"
-            - definiteness: "indef" | "def" | "bare"
-            - is_human: bool
-            - honorific: bool
-            - classifier_type: explicit classifier key (e.g. "person")
-            - use_classifier: bool (override default classifier behavior)
-            - use_plural_particle: bool (override plural particle behavior)
-        config:
-            Language card config.
-
-    Returns:
-        A surface NP string (e.g. "一名学生", "学生们").
-    """
-    if features is None:
-        features = {}
-
-    lemma = lemma.strip()
-    if not lemma:
-        return ""
-
-    number = features.get("number", "sg")
-    definiteness = features.get("definiteness", "bare")
-
-    requires_classifier = bool(
-        _get_config("syntax.requires_classifier_in_predicate", config, False)
-    )
-    indefinite_article = _get_config("articles.indefinite", config, "")
-    plural_particle = _get_config("particles.plural", config, "")
-    possessive_particle = _get_config("particles.possession", config, "")
-
-    # Explicit overrides
-    use_classifier = features.get("use_classifier")
-    if use_classifier is None:
-        use_classifier = requires_classifier
-
-    use_plural_particle = features.get("use_plural_particle")
-    if use_plural_particle is None:
-        # default: only humans take plural particle in simple bios
-        use_plural_particle = bool(features.get("is_human", False)) and bool(
-            plural_particle
-        )
-
-    # Build NP step by step
-    parts: list[str] = []
-
-    # 1. Indefinite singular with classifier: "yī CL N"
-    if definiteness == "indef" and number == "sg" and use_classifier:
-        clf = _select_classifier(features, config)
-        if indefinite_article:
-            parts.append(indefinite_article)
-        if clf:
-            parts.append(clf)
-        parts.append(lemma)
-        return "".join(parts) if not _uses_spaces(config) else " ".join(parts)
-
-    # 2. Plural with particle: "N + men" (usually for humans)
-    if number == "pl" and use_plural_particle and plural_particle:
-        # e.g. 学生 + 们
-        phrase = lemma + plural_particle
-        return phrase
-
-    # 3. Bare noun (most analytic languages prefer bare NPs by default)
-    return lemma
-
-
-def realize_possessive(
-    owner_np: str,
-    possessed_np: str,
-    config: Dict[str, Any],
-    *,
-    omit_particle_when_close: bool = False,
-) -> str:
-    """
-    Realize a possessive construction: owner + POSSESSIVE_PARTICLE + possessed.
-
-    For Mandarin-like patterns: "玛丽 的 老师".
-
-    Args:
-        owner_np:
-            The possessor NP (already realized).
-        possessed_np:
-            The possessed NP (already realized).
-        config:
-            Language config.
-        omit_particle_when_close:
-            Some isolating languages omit the possessive particle in fixed
-            compounds; this flag allows the caller to request that behavior.
-    """
-    owner_np = owner_np.strip()
-    possessed_np = possessed_np.strip()
-
-    if not owner_np:
-        return possessed_np
-    if not possessed_np:
-        return owner_np
-
-    possession_particle = _get_config("particles.possession", config, "")
-
-    if omit_particle_when_close or not possession_particle:
-        # Simple juxtaposition
-        if _uses_spaces(config):
-            return f"{owner_np} {possessed_np}"
-        return owner_np + possessed_np
-
-    if _uses_spaces(config):
-        return f"{owner_np} {possession_particle} {possessed_np}"
-    return owner_np + possession_particle + possessed_np
-
-
-def realize_adjective_sequence(
-    adjectives: list[str],
-    noun_np: str,
-    config: Dict[str, Any],
-) -> str:
-    """
-    Combine adjectives and noun according to adjective order settings.
-
-    For many isolating languages:
-    - Pre-nominal adjectives: "ADJ ADJ N"
-    - Post-nominal adjectives: "N ADJ ADJ"
-
-    Args:
-        adjectives:
-            List of already-realized adjectives (strings).
-        noun_np:
-            Realized noun phrase.
-        config:
-            Language config.
-
-    Returns:
-        Full NP with adjectives.
-    """
-    adjectives = [a.strip() for a in adjectives if a.strip()]
-    noun_np = noun_np.strip()
-
-    if not adjectives:
-        return noun_np
-
-    order = _get_config("syntax.adjective_order", config, "pre")
-    parts: list[str]
-
-    if order == "post":
-        # N ADJ1 ADJ2
-        parts = [noun_np] + adjectives
-    else:
-        # default: ADJ1 ADJ2 N
-        parts = adjectives + [noun_np]
-
-    if _uses_spaces(config):
-        return " ".join(parts)
-    return "".join(parts)
-
-
-def _uses_spaces(config: Dict[str, Any]) -> bool:
-    """
-    Helper: whether the target language typically uses spaces between tokens.
-
-    Most Sinitic languages in this project are represented with no spaces,
-    but this flag allows reuse for other isolating languages that do.
-    """
-    # Default to False for Chinese-style scripts
-    return bool(_get_config("syntax.use_spaces", config, False))

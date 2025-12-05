@@ -212,10 +212,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--langs",
         type=str,
         default="fr,it,es,en",
-        help=(
-            "Comma-separated language codes to render. "
-            "Default: fr,it,es,en"
-        ),
+        help=("Comma-separated language codes to render. " "Default: fr,it,es,en"),
     )
     return parser
 

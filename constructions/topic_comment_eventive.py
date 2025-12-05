@@ -233,8 +233,12 @@ def realize_topic_comment_eventive(
     # 2. Build EVENT SUBJECT NP (or possibly drop it)
     # ---------------------------------------------------------------------
     # Decide on subject features, falling back to topic features if needed
-    subj_gender = slots.subject_gender if slots.subject_gender is not None else slots.topic_gender
-    subj_number = slots.subject_number if slots.subject_number is not None else slots.topic_number
+    subj_gender = (
+        slots.subject_gender if slots.subject_gender is not None else slots.topic_gender
+    )
+    subj_number = (
+        slots.subject_number if slots.subject_number is not None else slots.topic_number
+    )
 
     subject_features: Dict[str, Any] = {
         "role": "subject",
@@ -252,7 +256,7 @@ def realize_topic_comment_eventive(
         subject_corefers_topic = True
     else:
         subject_lemma = slots.event_subject_name
-        subject_corefers_topic = (slots.event_subject_name == slots.topic_name)
+        subject_corefers_topic = slots.event_subject_name == slots.topic_name
 
     # Should we drop the event subject?
     drop_subj = bool(lang_profile.get("drop_event_subject_if_same_as_topic", False))

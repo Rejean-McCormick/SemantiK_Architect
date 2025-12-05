@@ -8,7 +8,7 @@
   "syntax": {
     "noun_gender_agreement": true,
     "adjective_gender_agreement": false,
-    "punctuation": "।"
+    "punctuation": "?"
   },
   "morphology": {
     "suffixes": [

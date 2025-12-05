@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "ta",
+    "family": "dravidian"
+  },
+  "name": "Tamil",
+  "syntax": {
+    "copula_type": "suffix",
+    "inflect_adjectives": true,
+    "punctuation": "."
+  },
+  "morphology": {
+    "gender_suffixes": [
+      { "ends_with": "karan", "replace_with": "kari" },
+      { "ends_with": "an", "replace_with": "i" }
+    ],
+    "irregulars": {
+      "raja": "rani",
+      "thozhan": "thozhi",
+      "magan": "magal"
+    },
+    "default_fem_suffix": "i",
+    "predicative_suffixes": {
+      "male": "aan",
+      "female": "aal",
+      "neutral": "athu"
+    }
+  },
+  "phonetics": {
+    "buffer_char": "v"
+  },
+  "verbs": {
+    "copula": {
+      "default": "aagum"
+    }
+  },
+  "structure": "{name} {nationality} {profession}{copula_suffix}."
+}

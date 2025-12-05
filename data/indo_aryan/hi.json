@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "hi",
+    "family": "indo_aryan"
+  },
+  "name": "Hindi",
+  "syntax": {
+    "noun_gender_agreement": true,
+    "adjective_gender_agreement": true,
+    "punctuation": "?"
+  },
+  "morphology": {
+    "suffixes": [
+      { "ends_with": "aa", "replace_with": "ii" },
+      { "ends_with": "a", "replace_with": "i" }
+    ],
+    "irregulars": {
+      "pita": "mata",
+      "raja": "rani",
+      "beta": "beti",
+      "ladka": "ladki",
+      "kavi": "kaviyitri",
+      "vidwan": "vidushi"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "zero_copula_in_present": false,
+      "default": "hai",
+      "present": "hai",
+      "formal": "hain",
+      "past_male": "tha",
+      "past_female": "thi",
+      "past_plural": "the"
+    }
+  },
+  "structure": "{name} {nationality} {profession} {copula}."
+}

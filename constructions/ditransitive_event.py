@@ -81,14 +81,18 @@ class MorphAPI(Protocol):
     Minimal protocol expected from the morphology layer.
     """
 
-    def realize_np(self, np_spec: Dict[str, Any], role: str, lang_profile: Dict[str, Any]) -> str:
-        ...
+    def realize_np(
+        self, np_spec: Dict[str, Any], role: str, lang_profile: Dict[str, Any]
+    ) -> str: ...
 
-    def realize_verb(self, verb_spec: Dict[str, Any], lang_profile: Dict[str, Any]) -> str:
-        ...
+    def realize_verb(
+        self, verb_spec: Dict[str, Any], lang_profile: Dict[str, Any]
+    ) -> str: ...
 
 
-def _merge_verb_features(verb_spec: Dict[str, Any], sem: Dict[str, Any]) -> Dict[str, Any]:
+def _merge_verb_features(
+    verb_spec: Dict[str, Any], sem: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Merge tense/aspect/mood/negation from `sem` into the verb spec.
     """
@@ -104,7 +108,9 @@ def _merge_verb_features(verb_spec: Dict[str, Any], sem: Dict[str, Any]) -> Dict
     return spec
 
 
-def _prepare_np_spec(np_sem: Optional[Dict[str, Any]], case: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def _prepare_np_spec(
+    np_sem: Optional[Dict[str, Any]], case: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
     """
     Prepare an NP spec for the morphology API, optionally adding a case feature.
     """
@@ -218,16 +224,22 @@ class DitransitiveEventConstruction:
             recip_spec = _prepare_np_spec(recip_sem, case=None)
 
         # 5. Realize subject NP and verb.
-        subject_form = morph_api.realize_np(agent_sem, role="agent", lang_profile=lang_profile)
+        subject_form = morph_api.realize_np(
+            agent_sem, role="agent", lang_profile=lang_profile
+        )
         verb_form = morph_api.realize_verb(verb_spec, lang_profile=lang_profile)
 
         # 6. Realize theme NP.
         if theme_spec:
-            theme_form = morph_api.realize_np(theme_spec, role="theme", lang_profile=lang_profile)
+            theme_form = morph_api.realize_np(
+                theme_spec, role="theme", lang_profile=lang_profile
+            )
 
         # 7. Realize recipient NP according to strategy.
         if recip_spec:
-            recip_np_form = morph_api.realize_np(recip_spec, role="recipient", lang_profile=lang_profile)
+            recip_np_form = morph_api.realize_np(
+                recip_spec, role="recipient", lang_profile=lang_profile
+            )
             if strategy == "prepositional_to":
                 # Add adposition before recipient NP.
                 recip_form = f"{recipient_adp} {recip_np_form}"

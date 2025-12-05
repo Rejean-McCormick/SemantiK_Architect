@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "ro",
+    "family": "romance"
+  },
+  "name": "Romanian",
+  "articles": {
+    "m": {
+      "default": "un"
+    },
+    "f": {
+      "default": "o"
+    }
+  },
+  "morphology": {
+    "suffixes": [
+      { "ends_with": "tor", "replace_with": "toare" },
+      { "ends_with": "or", "replace_with": "oare" },
+      { "ends_with": "u", "replace_with": "a" },
+      { "ends_with": "an", "replace_with": "ană" },
+      { "ends_with": "ez", "replace_with": "eză" },
+      { "ends_with": "us", "replace_with": "usă" }
+    ],
+    "irregulars": {}
+  },
+  "phonetics": {
+    "elision": false
+  },
+  "structure": "{name} este {article}{sep}{profession} {nationality}."
+}

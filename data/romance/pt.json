@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "pt",
+    "family": "romance"
+  },
+  "name": "Portuguese",
+  "articles": {
+    "m": {
+      "default": "um"
+    },
+    "f": {
+      "default": "uma"
+    }
+  },
+  "morphology": {
+    "suffixes": [
+      { "ends_with": "or", "replace_with": "ora" },
+      { "ends_with": "ês", "replace_with": "esa" },
+      { "ends_with": "o", "replace_with": "a" },
+      { "ends_with": "ão", "replace_with": "oa" },
+      { "ends_with": "ol", "replace_with": "ola" }
+    ],
+    "irregulars": {
+      "europeu": "europeia",
+      "judeu": "judia",
+      "réu": "ré",
+      "barão": "baronesa",
+      "ator": "atriz",
+      "alemão": "alemã"
+    }
+  },
+  "phonetics": {
+    "elision": false
+  },
+  "structure": "{name} é {article}{sep}{profession} {nationality}."
+}

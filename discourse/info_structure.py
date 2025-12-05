@@ -159,7 +159,9 @@ def infer_bio_info_structure(
     if is_first_sentence:
         base = default_bio_first_sentence_info(main_predicate_role=main_predicate_role)
     else:
-        base = default_bio_followup_sentence_info(main_predicate_role=main_predicate_role)
+        base = default_bio_followup_sentence_info(
+            main_predicate_role=main_predicate_role
+        )
 
     return apply_override(base, user_override)
 
