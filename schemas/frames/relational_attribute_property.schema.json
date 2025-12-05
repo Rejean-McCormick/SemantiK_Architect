@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Relational attribute / property",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier.",
+      "enum": [
+        "relational_attribute_property",
+        "relation.attribute"
+      ]
+    },
+
+    "subject": {
+      "type": "object",
+      "description": "Entity that bears the attribute or property. Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "attribute_lemma": {
+      "type": ["string", "null"],
+      "description": "Lemma-level label for the attribute, e.g. 'democratic', 'bilingual', 'red', 'religious', 'endangered'."
+    },
+
+    "attribute_kind": {
+      "type": ["string", "null"],
+      "description": "Optional high-level category of the attribute, e.g. 'political_system', 'colour', 'language_capability', 'conservation_status'."
+    },
+
+    "value": {
+      "description": "Value of the property, if the attribute is not purely adjectival. May be scalar, categorical, or structured.",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "integer" },
+        { "type": "boolean" },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": true
+        },
+        { "type": "null" }
+      ]
+    },
+
+    "value_unit": {
+      "type": ["string", "null"],
+      "description": "Optional unit for numeric values, e.g. 'km', 'm', 'kg', '%', 'inhabitants_per_km2'."
+    },
+
+    "value_interpretation": {
+      "type": ["string", "null"],
+      "description": "Optional semantic interpretation of the value, e.g. 'index_score', 'ordinal_rank', 'share_of_population'."
+    },
+
+    "polarity": {
+      "type": ["string", "null"],
+      "description": "Polarity of the attribute, if relevant. Typical values: 'positive' (has attribute), 'negative' (explicitly does not have attribute), 'unknown'."
+    },
+
+    "certainty": {
+      "description": "Optional certainty / confidence for the attribution. Either a numeric score in [0,1] or a coarse label like 'certain', 'uncertain', 'disputed'.",
+      "oneOf": [
+        {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+
+    "scope": {
+      "type": ["string", "null"],
+      "description": "Optional scope or domain in which the attribute holds, e.g. 'national', 'regional', 'within_EU', 'in_domestic_competitions'."
+    },
+
+    "time_span": {
+      "type": ["object", "null"],
+      "description": "Time span during which the attribute is valid or observed. Shape follows semantics.types.TimeSpan.",
+      "additionalProperties": true
+    },
+
+    "time_point": {
+      "type": ["object", "null"],
+      "description": "Alternative representation when a single point in time (e.g. census year) is more appropriate than a span.",
+      "additionalProperties": true
+    },
+
+    "source_entities": {
+      "type": "array",
+      "description": "Entities (organizations, authors, datasets) that assert or support this attribute, where attribution is important.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "source_kind": {
+      "type": ["string", "null"],
+      "description": "Coarse type of source, such as 'official_statistics', 'scientific_study', 'news_report', 'internal_dataset'."
+    },
+
+    "qualifiers": {
+      "type": "array",
+      "description": "Free-form list of language-neutral qualifiers, caveats, or conditions, e.g. 'as_of_2020', 'according_to_un', 'in_men_only'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for additional structured information not yet promoted to first-class fields (e.g. coding scheme identifiers, transformation flags).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Reserved for pipeline- or source-specific metadata that should not affect generation but may be useful for debugging or analysis.",
+      "additionalProperties": true
+    },
+
+    "property": {
+      "type": ["string", "null"],
+      "description": "Legacy field: property label. Prefer 'attribute_lemma' and 'attribute_kind' for new data."
+    },
+
+    "value_str": {
+      "type": ["string", "null"],
+      "description": "Legacy field: string representation of the value. Prefer 'value' with appropriate type."
+    },
+
+    "time": {
+      "type": ["object", "null"],
+      "description": "Legacy field: generic time structure. Prefer 'time_span' or 'time_point'.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "subject"
+  ]
+}

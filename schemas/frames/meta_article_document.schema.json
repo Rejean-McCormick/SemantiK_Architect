@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Article / document meta frame",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier for article/document meta frames.",
+      "const": "article"
+    },
+
+    "subject": {
+      "type": ["object", "null"],
+      "description": "Optional main subject entity for the article, if there is a single clear topic (person, city, organization, etc.). Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "title": {
+      "type": ["string", "null"],
+      "description": "Canonical article title in the source project (e.g. the page title on Wikipedia)."
+    },
+
+    "language": {
+      "type": ["string", "null"],
+      "description": "Language code of the article, typically ISO 639-1 (e.g. 'en', 'fr', 'sw')."
+    },
+
+    "project": {
+      "type": ["string", "null"],
+      "description": "Optional project identifier, e.g. 'wikipedia', 'wikivoyage', or another downstream consumer label."
+    },
+
+    "page_id": {
+      "type": ["string", "null"],
+      "description": "Optional page identifier in the source system (e.g. MediaWiki page id)."
+    },
+
+    "revision_id": {
+      "type": ["string", "null"],
+      "description": "Optional revision identifier in the source system, if available."
+    },
+
+    "sections": {
+      "type": "array",
+      "description": "Ordered list of section-level meta frames describing the structure and scoped content of the article.",
+      "items": {
+        "$ref": "meta_section_summary.schema.json#"
+      }
+    },
+
+    "sources": {
+      "type": "array",
+      "description": "List of source/citation meta frames used anywhere in the article-level semantics.",
+      "items": {
+        "$ref": "meta_source_citation.schema.json#"
+      }
+    },
+
+    "source_index": {
+      "type": "object",
+      "description": "Optional mapping from source ids to source frames, for fast lookup. Keys are source_id strings; values are SourceCitationFrame objects.",
+      "additionalProperties": {
+        "$ref": "meta_source_citation.schema.json#"
+      }
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary metadata bag for anything else that should travel with the article document frame but does not have a dedicated field (provenance, debug info, raw source snippets, etc.). Values should be JSON-serializable.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type"
+  ]
+}

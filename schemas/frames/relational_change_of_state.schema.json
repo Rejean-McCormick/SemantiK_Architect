@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abstract-wiki.org/schemas/frames/relational_change_of_state.schema.json",
+  "title": "Relational change-of-state frame",
+  "description": "Schema for a change-of-state relational frame capturing transitions such as becoming, being renamed, abolished, merged, etc.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "relational.change_of_state",
+      "description": "Canonical frame type discriminator for change-of-state frames."
+    },
+    "id": {
+      "type": "string",
+      "description": "Optional stable identifier for this frame instance (e.g. local ID or QID-like key)."
+    },
+    "subject": {
+      "$ref": "#/definitions/entityRef",
+      "description": "Entity whose state is changing."
+    },
+    "old_state": {
+      "type": ["string", "null"],
+      "description": "Previous state, status, label, or classification of the subject (e.g. 'independent kingdom', 'provisional government', 'candidate city')."
+    },
+    "new_state": {
+      "type": ["string", "null"],
+      "description": "New state, status, label, or classification of the subject after the change (e.g. 'province of X', 'abolished municipality', 'capital city')."
+    },
+    "change_type": {
+      "type": "string",
+      "description": "Coarse-grained type of change. Recommended values include: 'become', 'abolish', 'rename', 'merge', 'split', 'convert', 'status_change', 'other'.",
+      "enum": [
+        "become",
+        "abolish",
+        "rename",
+        "merge",
+        "split",
+        "convert",
+        "status_change",
+        "other"
+      ]
+    },
+    "trigger_event": {
+      "$ref": "#/definitions/eventRef",
+      "description": "Optional explicit event frame or reference that instantiates or causes the change (e.g. a law, reform, battle, referendum)."
+    },
+    "trigger_description": {
+      "type": ["string", "null"],
+      "description": "Free-text description of the triggering circumstances when no dedicated event frame is available (e.g. 'following the 1995 constitutional reform')."
+    },
+    "time": {
+      "$ref": "#/definitions/timeSpan",
+      "description": "Coarse time span during which the change occurred or took effect."
+    },
+    "certainty": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 1.0,
+      "description": "Optional confidence value for this change-of-state fact, between 0 and 1."
+    },
+    "source_id": {
+      "type": ["string", "null"],
+      "description": "Optional upstream source or citation key used to derive this frame (e.g. a reference ID or dataset key)."
+    },
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary additional data that does not yet have a dedicated field.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "subject",
+    "change_type"
+  ],
+  "definitions": {
+    "entityRef": {
+      "description": "Reference to the subject entity, either by ID or inline object.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Identifier of the entity in the upstream knowledge base (e.g. QID)."
+        },
+        {
+          "type": "object",
+          "description": "Inline minimal entity representation.",
+          "additionalProperties": true,
+          "properties": {
+            "id": {
+              "type": ["string", "null"],
+              "description": "Optional stable identifier of the entity."
+            },
+            "name": {
+              "type": "string",
+              "description": "Canonical label or name of the entity in some language."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "eventRef": {
+      "description": "Reference to a triggering event, either by ID or inline object.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Identifier of the event in the upstream knowledge base."
+        },
+        {
+          "type": "object",
+          "description": "Inline minimal event representation.",
+          "additionalProperties": true,
+          "properties": {
+            "id": {
+              "type": ["string", "null"],
+              "description": "Optional stable identifier of the event."
+            },
+            "label": {
+              "type": "string",
+              "description": "Human-readable label or name of the event."
+            },
+            "event_type": {
+              "type": ["string", "null"],
+              "description": "Optional coarse event type (e.g. 'law', 'reform', 'battle', 'treaty')."
+            }
+          },
+          "required": [
+            "label"
+          ]
+        }
+      ]
+    },
+    "timeSpan": {
+      "type": "object",
+      "description": "Coarse time span representation for the change-of-state.",
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": ["string", "null"],
+          "description": "Start of the period in ISO-8601-like format or a year string (e.g. '1990-01-01', '1990')."
+        },
+        "end": {
+          "type": ["string", "null"],
+          "description": "End of the period in ISO-8601-like format or a year string."
+        },
+        "point": {
+          "type": ["string", "null"],
+          "description": "Instantaneous date/time if the change is effectively punctual (e.g. '1995-07-01')."
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "If true, indicates that the dates are approximate."
+        }
+      }
+    }
+  }
+}

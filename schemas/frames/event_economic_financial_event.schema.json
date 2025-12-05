@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/frames/event_economic_financial_event.schema.json",
+  "title": "Abstract Wiki Architect – Economic / Financial Event Frame",
+  "description": "JSON schema for the economic / financial event frame (`event.economic`), representing crises, bubbles, crashes, mergers, IPOs, bailouts, and sanctions episodes with economic- and finance-specific structure.",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "event.economic",
+      "description": "Canonical frame type for this frame family. Must be \"event.economic\"."
+    },
+
+    "id": {
+      "type": "string",
+      "description": "Stable identifier for the event, if available (e.g. Wikidata QID, local ID)."
+    },
+
+    "event_type": {
+      "type": "string",
+      "description": "High-level label for the economic / financial event (e.g. \"financial_crisis\", \"stock_market_crash\", \"merger\", \"acquisition\", \"ipo\", \"bailout\", \"sanctions_episode\")."
+    },
+
+    "label": {
+      "type": "string",
+      "description": "Optional human-readable label for the event (e.g. \"2008 global financial crisis\", \"Acme–Globex merger\")."
+    },
+
+    "participants": {
+      "type": "object",
+      "description": "Mapping from role label to an Entity-shaped object. Typical roles include \"subject\", \"affected_economy\", \"regulator\", \"acquirer\", \"target\", \"sender\", \"target_of_sanctions\".",
+      "additionalProperties": {
+        "$ref": "#/definitions/Entity"
+      }
+    },
+
+    "time": {
+      "description": "Optional time span describing when the event occurred (or unfolded, for multi-year crises).",
+      "$ref": "#/definitions/TimeSpan"
+    },
+
+    "location": {
+      "description": "Optional primary location or region where the event took place or was centred.",
+      "$ref": "#/definitions/Location"
+    },
+
+    "properties": {
+      "type": "object",
+      "description": "Arbitrary additional semantic properties for the event, such as macro indicators or deal parameters (e.g. {\"gdp_change_pct\": -3.2, \"index_drop_pct\": 7.5}).",
+      "additionalProperties": true
+    },
+
+    "subject_entities": {
+      "type": "array",
+      "description": "High-level entities the event is primarily about in an encyclopedic sense (e.g. countries, companies, markets). Often overlaps with roles in `participants`.",
+      "items": {
+        "$ref": "#/definitions/Entity"
+      }
+    },
+
+    "affected_economies": {
+      "type": "array",
+      "description": "List of economies, states, or regions whose macroeconomic indicators are significantly impacted by the event.",
+      "items": {
+        "$ref": "#/definitions/Entity"
+      }
+    },
+
+    "regulators": {
+      "type": "array",
+      "description": "Regulatory bodies, central banks, or supranational institutions involved (e.g. \"Federal Reserve\", \"European Central Bank\").",
+      "items": {
+        "$ref": "#/definitions/Entity"
+      }
+    },
+
+    "counterparties": {
+      "type": "array",
+      "description": "Additional entities acting as explicit counterparties in deals, bailouts, or sanctions (e.g. acquirer/target companies, sender/target of sanctions).",
+      "items": {
+        "$ref": "#/definitions/Entity"
+      }
+    },
+
+    "market_or_sector_labels": {
+      "type": "array",
+      "description": "Neutral labels for the primary markets or sectors involved (e.g. [\"banking\", \"housing\", \"sovereign_debt\", \"equity_markets\"]).",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "headline_amount": {
+      "type": "number",
+      "description": "Single headline monetary amount associated with the event, such as deal value, bailout size, or asset write-down (in raw units of `headline_currency`)."
+    },
+
+    "headline_currency": {
+      "type": "string",
+      "description": "Currency code or label corresponding to `headline_amount` (e.g. \"USD\", \"EUR\")."
+    },
+
+    "headline_amount_year": {
+      "type": "integer",
+      "description": "Reference year for `headline_amount` (e.g. deal year or bailout announcement year)."
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Frame-specific attribute map for additional structured economic indicators that do not justify dedicated top-level fields (e.g. `index_drop_pct`, `unemployment_peak_pct`, `debt_to_gdp_ratio`).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Opaque metadata from upstream sources (original JSON, provenance, IDs); not interpreted by the core NLG pipeline.",
+      "additionalProperties": true
+    }
+  },
+
+  "required": ["frame_type"],
+
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "description": "Core discourse entity, matching semantics.types.Entity.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the entity, if any (e.g. Wikidata QID or local ID)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Preferred surface name for the entity."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Coarse gender label where relevant (e.g. \"male\", \"female\", \"nonbinary\")."
+        },
+        "human": {
+          "type": "boolean",
+          "description": "True if the entity is a human person."
+        },
+        "entity_type": {
+          "type": "string",
+          "description": "Coarse type label for the entity (e.g. \"person\", \"organization\", \"country\", \"market\")."
+        },
+        "lemmas": {
+          "type": "array",
+          "description": "List of lemma-like keys associated with the entity, for lexicon lookup.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature map for language-independent attributes (e.g. grammatical gender, number, animacy).",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Opaque metadata for original source representation, IDs, etc.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "Location": {
+      "type": "object",
+      "description": "Location entity, matching semantics.types.Location (cities, regions, markets, venues, etc.).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the location, if any."
+        },
+        "name": {
+          "type": "string",
+          "description": "Preferred surface name of the location."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Coarse kind of location (e.g. \"city\", \"region\", \"country\", \"market\")."
+        },
+        "country_code": {
+          "type": "string",
+          "description": "Optional ISO 3166-1 alpha-2 country code, where applicable."
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature map for location attributes.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Opaque metadata for original source representation, IDs, etc.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "TimeSpan": {
+      "type": "object",
+      "description": "Coarse-grained time interval, matching semantics.types.TimeSpan.",
+      "properties": {
+        "start_year": {
+          "type": "integer",
+          "description": "Start year of the interval, if known."
+        },
+        "end_year": {
+          "type": "integer",
+          "description": "End year of the interval, if known."
+        },
+        "start_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Start month (1–12), if known."
+        },
+        "start_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Start day of month (1–31), if known."
+        },
+        "end_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "End month (1–12), if known."
+        },
+        "end_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "End day of month (1–31), if known."
+        },
+        "approximate": {
+          "type": "boolean",
+          "description": "True if the dates are approximate or inferred."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Opaque metadata for original time expressions or source-specific details.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

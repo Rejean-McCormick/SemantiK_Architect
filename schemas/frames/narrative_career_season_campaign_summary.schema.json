@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Career / season / campaign summary",
+  "description": "Aggregate / narrative frame summarising a subject's career, sports season, or political campaign as a sequence of phases with headline metrics.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "enum": ["aggregate.career_summary"],
+      "description": "Stable frame type identifier. Must be 'aggregate.career_summary' for this schema."
+    },
+    "subject_id": {
+      "type": ["string", "null"],
+      "description": "Stable identifier for the subject whose career/season/campaign is being summarised (e.g. an entity or team ID)."
+    },
+    "domain": {
+      "type": ["string", "null"],
+      "description": "Optional domain label such as 'sports', 'politics', 'music', 'academia', etc."
+    },
+    "span": {
+      "description": "Overall temporal span covered by the career/season/campaign summary.",
+      "$ref": "#/definitions/TimeSpan"
+    },
+    "phases": {
+      "type": "array",
+      "description": "Ordered list of named phases within the career/season/campaign.",
+      "items": {
+        "$ref": "#/definitions/CareerPhase"
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Top-level aggregated metrics for the whole career/season/campaign (e.g. total_matches, total_goals, seats_won).",
+      "additionalProperties": true
+    },
+    "headline": {
+      "type": ["string", "null"],
+      "description": "Optional precomputed headline / one-line summary capturing the main outcome of the career/season/campaign."
+    },
+    "extra": {
+      "type": "object",
+      "description": "Free-form extra metadata not covered by the structured fields.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["frame_type"],
+  "definitions": {
+    "TimeSpan": {
+      "type": "object",
+      "description": "Loose representation of a temporal span, typically in years and optionally months/days, with an approximate flag.",
+      "additionalProperties": false,
+      "properties": {
+        "start_year": {
+          "type": ["integer", "null"],
+          "description": "Start year of the span (inclusive), if known."
+        },
+        "end_year": {
+          "type": ["integer", "null"],
+          "description": "End year of the span (inclusive), if known."
+        },
+        "start_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Start month (1–12), if known."
+        },
+        "start_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Start day of month (1–31), if known."
+        },
+        "end_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12,
+          "description": "End month (1–12), if known."
+        },
+        "end_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31,
+          "description": "End day of month (1–31), if known."
+        },
+        "approximate": {
+          "type": "boolean",
+          "description": "If true, the span is approximate (e.g. inferred or rounded)."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form extra metadata about the span.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "Event": {
+      "type": "object",
+      "description": "Loosely-typed event object. In practice this will typically be an event frame or a reference to one.",
+      "additionalProperties": true
+    },
+    "CareerPhase": {
+      "type": "object",
+      "description": "One coherent phase of a career, season, or campaign with its own time span, key events, and metrics.",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Human-readable label for the phase (e.g. 'Early career', 'Prime years', '2019–20 season')."
+        },
+        "span": {
+          "description": "Temporal span for this phase.",
+          "$ref": "#/definitions/TimeSpan"
+        },
+        "key_events": {
+          "type": "array",
+          "description": "Optional list of key events associated with this phase (e.g. transfers, elections, championships).",
+          "items": {
+            "$ref": "#/definitions/Event"
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "description": "Phase-level metrics (e.g. matches, goals, awards, seats, publications).",
+          "additionalProperties": true
+        }
+      },
+      "required": ["label"]
+    }
+  }
+}

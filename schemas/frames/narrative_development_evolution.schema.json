@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Development / evolution narrative",
+  "description": "Schema for the DevelopmentEvolutionFrame aggregate narrative, representing how an entity develops or evolves over time.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "aggregate.development",
+      "description": "Canonical frame type identifier for DevelopmentEvolutionFrame."
+    },
+    "subject": {
+      "$ref": "#/definitions/EntityRef"
+    },
+    "overall_time_span": {
+      "$ref": "#/definitions/TimeSpan"
+    },
+    "stages": {
+      "type": "array",
+      "description": "Ordered list of development / evolution stages.",
+      "items": {
+        "$ref": "#/definitions/DevelopmentStage"
+      }
+    },
+    "key_transitions": {
+      "type": "array",
+      "description": "Optional list of key events or transitions that connect stages.",
+      "items": {
+        "$ref": "#/definitions/EventRef"
+      }
+    },
+    "global_drivers": {
+      "type": "array",
+      "description": "High-level drivers or causes that influence the subject's development across stages (e.g. 'industrialization', 'climate change').",
+      "items": {
+        "type": "string"
+      }
+    },
+    "global_outcomes": {
+      "type": "array",
+      "description": "High-level outcomes, impacts, or end states resulting from the development (e.g. 'rapid urbanization', 'decline of heavy industry').",
+      "items": {
+        "type": "string"
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Optional ad-hoc attributes or scalar/structured properties attached to the overall development narrative.",
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Opaque metadata, such as source-system payloads, IDs, or debugging information.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["frame_type", "stages"],
+  "definitions": {
+    "EntityRef": {
+      "type": "object",
+      "description": "Lightweight reference to an entity (person, place, organization, etc.).",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": ["string", "integer", "null"],
+          "description": "Local or global identifier for the entity (e.g. QID, database ID)."
+        },
+        "name": {
+          "type": ["string", "null"],
+          "description": "Canonical label or name for the entity."
+        },
+        "type": {
+          "type": ["string", "null"],
+          "description": "Optional high-level type label (e.g. 'city', 'company', 'person')."
+        },
+        "qid": {
+          "type": ["string", "null"],
+          "description": "Optional Wikidata QID or similar external identifier."
+        }
+      }
+    },
+    "EventRef": {
+      "type": "object",
+      "description": "Reference to an event or episode relevant to the development stages.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": ["string", "integer", "null"],
+          "description": "Local or global identifier for the event."
+        },
+        "label": {
+          "type": ["string", "null"],
+          "description": "Short human-readable label or name for the event."
+        },
+        "event_type": {
+          "type": ["string", "null"],
+          "description": "Optional normalized type label for the event (e.g. 'law-passed', 'merger', 'disaster')."
+        }
+      }
+    },
+    "TimeSpan": {
+      "type": "object",
+      "description": "Loose representation of a temporal span (possibly partial or approximate).",
+      "additionalProperties": true,
+      "properties": {
+        "start_year": {
+          "type": ["integer", "null"]
+        },
+        "end_year": {
+          "type": ["integer", "null"]
+        },
+        "start_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "start_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "end_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "end_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "If true, the span is approximate (e.g. circa dates, inferred ranges)."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Optional metadata attached to the time span.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "DevelopmentStage": {
+      "type": "object",
+      "description": "Single coherent stage in the subject's development or evolution.",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Short name for the stage (e.g. 'Industrialization', 'Post-war expansion')."
+        },
+        "time_span": {
+          "$ref": "#/definitions/TimeSpan"
+        },
+        "summary": {
+          "type": ["string", "null"],
+          "description": "One- or few-sentence natural-language summary of what characterizes this stage."
+        },
+        "key_events": {
+          "type": "array",
+          "description": "Key events that define or punctuate this stage.",
+          "items": {
+            "$ref": "#/definitions/EventRef"
+          }
+        },
+        "drivers": {
+          "type": "array",
+          "description": "Main drivers or influences specific to this stage (e.g. 'railway construction', 'EU accession talks').",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["label"]
+    }
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.abstractwiki.org/frames/relational_communication_statement.schema.json",
+  "title": "Relational communication / statement frame",
+  "description": "Relational / statement-level frame for attributed communications such as reports, statements, and quotations (e.g. \"According to X, Y\", \"X said that …\").",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "description": "Stable discriminator for this relational family. When provided, it SHOULD be \"rel.communication-statement\".",
+      "type": "string",
+      "enum": [
+        "rel.communication-statement"
+      ]
+    },
+    "id": {
+      "description": "Optional stable identifier for this communication fact (for cross-references, provenance, etc.).",
+      "type": "string"
+    },
+    "source": {
+      "description": "Speaker / author / authority providing the statement (e.g. a person, organization, or group). May be given as an identifier, name string, or small inline entity object.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Identifier or label for the source entity."
+        },
+        {
+          "type": "object",
+          "description": "Inline entity-like object for the source.",
+          "additionalProperties": true,
+          "properties": {
+            "id": {
+              "description": "Canonical identifier for the source entity.",
+              "type": "string"
+            },
+            "name": {
+              "description": "Human-readable name for the source entity.",
+              "type": "string"
+            },
+            "kind": {
+              "description": "Optional coarse type label for the source (e.g. \"person\", \"organization\", \"publication\").",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "content": {
+      "description": "Propositional content that is being attributed to the source. Typically another frame encoded as JSON, or a small structured object; may also be a simple scalar or list.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "comm_type": {
+      "description": "High-level type of communication (e.g. \"statement\", \"report\", \"claim\", \"estimate\").",
+      "type": "string",
+      "default": "statement"
+    },
+    "medium": {
+      "description": "Medium or channel of communication (e.g. \"book\", \"interview\", \"press_release\", \"report\").",
+      "type": "string"
+    },
+    "audience": {
+      "description": "Intended audience or target of the communication, if relevant (e.g. \"parliament\", \"public\"). Same encoding conventions as `source`.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Identifier or label for the audience entity."
+        },
+        {
+          "type": "object",
+          "description": "Inline entity-like object for the audience.",
+          "additionalProperties": true,
+          "properties": {
+            "id": {
+              "description": "Canonical identifier for the audience entity.",
+              "type": "string"
+            },
+            "name": {
+              "description": "Human-readable name for the audience entity.",
+              "type": "string"
+            },
+            "kind": {
+              "description": "Optional coarse type label for the audience (e.g. \"institution\", \"public\").",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "time": {
+      "description": "When the communication took place, as a coarse date or time span.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Free-text or ISO-like date representation."
+        },
+        {
+          "type": "object",
+          "description": "Structured time span object.",
+          "additionalProperties": true,
+          "properties": {
+            "start_year": {
+              "description": "Start year of the time span.",
+              "type": "integer"
+            },
+            "end_year": {
+              "description": "End year of the time span (inclusive or exclusive depending on project convention).",
+              "type": "integer"
+            },
+            "point_in_time": {
+              "description": "Single date or timestamp (e.g. ISO 8601 string).",
+              "type": "string"
+            },
+            "text": {
+              "description": "Human-readable description of the time span (e.g. \"late 19th century\").",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "quoted_text": {
+      "description": "Optional direct-quote surface if the wording should be preserved (e.g. for quotation-style realizations).",
+      "type": "string"
+    },
+    "certainty": {
+      "description": "Confidence that the attribution (that the source said the content) is correct. 0.0 = completely uncertain, 1.0 = maximal confidence.",
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 1.0
+    },
+    "source_id": {
+      "description": "Optional provenance handle for the fact that \"source communicated content\" (e.g. citation key, statement ID).",
+      "type": "string"
+    },
+    "extra": {
+      "description": "Open-ended metadata map for caller-specific fields that are not interpreted generically by the NLG pipeline.",
+      "type": "object",
+      "additionalProperties": true,
+      "default": {}
+    }
+  },
+  "required": [
+    "source",
+    "content"
+  ]
+}

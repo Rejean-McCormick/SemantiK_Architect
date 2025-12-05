@@ -1,0 +1,184 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abstractwiki.org/schemas/frames/entity_geopolitical_entity.schema.json",
+  "title": "Geopolitical Entity Frame",
+  "description": "Frame JSON for geopolitical entities such as countries, regions, cities, municipalities and similar administrative units.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "frame_type",
+    "name"
+  ],
+  "properties": {
+    "frame_type": {
+      "description": "Frame family identifier for a geopolitical entity.",
+      "type": "string",
+      "const": "entity_geopolitical_entity"
+    },
+    "id": {
+      "description": "Optional stable identifier for the entity (e.g. Wikidata QID).",
+      "type": "string"
+    },
+    "name": {
+      "description": "Primary name of the geopolitical entity in the target language.",
+      "type": "string",
+      "minLength": 1
+    },
+    "native_name": {
+      "description": "Name of the entity in its primary local / official language, if different from `name`.",
+      "type": "string"
+    },
+    "short_name": {
+      "description": "Short or common name used in informal or abbreviated contexts.",
+      "type": "string"
+    },
+    "kind": {
+      "description": "High-level kind of geopolitical entity.",
+      "type": "string",
+      "enum": [
+        "country",
+        "sovereign_state",
+        "constituent_country",
+        "territory",
+        "dependency",
+        "province",
+        "state",
+        "region",
+        "county",
+        "district",
+        "municipality",
+        "city",
+        "town",
+        "village",
+        "metropolitan_area",
+        "union",
+        "supranational",
+        "other"
+      ]
+    },
+    "parent_entity_name": {
+      "description": "Name of the higher-level entity that this entity is part of (e.g. country for a city, state for a district).",
+      "type": "string"
+    },
+    "capital_name": {
+      "description": "Name of the capital city or administrative centre, if applicable.",
+      "type": "string"
+    },
+    "seat_name": {
+      "description": "Name of the administrative seat if different from capital_name.",
+      "type": "string"
+    },
+    "iso_codes": {
+      "description": "ISO or similar codes associated with this entity.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "iso_3166_1_alpha2": {
+          "description": "Two-letter ISO 3166-1 alpha-2 country code.",
+          "type": "string"
+        },
+        "iso_3166_1_alpha3": {
+          "description": "Three-letter ISO 3166-1 alpha-3 country code.",
+          "type": "string"
+        },
+        "iso_3166_1_numeric": {
+          "description": "Numeric ISO 3166-1 code.",
+          "type": "string"
+        },
+        "iso_3166_2": {
+          "description": "ISO 3166-2 subdivision code (for regions, states, provinces, etc.).",
+          "type": "string"
+        },
+        "fips": {
+          "description": "Legacy FIPS or other regional code, if used.",
+          "type": "string"
+        }
+      }
+    },
+    "continent_lemmas": {
+      "description": "Lemma-like labels for the continent(s) the entity belongs to.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "region_lemmas": {
+      "description": "Lemma-like labels for supra-national or sub-continental regions (e.g. \"europe\", \"middle_east\").",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "country_lemmas": {
+      "description": "Lemma-like labels for the country the entity belongs to (for cities, regions, etc.).",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "language_lemmas": {
+      "description": "Lemma-like labels for official or major languages in the entity.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "demonym_lemmas": {
+      "description": "Lemma-like labels for demonyms (e.g. \"french\", \"canadian\").",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "population": {
+      "description": "Approximate population of the entity.",
+      "type": "number",
+      "minimum": 0
+    },
+    "population_year": {
+      "description": "Reference year for the population value.",
+      "type": "integer"
+    },
+    "area_km2": {
+      "description": "Area of the entity, in square kilometres.",
+      "type": "number",
+      "minimum": 0
+    },
+    "elevation_m": {
+      "description": "Typical or average elevation in metres, if relevant.",
+      "type": "number"
+    },
+    "timezone_lemmas": {
+      "description": "List of timezone identifiers or lemma-like labels (e.g. \"utc+1\", \"eastern_standard_time\").",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "established": {
+      "description": "Year or approximate period when the entity was established or first recorded.",
+      "type": "integer"
+    },
+    "dissolved": {
+      "description": "Year or approximate period when the entity ceased to exist in its current form, if applicable.",
+      "type": "integer"
+    },
+    "neighbor_entity_names": {
+      "description": "Names of neighboring entities (countries, regions, municipalities, etc.), if applicable.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "attributes": {
+      "description": "Bag of structured attributes for additional data not covered by dedicated fields (GDP, HDI, etc.). Values should be JSON-serializable.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "extra": {
+      "description": "Opaque metadata preserved for tracing or debugging (original source rows, IDs, etc.).",
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

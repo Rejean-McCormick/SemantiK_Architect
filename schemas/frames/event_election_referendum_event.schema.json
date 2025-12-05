@@ -1,0 +1,226 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame Schema: Election / Referendum Event",
+  "description": "JSON schema for the ElectionReferendumEventFrame semantic structure used for elections and referendums.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "election-referendum",
+      "description": "Stable frame identifier; must be \"election-referendum\" for ElectionReferendumEventFrame instances."
+    },
+
+    "id": {
+      "type": ["string", "null"],
+      "description": "Optional identifier for the event (e.g. source ID or internal key)."
+    },
+
+    "event_kind": {
+      "type": ["string", "null"],
+      "description": "Kind of event, typically \"election\" or \"referendum\", but may be more specific (e.g. \"presidential_election\", \"constitutional_referendum\")."
+    },
+
+    "office": {
+      "type": ["object", "null"],
+      "description": "Target office for the election (e.g. President, Mayor), as an Entity-like object. May be null for purely legislative/list elections.",
+      "additionalProperties": true
+    },
+
+    "body": {
+      "type": ["object", "null"],
+      "description": "Representative body being elected (e.g. House of Commons, Bundestag, City Council), as an Entity-like object.",
+      "additionalProperties": true
+    },
+
+    "jurisdiction": {
+      "type": ["object", "null"],
+      "description": "Main jurisdiction in which the election or referendum took place (e.g. country, state, city), as an Entity-like object.",
+      "additionalProperties": true
+    },
+
+    "supervising_body": {
+      "type": ["object", "null"],
+      "description": "Electoral commission or similar authority responsible for overseeing the vote, as an Entity-like object.",
+      "additionalProperties": true
+    },
+
+    "time": {
+      "type": ["object", "null"],
+      "description": "TimeSpan-like object representing when the vote took place (date or interval).",
+      "properties": {
+        "start_year": {
+          "type": ["integer", "null"]
+        },
+        "end_year": {
+          "type": ["integer", "null"]
+        },
+        "approximate": {
+          "type": ["boolean", "null"]
+        },
+        "extra": {
+          "type": ["object", "null"],
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "location": {
+      "type": ["object", "null"],
+      "description": "Main physical location when a specific city/venue is salient (e.g. congress site for a leadership election). Entity-like Location object.",
+      "additionalProperties": true
+    },
+
+    "electoral_system": {
+      "type": ["string", "null"],
+      "description": "Short description of the voting system (e.g. \"first_past_the_post\", \"two_round\", \"proportional_representation\")."
+    },
+
+    "chamber_size": {
+      "type": ["integer", "null"],
+      "description": "Total number of seats in the elected body, if applicable."
+    },
+
+    "seats_contested": {
+      "type": ["integer", "null"],
+      "description": "Number of seats up for election in this event (may be less than or equal to chamber_size for partial renewals)."
+    },
+
+    "electorate_size": {
+      "type": ["integer", "null"],
+      "description": "Number of eligible voters, if known."
+    },
+
+    "total_votes": {
+      "type": ["integer", "null"],
+      "description": "Total number of votes cast (valid + invalid), if known."
+    },
+
+    "turnout_absolute": {
+      "type": ["integer", "null"],
+      "description": "Number of participating voters (can equal total_votes in simple counts)."
+    },
+
+    "turnout_rate": {
+      "type": ["number", "null"],
+      "description": "Turnout as a fraction of the eligible electorate (0.0–1.0)."
+    },
+
+    "main_parties": {
+      "type": "array",
+      "description": "Coarse list of main parties or alliances involved in the election, as Entity-like objects.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "candidate_results": {
+      "type": "array",
+      "description": "Detailed per-candidate or per-list results.",
+      "items": {
+        "type": "object",
+        "description": "Result row for an individual candidate or list.",
+        "additionalProperties": false,
+        "properties": {
+          "candidate": {
+            "type": "object",
+            "description": "Candidate or list entity.",
+            "additionalProperties": true
+          },
+          "party": {
+            "type": ["object", "null"],
+            "description": "Optional party/alliance entity associated with the candidate.",
+            "additionalProperties": true
+          },
+          "votes": {
+            "type": ["integer", "null"],
+            "description": "Absolute number of votes received."
+          },
+          "vote_share": {
+            "type": ["number", "null"],
+            "description": "Fraction of valid votes obtained (0.0–1.0)."
+          },
+          "seats": {
+            "type": ["integer", "null"],
+            "description": "Number of seats obtained, if applicable."
+          },
+          "outcome": {
+            "type": ["string", "null"],
+            "description": "Outcome label (e.g. \"elected\", \"eliminated\", \"runoff\", or project-specific labels)."
+          },
+          "extra": {
+            "type": "object",
+            "description": "Open-ended map for additional result metadata (e.g. swing, rank_in_round_1).",
+            "additionalProperties": true
+          }
+        },
+        "required": ["candidate"]
+      }
+    },
+
+    "referendum_question": {
+      "type": ["string", "null"],
+      "description": "Abstract/lemma-level question or topic being voted on for referendums (e.g. membership, approval of a constitution)."
+    },
+
+    "referendum_option_results": {
+      "type": "array",
+      "description": "Detailed per-option results for referendums (e.g. yes/no, leave/remain).",
+      "items": {
+        "type": "object",
+        "description": "Result row for a choice in a referendum.",
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Short label for the option (e.g. \"yes\", \"no\", \"remain\", \"leave\")."
+          },
+          "votes": {
+            "type": ["integer", "null"],
+            "description": "Absolute number of votes for the option."
+          },
+          "vote_share": {
+            "type": ["number", "null"],
+            "description": "Fraction of valid votes obtained (0.0–1.0)."
+          },
+          "outcome": {
+            "type": ["string", "null"],
+            "description": "Outcome label (e.g. \"approved\", \"rejected\"), project-specific."
+          },
+          "extra": {
+            "type": "object",
+            "description": "Open-ended map for additional metadata (e.g. swing, region-specific notes).",
+            "additionalProperties": true
+          }
+        },
+        "required": ["label"]
+      }
+    },
+
+    "winning_entities": {
+      "type": "array",
+      "description": "Convenience list of winning candidates/parties/options as Entity-like objects for quick access.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "properties": {
+      "type": "object",
+      "description": "Open-ended map for additional structured attributes not modeled as first-class fields (e.g. rounds, coalition_formed, thresholds, age_limit, compulsory_voting).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata and provenance (e.g. original Z-objects, raw statement IDs, debug notes). Not interpreted by the NLG layer.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type"
+  ]
+}

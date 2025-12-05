@@ -1,0 +1,348 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abstractwiki.org/schemas/frames/event_disaster_accident_event.schema.json",
+  "title": "Disaster / Accident Event Frame",
+  "description": "JSON schema for disaster / accident event frames (`event.disaster`). Covers natural disasters (earthquakes, floods, storms, epidemics) and major accidents (industrial accidents, crashes, spills, etc.).",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "event.disaster",
+      "description": "Canonical frame type identifier for disaster / accident events."
+    },
+
+    "main_event": {
+      "$ref": "#/definitions/Event",
+      "description": "Core event object representing the disaster or accident."
+    },
+
+    "label": {
+      "type": ["string", "null"],
+      "description": "Optional human-readable label for the event (e.g. \"Chernobyl disaster\", \"2011 Tōhoku earthquake and tsunami\")."
+    },
+
+    "disaster_kind": {
+      "type": ["string", "null"],
+      "description": "Coarse type label such as \"earthquake\", \"flood\", \"tsunami\", \"hurricane\", \"epidemic\", \"industrial_accident\", \"air_crash\", \"train_derailment\", etc."
+    },
+
+    "cause_description": {
+      "type": ["string", "null"],
+      "description": "Short neutral description of the immediate cause or trigger (e.g. \"reactor core meltdown\", \"dam failure\", \"human error\")."
+    },
+
+    "cause_entity": {
+      "anyOf": [
+        { "$ref": "#/definitions/Entity" },
+        { "type": "null" }
+      ],
+      "description": "Optional entity treated as the cause or origin (e.g. a facility, company, vessel, storm system)."
+    },
+
+    "severity_scale": {
+      "type": ["string", "null"],
+      "description": "Name of the severity scale used for `severity_value` (e.g. \"moment_magnitude\", \"richter\", \"mercalli\", \"saffir_simpson\")."
+    },
+
+    "severity_value": {
+      "type": ["number", "null"],
+      "description": "Numeric severity value on the given `severity_scale`, if applicable."
+    },
+
+    "casualties": {
+      "anyOf": [
+        { "$ref": "#/definitions/Casualties" },
+        { "type": "null" }
+      ],
+      "description": "Structured casualty figures (killed, injured, missing, displaced)."
+    },
+
+    "economic_damage": {
+      "anyOf": [
+        { "$ref": "#/definitions/EconomicDamage" },
+        { "type": "null" }
+      ],
+      "description": "Approximate economic damage caused by the event."
+    },
+
+    "affected_areas": {
+      "type": "array",
+      "description": "List of locations (countries, regions, cities) significantly affected by the event.",
+      "items": { "$ref": "#/definitions/Location" }
+    },
+
+    "response_entities": {
+      "type": "array",
+      "description": "Entities responsible for major responses or relief efforts (e.g. governments, agencies, NGOs).",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Additional structured attributes that do not justify dedicated top-level fields (e.g. \"tsunami_height_m\", \"area_affected_km2\").",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata hook for provenance, original records, etc. Not interpreted by the core semantics layer.",
+      "additionalProperties": true
+    }
+  },
+
+  "required": [
+    "frame_type",
+    "main_event"
+  ],
+
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "description": "Lightweight entity reference (person, organization, place, facility, etc.).",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Canonical label for the entity."
+        },
+        "qid": {
+          "type": ["string", "null"],
+          "description": "Optional Wikidata QID or similar global identifier."
+        },
+        "ids": {
+          "type": "object",
+          "description": "Optional map of source-specific IDs (e.g. Wikidata, Wikipedia, internal IDs).",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"]
+          }
+        },
+        "entity_type": {
+          "type": ["string", "null"],
+          "description": "Optional coarse entity type (e.g. \"country\", \"city\", \"company\", \"organization\", \"person\")."
+        },
+        "meta": {
+          "type": "object",
+          "description": "Optional additional metadata about the entity.",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "Location": {
+      "type": "object",
+      "description": "Generic location object used across frames.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable label for the location (city, region, country, etc.)."
+        },
+        "kind": {
+          "type": ["string", "null"],
+          "description": "Coarse kind such as \"city\", \"region\", \"country\", \"ocean\", etc."
+        },
+        "entity": {
+          "anyOf": [
+            { "$ref": "#/definitions/Entity" },
+            { "type": "null" }
+          ],
+          "description": "Optional backing entity reference for this location."
+        },
+        "coords": {
+          "anyOf": [
+            { "$ref": "#/definitions/Coordinates" },
+            { "type": "null" }
+          ],
+          "description": "Optional geographic coordinates."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata for the location.",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "Coordinates": {
+      "type": "object",
+      "description": "Simple latitude / longitude coordinate pair.",
+      "properties": {
+        "lat": {
+          "type": "number"
+        },
+        "lon": {
+          "type": "number"
+        }
+      },
+      "required": ["lat", "lon"],
+      "additionalProperties": false
+    },
+
+    "TimeSpan": {
+      "type": "object",
+      "description": "Loose representation of a time span or single date.",
+      "properties": {
+        "start_year": { "type": ["integer", "null"] },
+        "start_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "start_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "end_year": { "type": ["integer", "null"] },
+        "end_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "end_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "precision": {
+          "type": ["string", "null"],
+          "description": "Optional precision hint such as \"year\", \"month\", \"day\"."
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "Whether the span or date is approximate."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata, e.g. original string, calendar system.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "Event": {
+      "type": "object",
+      "description": "Generic event object used by event-centric frames.",
+      "properties": {
+        "id": {
+          "type": ["string", "integer", "null"],
+          "description": "Source-specific identifier for the event, if available."
+        },
+        "event_type": {
+          "type": ["string", "null"],
+          "description": "Fine-grained event type label (e.g. \"earthquake\", \"flood\", \"industrial_accident\")."
+        },
+        "label": {
+          "type": ["string", "null"],
+          "description": "Optional human-readable label for the event."
+        },
+        "time_span": {
+          "anyOf": [
+            { "$ref": "#/definitions/TimeSpan" },
+            { "type": "null" }
+          ],
+          "description": "Approximate temporal span of the event."
+        },
+        "location": {
+          "anyOf": [
+            { "$ref": "#/definitions/Location" },
+            { "type": "null" }
+          ],
+          "description": "Primary location of the event, if applicable."
+        },
+        "participants": {
+          "type": "object",
+          "description": "Optional map from role labels (e.g. \"victim\", \"operator\", \"regulator\") to entity references.",
+          "additionalProperties": {
+            "anyOf": [
+              { "$ref": "#/definitions/Entity" },
+              {
+                "type": "array",
+                "items": { "$ref": "#/definitions/Entity" }
+              }
+            ]
+          }
+        },
+        "properties": {
+          "type": "object",
+          "description": "Additional machine-readable properties of the event (numeric indicators, flags, etc.).",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata, not interpreted by the core semantics layer.",
+          "additionalProperties": true
+        }
+      },
+      "required": [],
+      "additionalProperties": true
+    },
+
+    "Casualties": {
+      "type": "object",
+      "description": "Structured casualty figures for a disaster / accident.",
+      "properties": {
+        "killed": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Estimated number of people killed."
+        },
+        "injured": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Estimated number of people injured."
+        },
+        "missing": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Estimated number of people missing."
+        },
+        "displaced": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Estimated number of people displaced or evacuated."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata (e.g. notes about estimation methods).",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "EconomicDamage": {
+      "type": "object",
+      "description": "Approximate economic damage caused by the event.",
+      "properties": {
+        "amount": {
+          "type": ["number", "null"],
+          "description": "Numeric amount of estimated damage, typically in nominal currency units."
+        },
+        "currency": {
+          "type": ["string", "null"],
+          "description": "Currency code or label (e.g. \"USD\", \"EUR\")."
+        },
+        "year": {
+          "type": ["integer", "null"],
+          "description": "Year to which the estimate refers (e.g. year of the event or estimate)."
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "Whether the amount is approximate."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata (e.g. source, methodology).",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

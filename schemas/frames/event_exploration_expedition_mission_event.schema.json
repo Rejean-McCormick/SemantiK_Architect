@@ -1,0 +1,248 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Exploration / Expedition / Mission Event Frame",
+  "description": "Canonical JSON schema for exploration / expedition / mission event frames (`exploration-expedition-mission`). Covers expeditions, voyages, and space missions as thin wrappers over a generic `Event` plus a small set of mission-specific fields.",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "frame_type": {
+      "description": "Frame type discriminator. Must be `exploration-expedition-mission`.",
+      "type": "string",
+      "const": "exploration-expedition-mission"
+    },
+
+    "main_event": {
+      "description": "Underlying core event representing the expedition / voyage / mission.",
+      "$ref": "#/definitions/Event"
+    },
+
+    "mission_kind": {
+      "description": "Coarse label for the mission kind. Canonical values (when normalized) include `expedition`, `voyage`, `exploration`, `space_mission`, and `mission`, but arbitrary non-empty values are allowed.",
+      "type": ["string", "null"]
+    },
+
+    "leaders": {
+      "description": "Key leaders or commanders of the mission (expedition leaders, captains, mission commanders, etc.).",
+      "type": "array",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "crew": {
+      "description": "Crew members or core participants (explorers, astronauts, climbers, etc.).",
+      "type": "array",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "sponsoring_organizations": {
+      "description": "Organizations that sponsor, fund, or formally organize the mission (e.g. research institutions, space agencies, navies).",
+      "type": "array",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "departure_location": {
+      "description": "Primary departure location for the mission (port, launch site, base camp, etc.).",
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/Location" }
+      ]
+    },
+
+    "arrival_location": {
+      "description": "Primary arrival or return location (final port, landing site, etc.), if distinct from the departure location.",
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/Location" }
+      ]
+    },
+
+    "route_locations": {
+      "description": "List of intermediate locations along the route (ports of call, waypoints, camps, flybys, etc.).",
+      "type": "array",
+      "items": { "$ref": "#/definitions/Location" }
+    },
+
+    "target_locations": {
+      "description": "Key target locations or destinations for the mission (e.g. specific regions, mountains, celestial bodies, landing sites).",
+      "type": "array",
+      "items": { "$ref": "#/definitions/Location" }
+    },
+
+    "overall_timespan": {
+      "description": "Overall timespan of the mission. If omitted, may default to the `main_event.time` span.",
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/TimeSpan" }
+      ]
+    },
+
+    "outcome_summary": {
+      "description": "Short label summarizing the overall outcome (e.g. `successful`, `partially_successful`, `failed`, or a brief phrase like `first crewed lunar landing`).",
+      "type": ["string", "null"]
+    },
+
+    "discoveries": {
+      "description": "Key discoveries, reached landmarks, or surveyed objects associated with the mission (mapped regions, celestial bodies, archaeological sites, etc.).",
+      "type": "array",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "attributes": {
+      "description": "Arbitrary mission-specific attributes that are not common enough to warrant top-level fields (e.g. ship names, launch vehicle, landing site names).",
+      "type": "object",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "description": "Opaque metadata bag for original source structures (raw JSON, Wikidata statements, provenance, debug info, etc.). Not intended for direct surface realization.",
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+
+  "required": [
+    "frame_type",
+    "main_event"
+  ],
+
+  "definitions": {
+    "Entity": {
+      "description": "Generic entity object (person, organization, place, vessel, mission, etc.). At minimum a name; additional typing and metadata are allowed.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable identifier (e.g. Wikidata QID, internal ID).",
+          "type": ["string", "null"]
+        },
+        "name": {
+          "description": "Human-readable label for the entity.",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "High-level type hint (e.g. `person`, `organization`, `place`, `vessel`, `mission`).",
+          "type": ["string", "null"]
+        },
+        "human": {
+          "description": "Whether this entity represents a human person.",
+          "type": ["boolean", "null"]
+        },
+        "gender": {
+          "description": "Optional gender tag for human entities (e.g. `male`, `female`, `nonbinary`, project-specific).",
+          "type": ["string", "null"]
+        },
+        "features": {
+          "description": "Free-form feature map for entity-level attributes.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "extra": {
+          "description": "Extra metadata and provenance.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "TimeSpan": {
+      "description": "Coarse time span or partial date, designed to tolerate partial information.",
+      "type": "object",
+      "properties": {
+        "start_year": { "type": ["integer", "null"] },
+        "start_month": { "type": ["integer", "null"], "minimum": 1, "maximum": 12 },
+        "start_day": { "type": ["integer", "null"], "minimum": 1, "maximum": 31 },
+        "end_year": { "type": ["integer", "null"] },
+        "end_month": { "type": ["integer", "null"], "minimum": 1, "maximum": 12 },
+        "end_day": { "type": ["integer", "null"], "minimum": 1, "maximum": 31 },
+        "approximate": {
+          "description": "If true, the span is approximate or uncertain.",
+          "type": ["boolean", "null"]
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "Location": {
+      "description": "Lightweight location object for events (city, region, mountain, launch site, celestial body, etc.).",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name of the location.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Optional classification (e.g. `city`, `country`, `region`, `mountain`, `sea`, `launch_site`, `celestial_body`).",
+          "type": ["string", "null"]
+        },
+        "country_code": {
+          "description": "Optional country code (e.g. ISO 3166-1 alpha-2).",
+          "type": ["string", "null"]
+        },
+        "admin_hierarchy": {
+          "description": "Optional list of enclosing administrative units (e.g. region, country).",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "features": {
+          "description": "Additional geographic codes or metadata.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "extra": {
+          "description": "Extra metadata not part of core semantics.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "Event": {
+      "description": "Generic semantic event object backing all event frames. Used here to represent the mission as an event.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Optional stable identifier for the event.",
+          "type": ["string", "null"]
+        },
+        "event_type": {
+          "description": "High-level label for the event (e.g. `mission`, `expedition`, `voyage`, or a project-specific label).",
+          "type": "string"
+        },
+        "participants": {
+          "description": "Mapping from role label to entity (e.g. `agent`, `crew`, `sponsor`, `subject`).",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/Entity" }
+        },
+        "time": {
+          "description": "When the event occurred.",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/TimeSpan" }
+          ]
+        },
+        "location": {
+          "description": "Primary location of the event (can be a route aggregate or a key site).",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/Location" }
+          ]
+        },
+        "properties": {
+          "description": "Additional semantic properties of the event (instrument, manner, cause, etc.).",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "extra": {
+          "description": "Metadata and provenance not part of semantic content.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["event_type"],
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AbstractWiki Architect Frame Schema: Relational – Definition / classification",
+  "description": "Schema for the rel.definition-classification frame: definitional and classification relations of the form 'X is a Y' or 'X is a type of Y'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "frame_type",
+    "subject"
+  ],
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "rel.definition-classification",
+      "description": "Canonical frame type identifier for definitional / classification relations."
+    },
+    "frame_family": {
+      "type": "string",
+      "enum": [
+        "relational"
+      ],
+      "description": "Optional high-level family label; always relational for this frame."
+    },
+    "subject": {
+      "$ref": "#/definitions/entity",
+      "description": "The entity being defined or classified (often the article's main subject)."
+    },
+    "definitional_relation": {
+      "type": "string",
+      "description": "High-level label describing the semantic relation between subject and supertype(s), e.g. instance-of, subclass-of, role-of, alias-of."
+    },
+    "supertype_entities": {
+      "type": "array",
+      "description": "Entity-level supertypes that the subject belongs to (e.g. specific organizations, classes, or categories represented as entities).",
+      "items": {
+        "$ref": "#/definitions/entity"
+      }
+    },
+    "supertype_lemmas": {
+      "type": "array",
+      "description": "Lemma-level labels for the type(s) that the subject belongs to (e.g. writer, political party, programming language).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "modifier_lemmas": {
+      "type": "array",
+      "description": "Lemma-level modifiers that refine or qualify the supertype(s) (e.g. british, fictional, roman_catholic).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gloss": {
+      "type": "string",
+      "description": "Optional short textual gloss or fallback definition snippet when structured classification data is insufficient."
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Arbitrary structured attributes related to this definitional fact (e.g. source, source_property, confidence).",
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata / provenance bag passed through unchanged (e.g. original AbstractWiki blobs, Wikidata statements).",
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "entity": {
+      "type": "object",
+      "description": "Generic entity reference (person, organization, place, class, etc.).",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Local identifier for the entity, if any."
+        },
+        "qid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "External identifier such as a Wikidata QID."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Human-readable label for the entity."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional kind label (e.g. person, organization, class)."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata attached to the entity.",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,287 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AbstractWiki Architect Frame Schema: Entity – Sports team / club",
+  "description": "Schema for the entity.sports_team frame: semantic representation of sports teams and clubs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "entity.sports_team",
+      "description": "Canonical frame type identifier for sports teams and clubs."
+    },
+    "frame_family": {
+      "type": "string",
+      "enum": [
+        "entity"
+      ],
+      "description": "Optional high-level family label; always entity for this frame."
+    },
+    "main_entity": {
+      "$ref": "#/definitions/entity",
+      "description": "The team entity itself (e.g. FC Barcelona, New York Yankees)."
+    },
+    "sport": {
+      "type": "string",
+      "description": "Lemma for the primary sport played by the team (e.g. football, basketball)."
+    },
+    "team_type": {
+      "type": "string",
+      "description": "High-level type of team, e.g. club, national team, women's team."
+    },
+    "home_location": {
+      "$ref": "#/definitions/location",
+      "description": "Geographic home location of the team, typically a city or region."
+    },
+    "home_venue": {
+      "$ref": "#/definitions/location",
+      "description": "Primary stadium, arena, or ground where the team plays its home games."
+    },
+    "country": {
+      "$ref": "#/definitions/entity",
+      "description": "Country entity associated with the team (for national teams or clubs strongly associated with one country)."
+    },
+    "leagues": {
+      "type": "array",
+      "description": "Leagues or competitions the team participates in (past or present).",
+      "items": {
+        "$ref": "#/definitions/entity"
+      }
+    },
+    "founding_event": {
+      "$ref": "#/definitions/event",
+      "description": "Event describing the founding or establishment of the team."
+    },
+    "dissolution_event": {
+      "$ref": "#/definitions/event",
+      "description": "Event describing dissolution, relocation, or merger that ended the team’s existence, if applicable."
+    },
+    "active_timespan": {
+      "$ref": "#/definitions/timespan",
+      "description": "Coarse-grained timespan summarizing the period during which the team has been active."
+    },
+    "colors": {
+      "type": "array",
+      "description": "Primary team colors (surface forms, not language-specific morphology).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nicknames": {
+      "type": "array",
+      "description": "Common nicknames for the team (e.g. The Reds).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "current_manager": {
+      "$ref": "#/definitions/entity",
+      "description": "Current head coach or manager, where such a role exists."
+    },
+    "current_captain": {
+      "$ref": "#/definitions/entity",
+      "description": "Current team captain, where such a role exists."
+    },
+    "notable_players": {
+      "type": "array",
+      "description": "Notable players historically associated with the team.",
+      "items": {
+        "$ref": "#/definitions/entity"
+      }
+    },
+    "honours_events": {
+      "type": "array",
+      "description": "Events representing important titles or honours, such as championship wins, cups, or major trophies.",
+      "items": {
+        "$ref": "#/definitions/event"
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Open-ended attribute map for additional team-specific information (e.g. founded_as, ownership_model, supporter_groups, rivalries).",
+      "additionalProperties": true"
+    },
+    "extra": {
+      "type": "object",
+      "description": "Opaque metadata bag for passing through source-specific structures (e.g. raw JSON, Wikidata statements).",
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "entity": {
+      "type": "object",
+      "description": "Generic entity reference (person, organization, place, etc.).",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Local identifier for the entity, if any."
+        },
+        "qid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "External identifier such as a Wikidata QID."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Human-readable label for the entity."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional kind label (e.g. person, organization, stadium)."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata attached to the entity.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "description": "Location reference (city, country, region, venue, etc.).",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Local identifier for the location, if any."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Human-readable name of the location."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional kind label (e.g. city, country, stadium)."
+        },
+        "country_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional ISO 3166-1 alpha-2 country code."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata attached to the location.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "timespan": {
+      "type": "object",
+      "description": "Coarse time span with optional year, month, and day fields.",
+      "additionalProperties": false,
+      "properties": {
+        "start_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "start_month": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "start_day": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_month": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_day": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "approximate": {
+          "type": "boolean"
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "description": "Generic event reference with type, time, location, and participants.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Local identifier for the event, if any."
+        },
+        "event_type": {
+          "type": "string",
+          "description": "High-level event type label (e.g. founding, title-win)."
+        },
+        "participants": {
+          "type": "object",
+          "description": "Mapping from role label to entity participant.",
+          "additionalProperties": {
+            "$ref": "#/definitions/entity"
+          }
+        },
+        "time": {
+          "$ref": "#/definitions/timespan"
+        },
+        "location": {
+          "$ref": "#/definitions/location"
+        },
+        "properties": {
+          "type": "object",
+          "description": "Arbitrary additional semantic properties.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata attached to the event.",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,285 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abstractwiki.example.org/schemas/frames/entity_person.schema.json",
+  "title": "Person / Biography Frame (PersonFrame / BioFrame)",
+  "description": "JSON representation of a person / biography frame (PersonFrame, backed by BioFrame in semantics.types).",
+  "type": "object",
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "bio",
+      "description": "Stable frame type discriminator for person / biography frames."
+    },
+    "main_entity": {
+      "$ref": "#/definitions/Entity",
+      "description": "The person the biography is about."
+    },
+    "primary_profession_lemmas": {
+      "type": "array",
+      "description": "Lemma keys describing the primary profession(s) or occupation(s) of the person.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nationality_lemmas": {
+      "type": "array",
+      "description": "Lemma keys describing the nationality or national affiliations of the person.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "birth_event": {
+      "description": "Optional birth event, typically with event_type 'birth'.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/definitions/Event"
+        }
+      ]
+    },
+    "death_event": {
+      "description": "Optional death event, typically with event_type 'death'.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/definitions/Event"
+        }
+      ]
+    },
+    "other_events": {
+      "type": "array",
+      "description": "Other salient events in the person's life (discoveries, awards, offices, etc.).",
+      "items": {
+        "$ref": "#/definitions/Event"
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Arbitrary attribute map for the person (e.g. fields, known_for, etc.).",
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary metadata (e.g. original JSON from AW, Wikidata IDs, provenance).",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+  "additionalProperties": true,
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "description": "A discourse entity (person, organization, place, abstract thing).",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stable identifier (e.g. a Wikidata QID like 'Q42')."
+        },
+        "name": {
+          "type": "string",
+          "description": "Canonical label when no localized surface form is available (e.g. 'Marie Curie')."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Coarse gender category (e.g. 'female', 'male', 'nonbinary', 'unknown')."
+        },
+        "human": {
+          "type": "boolean",
+          "description": "Whether this entity is a human."
+        },
+        "entity_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional coarse type hint ('person', 'organization', 'place', etc.)."
+        },
+        "lemmas": {
+          "type": "array",
+          "description": "Optional list of lexeme lemmas associated with the entity (e.g. ['physicist', 'chemist']).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary (grammatical category, animacy, number, etc.).",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata for the entity.",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "Location": {
+      "type": "object",
+      "description": "A location entity (city, country, region, etc.).",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stable identifier, e.g. a QID or geocode."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable label (e.g. 'Paris')."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional location kind ('city', 'country', 'region', ...)."
+        },
+        "country_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional ISO country code (e.g. 'FR')."
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary, e.g. for preposition choice.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata.",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "TimeSpan": {
+      "type": "object",
+      "description": "A simple time span (possibly a single year or date).",
+      "properties": {
+        "start_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "start_month": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "start_day": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_month": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_day": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "approximate": {
+          "type": "boolean"
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "Event": {
+      "type": "object",
+      "description": "A semantic event or state.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Coarse event type label (e.g. 'birth', 'death', 'award')."
+        },
+        "participants": {
+          "type": "object",
+          "description": "Mapping from role label to participating entity.",
+          "additionalProperties": {
+            "$ref": "#/definitions/Entity"
+          }
+        },
+        "time": {
+          "description": "Optional time span for the event.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/definitions/TimeSpan"
+            }
+          ]
+        },
+        "location": {
+          "description": "Optional location of the event.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/definitions/Location"
+            }
+          ]
+        },
+        "properties": {
+          "type": "object",
+          "description": "Additional structured properties for the event.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata (e.g. original source structure).",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "event_type"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

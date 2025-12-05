@@ -275,7 +275,7 @@ class BioFrame:
 # ---------------------------------------------------------------------------
 
 # Generic alias for "something we can render as a sentence or series of sentences"
-SemanticFrame = BioFrame  # can be extended to a Union[...] in the future
+SemanticFrame = BioFrame  # can be extended to a Union[.] in the future
 
 __all__ = [
     "Entity",

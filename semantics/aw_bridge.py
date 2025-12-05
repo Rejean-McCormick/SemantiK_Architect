@@ -1,217 +1,355 @@
+# semantics/aw_bridge.py
 """
-semantics/aw_bridge.py
+Bridging layer between external AbstractWiki-style JSON payloads and the
+internal semantic frame dataclasses defined in :mod:`semantics.types`
+and the family-specific modules.
 
-Bridge between Wikifunctions-style Z-Objects and the local NLG router.
+This module is intentionally thin:
 
-Goal
-----
-In Wikifunctions, implementations may receive inputs wrapped in Z-Objects
-(e.g. Z6 for strings) instead of plain Python primitives. This module:
+* It is responsible for:
+  - basic validation of the external payload structure,
+  - detecting the intended ``frame_type`` for each payload,
+  - routing the payload to the appropriate normalization function.
 
-1. Safely unwraps Z-Objects into native Python types (recursively).
-2. Normalizes a generic "render this construction" request.
-3. Calls the local `router.render(...)`.
-4. Wraps the final surface string back into a Z6 object (if desired).
+* It is **not** responsible for:
+  - detailed schema validation,
+  - filling in defaults,
+  - constructing dataclass instances directly.
 
-Typical Wikifunctions usage
----------------------------
+Those tasks are delegated to :mod:`semantics.normalization`, which is the
+single place that should know about quirks of upstream schemas.
 
-Implementation pseudo-code for a generic "render clause" function:
+The high-level API exposed here is:
 
-    from semantics.aw_bridge import render_from_z_call
+    - ``frame_from_aw``: convert a single JSON payload into a Frame.
+    - ``frames_from_aw``: convert a sequence of payloads into Frames.
 
-    def impl(z_args):
-        # `z_args` is a dict containing construction id, language, slots, etc.
-        # Wikifunctions will pass Z-Objects here; locally you can call this
-        # function directly with plain Python values or Z-wrapped ones.
-        return render_from_z_call(z_args)
+The external JSON is assumed to be *AbstractWiki-like*:
 
-Expected input shape
---------------------
+    - It may contain a ``"frame_type"`` field with canonical strings like
+      ``"bio"`` or ``"entity.organization"``.
+    - If not, we try to infer a canonical frame type from secondary
+      fields such as ``"type"``, ``"family"``, or ``"kind"``.
 
-`render_from_z_call` expects a single argument: a dict (possibly Z-wrapped)
-with at least:
-
-    {
-        "construction_id": "copula_equative_simple",  # or Z6(...)
-        "lang_code": "fr",                            # or "language"/"lang"
-        "slots": {
-            # arbitrary construction-specific slots
-            "SUBJ": {"surface": "Marie Curie"},
-            "PRED_NP": {
-                "lemma": "physicist",
-                "pos": "NOUN",
-                "features": {"gender": "f", "number": "sg"},
-            },
-        },
-    }
-
-Key aliases supported:
-
-    - construction_id: "construction_id" | "construction" | "template"
-    - lang_code:       "lang_code" | "language" | "lang"
-    - slots:           "slots" | "arguments" | "args"
-
-All values can be plain Python objects or Z-Objects; everything is
-recursively unwrapped before calling the router.
+The internal canonical frame type strings are the ones documented in
+the FRAMES_* docs (e.g. ``docs/FRAMES_ENTITY.md``).
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from dataclasses import dataclass
+from typing import Any, Iterable, Mapping, MutableMapping, Sequence
 
-try:
-    # Preferred: use the local mock that understands Z6/Z9
-    from utils.wikifunctions_api_mock import unwrap as wf_unwrap, Z6
-except Exception:  # pragma: no cover - extremely defensive
-    # Fallbacks so this module still works outside this repository
-    def wf_unwrap(obj: Any) -> Any:
-        return obj
+from .types import Frame  # protocol / base type
 
-    def Z6(text: str) -> Dict[str, Any]:
-        return {"Z1K1": "Z6", "Z6K1": text}
+# Normalization module is expected to provide the concrete converters.
+from . import normalization
 
 
-# The router is the main entry point into the NLG system.
-import router
-
-
-# ---------------------------------------------------------------------------
-# Z-object helpers
-# ---------------------------------------------------------------------------
-
-
-def unwrap_recursive(obj: Any) -> Any:
-    """
-    Recursively unwrap Wikifunctions Z-Objects into plain Python types.
-
-    Rules:
-        - First, pass the object through `wf_unwrap` (handles Z6/Z9, etc.).
-        - If the result is a dict, unwrap its values recursively.
-        - If the result is a list/tuple, unwrap each element.
-        - Otherwise, return the value as-is.
-
-    This lets callers pass a deeply nested structure containing Z-Objects
-    anywhere and receive a plain Python structure back.
-    """
-    base = wf_unwrap(obj)
-
-    if isinstance(base, dict):
-        return {k: unwrap_recursive(v) for k, v in base.items()}
-
-    if isinstance(base, (list, tuple)):
-        return [unwrap_recursive(v) for v in base]
-
-    return base
-
-
-# ---------------------------------------------------------------------------
-# Normalization of a generic NLG call
-# ---------------------------------------------------------------------------
-
-
-def _pick_first(d: Dict[str, Any], *keys: str) -> Any:
-    """
-    Return the first non-missing key from `d` among `keys`.
-
-    Example:
-        lang = _pick_first(data, "lang_code", "language", "lang")
-    """
-    for key in keys:
-        if key in d:
-            return d[key]
-    return None
-
-
-def normalize_nlg_call(z_call: Dict[str, Any]) -> Tuple[str, Dict[str, Any], str]:
-    """
-    Normalize a Wikifunctions-style call into:
-
-        (construction_id, slots_dict, lang_code)
-
-    Steps:
-        1. Recursively unwrap all Z-Objects in `z_call`.
-        2. Resolve aliases for construction id, language code, and slots.
-        3. Validate types and return normalized values.
-
-    Raises:
-        ValueError / TypeError if required fields are missing or malformed.
-    """
-    if not isinstance(z_call, dict):
-        raise TypeError(f"Expected top-level dict for z_call, got {type(z_call)}")
-
-    plain: Dict[str, Any] = unwrap_recursive(z_call)
-
-    construction_id = _pick_first(plain, "construction_id", "construction", "template")
-    lang_code = _pick_first(plain, "lang_code", "language", "lang")
-    slots = _pick_first(plain, "slots", "arguments", "args")
-
-    if construction_id is None:
-        raise ValueError(
-            "Missing 'construction_id' (or alias 'construction' / 'template') "
-            "in NLG call."
-        )
-
-    if lang_code is None:
-        raise ValueError(
-            "Missing 'lang_code' (or alias 'language' / 'lang') in NLG call."
-        )
-
-    if slots is None:
-        slots = {}
-
-    if not isinstance(slots, dict):
-        raise TypeError(f"'slots' must be a dict after unwrapping, got {type(slots)}")
-
-    return str(construction_id), slots, str(lang_code)
-
-
-# ---------------------------------------------------------------------------
-# Public bridge API
-# ---------------------------------------------------------------------------
-
-
-def render_from_z_call(z_call: Dict[str, Any], wrap_result: bool = True) -> Any:
-    """
-    Main bridge function: take a Wikifunctions-style payload, return surface text.
-
-    Args:
-        z_call:
-            Dict that may contain Wikifunctions Z-Objects anywhere. Must specify:
-                - construction_id / construction / template
-                - lang_code / language / lang
-                - slots / arguments / args (optional, defaults to {})
-        wrap_result:
-            If True (default), wrap the resulting string in a Z6 object.
-            If False, return the raw Python string.
-
-    Returns:
-        Either:
-            - A Z6-wrapped string (default), e.g. {"Z1K1": "Z6", "Z6K1": "..."}
-            - A plain Python string, if wrap_result=False.
-
-    Raises:
-        ValueError / TypeError if the input is missing required fields or
-        has the wrong top-level type.
-    """
-    construction_id, slots, lang_code = normalize_nlg_call(z_call)
-
-    # Delegate to the central router; it decides which engine/constructions
-    # to use based on `lang_code` and `construction_id`.
-    surface_text: str = router.render(
-        construction_id=construction_id,
-        slots=slots,
-        lang_code=lang_code,
-    )
-
-    if wrap_result:
-        return Z6(surface_text)
-
-    return surface_text
+AWFramePayload = Mapping[str, Any]
+AWMutablePayload = MutableMapping[str, Any]
 
 
 __all__ = [
-    "unwrap_recursive",
-    "normalize_nlg_call",
-    "render_from_z_call",
+    "AWFramePayload",
+    "UnknownFrameTypeError",
+    "frame_from_aw",
+    "frames_from_aw",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Errors
+# ---------------------------------------------------------------------------
+
+
+class UnknownFrameTypeError(KeyError):
+    """Raised when we cannot detect or normalize the frame type of a payload."""
+
+    def __init__(self, frame_type: str | None, payload: AWFramePayload):
+        msg = f"Unknown or unsupported frame_type {frame_type!r}"
+        super().__init__(msg)
+        self.frame_type = frame_type
+        self.payload = payload
+
+
+# ---------------------------------------------------------------------------
+# Frame type detection
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class DetectedFrameType:
+    """Small helper object for frame-type detection."""
+
+    canonical: str
+    source_field: str
+
+
+_FRAME_TYPE_FALLBACK_KEYS: Sequence[str] = (
+    "frame_type",  # preferred / canonical
+    "type",
+    "family",
+    "kind",
+)
+
+
+def _coerce_to_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        v = value.strip()
+        return v or None
+    return str(value).strip() or None
+
+
+def _normalize_raw_frame_type(raw: str) -> str:
+    """
+    Map loose / legacy identifiers to canonical frame_type strings.
+
+    This function is the only place in this module that encodes
+    knowledge about legacy naming conventions. All other normalization
+    logic lives in :mod:`semantics.normalization`.
+    """
+    lower = raw.strip().lower()
+
+    # Person / bio
+    if lower in {"bio", "person", "person-bio", "person_bio"}:
+        return "bio"
+
+    # Entity families
+    if lower in {"organization", "organisation", "org"}:
+        return "entity.organization"
+    if lower in {"gpe", "country", "state", "city", "municipality"}:
+        return "entity.gpe"
+    if lower in {"place", "geographic_feature", "geo"}:
+        return "entity.place"
+    if lower in {"facility", "infrastructure"}:
+        return "entity.facility"
+    if lower in {"astronomical_object", "astro_object", "celestial_body"}:
+        return "entity.astronomical_object"
+    if lower in {"taxon", "species"}:
+        return "entity.taxon"
+    if lower in {"chemical", "material"}:
+        return "entity.chemical"
+    if lower in {"artifact", "artefact"}:
+        return "entity.artifact"
+    if lower in {"vehicle", "craft"}:
+        return "entity.vehicle"
+    if lower in {"creative_work", "work"}:
+        return "entity.creative_work"
+    if lower in {"software", "website", "protocol", "standard"}:
+        return "entity.software_or_standard"
+    if lower in {"product", "brand"}:
+        return "entity.product_or_brand"
+    if lower in {"sports_team", "club", "team"}:
+        return "entity.sports_team"
+    if lower in {"competition", "tournament", "league"}:
+        return "entity.competition"
+    if lower in {"language", "lang"}:
+        return "entity.language"
+    if lower in {"religion", "belief_system", "ideology"}:
+        return "entity.belief_system"
+    if lower in {"discipline", "field", "theory"}:
+        return "entity.discipline_or_theory"
+    if lower in {"law", "treaty", "policy", "constitution"}:
+        return "entity.legal_instrument"
+    if lower in {"project", "program", "programme", "initiative"}:
+        return "entity.project_or_program"
+    if lower in {"fictional", "fictional_entity", "fiction"}:
+        return "entity.fictional"
+
+    # Event families (see docs/FRAMES_EVENT.md)
+    if lower in {"event", "generic_event"}:
+        return "event.generic"
+    if lower in {"historical_event", "history_event"}:
+        return "event.historical"
+    if lower in {"conflict", "war", "battle"}:
+        return "event.conflict"
+    if lower in {"election", "referendum"}:
+        return "event.election"
+    if lower in {"disaster", "accident"}:
+        return "event.disaster"
+    if lower in {"scientific_milestone", "technical_milestone"}:
+        return "event.scientific_milestone"
+    if lower in {"cultural_event"}:
+        return "event.cultural"
+    if lower in {"sports_event", "match", "season"}:
+        return "event.sports"
+    if lower in {"legal_case", "court_case"}:
+        return "event.legal_case"
+    if lower in {"economic_event", "financial_event"}:
+        return "event.economic"
+    if lower in {"exploration", "expedition", "mission"}:
+        return "event.exploration"
+    if lower in {"life_event"}:
+        return "event.life"
+
+    # Relational families (FRAMES_RELATIONAL)
+    if lower in {"definition", "classification"}:
+        return "rel.definition"
+    if lower in {"attribute", "property"}:
+        return "rel.attribute"
+    if lower in {"quantitative", "quantity"}:
+        return "rel.quantitative"
+    if lower in {"comparison", "ranking"}:
+        return "rel.comparative"
+    if lower in {"membership", "affiliation"}:
+        return "rel.membership"
+    if lower in {"role", "position", "office"}:
+        return "rel.role"
+    if lower in {"part_whole", "composition"}:
+        return "rel.part_whole"
+    if lower in {"ownership", "control"}:
+        return "rel.ownership"
+    if lower in {"spatial_relation", "spatial"}:
+        return "rel.spatial"
+    if lower in {"temporal_relation", "temporal"}:
+        return "rel.temporal"
+    if lower in {"causal", "influence"}:
+        return "rel.causal"
+    if lower in {"change_of_state", "change"}:
+        return "rel.change_of_state"
+    if lower in {"communication", "statement", "quote"}:
+        return "rel.communication"
+    if lower in {"opinion", "evaluation"}:
+        return "rel.opinion"
+    if lower in {"relation_bundle", "multi_fact"}:
+        return "rel.bundle"
+
+    # Narrative / aggregate families (FRAMES_NARRATIVE)
+    if lower in {"timeline", "chronology"}:
+        return "narr.timeline"
+    if lower in {"career_summary", "season_summary", "campaign_summary"}:
+        return "narr.career_or_season"
+    if lower in {"development", "evolution"}:
+        return "narr.development"
+    if lower in {"reception", "impact"}:
+        return "narr.reception"
+    if lower in {"structure", "organization"}:
+        return "narr.structure"
+    if lower in {"comparison_set", "contrast"}:
+        return "narr.comparison_set"
+    if lower in {"list", "enumeration"}:
+        return "narr.list"
+
+    # Meta / article-level families (FRAMES_META)
+    if lower in {"article", "document"}:
+        return "meta.article"
+    if lower in {"section", "section_summary"}:
+        return "meta.section"
+    if lower in {"source", "citation", "reference"}:
+        return "meta.source"
+
+    # If the string already looks canonical (contains a dot and a family prefix),
+    # we just return it as-is.
+    if "." in lower:
+        return lower
+
+    # Fallback: assume caller provided something we don't recognize;
+    # let normalization handle (and potentially reject) it.
+    return lower
+
+
+def detect_frame_type(payload: AWFramePayload) -> DetectedFrameType:
+    """
+    Best-effort detection of canonical frame type from an AW payload.
+
+    This is deliberately conservative: if we cannot find *any* suitable
+    clue, we leave it to the caller to decide what to do.
+    """
+    for key in _FRAME_TYPE_FALLBACK_KEYS:
+        raw = _coerce_to_str(payload.get(key))
+        if raw:
+            canonical = _normalize_raw_frame_type(raw)
+            return DetectedFrameType(canonical=canonical, source_field=key)
+
+    # No candidate found
+    raise UnknownFrameTypeError(frame_type=None, payload=payload)
+
+
+# ---------------------------------------------------------------------------
+# Routing to normalization
+# ---------------------------------------------------------------------------
+
+
+def _normalize_by_family(
+    detected: DetectedFrameType,
+    payload: AWFramePayload,
+) -> Frame:
+    """
+    Route a payload to the appropriate normalization function based on
+    the canonical frame type prefix.
+
+    The concrete functions live in :mod:`semantics.normalization`. Only
+    their *signatures* are assumed here:
+
+        - normalize_bio_frame(payload, frame_type) -> BioFrame
+        - normalize_entity_frame(payload, frame_type) -> Frame
+        - normalize_event_frame(payload, frame_type) -> Frame
+        - normalize_relational_frame(payload, frame_type) -> Frame
+        - normalize_narrative_frame(payload, frame_type) -> Frame
+        - normalize_meta_frame(payload, frame_type) -> Frame
+
+    Each function is responsible for dispatching within its own family
+    (e.g. `entity.organization` vs `entity.gpe`).
+    """
+    ft = detected.canonical
+
+    if ft.startswith("bio"):
+        return normalization.normalize_bio_frame(payload, ft)
+
+    if ft.startswith("entity."):
+        return normalization.normalize_entity_frame(payload, ft)
+
+    if ft.startswith("event."):
+        return normalization.normalize_event_frame(payload, ft)
+
+    if ft.startswith("rel.") or ft.startswith("relation."):
+        return normalization.normalize_relational_frame(payload, ft)
+
+    if ft.startswith("narr."):
+        return normalization.normalize_narrative_frame(payload, ft)
+
+    if ft.startswith("meta."):
+        return normalization.normalize_meta_frame(payload, ft)
+
+    # If the type didn’t match any known family prefix, allow the
+    # normalization module to attempt a catch-all normalization. If it
+    # doesn’t support it, we re-raise a clear error.
+    if hasattr(normalization, "normalize_generic_frame"):
+        return normalization.normalize_generic_frame(payload, ft)
+
+    raise UnknownFrameTypeError(frame_type=ft, payload=payload)
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+def frame_from_aw(payload: AWFramePayload) -> Frame:
+    """
+    Convert a single AbstractWiki-style JSON payload into a semantic Frame.
+
+    This function is pure and side-effect-free: it never mutates the
+    incoming payload and never reaches out to external systems.
+
+    :raises UnknownFrameTypeError:
+        if the payload does not contain any usable frame-type information
+        or if the canonical frame type cannot be handled.
+    """
+    detected = detect_frame_type(payload)
+    return _normalize_by_family(detected, payload)
+
+
+def frames_from_aw(payloads: Iterable[AWFramePayload]) -> list[Frame]:
+    """
+    Convert an iterable of AW payloads into a list of semantic Frames.
+
+    This is a thin convenience wrapper over :func:`frame_from_aw`. It
+    stops at the first error and propagates it to the caller. If you need
+    “best-effort” behavior, you can wrap calls to :func:`frame_from_aw`
+    in your own error-handling logic.
+    """
+    return [frame_from_aw(p) for p in payloads]

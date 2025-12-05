@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Meta section summary",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier for section-level meta frames.",
+      "enum": [
+        "meta.section_summary",
+        "section",
+        "meta_section_summary"
+      ]
+    },
+
+    "section_id": {
+      "type": ["string", "null"],
+      "description": "Logical identifier for the section, typically a language-neutral code such as 'lead', 'early_life', 'career', 'works', 'legacy', or a slug derived from a heading."
+    },
+
+    "heading": {
+      "type": ["string", "null"],
+      "description": "Human-readable heading text for this section in the working language, e.g. 'Early life', 'Career'. Optional; some callers may infer headings from section_id."
+    },
+
+    "level": {
+      "type": "integer",
+      "description": "Hierarchical level of the section. Conventionally: 1 = top-level/lead, 2 = h2, 3 = h3, and so on.",
+      "default": 2
+    },
+
+    "parent_section_id": {
+      "type": ["string", "null"],
+      "description": "Optional identifier of a parent section for nested structures. If null, this section is considered top-level within the article."
+    },
+
+    "subject_time_span": {
+      "type": ["object", "null"],
+      "description": "Optional time span describing the temporal scope of the subject in this section (e.g. early life years, a particular period of a war). Shape follows semantics.types.TimeSpan.",
+      "additionalProperties": true
+    },
+
+    "topic_span_description": {
+      "type": ["string", "null"],
+      "description": "Optional free-text, language-neutral description of what temporal or logical span this section covers, suitable as a semantic hint for planners."
+    },
+
+    "frames": {
+      "type": "array",
+      "description": "List of semantic frames (entity/event/relational/narrative, etc.) that should be realized in this section. Each entry is typically one of the core frame types (bio, entity.organization, event.* , relation.*, aggregate.*), serialized according to its own schema.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "ordering_hint": {
+      "type": ["string", "null"],
+      "description": "Optional hint for ordering/rendering of frames within this section, e.g. 'chronological', 'by_importance', 'group_by_theme'."
+    },
+
+    "max_frames": {
+      "type": ["integer", "null"],
+      "description": "Optional soft cap on how many frames from `frames` should actually be realized when generating text. Planners may use this to truncate very dense sections."
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Optional additional structured attributes at the section level (e.g. UI hints, layout preferences) that are not yet promoted to first-class fields.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata for project-specific extensions (provenance, original section ids, debugging info). Not interpreted by core semantics.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "frames"
+  ]
+}

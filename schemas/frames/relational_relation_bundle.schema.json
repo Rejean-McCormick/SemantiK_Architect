@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Relational relation bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Stable string label used by routers / planners to recognize this as a relation-bundle frame.",
+      "enum": [
+        "relation.bundle",
+        "rel.bundle",
+        "relational_relation_bundle"
+      ]
+    },
+
+    "subject": {
+      "type": "object",
+      "description": "Entity about which the bundle of facts is stated (city, country, organization, person, etc.). Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "items": {
+      "type": "array",
+      "description": "List of RelationBundleItem entries, each wrapping a more specific relational frame together with a coarse type and optional salience / ordering hints.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "relation_type": {
+            "type": "string",
+            "description": "Coarse label describing the kind of relation, used for ordering and planning heuristics (e.g. 'definition', 'classification', 'attribute', 'quantitative', 'membership', 'part_whole', 'location', 'role')."
+          },
+          "relation": {
+            "description": "Underlying relation object. Typically one of the specific relational frames (membership, quantitative measure, etc.).",
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "salience": {
+            "type": ["number", "null"],
+            "description": "Optional numeric score indicating importance of this relation within the bundle. Higher = more important.",
+            "default": 1.0
+          },
+          "order_hint": {
+            "type": ["integer", "null"],
+            "description": "Optional integer suggesting preferred ordering among relations of similar type. Lower values are typically placed earlier."
+          }
+        },
+        "required": [
+          "relation_type",
+          "relation"
+        ]
+      }
+    },
+
+    "info_structure": {
+      "type": ["object", "null"],
+      "description": "Optional information-structure annotation (topic/focus/background hints for subject vs. predicate roles). Shape follows semantics.normalization.InfoStructure.",
+      "additionalProperties": true
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Open-ended attribute map for bundle-level metadata useful to downstream components (e.g. 'max_items_per_sentence', 'preferred_pattern').",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata preserved but not interpreted by core NLG logic (e.g. original IDs, provenance, pipeline-debug info).",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "subject",
+    "items"
+  ]
+}

@@ -1,0 +1,407 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wikipedia Frame Schema — Entity: Fictional Entity",
+  "description": "JSON shape for the entity-level fictional entity frame, used for fictional characters, settings, universes, and franchises in encyclopedic lead sentences and short summaries. It corresponds to the 'fictional-entity' family in the frame inventory and the semantics/entity/fictional_entity_frame.py model.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Frame family identifier. For fictional entity frames the canonical value is 'entity.fictional_entity'. The shorter internal variant 'fictional_entity' is also accepted for compatibility.",
+      "enum": [
+        "entity.fictional_entity",
+        "fictional_entity"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "description": "Optional stable identifier for this frame instance (e.g. an internal ID, page ID, or statement cluster ID). This is NOT the same as the fictional entity's own identifier."
+    },
+    "main_entity": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "The fictional entity being described: a character, place, object, species, organization, universe, or franchise."
+    },
+    "entity_role": {
+      "type": "string",
+      "description": "Optional role label for how main_entity functions in this frame. For article-level entity frames this is usually 'subject'.",
+      "default": "subject"
+    },
+    "fictional_kinds_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels describing what kind of fictional entity this is, such as ['fictional character'], ['fictional city'], ['fictional planet'], ['fictional species'], or ['fictional organization'].",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "universe_entities": {
+      "type": "array",
+      "description": "Fictional universes, franchises, or works-of-origin that this entity belongs to or primarily appears in (e.g. 'Marvel Cinematic Universe', 'Star Wars', 'The Lord of the Rings').",
+      "items": {
+        "$ref": "#/definitions/EntityRef"
+      }
+    },
+    "creator_entities": {
+      "type": "array",
+      "description": "Real-world creators associated with this fictional entity, such as authors, screenwriters, directors, illustrators, or character designers.",
+      "items": {
+        "$ref": "#/definitions/EntityRef"
+      }
+    },
+    "first_appearance_work": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "The earliest known work (book, film, comic, game, etc.) in which the fictional entity appears."
+    },
+    "first_appearance_event": {
+      "$ref": "#/definitions/EventRef",
+      "description": "Optional structured event for the entity's first appearance (e.g. publication, broadcast, or release), when modeled separately."
+    },
+    "species_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for the in-universe species or race of a character or group (e.g. ['human'], ['elf'], ['android']).",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "occupation_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for occupations, roles, or archetypes of the fictional entity, such as ['detective'], ['superhero'], ['villain'], ['wizard'].",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "alignment_lemmas": {
+      "type": "array",
+      "description": "Coarse alignment / narrative role labels, such as ['protagonist'], ['antagonist'], ['antihero'], ['supporting_character'], ['comic_relief'].",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "affiliation_entities": {
+      "type": "array",
+      "description": "Fictional organizations, factions, teams, houses, or families that the entity is affiliated with (e.g. 'Avengers', 'Gryffindor', 'House Stark').",
+      "items": {
+        "$ref": "#/definitions/EntityRef"
+      }
+    },
+    "in_universe_locations": {
+      "type": "array",
+      "description": "Fictional places with which the entity is strongly associated (home city, home planet, main setting, etc.). These are typically modeled as entities or locations in the same fiction universe.",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/EntityRef"
+          },
+          {
+            "$ref": "#/definitions/LocationRef"
+          }
+        ]
+      }
+    },
+    "real_world_origins": {
+      "type": "array",
+      "description": "Optional references to real-world locations, cultures, or time periods that inspired or strongly influence the fictional entity.",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/EntityRef"
+          },
+          {
+            "$ref": "#/definitions/LocationRef"
+          }
+        ]
+      }
+    },
+    "abilities_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for notable abilities, powers, or traits (e.g. ['telepathy'], ['super strength'], ['time travel'], ['immortality']).",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "description": "Important in-universe relationships to other fictional entities that may be mentioned in short summaries (e.g. 'sibling of X', 'mentor of Y', 'archenemy of Z'). Each item is a small relation object.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "relation_type",
+          "target"
+        ],
+        "properties": {
+          "relation_type": {
+            "type": "string",
+            "description": "Label describing the relationship type, such as 'sibling', 'parent', 'child', 'partner', 'ally', 'enemy', 'mentor'."
+          },
+          "target": {
+            "$ref": "#/definitions/EntityRef",
+            "description": "The other fictional entity involved in this relationship."
+          },
+          "extra": {
+            "type": "object",
+            "description": "Optional metadata for this specific relationship.",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "signature_items": {
+      "type": "array",
+      "description": "Optional list of in-universe items, vehicles, or artifacts particularly associated with the entity (e.g. a specific sword, starship, or device).",
+      "items": {
+        "$ref": "#/definitions/EntityRef"
+      }
+    },
+    "catchphrases": {
+      "type": "array",
+      "description": "Short texts for iconic phrases or slogans associated with the entity. These are usually not reproduced verbatim by the NLG system, but can be used to guide description or for debugging / metadata.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Additional attribute-style facts that do not warrant dedicated top-level fields but may be useful for surface realization. Example keys include 'alias', 'title', 'rank', 'team_status', 'costume_features', 'character_arc_keywords'.",
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary extra metadata carried through normalization; not interpreted by the generic NLG layer but preserved for traceability and debugging.",
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "EntityRef": {
+      "type": "object",
+      "description": "Lightweight reference to a discourse entity, following the shape of semantics.types.Entity.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the entity, e.g. a Wikidata QID ('Q42'), local database ID, or URI."
+        },
+        "name": {
+          "type": "string",
+          "description": "Preferred surface name or label, such as 'Sherlock Holmes' or 'Gotham City'."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Coarse gender category for human entities (e.g. 'female', 'male', 'nonbinary', 'unknown')."
+        },
+        "human": {
+          "type": "boolean",
+          "description": "Whether this entity is a human (useful for pronoun selection)."
+        },
+        "entity_type": {
+          "type": "string",
+          "description": "Optional coarse type hint such as 'person', 'organization', 'place', 'fictional_character', 'fictional_place'."
+        },
+        "lemmas": {
+          "type": "array",
+          "description": "Optional list of lexeme lemmas associated with the entity.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary for morphology / constructions (e.g. grammatical person, number, animacy).",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata (IDs, codes, raw source row, etc.).",
+          "additionalProperties": true
+        }
+      }
+    },
+    "LocationRef": {
+      "type": "object",
+      "description": "Reference to a location, following the shape of semantics.types.Location.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the location (e.g. QID, geocode)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable label (e.g. 'Metropolis', 'Hogwarts')."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Optional location kind, such as 'city', 'country', 'region', 'school', 'planet'."
+        },
+        "country_code": {
+          "type": "string",
+          "description": "Optional ISO country code for real-world locations, such as 'GB'."
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary, e.g. for preposition choice.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "TimeSpan": {
+      "type": "object",
+      "description": "Coarse time span or single date, following semantics.types.TimeSpan.",
+      "additionalProperties": false,
+      "properties": {
+        "start_year": {
+          "type": "integer",
+          "description": "Starting year, e.g. 1954. For a single date, this is the main year of interest."
+        },
+        "end_year": {
+          "type": "integer",
+          "description": "Optional end year."
+        },
+        "start_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Optional start month (1–12)."
+        },
+        "start_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Optional start day (1–31)."
+        },
+        "end_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Optional end month (1–12)."
+        },
+        "end_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Optional end day (1–31)."
+        },
+        "approximate": {
+          "type": "boolean",
+          "description": "If true, the timespan is approximate (e.g. 'around 1980')."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata or source-specific fields.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "EventRef": {
+      "type": "object",
+      "description": "Lightweight reference to a semantic event (semantics.types.Event), such as a publication, broadcast, or release.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the event."
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Free-form event type label, such as 'publication', 'broadcast', 'release', 'first_appearance'."
+        },
+        "time": {
+          "$ref": "#/definitions/TimeSpan",
+          "description": "When the event took place."
+        },
+        "location": {
+          "description": "Where the event took place (entity or location).",
+          "oneOf": [
+            {
+              "$ref": "#/definitions/EntityRef"
+            },
+            {
+              "$ref": "#/definitions/LocationRef"
+            }
+          ]
+        },
+        "participants": {
+          "type": "object",
+          "description": "Optional mapping from participant roles (e.g. 'subject', 'creator') to entities involved in the event.",
+          "additionalProperties": {
+            "$ref": "#/definitions/EntityRef"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary event metadata.",
+          "additionalProperties": true
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "frame_type": "entity.fictional_entity",
+      "main_entity": {
+        "id": "Q12345",
+        "name": "Sherlock Holmes",
+        "entity_type": "fictional_character"
+      },
+      "fictional_kinds_lemmas": [
+        "fictional character",
+        "detective"
+      ],
+      "universe_entities": [
+        {
+          "name": "Sherlock Holmes stories",
+          "entity_type": "franchise"
+        }
+      ],
+      "creator_entities": [
+        {
+          "name": "Arthur Conan Doyle",
+          "entity_type": "person"
+        }
+      ],
+      "first_appearance_work": {
+        "name": "A Study in Scarlet",
+        "entity_type": "novel"
+      },
+      "species_lemmas": [
+        "human"
+      ],
+      "occupation_lemmas": [
+        "detective"
+      ],
+      "alignment_lemmas": [
+        "protagonist"
+      ],
+      "affiliation_entities": [
+        {
+          "name": "Scotland Yard",
+          "entity_type": "organization"
+        }
+      ],
+      "attributes": {
+        "residence": "221B Baker Street",
+        "notable_traits": [
+          "brilliant_deduction",
+          "violin_playing"
+        ]
+      },
+      "extra": {
+        "wikidata_qid": "Q12345"
+      }
+    }
+  ]
+}

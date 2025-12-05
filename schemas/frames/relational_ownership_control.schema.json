@@ -1,0 +1,220 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Architect – Relational: ownership / control frame",
+  "description": "Canonical semantic frame for ownership and control relations between two entities (e.g. company–subsidiary, state–enterprise, operator–facility) used by Abstract Wiki Architect.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame type name. Normalization code can accept several aliases, but JSON authored against this schema should prefer 'relational.ownership_control'.",
+      "enum": [
+        "relational.ownership_control",
+        "relational_ownership_control",
+        "ownership_control"
+      ]
+    },
+
+    "owner": {
+      "description": "The owning or controlling entity. This may be a person, organization, state, etc.",
+      "$ref": "#/definitions/Entity"
+    },
+
+    "asset": {
+      "description": "The entity that is owned, controlled, operated, or managed by 'owner' (e.g. company, facility, brand).",
+      "$ref": "#/definitions/Entity"
+    },
+
+    "relation_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Coarse label describing the nature of the relation, typically one of 'ownership', 'majority_ownership', 'minority_ownership', 'control', 'operation', 'management'."
+    },
+
+    "ownership_share_pct": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Optional approximate ownership share as a percentage (0–100), e.g. 51.0 for a 51% stake."
+    },
+
+    "control_level": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional qualitative description of control level, e.g. 'full', 'majority', 'minority', 'operational_only'."
+    },
+
+    "time_span": {
+      "description": "Optional time span during which the ownership / control relation holds.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TimeSpan"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+
+    "jurisdiction": {
+      "description": "Optional jurisdiction in which the ownership / control relation is relevant (typically a country or region).",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Entity"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for extensibility (e.g. voting_rights_pct, economic_interest_pct, listing_status). Keys should be snake_case strings.",
+      "additionalProperties": true
+    }
+  },
+
+  "required": [
+    "frame_type",
+    "owner",
+    "asset"
+  ],
+
+  "definitions": {
+    "Entity": {
+      "description": "Lightweight entity reference used inside frames. It mirrors semantics.common.entity_base.Entity.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stable identifier, typically a Wikidata QID such as 'Q42', or another project-specific ID."
+        },
+        "name": {
+          "type": "string",
+          "description": "Canonical surface label for the entity in the working language."
+        },
+        "gender": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional gender code for human entities, e.g. 'male', 'female', 'unknown'."
+        },
+        "human": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Whether this entity is a human individual."
+        },
+        "entity_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional coarse type hint such as 'organization', 'person', 'place', 'company', 'state'."
+        },
+        "lemmas": {
+          "type": "array",
+          "description": "Optional list of lemma strings associated with the entity, e.g. profession or role lemmas.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary (e.g. grammatical, semantic, or domain-specific flags).",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata attached to the entity.",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+
+    "TimeSpan": {
+      "description": "Coarse time span representation as used in semantics.common.entity_base.TimeSpan.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "start_year": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Starting year, e.g. 1998."
+        },
+        "end_year": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Optional end year, e.g. 2005."
+        },
+        "start_month": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Optional starting month (1-12)."
+        },
+        "start_day": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Optional starting day of month (1-31)."
+        },
+        "end_month": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Optional end month (1-12)."
+        },
+        "end_day": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Optional end day of month (1-31)."
+        },
+        "approximate": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Whether the dates are approximate or inferred."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata related to the time span.",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

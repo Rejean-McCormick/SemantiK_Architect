@@ -1,0 +1,330 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Entity Creative Work Frame",
+  "description": "Canonical JSON schema for creative work entity frames (`entity.creative_work`). Covers books, films, TV series, episodes, albums, songs, paintings, games, etc.",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "frame_type": {
+      "description": "Frame type discriminator. Must be `entity.creative_work`.",
+      "type": "string",
+      "const": "entity.creative_work"
+    },
+
+    "id": {
+      "description": "Optional stable identifier for this frame (e.g. internal ID, Wikidata QID for the work, etc.).",
+      "type": ["string", "null"]
+    },
+
+    "main_entity": {
+      "description": "Canonical entity representing the creative work itself.",
+      "$ref": "#/definitions/Entity"
+    },
+
+    "work_kind": {
+      "description": "High-level category of the work, such as `book`, `novel`, `film`, `tv_series`, `tv_episode`, `album`, `song`, `painting`, `video_game`, etc.",
+      "type": "string"
+    },
+
+    "creator_entities": {
+      "description": "Primary creators of the work (authors, directors, composers, creators).",
+      "type": "array",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "release_event": {
+      "description": "Semantic event object describing the first/public release or premiere of the work.",
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/Event" }
+      ]
+    },
+
+    "original_language": {
+      "description": "Primary/original language code of the work (BCP 47 / ISO 639 style, e.g. `en`, `fr`, `ja`).",
+      "type": ["string", "null"]
+    },
+
+    "runtime_minutes": {
+      "description": "Approximate running time in minutes (for films, episodes, games, etc.).",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+
+    "page_count": {
+      "description": "Number of pages (for books, comics, etc.).",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+
+    "episode_count": {
+      "description": "Number of episodes (for series, seasons, etc.).",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+
+    "series_or_franchise": {
+      "description": "Larger series or franchise this work belongs to (e.g. a franchise for a film, series for an episode).",
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/Entity" }
+      ]
+    },
+
+    "attributes": {
+      "description": "Additional structured attributes for creative works. Known keys are typed below; other keys are allowed for project-specific extensions.",
+      "type": "object",
+      "properties": {
+        "genre_lemmas": {
+          "description": "Genre or style labels as lemma-like strings (e.g. `science fiction`, `fantasy`, `drama`).",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+
+        "publisher_or_label": {
+          "description": "Publishing house, record label, or equivalent.",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/Entity" }
+          ]
+        },
+
+        "cast": {
+          "description": "Cast information, mainly for audiovisual works. Each entry typically represents an actor and the role they portray.",
+          "type": "array",
+          "items": { "$ref": "#/definitions/CastMember" }
+        },
+
+        "platforms": {
+          "description": "Distribution or release platforms (e.g. `Netflix`, `PC`, `PlayStation`, `Kindle`).",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+
+        "awards": {
+          "description": "Awards, nominations, and similar recognitions received by the work.",
+          "type": "array",
+          "items": { "$ref": "#/definitions/Award" }
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "description": "Arbitrary metadata not part of the core semantics (provenance, source IDs, debug info, etc.).",
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+
+  "required": [
+    "frame_type",
+    "main_entity",
+    "work_kind"
+  ],
+
+  "definitions": {
+    "Entity": {
+      "description": "Generic entity object (person, organization, place, work, etc.). At minimum a name; additional typing and metadata are allowed.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable identifier (e.g. Wikidata QID).",
+          "type": ["string", "null"]
+        },
+        "name": {
+          "description": "Human-readable label for the entity.",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "High-level type hint (e.g. `person`, `organization`, `place`, `work`).",
+          "type": ["string", "null"]
+        },
+        "human": {
+          "description": "Whether this entity represents a human person.",
+          "type": ["boolean", "null"]
+        },
+        "gender": {
+          "description": "Optional gender tag for human entities (e.g. `male`, `female`, `nonbinary`, project-specific).",
+          "type": ["string", "null"]
+        },
+        "features": {
+          "description": "Free-form feature map for entity-level attributes.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "extra": {
+          "description": "Extra metadata and provenance.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "TimeSpan": {
+      "description": "Coarse time span or partial date, encoded as a flat object. Designed to tolerate partial information.",
+      "type": "object",
+      "properties": {
+        "start_year": { "type": ["integer", "null"] },
+        "start_month": { "type": ["integer", "null"], "minimum": 1, "maximum": 12 },
+        "start_day": { "type": ["integer", "null"], "minimum": 1, "maximum": 31 },
+        "end_year": { "type": ["integer", "null"] },
+        "end_month": { "type": ["integer", "null"], "minimum": 1, "maximum": 12 },
+        "end_day": { "type": ["integer", "null"], "minimum": 1, "maximum": 31 },
+        "approximate": {
+          "description": "If true, the span is approximate or uncertain.",
+          "type": ["boolean", "null"]
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "Location": {
+      "description": "Lightweight location object for events (city, country, region, building, etc.).",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name of the location (city, country, etc.).",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Optional classification (e.g. `city`, `country`, `region`, `building`).",
+          "type": ["string", "null"]
+        },
+        "country_code": {
+          "description": "Optional country code (e.g. ISO 3166-1 alpha-2).",
+          "type": ["string", "null"]
+        },
+        "admin_hierarchy": {
+          "description": "Optional list of enclosing administrative units (e.g. region, country).",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "features": {
+          "description": "Additional geographic codes or metadata.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "extra": {
+          "description": "Extra metadata not part of core semantics.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "Event": {
+      "description": "Semantic event object used for release and similar episodes. Mirrors the `Event` JSON conventions.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Optional stable identifier for the event (e.g. local ID).",
+          "type": ["string", "null"]
+        },
+        "event_type": {
+          "description": "High-level label (e.g. `release`, `premiere`, `publication`).",
+          "type": "string"
+        },
+        "participants": {
+          "description": "Mapping from role label to entity (e.g. `subject`, `agent`, `location_owner`).",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/Entity" }
+        },
+        "time": {
+          "description": "When the event occurred.",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/TimeSpan" }
+          ]
+        },
+        "location": {
+          "description": "Where the event occurred.",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/Location" }
+          ]
+        },
+        "properties": {
+          "description": "Additional semantic properties of the event (instrument, manner, cause, etc.).",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "extra": {
+          "description": "Metadata and provenance not part of semantic content.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["event_type"],
+      "additionalProperties": true
+    },
+
+    "CastMember": {
+      "description": "Cast/credit entry for audiovisual works.",
+      "type": "object",
+      "properties": {
+        "person": {
+          "description": "Actor or performer.",
+          "$ref": "#/definitions/Entity"
+        },
+        "role_name": {
+          "description": "Name of the character or role played.",
+          "type": ["string", "null"]
+        },
+        "credited_as": {
+          "description": "Credit line as it appears in on-screen or official materials.",
+          "type": ["string", "null"]
+        },
+        "extra": {
+          "description": "Any additional cast-related metadata.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["person"],
+      "additionalProperties": false
+    },
+
+    "Award": {
+      "description": "Award, nomination, or similar recognition for the work.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name of the award (e.g. `Academy Award for Best Picture`).",
+          "type": "string"
+        },
+        "year": {
+          "description": "Year the award or nomination was given.",
+          "type": ["integer", "null"]
+        },
+        "category": {
+          "description": "Award category, if applicable.",
+          "type": ["string", "null"]
+        },
+        "result": {
+          "description": "Result/standing such as `won`, `nominated`, or project-specific labels.",
+          "type": ["string", "null"]
+        },
+        "presenting_body": {
+          "description": "Organization that presents the award.",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/Entity" }
+          ]
+        },
+        "extra": {
+          "description": "Additional metadata regarding the award.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,248 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Architect Frame Schema: Astronomical Object",
+  "description": "JSON schema for `entity.astronomical_object` frames used by the Abstract Wiki Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `AstronomicalObjectFrame`.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "enum": [
+        "entity.astronomical_object"
+      ],
+      "description": "Canonical frame type identifier. Must be `entity.astronomical_object`."
+    },
+    "main_entity": {
+      "$ref": "#/definitions/EntityRef"
+    },
+    "astro_kind": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "High-level astronomical kind, e.g. 'star', 'planet', 'galaxy', 'exoplanet'."
+    },
+    "mass_kg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Approximate mass in kilograms, if known."
+    },
+    "radius_km": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Approximate mean radius in kilometres, if known."
+    },
+    "orbital_period_days": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Orbital period in Earth days, when applicable (e.g. planets, moons)."
+    },
+    "semi_major_axis_au": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Semi-major axis in astronomical units, when applicable."
+    },
+    "distance_ly": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Distance from Earth in light-years, when applicable."
+    },
+    "constellation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Constellation in which the object is observed (IAU-style name), when applicable."
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Optional attribute bag used for secondary facts and domain-specific keys.\n\nRecommended keys for astronomical objects include:\n- `discovery_event` (EventRef): discovery / first observation event.\n- `spectral_type` (string): spectral classification, e.g. 'G2V'.\n- `host_star` (EntityRef): host star for exoplanets.\n- `satellites` (array[EntityRef]): known satellites / moons.\n\nCallers MAY provide additional keys; they will be passed through to the semantics layer.",
+      "properties": {
+        "discovery_event": {
+          "$ref": "#/definitions/EventRef"
+        },
+        "spectral_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "host_star": {
+          "$ref": "#/definitions/EntityRef"
+        },
+        "satellites": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityRef"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Opaque source-specific metadata not interpreted by the core semantics/NLG layer. Use this to carry original IDs, raw fields, or debugging information.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+  "definitions": {
+    "EntityRef": {
+      "type": "object",
+      "description": "Lightweight reference to an entity in the Abstract Wiki knowledge graph or an external source. At least one identifier (`id`, `qid`, or `name`) SHOULD be provided.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Opaque internal identifier for the entity (database or graph ID)."
+        },
+        "qid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional Wikidata QID, e.g. 'Q2' for Earth."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Surface name of the entity in a reference language."
+        },
+        "entity_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Loose entity type label, e.g. 'astronomical_object', 'person', 'place'."
+        },
+        "lang": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional BCP-47-like language tag for `name`, e.g. 'en', 'fr'."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form payload attached to the entity reference.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true,
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "qid"
+          ]
+        },
+        {
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "TimeSpan": {
+      "type": "object",
+      "description": "Approximate or exact time span for an event. All fields are optional; callers may encode a single point (`point`) or an interval (`start`/`end`).",
+      "properties": {
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Start of the interval in ISO-8601 form, e.g. '1995-01-01' or '1995-01-01T00:00:00Z'."
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "End of the interval in ISO-8601 form."
+        },
+        "point": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Instantaneous timestamp in ISO-8601 form when appropriate."
+        },
+        "precision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional precision hint such as 'year', 'month', 'day', 'hour'."
+        }
+      },
+      "additionalProperties": true
+    },
+    "EventRef": {
+      "type": "object",
+      "description": "Lightweight representation or reference for an event. Used here primarily for discovery events.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Opaque internal identifier for the event (database or graph ID)."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Short human-readable label for the event."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Informal event type label, e.g. 'discovery', 'observation'."
+        },
+        "time": {
+          "$ref": "#/definitions/TimeSpan"
+        },
+        "location": {
+          "$ref": "#/definitions/EntityRef"
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityRef"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form payload attached to the event reference.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

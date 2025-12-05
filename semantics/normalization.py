@@ -2,7 +2,7 @@
 semantics/normalization.py
 ==========================
 
-Light-weight helpers to turn “messy” abstract inputs into a clean,
+Light-weight helpers to turn "messy" abstract inputs into a clean,
 predictable shape before they hit the engines / constructions.
 
 This module focuses on three things:
@@ -16,7 +16,7 @@ This module focuses on three things:
 3. Normalizing simple information-structure features:
    - topic / focus / background role labels
 
-The goal is *not* to prescribe a single global semantic model, but to give
+The goal is not to prescribe a single global semantic model, but to give
 you a stable, minimal contract so that:
 
 - router.render_biography(...) can accept a variety of inputs
@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 try:
-    # Preferred: use the project’s Wikifunctions mock if available
+    # Preferred: use the project's Wikifunctions mock if available
     from utils.wikifunctions_api_mock import unwrap as _unwrap_zobject
 except ImportError:  # pragma: no cover - defensive fallback for isolated use
 
@@ -283,7 +283,7 @@ def normalize_info_structure(raw: Optional[Mapping[str, Any]]) -> InfoStructure:
 
 
 # ---------------------------------------------------------------------------
-# Biography input normalization
+# Biography semantics normalization
 # ---------------------------------------------------------------------------
 
 
@@ -417,7 +417,7 @@ def normalize_bio_semantics(
             extra={},  # no place for extras in positional form
         )
 
-    # Fallback: treat any other type as a “name-only” input; everything else unknown.
+    # Fallback: treat any other type as a "name-only" input; everything else unknown.
     name = _normalize_string(raw)
     return BioSemantics(
         name=name,
@@ -450,7 +450,7 @@ def normalize_bio_with_info(
 
         {
             "bio": BioSemantics(...),
-            "info_structure": InfoStructure(...)
+            "info_structure": InfoStructure(...),
         }
 
     This is intentionally a plain dict so that it can be JSON-ified or

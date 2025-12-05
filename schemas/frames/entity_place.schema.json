@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame Schema: Place",
+  "description": "JSON schema for the PlaceFrame semantic structure used for geographic / place entities.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "enum": ["place"],
+      "description": "Stable frame identifier; must be \"place\" for PlaceFrame instances."
+    },
+
+    "main_entity": {
+      "type": ["object", "null"],
+      "description": "The place entity that this frame describes, typically mirroring semantics.types.Entity (id, name, entity_type, extra, etc.)."
+    },
+
+    "primary_kind": {
+      "type": ["string", "null"],
+      "description": "Coarse semantic kind of place, e.g. \"country\", \"city\", \"river\", \"mountain\", \"airport\", \"stadium\"."
+    },
+
+    "locations": {
+      "type": "array",
+      "description": "Zero or more Location-like objects describing where this place is situated (e.g. continent, country, region).",
+      "items": {
+        "type": "object",
+        "description": "A generic location object, typically matching semantics.types.Location (id, name, kind, extra, etc.)."
+      }
+    },
+
+    "admin_level": {
+      "type": ["integer", "null"],
+      "description": "Optional administrative level indicator, where lower numbers usually mean higher-level units (e.g. 0=nation, 1=region, 2=province, 3=municipality)."
+    },
+
+    "timespan": {
+      "type": ["object", "null"],
+      "description": "Coarse TimeSpan-like object describing the existence or relevant period of the place (e.g. founding and dissolution years).",
+      "properties": {
+        "start_year": {
+          "type": ["integer", "null"],
+          "description": "Approximate start year."
+        },
+        "end_year": {
+          "type": ["integer", "null"],
+          "description": "Approximate end year, if applicable."
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "Whether the span is approximate rather than exact."
+        },
+        "extra": {
+          "type": ["object", "null"],
+          "description": "Optional additional metadata for the time span.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "population": {
+      "type": ["integer", "null"],
+      "description": "Approximate population count, if known."
+    },
+
+    "population_timespan": {
+      "type": ["object", "null"],
+      "description": "TimeSpan-like object indicating when the population value applies (e.g. census year or period).",
+      "properties": {
+        "start_year": {
+          "type": ["integer", "null"],
+          "description": "Year or start year for the population figure."
+        },
+        "end_year": {
+          "type": ["integer", "null"],
+          "description": "Optional end year, for multi-year ranges."
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "Whether the population time span is approximate."
+        },
+        "extra": {
+          "type": ["object", "null"],
+          "description": "Optional additional metadata for the population time span.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "area_km2": {
+      "type": ["number", "null"],
+      "description": "Area of the place in square kilometres, if known."
+    },
+
+    "elevation_m": {
+      "type": ["number", "null"],
+      "description": "Elevation in metres above sea level, if applicable (e.g. for mountains, cities, plateaus)."
+    },
+
+    "parent_entities": {
+      "type": "array",
+      "description": "Zero or more parent / containing entities, represented as generic Entity-like objects (e.g. country, region, municipality).",
+      "items": {
+        "type": "object",
+        "description": "An Entity-like object for the parent; typically includes id, name, entity_type, and extra.",
+        "additionalProperties": true
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Open-ended attribute map for additional structured facts about the place (climate, codes, nicknames, etc.). Keys should be strings.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata bag for provenance, debug info, or original-source fields that are not directly interpreted by NLG.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type"
+  ]
+}

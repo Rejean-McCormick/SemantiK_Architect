@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema#",
+  "$id": "schemas/frames/event_sports_event.schema.json",
+  "title": "SportsEventFrame",
+  "description": "Schema for sports-related events (matches, fixtures, tournaments, seasons) backed by semantics.event.sports_event_frame.SportsEventFrame.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "event.sports",
+      "description": "Canonical frame family identifier; must be \"event.sports\" for sports events."
+    },
+    "id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional stable identifier for the event (e.g. Wikidata QID or internal ID)."
+    },
+    "event_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "High-level label for the sports event type (e.g. \"match\", \"tournament\", \"season\", \"fixture\")."
+    },
+    "participants": {
+      "type": "object",
+      "description": "Mapping from role label to entity-like objects representing teams, players, officials, etc. Common keys include \"home_team\", \"away_team\", \"team1\", \"team2\", \"winner\", \"runner_up\", \"referee\", \"venue_owner\".",
+      "additionalProperties": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "time": {
+      "description": "Approximate time span when the event took place (single day, range of days, or season).",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/time_span"
+        }
+      ]
+    },
+    "location": {
+      "description": "Location where the event took place (stadium, city, country, etc.).",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/location"
+        }
+      ]
+    },
+    "properties": {
+      "type": "object",
+      "description": "Additional semantic properties specific to sports events, such as scores, competition, stage, leg, aggregate scores, penalty shoot-out details, etc. Keys are project-defined.",
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary metadata not directly part of semantic content (e.g. original source payloads, debug info).",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type"
+  ],
+  "$defs": {
+    "entity": {
+      "type": "object",
+      "description": "Light-weight entity representation used inside event participants and properties.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stable identifier for the entity, e.g. Wikidata QID."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Canonical label or surface-form name of the entity."
+        },
+        "entity_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional coarse type label for the entity (e.g. \"team\", \"club\", \"player\", \"stadium\")."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata about the entity.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "time_span": {
+      "type": "object",
+      "description": "Time span representation compatible with semantics.types.TimeSpan.",
+      "properties": {
+        "start_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "start_month": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "start_day": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "end_month": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "end_day": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "approximate": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "If true, the time span is approximate (e.g. a season or era rather than an exact date)."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata about the time span.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "location": {
+      "type": "object",
+      "description": "Location representation compatible with semantics.types.Location.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stable identifier for the location, if any."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Human-readable label for the location (e.g. stadium or city name)."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional type/category of the location (e.g. \"stadium\", \"city\", \"country\")."
+        },
+        "country_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional ISO 3166-1 alpha-2 country code."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata about the location.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

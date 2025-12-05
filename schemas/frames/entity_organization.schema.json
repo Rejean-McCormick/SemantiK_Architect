@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://abstractwiki.org/schemas/frames/entity_organization.schema.json",
+  "title": "OrganizationFrame",
+  "description": "Semantic frame for organizations, companies, parties, clubs, and similar group entities.",
+  "type": "object",
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "entity_organization",
+      "description": "Discriminator for this frame family; must be \"entity_organization\"."
+    },
+    "main_entity": {
+      "$ref": "#/$defs/entity",
+      "description": "The organization being described."
+    },
+    "organization_type_lemmas": {
+      "type": "array",
+      "description": "Lemma-level labels for the type of organization (e.g. \"company\", \"political party\").",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sector_lemmas": {
+      "type": "array",
+      "description": "Lemma-level labels for the sector or field of activity (e.g. \"technology\", \"banking\").",
+      "items": {
+        "type": "string"
+      }
+    },
+    "country_lemmas": {
+      "type": "array",
+      "description": "Lemma-level labels for national or regional affiliation (e.g. \"american\", \"french\").",
+      "items": {
+        "type": "string"
+      }
+    },
+    "headquarters": {
+      "$ref": "#/$defs/location",
+      "description": "Primary headquarters location, if known."
+    },
+    "founding_event": {
+      "$ref": "#/$defs/event",
+      "description": "Optional event representing the founding / establishment of the organization."
+    },
+    "dissolution_event": {
+      "$ref": "#/$defs/event",
+      "description": "Optional event representing the dissolution / closure / merger that ended the organization's independent existence."
+    },
+    "other_events": {
+      "type": "array",
+      "description": "Other salient events in the organization's history (mergers, relocations, major milestones).",
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "key_people": {
+      "type": "object",
+      "description": "Mapping from role label (e.g. \"founder\", \"chairperson\") to a list of people entities.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/entity"
+        }
+      }
+    },
+    "parent_organizations": {
+      "type": "array",
+      "description": "Parent organizations, if any.",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "subsidiaries": {
+      "type": "array",
+      "description": "Notable subsidiaries or controlled organizations.",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "predecessors": {
+      "type": "array",
+      "description": "Organizations that this one directly succeeded (e.g. after a merger or renaming).",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "successors": {
+      "type": "array",
+      "description": "Organizations that directly succeed this one.",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Arbitrary attribute map with structured, JSON-serializable values.",
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Opaque metadata and provenance; not interpreted by the generic NLG pipeline.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "entity": {
+      "type": "object",
+      "description": "Lightweight entity reference used inside frames.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier (e.g. Wikidata QID) if available."
+        },
+        "name": {
+          "type": "string",
+          "description": "Canonical surface name for the entity."
+        },
+        "entity_type": {
+          "type": "string",
+          "description": "Coarse entity type label (e.g. \"person\", \"organization\", \"work\")."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary additional metadata on the entity.",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "location": {
+      "type": "object",
+      "description": "Location structure used in frames.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the location, if any."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the location."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Coarse location kind (e.g. \"city\", \"country\", \"building\", \"region\")."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary additional metadata on the location.",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "event": {
+      "type": "object",
+      "description": "Generic event structure used for founding / dissolution / historical events.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the event, if any."
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Coarse event type label (e.g. \"founding\", \"dissolution\", \"merger\")."
+        },
+        "time": {
+          "type": "object",
+          "description": "Time span associated with the event.",
+          "properties": {
+            "start_year": {
+              "type": "integer"
+            },
+            "end_year": {
+              "type": ["integer", "null"]
+            },
+            "approximate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "start_year"
+          ],
+          "additionalProperties": true
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "participants": {
+          "type": "object",
+          "description": "Mapping from role labels to entities participating in the event.",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/entity"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/entity"
+                }
+              }
+            ]
+          }
+        },
+        "properties": {
+          "type": "object",
+          "description": "Arbitrary event-level properties (e.g. \"cause\", \"outcome\").",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Opaque metadata for the event.",
+          "additionalProperties": true
+        }
+      },
+      "required": [],
+      "additionalProperties": true
+    }
+  }
+}

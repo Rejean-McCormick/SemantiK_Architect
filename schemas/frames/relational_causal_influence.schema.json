@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Relational causal / influence",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier for the causal / influence family. For this frame, the canonical value is \"rel.causal-influence\"; the family-level type is \"relation.causal\".",
+      "enum": [
+        "rel.causal-influence",
+        "relation.causal",
+        "relational_causal_influence"
+      ]
+    },
+
+    "cause": {
+      "type": "object",
+      "description": "The causal side of the relation: typically an Event (e.g. a policy change, a crisis, an intervention) or an Entity that stands in for an event (e.g. a law, an institution). Shape follows semantics.types.Event or semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "effect": {
+      "type": "object",
+      "description": "The effect side of the relation: typically an Event or state change, but occasionally an Entity if that entity’s state is what changes. Shape follows semantics.types.Event or semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "causal_relation": {
+      "type": ["string", "null"],
+      "description": "Coarse label describing the subtype of causal / influence relation. Recommended values include: \"cause\", \"contributes-to\", \"leads-to\", \"triggers\", \"enables\", \"prevents\", \"associated-with\". Projects may extend this inventory."
+    },
+
+    "polarity": {
+      "type": ["string", "null"],
+      "description": "Optional high-level polarity of the effect from the perspective of the subject or narrator. Typical values: \"positive\", \"negative\", \"mixed\", \"neutral\"."
+    },
+
+    "strength": {
+      "type": ["number", "null"],
+      "description": "Optional numerical strength of the relationship, in whatever scale a project chooses (e.g. 0.0–1.0, or 1–5). Engines should not assume any particular scaling convention."
+    },
+
+    "time": {
+      "type": ["object", "null"],
+      "description": "Optional TimeSpan indicating when the causal influence is understood to hold, or when the effect occurred. Shape follows semantics.types.TimeSpan.",
+      "additionalProperties": true
+    },
+
+    "scope_description": {
+      "type": ["string", "null"],
+      "description": "Optional free-text description of the scope or context of the relationship (e.g. \"in Europe\", \"among low-income countries\", \"in the 1990s\")."
+    },
+
+    "mechanism_lemmas": {
+      "type": "array",
+      "description": "Lemma-level hints about the mechanism or pathway of influence, e.g. [\"economic\", \"political\"] or [\"through trade\", \"through migration\"]. These are language-neutral and may be mapped to surface phrases by NLG components.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "mechanism_gloss": {
+      "type": ["string", "null"],
+      "description": "Optional short textual gloss explaining the mechanism in more detail. This is language-specific and should only be surfaced when appropriate."
+    },
+
+    "evidence": {
+      "type": ["object", "null"],
+      "description": "Optional structured evidence / provenance information for the causal claim. Typical keys might include 'source', 'source_type', 'confidence', 'citation_keys'. NLG components should treat this as opaque metadata.",
+      "additionalProperties": true
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for additional structured information about this causal relation, beyond the core fields. Examples: {\"reversibility\": \"irreversible\", \"lag_years\": 10}.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Reserved for pipeline- or source-specific metadata that should not affect generation but may be useful for debugging or analysis.",
+      "additionalProperties": true
+    },
+
+    "relation_type": {
+      "type": ["string", "null"],
+      "description": "Legacy field: coarse label for the causal relation. Prefer 'causal_relation' for new data."
+    },
+
+    "cause_entity": {
+      "type": ["object", "null"],
+      "description": "Legacy field: cause-side entity. Prefer 'cause', which may also be an Event.",
+      "additionalProperties": true
+    },
+
+    "effect_entity": {
+      "type": ["object", "null"],
+      "description": "Legacy field: effect-side entity. Prefer 'effect', which may also be an Event.",
+      "additionalProperties": true
+    },
+
+    "time_span": {
+      "type": ["object", "null"],
+      "description": "Legacy field: generic time span for the relation. Prefer 'time'.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "cause",
+    "effect"
+  ]
+}

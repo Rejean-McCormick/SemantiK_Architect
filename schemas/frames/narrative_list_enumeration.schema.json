@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Narrative list / enumeration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier for the list / enumeration family. In the global frame inventory this corresponds to \"aggregate.list_enumeration\".",
+      "enum": [
+        "aggregate.list_enumeration",
+        "narrative.list_enumeration",
+        "narrative_list_enumeration"
+      ]
+    },
+
+    "subject": {
+      "type": ["object", "null"],
+      "description": "Optional main subject that owns or is characterized by the list (e.g. a ministry that has departments, a product that has features). Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "relation_lemma": {
+      "type": ["string", "null"],
+      "description": "Optional lemma-level label for the list relation between subject and items, e.g. 'have', 'include', 'consist_of', 'offer'. Used for patterns like 'X has A, B, and C'."
+    },
+
+    "group_label_lemma": {
+      "type": ["string", "null"],
+      "description": "Optional lemma-level label naming the group or collection as a whole, e.g. 'department', 'branch', 'product', 'feature', 'species'."
+    },
+
+    "scope_entity": {
+      "type": ["object", "null"],
+      "description": "Optional entity defining the scope of the enumeration (e.g. 'in the EU', 'within the company'). Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "items": {
+      "type": "array",
+      "description": "Items in the list or enumeration. Each item may be an entity, a concept, or a mixed slot with both an entity and a label.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity": {
+            "type": ["object", "null"],
+            "description": "Optional entity representing this item (e.g. a department, product, or person). Shape follows semantics.types.Entity.",
+            "additionalProperties": true
+          },
+          "label": {
+            "type": ["string", "null"],
+            "description": "Optional short label or name for the item, if modelling it as a full entity is not needed."
+          },
+          "category_lemma": {
+            "type": ["string", "null"],
+            "description": "Optional lemma-level category for this item (e.g. 'film', 'novel', 'river', 'island') when items fall into subtypes."
+          },
+          "order_index": {
+            "type": ["integer", "null"],
+            "description": "Optional explicit order index for this item within the list, if a particular ordering should be preserved."
+          },
+          "is_primary": {
+            "type": ["boolean", "null"],
+            "description": "Optional flag marking this item as primary or especially important within the list."
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "Optional short note or gloss about this specific item, e.g. a key property or disambiguating descriptor."
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Optional lightly structured attribute bag specific to this item (e.g. {'population': 100000, 'year_established': 1950}).",
+            "additionalProperties": true
+          }
+        }
+      },
+      "minItems": 1
+    },
+
+    "ordering_dimension_lemma": {
+      "type": ["string", "null"],
+      "description": "Optional lemma-level label for the dimension along which items are implicitly ordered (e.g. 'size', 'importance', 'chronology')."
+    },
+
+    "conjunction_lemma": {
+      "type": ["string", "null"],
+      "description": "Optional lemma-level label for the conjunction preferred when listing items, e.g. 'and', 'or'. Engines may override based on language defaults."
+    },
+
+    "summary_gloss": {
+      "type": ["string", "null"],
+      "description": "Optional short, language-specific gloss describing the intended list narrative (e.g. 'the main departments are...'). Engines may ignore or rephrase this."
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for additional structured information not yet promoted to first-class fields (e.g. numeric counts, coverage flags).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Reserved for pipeline- or source-specific metadata that should not affect generation but may be useful for debugging or analysis.",
+      "additionalProperties": true
+    },
+
+    "elements": {
+      "type": "array",
+      "description": "Legacy field: list of items in the enumeration. Prefer 'items' for new data.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "list_kind": {
+      "type": ["string", "null"],
+      "description": "Legacy field: textual description of the list kind (e.g. 'departments', 'members'). Prefer 'group_label_lemma' and 'relation_lemma'."
+    }
+  },
+  "required": [
+    "frame_type",
+    "items"
+  ]
+}

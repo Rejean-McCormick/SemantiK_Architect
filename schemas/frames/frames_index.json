@@ -1,0 +1,358 @@
+{
+  "$schema": "schema.json",
+  "version": 1,
+  "frames": {
+    "person": {
+      "index": 1,
+      "family": "entity",
+      "canonical_type": "bio",
+      "schema": "entity_person.schema.json"
+    },
+    "organization": {
+      "index": 2,
+      "family": "entity",
+      "canonical_type": "entity.organization",
+      "schema": "entity_organization.schema.json"
+    },
+    "geopolitical-entity": {
+      "index": 3,
+      "family": "entity",
+      "canonical_type": "entity.gpe",
+      "schema": "entity_geopolitical_entity.schema.json"
+    },
+    "place": {
+      "index": 4,
+      "family": "entity",
+      "canonical_type": "entity.place",
+      "schema": "entity_place.schema.json"
+    },
+    "facility": {
+      "index": 5,
+      "family": "entity",
+      "canonical_type": "entity.facility",
+      "schema": "entity_facility.schema.json"
+    },
+    "astronomical-object": {
+      "index": 6,
+      "family": "entity",
+      "canonical_type": "entity.astronomical",
+      "schema": "entity_astronomical_object.schema.json"
+    },
+    "species": {
+      "index": 7,
+      "family": "entity",
+      "canonical_type": "entity.species",
+      "schema": "entity_species.schema.json"
+    },
+    "chemical-material": {
+      "index": 8,
+      "family": "entity",
+      "canonical_type": "entity.chemical_or_material",
+      "schema": "entity_chemical_material.schema.json"
+    },
+    "artifact": {
+      "index": 9,
+      "family": "entity",
+      "canonical_type": "entity.artifact",
+      "schema": "entity_artifact.schema.json"
+    },
+    "vehicle": {
+      "index": 10,
+      "family": "entity",
+      "canonical_type": "entity.vehicle",
+      "schema": "entity_vehicle.schema.json"
+    },
+    "creative-work": {
+      "index": 11,
+      "family": "entity",
+      "canonical_type": "entity.creative_work",
+      "schema": "entity_creative_work.schema.json"
+    },
+    "software-protocol-standard": {
+      "index": 12,
+      "family": "entity",
+      "canonical_type": "entity.software_or_standard",
+      "schema": "entity_software_protocol_standard.schema.json"
+    },
+    "product-brand": {
+      "index": 13,
+      "family": "entity",
+      "canonical_type": "entity.product_or_brand",
+      "schema": "entity_product_brand.schema.json"
+    },
+    "sports-team": {
+      "index": 14,
+      "family": "entity",
+      "canonical_type": "entity.sports_team_or_club",
+      "schema": "entity_sports_team.schema.json"
+    },
+    "competition-league": {
+      "index": 15,
+      "family": "entity",
+      "canonical_type": "entity.competition_or_league",
+      "schema": "entity_competition_league.schema.json"
+    },
+    "language": {
+      "index": 16,
+      "family": "entity",
+      "canonical_type": "entity.language",
+      "schema": "entity_language.schema.json"
+    },
+    "religion-ideology": {
+      "index": 17,
+      "family": "entity",
+      "canonical_type": "entity.belief_system",
+      "schema": "entity_religion_ideology.schema.json"
+    },
+    "discipline-theory": {
+      "index": 18,
+      "family": "entity",
+      "canonical_type": "entity.discipline_or_theory",
+      "schema": "entity_discipline_theory.schema.json"
+    },
+    "law-treaty-policy": {
+      "index": 19,
+      "family": "entity",
+      "canonical_type": "entity.legal_instrument",
+      "schema": "entity_law_treaty_policy.schema.json"
+    },
+    "project-program": {
+      "index": 20,
+      "family": "entity",
+      "canonical_type": "entity.project_or_program",
+      "schema": "entity_project_program.schema.json"
+    },
+    "fictional-entity": {
+      "index": 21,
+      "family": "entity",
+      "canonical_type": "entity.fictional",
+      "schema": "entity_fictional_entity.schema.json"
+    },
+
+    "generic-event": {
+      "index": 22,
+      "family": "event",
+      "canonical_type": "event.generic",
+      "schema": "event_generic_event.schema.json"
+    },
+    "historical-event": {
+      "index": 23,
+      "family": "event",
+      "canonical_type": "event.historical",
+      "schema": "event_historical_event.schema.json"
+    },
+    "conflict-event": {
+      "index": 24,
+      "family": "event",
+      "canonical_type": "event.conflict",
+      "schema": "event_conflict_war_event.schema.json"
+    },
+    "election-referendum": {
+      "index": 25,
+      "family": "event",
+      "canonical_type": "event.election",
+      "schema": "event_election_referendum_event.schema.json"
+    },
+    "disaster-accident": {
+      "index": 26,
+      "family": "event",
+      "canonical_type": "event.disaster",
+      "schema": "event_disaster_accident_event.schema.json"
+    },
+    "scientific-technical-milestone": {
+      "index": 27,
+      "family": "event",
+      "canonical_type": "event.scientific_milestone",
+      "schema": "event_scientific_technical_milestone_event.schema.json"
+    },
+    "cultural-event": {
+      "index": 28,
+      "family": "event",
+      "canonical_type": "event.cultural",
+      "schema": "event_cultural_event.schema.json"
+    },
+    "sports-event": {
+      "index": 29,
+      "family": "event",
+      "canonical_type": "event.sports",
+      "schema": "event_sports_event.schema.json"
+    },
+    "legal-case": {
+      "index": 30,
+      "family": "event",
+      "canonical_type": "event.legal_case",
+      "schema": "event_legal_case_event.schema.json"
+    },
+    "economic-financial-event": {
+      "index": 31,
+      "family": "event",
+      "canonical_type": "event.economic",
+      "schema": "event_economic_financial_event.schema.json"
+    },
+    "exploration-expedition-mission": {
+      "index": 32,
+      "family": "event",
+      "canonical_type": "event.exploration",
+      "schema": "event_exploration_expedition_mission_event.schema.json"
+    },
+    "life-event": {
+      "index": 33,
+      "family": "event",
+      "canonical_type": "event.life",
+      "schema": "event_life_event.schema.json"
+    },
+
+    "definition-classification": {
+      "index": 34,
+      "family": "relational",
+      "canonical_type": "rel.definition",
+      "schema": "relational_definition_classification.schema.json"
+    },
+    "attribute-property": {
+      "index": 35,
+      "family": "relational",
+      "canonical_type": "rel.attribute",
+      "schema": "relational_attribute_property.schema.json"
+    },
+    "quantitative-measure": {
+      "index": 36,
+      "family": "relational",
+      "canonical_type": "rel.quantitative",
+      "schema": "relational_quantitative_measure.schema.json"
+    },
+    "comparative-ranking": {
+      "index": 37,
+      "family": "relational",
+      "canonical_type": "rel.comparative",
+      "schema": "relational_comparative_ranking.schema.json"
+    },
+    "membership-affiliation": {
+      "index": 38,
+      "family": "relational",
+      "canonical_type": "rel.membership",
+      "schema": "relational_membership_affiliation.schema.json"
+    },
+    "role-position-office": {
+      "index": 39,
+      "family": "relational",
+      "canonical_type": "rel.role",
+      "schema": "relational_role_position_office.schema.json"
+    },
+    "part-whole-composition": {
+      "index": 40,
+      "family": "relational",
+      "canonical_type": "rel.part_whole",
+      "schema": "relational_part_whole_composition.schema.json"
+    },
+    "ownership-control": {
+      "index": 41,
+      "family": "relational",
+      "canonical_type": "rel.ownership",
+      "schema": "relational_ownership_control.schema.json"
+    },
+    "spatial-relation": {
+      "index": 42,
+      "family": "relational",
+      "canonical_type": "rel.spatial",
+      "schema": "relational_spatial_relation.schema.json"
+    },
+    "temporal-relation": {
+      "index": 43,
+      "family": "relational",
+      "canonical_type": "rel.temporal",
+      "schema": "relational_temporal_relation.schema.json"
+    },
+    "causal-influence": {
+      "index": 44,
+      "family": "relational",
+      "canonical_type": "rel.causal",
+      "schema": "relational_causal_influence.schema.json"
+    },
+    "change-of-state": {
+      "index": 45,
+      "family": "relational",
+      "canonical_type": "rel.change_of_state",
+      "schema": "relational_change_of_state.schema.json"
+    },
+    "communication-statement": {
+      "index": 46,
+      "family": "relational",
+      "canonical_type": "rel.communication",
+      "schema": "relational_communication_statement.schema.json"
+    },
+    "opinion-evaluation": {
+      "index": 47,
+      "family": "relational",
+      "canonical_type": "rel.opinion",
+      "schema": "relational_opinion_evaluation.schema.json"
+    },
+    "relation-bundle": {
+      "index": 48,
+      "family": "relational",
+      "canonical_type": "rel.bundle",
+      "schema": "relational_relation_bundle.schema.json"
+    },
+
+    "timeline-chronology": {
+      "index": 49,
+      "family": "narrative",
+      "canonical_type": "narr.timeline",
+      "schema": "narrative_timeline_chronology.schema.json"
+    },
+    "career-season-campaign-summary": {
+      "index": 50,
+      "family": "narrative",
+      "canonical_type": "narr.career_or_season",
+      "schema": "narrative_career_season_campaign_summary.schema.json"
+    },
+    "development-evolution": {
+      "index": 51,
+      "family": "narrative",
+      "canonical_type": "narr.development",
+      "schema": "narrative_development_evolution.schema.json"
+    },
+    "reception-impact": {
+      "index": 52,
+      "family": "narrative",
+      "canonical_type": "narr.reception",
+      "schema": "narrative_reception_impact.schema.json"
+    },
+    "structure-organization": {
+      "index": 53,
+      "family": "narrative",
+      "canonical_type": "narr.structure",
+      "schema": "narrative_structure_organization.schema.json"
+    },
+    "comparison-set-contrast": {
+      "index": 54,
+      "family": "narrative",
+      "canonical_type": "narr.comparison_set",
+      "schema": "narrative_comparison_set_contrast.schema.json"
+    },
+    "list-enumeration": {
+      "index": 55,
+      "family": "narrative",
+      "canonical_type": "narr.list",
+      "schema": "narrative_list_enumeration.schema.json"
+    },
+
+    "article-document": {
+      "index": 56,
+      "family": "meta",
+      "canonical_type": "article",
+      "schema": "meta_article_document.schema.json"
+    },
+    "section-summary": {
+      "index": 57,
+      "family": "meta",
+      "canonical_type": "section",
+      "schema": "meta_section_summary.schema.json"
+    },
+    "source-citation": {
+      "index": 58,
+      "family": "meta",
+      "canonical_type": "source",
+      "schema": "meta_source_citation.schema.json"
+    }
+  }
+}

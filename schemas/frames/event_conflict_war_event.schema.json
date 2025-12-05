@@ -1,0 +1,223 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Conflict / war event",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier.",
+      "enum": [
+        "event_conflict_war_event",
+        "event.conflict_war"
+      ]
+    },
+
+    "main_event": {
+      "type": "object",
+      "description": "Core event being described (war, battle, campaign, operation, etc.). Shape follows semantics.types.Event.",
+      "additionalProperties": true
+    },
+
+    "conflict_kind": {
+      "type": ["string", "null"],
+      "description": "Coarse conflict kind label, e.g. 'war', 'battle', 'campaign', 'operation', 'uprising', 'civil_war'."
+    },
+
+    "conflict_scope": {
+      "type": ["string", "null"],
+      "description": "Optional scope label such as 'global', 'regional', 'local', 'civil', etc."
+    },
+
+    "belligerent_sides": {
+      "type": "array",
+      "description": "Structured representation of the main sides in the conflict, typically two or more.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "side_label": {
+            "type": ["string", "null"],
+            "description": "Short label for the side (e.g. 'Allies', 'Axis', 'Government', 'Rebels')."
+          },
+          "entities": {
+            "type": "array",
+            "description": "Entities participating on this side (states, organizations, factions).",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "strength_estimate": {
+            "type": ["number", "null"],
+            "description": "Approximate strength figure (troops, forces, or similar). Use attributes for units or more detail."
+          },
+          "casualties_estimate": {
+            "type": ["number", "null"],
+            "description": "Approximate casualties (killed, wounded, missing) for this side. Use attributes for breakdown."
+          },
+          "notes": {
+            "type": ["string", "null"],
+            "description": "Optional free-form notes about this side (e.g. major allies, special circumstances)."
+          }
+        }
+      }
+    },
+
+    "commanders": {
+      "type": "array",
+      "description": "Key commanders or leaders associated with the conflict, possibly annotated with side information.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "person": {
+            "type": "object",
+            "description": "Entity representing the commander or leader.",
+            "additionalProperties": true
+          },
+          "side_label": {
+            "type": ["string", "null"],
+            "description": "Optional reference to the side label this commander belongs to."
+          },
+          "role_label": {
+            "type": ["string", "null"],
+            "description": "Optional role label (e.g. 'commander_in_chief', 'field_commander')."
+          }
+        }
+      }
+    },
+
+    "theatre_locations": {
+      "type": "array",
+      "description": "Theatres or main locations where the conflict took place (countries, regions, specific localities).",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "overall_time_span": {
+      "type": ["object", "null"],
+      "description": "Overall time span of the conflict, typically covering the entire war or campaign. Shape follows semantics.types.TimeSpan.",
+      "additionalProperties": true
+    },
+
+    "key_phases": {
+      "type": "array",
+      "description": "Optional list of major phases or campaigns within the conflict.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": ["string", "null"],
+            "description": "Short label for the phase (e.g. 'Invasion', 'Stalemate', 'Counteroffensive')."
+          },
+          "time_span": {
+            "type": ["object", "null"],
+            "description": "Approximate time span of the phase.",
+            "additionalProperties": true
+          },
+          "summary": {
+            "type": ["string", "null"],
+            "description": "Optional short semantic summary of what characterizes this phase."
+          }
+        }
+      }
+    },
+
+    "outcome_lemma": {
+      "type": ["string", "null"],
+      "description": "Lemma-level label for the outcome, e.g. 'victory', 'defeat', 'indecisive', 'armistice', 'ceasefire'."
+    },
+
+    "outcome_description": {
+      "type": ["string", "null"],
+      "description": "Optional short description of the outcome, including who prevailed and how."
+    },
+
+    "treaties_or_settlements": {
+      "type": "array",
+      "description": "Treaties, agreements, or settlements that ended or substantially changed the conflict.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "total_casualties_estimate": {
+      "type": ["number", "null"],
+      "description": "Approximate total casualties across all sides. Use side-specific estimates in 'belligerent_sides' where available."
+    },
+
+    "civilian_casualties_estimate": {
+      "type": ["number", "null"],
+      "description": "Approximate civilian casualties, if explicitly distinguished."
+    },
+
+    "military_casualties_estimate": {
+      "type": ["number", "null"],
+      "description": "Approximate military casualties, if explicitly distinguished."
+    },
+
+    "legacy_tags": {
+      "type": "array",
+      "description": "Optional list of language-neutral tags summarizing legacy or significance, e.g. 'world_war', 'colonial_war', 'independence_war'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for additional, lightly structured information not yet promoted to first-class fields (e.g. economic impact, territorial changes).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Reserved for pipeline- or source-specific metadata that should not affect generation but may be useful for debugging or analysis.",
+      "additionalProperties": true
+    },
+
+    "conflict_type": {
+      "type": ["string", "null"],
+      "description": "Legacy field: coarse type label for the conflict (e.g. 'war', 'battle', 'operation'). Prefer 'conflict_kind' for new data."
+    },
+
+    "belligerents": {
+      "type": "array",
+      "description": "Legacy field: flat list of participating belligerents. Prefer 'belligerent_sides' for structured side data.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "locations": {
+      "type": "array",
+      "description": "Legacy field: list of locations for the conflict. Prefer 'theatre_locations'.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "start_time": {
+      "type": ["object", "null"],
+      "description": "Legacy field: start time of the conflict. Prefer 'overall_time_span'.",
+      "additionalProperties": true
+    },
+
+    "end_time": {
+      "type": ["object", "null"],
+      "description": "Legacy field: end time of the conflict. Prefer 'overall_time_span'.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_event"
+  ]
+}

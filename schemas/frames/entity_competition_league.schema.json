@@ -1,0 +1,223 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abstractwiki.org/schemas/frames/entity_competition_league.schema.json",
+  "title": "Entity Competition / League Frame",
+  "description": "JSON schema for sports competition / tournament / league frames (`competition_league`).",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "competition_league",
+      "description": "Canonical frame type identifier for competition / league frames."
+    },
+
+    "main_entity": {
+      "$ref": "#/definitions/Entity",
+      "description": "The competition / league entity itself (e.g. \"Premier League\", \"UEFA Champions League\")."
+    },
+
+    "sport_lemma": {
+      "type": ["string", "null"],
+      "description": "Lemma for the sport (e.g. \"football\", \"basketball\", \"ice hockey\"). Lemma, not a surface string."
+    },
+
+    "competition_kind": {
+      "type": ["string", "null"],
+      "description": "Coarse type of competition, e.g. \"league\", \"cup\", \"tournament\", \"championship\", \"season\", \"playoffs\"."
+    },
+
+    "level": {
+      "type": ["string", "null"],
+      "description": "Optional description of competitive level, e.g. \"top tier\", \"second division\"."
+    },
+
+    "organizing_body": {
+      "anyOf": [
+        { "$ref": "#/definitions/Entity" },
+        { "type": "null" }
+      ],
+      "description": "Organization that runs the competition (e.g. national association, confederation)."
+    },
+
+    "confederation": {
+      "anyOf": [
+        { "$ref": "#/definitions/Entity" },
+        { "type": "null" }
+      ],
+      "description": "Optional higher-level confederation or governing body (e.g. UEFA, CONMEBOL)."
+    },
+
+    "host_regions": {
+      "type": "array",
+      "description": "List of regions / countries where the competition takes place or is based.",
+      "items": { "$ref": "#/definitions/Location" }
+    },
+
+    "seasonal_scope": {
+      "anyOf": [
+        { "$ref": "#/definitions/TimeSpan" },
+        { "type": "null" }
+      ],
+      "description": "Optional time span representing the season or edition covered by this frame, if applicable."
+    },
+
+    "founded": {
+      "anyOf": [
+        { "$ref": "#/definitions/TimeSpan" },
+        { "type": "null" }
+      ],
+      "description": "Approximate founding / establishment time span for the competition."
+    },
+
+    "number_of_teams": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Approximate number of participating teams or clubs."
+    },
+
+    "participants": {
+      "type": "array",
+      "description": "Optional list of participating entities (usually clubs, national teams, or franchises).",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "promotion_to": {
+      "anyOf": [
+        { "$ref": "#/definitions/Entity" },
+        { "type": "null" }
+      ],
+      "description": "Optional higher competition to which teams can be promoted."
+    },
+
+    "relegation_to": {
+      "anyOf": [
+        { "$ref": "#/definitions/Entity" },
+        { "type": "null" }
+      ],
+      "description": "Optional lower competition to which teams can be relegated."
+    },
+
+    "format_summary": {
+      "type": ["string", "null"],
+      "description": "Short free-text summary of the competition format in neutral lemma-ish English (e.g. \"round-robin\")."
+    },
+
+    "frequency": {
+      "type": ["string", "null"],
+      "description": "How often the competition occurs, e.g. \"annual\", \"biennial\", \"quadrennial\"."
+    },
+
+    "champions": {
+      "type": "array",
+      "description": "Optional list of current champions (usually one team; can be more for shared titles).",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "most_successful_clubs": {
+      "type": "array",
+      "description": "Optional list of clubs / teams with the most titles in this competition.",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Optional attribute map for semantically meaningful predicates (e.g. age group, gender category).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary metadata for downstream systems (IDs, raw JSON, provenance, etc.).",
+      "additionalProperties": true
+    }
+  },
+
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "description": "Minimal entity representation used in competition frames.",
+      "properties": {
+        "id": {
+          "type": ["string", "integer", "null"],
+          "description": "Source-specific identifier for the entity (e.g. Wikidata QID, internal ID)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Canonical label for the entity."
+        },
+        "entity_type": {
+          "type": ["string", "null"],
+          "description": "Optional coarse entity type (e.g. \"club\", \"association\", \"country\")."
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "Location": {
+      "type": "object",
+      "description": "Minimal location representation (used for host regions).",
+      "properties": {
+        "id": {
+          "type": ["string", "integer", "null"],
+          "description": "Source-specific identifier for the location, if available."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable label (e.g. country, region, city name)."
+        },
+        "kind": {
+          "type": ["string", "null"],
+          "description": "Optional coarse kind (e.g. \"country\", \"region\", \"city\")."
+        },
+        "country_code": {
+          "type": ["string", "null"],
+          "description": "Optional ISO country code or similar."
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "TimeSpan": {
+      "type": "object",
+      "description": "Loose representation of a time span or single date.",
+      "properties": {
+        "start_year": { "type": ["integer", "null"] },
+        "end_year": { "type": ["integer", "null"] },
+        "start_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "start_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "end_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "end_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "Whether the date / span is approximate."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

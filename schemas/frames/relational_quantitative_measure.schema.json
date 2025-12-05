@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame Schema: Quantitative Measure Relation",
+  "description": "JSON schema for the QuantitativeFrame semantic structure used for numeric facts such as populations, areas, distances, GDP, scores, and other one-dimensional measures.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "relation.quantitative",
+      "description": "Stable frame identifier; must be \"relation.quantitative\" for QuantitativeFrame instances."
+    },
+
+    "id": {
+      "type": ["string", "null"],
+      "description": "Optional identifier for the quantitative fact (e.g. source ID or internal key)."
+    },
+
+    "subject": {
+      "type": "object",
+      "description": "The entity X that the measurement is about (e.g. a city, river, country, organization). Entity-like object, typically mirroring semantics.types.Entity (id, name, entity_type, extra, etc.).",
+      "additionalProperties": true
+    },
+
+    "measure_type": {
+      "type": "string",
+      "description": "Coarse semantic type of the measure, such as \"population\", \"area\", \"length\", \"gdp\", \"score\", etc."
+    },
+
+    "quantity": {
+      "type": "object",
+      "description": "Quantity-like object representing the numeric value, unit, qualifier, and optional bounds; typically mirroring semantics.common.quantity.Quantity.",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Coarse semantic kind of the quantity (e.g. \"count\", \"measure\", \"percentage\")."
+        },
+        "value": {
+          "type": ["number", "null"],
+          "description": "Preferred or central numeric value for simple point quantities."
+        },
+        "unit": {
+          "type": ["object", "null"],
+          "description": "Optional Unit-like object specifying the measurement unit (e.g. km, km2, USD, person, percent).",
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Canonical code for the unit (e.g. \"km\", \"km2\", \"USD\", \"person\", \"percent\")."
+            },
+            "name": {
+              "type": ["string", "null"],
+              "description": "Optional human-readable name for the unit."
+            },
+            "system": {
+              "type": ["string", "null"],
+              "description": "Optional unit system or standard (e.g. \"SI\", \"ISO4217\")."
+            },
+            "per": {
+              "type": ["string", "null"],
+              "description": "Optional \"per\" component for rate-like units (e.g. \"km2\" in \"person/km2\")."
+            }
+          },
+          "required": ["code"]
+        },
+        "qualifier": {
+          "type": "string",
+          "description": "Qualifier describing precision or bound type (e.g. \"exact\", \"approximate\", \"at_least\", \"at_most\", \"unknown\")."
+        },
+        "min_value": {
+          "type": ["number", "null"],
+          "description": "Optional lower bound for the quantity."
+        },
+        "max_value": {
+          "type": ["number", "null"],
+          "description": "Optional upper bound for the quantity."
+        },
+        "as_of": {
+          "description": "Optional time-related or contextual descriptor for when the quantity applies (e.g. year, date range, or TimeSpan-like object).",
+          "type": ["string", "number", "object", "null"],
+          "additionalProperties": true
+        },
+        "scope": {
+          "type": ["string", "null"],
+          "description": "Optional semantic scope of the quantity (e.g. \"city_proper\", \"metro_area\")."
+        },
+        "raw": {
+          "type": ["string", "null"],
+          "description": "Optional raw representation from the source (e.g. original numeric string with unit)."
+        },
+        "meta": {
+          "type": "object",
+          "description": "Open-ended metadata for the quantity (e.g. source IDs, confidence scores, provenance).",
+          "additionalProperties": true
+        }
+      },
+      "required": ["kind"]
+    },
+
+    "scope": {
+      "type": ["string", "null"],
+      "description": "Optional scope or qualifier for the subject, e.g. \"city proper\", \"metropolitan area\", \"national total\"."
+    },
+
+    "realization_hint": {
+      "type": ["string", "null"],
+      "description": "Optional hint to the realizer about how this fact should be expressed (e.g. \"as_of_clause\", \"parenthetical\")."
+    },
+
+    "certainty": {
+      "type": "number",
+      "description": "Heuristic certainty/confidence score in [0,1]. Defaults to 1.0 when omitted."
+    }
+  },
+  "required": [
+    "frame_type",
+    "subject",
+    "measure_type",
+    "quantity"
+  ]
+}

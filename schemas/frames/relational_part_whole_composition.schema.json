@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame Schema: Part–Whole / Composition Relation",
+  "description": "JSON schema for the PartWholeCompositionFrame semantic structure used for part–whole and composition relations (e.g. country–regions, object–components).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "relation.part_whole",
+      "description": "Stable frame identifier; must be \"relation.part_whole\" for part–whole / composition relation frames."
+    },
+
+    "whole": {
+      "type": "object",
+      "description": "The whole / container entity (e.g. a country, city, organization, physical object). Entity-like object, typically mirroring semantics.types.Entity (id, name, entity_type, extra, etc.).",
+      "additionalProperties": true
+    },
+
+    "parts": {
+      "type": "array",
+      "description": "List of entities that are parts / components / subdivisions of the whole. Each item is an Entity-like object.",
+      "items": {
+        "type": "object",
+        "description": "Part entity, typically mirroring semantics.types.Entity.",
+        "additionalProperties": true
+      }
+    },
+
+    "whole_role_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels describing the semantic role/type of the whole (e.g. \"country\", \"city\", \"organ\", \"solar_system\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "part_role_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels describing the semantic role/type of the parts (e.g. \"region\", \"district\", \"department\", \"member_state\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "relation_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels describing the part–whole relation itself (e.g. \"subdivision\", \"component\", \"member\", \"administrative_subdivision\"). These correspond to constructions like \"is divided into\", \"consists of\", \"is composed of\".",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Open-ended attribute map for additional structured facts about the relation itself (e.g. part_count, ordering, is_exhaustive). Keys should be strings.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata bag for provenance, debug info, or original-source fields that are not directly interpreted by NLG.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "whole"
+  ]
+}

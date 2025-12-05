@@ -1,0 +1,245 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Architect Frame Schema: Relational – Comparative / Ranking",
+  "description": "JSON schema for `relational.comparative_ranking` frames used by the Abstract Wiki Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `ComparativeFrame` (comparative / superlative / ranking facts).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "enum": [
+        "relational.comparative_ranking"
+      ],
+      "description": "Canonical frame type identifier. Must be `relational.comparative_ranking`."
+    },
+    "subject": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "The primary entity being described (X in 'X is larger than Y')."
+    },
+    "property": {
+      "type": "string",
+      "description": "The property being compared or ranked, expressed as a lemma-like key, e.g. 'population', 'area', 'age'."
+    },
+    "comparison_type": {
+      "type": "string",
+      "enum": [
+        "comparative",
+        "superlative",
+        "ranking"
+      ],
+      "description": "Type of comparison: 'comparative' (X larger than Y), 'superlative' (X the largest in domain), or 'ranking' (X is 2nd, 3rd, etc.)."
+    },
+    "standard": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "Comparison standard entity (Y in 'X is larger than Y'). Used primarily for pure comparative statements."
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "greater",
+        "less"
+      ],
+      "description": "Direction of the comparison with respect to the property: 'greater' (larger, higher, longer...) or 'less' (smaller, lower, shorter...). Defaults to 'greater' in most pipelines."
+    },
+    "rank": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Rank of the subject within the domain for superlative / ranking cases (1 for largest / highest, 2 for second-largest, etc.)."
+    },
+    "domain": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "Optional domain / set in which the ranking is evaluated, e.g. a country, region, league ('in France', 'in the world')."
+    },
+    "domain_scope": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional lexical hint for the preposition or scope marker, e.g. 'in', 'among', 'within'. Engines may ignore it and choose their own realization."
+    },
+    "subject_quantity": {
+      "$ref": "#/definitions/Quantity",
+      "description": "Optional explicit numeric value for the subject on the given property (e.g. population figure, area)."
+    },
+    "standard_quantity": {
+      "$ref": "#/definitions/Quantity",
+      "description": "Optional explicit numeric value for the standard entity on the given property."
+    },
+    "time": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "Optional time span or reference time for which the comparison holds (e.g. 'as of 2020')."
+    },
+    "certainty": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Optional certainty or confidence score in [0, 1]. Defaults to 1.0 when omitted."
+    },
+    "source_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional identifier of the original data source or record from which this comparative fact was derived."
+    },
+    "extra": {
+      "type": "object",
+      "description": "Opaque source-specific metadata not interpreted by the core semantics/NLG layer. Use this to carry original IDs, raw fields, or debugging information.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "subject",
+    "property",
+    "comparison_type"
+  ],
+  "definitions": {
+    "EntityRef": {
+      "type": "object",
+      "description": "Lightweight reference to an entity in the Abstract Wiki knowledge graph or an external source. At least one identifier (`id`, `qid`, or `name`) SHOULD be provided.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Opaque internal identifier for the entity (database or graph ID)."
+        },
+        "qid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional Wikidata QID, e.g. 'Q42'."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Surface name of the entity in a reference language."
+        },
+        "entity_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Loose entity type label, e.g. 'city', 'country', 'university'."
+        },
+        "lang": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional BCP-47-like language tag for `name`, e.g. 'en', 'fr'."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form payload attached to the entity reference.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true,
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "qid"
+          ]
+        },
+        {
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "TimeSpan": {
+      "type": "object",
+      "description": "Approximate or exact time span for an event or state. All fields are optional; callers may encode a single point (`point`) or an interval (`start`/`end`).",
+      "properties": {
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Start of the interval in ISO-8601 form, e.g. '1995-01-01' or '1995-01-01T00:00:00Z'."
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "End of the interval in ISO-8601 form."
+        },
+        "point": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Instantaneous timestamp in ISO-8601 form when appropriate."
+        },
+        "precision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional precision hint such as 'year', 'month', 'day', 'hour'."
+        }
+      },
+      "additionalProperties": true
+    },
+    "Quantity": {
+      "type": "object",
+      "description": "Numeric quantity with optional unit, bounds, and time. Designed to match the `Quantity` helper used in relational frames.",
+      "properties": {
+        "value": {
+          "type": "number",
+          "description": "Primary numeric value."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit label, e.g. 'people', 'km', 'USD', '°C', 'points'. May be an empty string when unit is implicit."
+        },
+        "approximate": {
+          "type": "boolean",
+          "description": "If true, the value is approximate (e.g. 'about', 'roughly')."
+        },
+        "lower_bound": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Optional lower bound for the quantity."
+        },
+        "upper_bound": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Optional upper bound for the quantity."
+        },
+        "time": {
+          "$ref": "#/definitions/TimeSpan"
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form payload attached to the quantity (e.g. original units, scaling).",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

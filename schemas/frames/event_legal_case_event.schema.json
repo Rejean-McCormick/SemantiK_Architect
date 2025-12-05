@@ -1,0 +1,346 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wikipedia Frame Schema — Event: Legal Case",
+  "description": "JSON shape for the legal case / legal proceeding event frame, corresponding to the `event.legal_case` family in the frame inventory and the semantics/event/legal_case_event_frame.py model. This frame captures trials, appeals, and landmark judicial decisions for encyclopedic summaries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "frame_type",
+    "main_event"
+  ],
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Frame family identifier. For legal case event frames the canonical value is \"event.legal_case\".",
+      "enum": [
+        "event.legal_case"
+      ]
+    },
+
+    "id": {
+      "type": "string",
+      "description": "Optional stable identifier for this frame instance (e.g. an internal ID, page ID, or statement cluster ID). This is NOT the same as the case_id or the main event's own identifier."
+    },
+
+    "main_event": {
+      "$ref": "#/definitions/EventRef",
+      "description": "Underlying semantic event representing the legal proceeding, following the shape of semantics.types.Event. Typically has event_type like \"legal_case\", \"trial\", or \"appeal\"."
+    },
+
+    "case_id": {
+      "type": "string",
+      "description": "Optional local identifier or citation key for the legal case (e.g. docket number or internal case code)."
+    },
+
+    "case_name": {
+      "type": "string",
+      "description": "Neutral case name, such as \"Brown v. Board of Education\"."
+    },
+
+    "court": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "Deciding court or tribunal, represented as an entity (e.g. 'Supreme Court of the United States')."
+    },
+
+    "jurisdiction": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "Jurisdiction or country/region under which the case falls (e.g. 'United States', 'European Court of Human Rights')."
+    },
+
+    "parties": {
+      "type": "object",
+      "description": "Mapping from party-role labels to lists of entities in that role, for example {\"plaintiff\": [...], \"defendant\": [...], \"appellant\": [...], \"respondent\": [...]}",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/EntityRef"
+        }
+      }
+    },
+
+    "issues": {
+      "type": "array",
+      "description": "Main legal issues or questions in neutral label form, not full sentences (e.g. ['racial segregation in public schools', 'freedom of expression']).",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+
+    "verdict_summary": {
+      "type": "string",
+      "description": "Short neutral label for the outcome or holding of the case (e.g. 'segregation in public schools held unconstitutional')."
+    },
+
+    "verdict_date": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "More precise decision date or span, if needed in addition to main_event.time."
+    },
+
+    "sentence_summary": {
+      "type": "string",
+      "description": "Optional short neutral label for the sentence in criminal cases (e.g. 'life imprisonment', 'death sentence overturned')."
+    },
+
+    "precedent_summary": {
+      "type": "string",
+      "description": "Short neutral description of how the case is viewed as precedent (e.g. 'landmark decision on school desegregation')."
+    },
+
+    "citations": {
+      "type": "array",
+      "description": "Optional list of reporter citations or neutral reference strings associated with the case (e.g. ['347 U.S. 483']).",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Additional structured attributes that do not warrant dedicated top-level fields. Example keys include 'panel_composition', 'lower_court', 'procedural_history', 'legal_doctrines'. Values are arbitrary JSON.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary extra metadata carried through normalization; not interpreted by the generic NLG layer but preserved for traceability and debugging.",
+      "additionalProperties": true
+    }
+  },
+
+  "definitions": {
+    "EntityRef": {
+      "type": "object",
+      "description": "Lightweight reference to a discourse entity, following the shape of semantics.types.Entity.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the entity, e.g. a Wikidata QID ('Q42'), local database ID, or URI."
+        },
+        "name": {
+          "type": "string",
+          "description": "Preferred surface name or label, such as 'Supreme Court of the United States' or 'Brown v. Board of Education plaintiffs'."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Coarse gender category for human entities (e.g. 'female', 'male', 'nonbinary', 'unknown')."
+        },
+        "human": {
+          "type": "boolean",
+          "description": "Whether this entity is a human (useful for pronoun selection)."
+        },
+        "entity_type": {
+          "type": "string",
+          "description": "Optional coarse type hint such as 'person', 'organization', 'court', 'jurisdiction', 'party_group'."
+        },
+        "lemmas": {
+          "type": "array",
+          "description": "Optional list of lemma-like labels associated with the entity (e.g. ['court', 'supreme_court']).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary for morphology / constructions (e.g. grammatical person, number, animacy).",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata (IDs, codes, raw source row, etc.).",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "LocationRef": {
+      "type": "object",
+      "description": "Reference to a location, following the shape of semantics.types.Location. May be used inside events if locations are modeled explicitly.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the location (e.g. QID, geocode)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable label (e.g. 'Topeka, Kansas')."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Optional location kind, such as 'city', 'country', 'region', 'courthouse'."
+        },
+        "country_code": {
+          "type": "string",
+          "description": "Optional ISO country code, such as 'US'."
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary, e.g. for preposition choice.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata.",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "TimeSpan": {
+      "type": "object",
+      "description": "Coarse time span or single date, following semantics.types.TimeSpan. Used here mainly for verdict_date, with years or full dates as needed.",
+      "additionalProperties": false,
+      "properties": {
+        "start_year": {
+          "type": "integer",
+          "description": "Starting year, e.g. 1954. For a single date, this is the main year of interest."
+        },
+        "end_year": {
+          "type": "integer",
+          "description": "Optional end year (for multi-year spans)."
+        },
+        "start_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Optional start month (1–12)."
+        },
+        "start_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Optional start day (1–31)."
+        },
+        "end_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Optional end month (1–12)."
+        },
+        "end_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Optional end day (1–31)."
+        },
+        "approximate": {
+          "type": "boolean",
+          "description": "If true, the timespan is approximate (e.g. 'around 1954')."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata or source-specific fields.",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "EventRef": {
+      "type": "object",
+      "description": "Lightweight reference to a semantic event (semantics.types.Event), such as a trial or appeal.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the event."
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Free-form event type label, such as 'legal_case', 'trial', 'appeal'."
+        },
+        "time": {
+          "$ref": "#/definitions/TimeSpan",
+          "description": "When the event took place."
+        },
+        "location": {
+          "description": "Where the event took place (entity or location).",
+          "oneOf": [
+            {
+              "$ref": "#/definitions/EntityRef"
+            },
+            {
+              "$ref": "#/definitions/LocationRef"
+            }
+          ]
+        },
+        "participants": {
+          "type": "object",
+          "description": "Optional mapping from participant roles (e.g. 'subject', 'court', 'party') to entities involved in the event.",
+          "additionalProperties": {
+            "$ref": "#/definitions/EntityRef"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary event metadata.",
+          "additionalProperties": true
+        }
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "frame_type": "event.legal_case",
+      "main_event": {
+        "id": "E_Brown_v_Board",
+        "event_type": "legal_case",
+        "time": {
+          "start_year": 1954
+        },
+        "location": {
+          "name": "Washington, D.C.",
+          "kind": "city",
+          "country_code": "US"
+        }
+      },
+      "case_id": "No. 1, 2, 3, 4, and 10",
+      "case_name": "Brown v. Board of Education",
+      "court": {
+        "name": "Supreme Court of the United States",
+        "entity_type": "court"
+      },
+      "jurisdiction": {
+        "name": "United States",
+        "entity_type": "country"
+      },
+      "parties": {
+        "plaintiff": [
+          {
+            "name": "Oliver Brown",
+            "entity_type": "person",
+            "human": true
+          }
+        ],
+        "defendant": [
+          {
+            "name": "Board of Education of Topeka",
+            "entity_type": "organization"
+          }
+        ]
+      },
+      "issues": [
+        "racial segregation in public schools"
+      ],
+      "verdict_summary": "segregation in public schools held unconstitutional",
+      "verdict_date": {
+        "start_year": 1954,
+        "start_month": 5,
+        "start_day": 17
+      },
+      "precedent_summary": "landmark decision on school desegregation and equal protection",
+      "citations": [
+        "347 U.S. 483"
+      ],
+      "attributes": {
+        "constitutional_basis": "Equal Protection Clause of the Fourteenth Amendment"
+      },
+      "extra": {
+        "wikidata_qid": "Q8893"
+      }
+    }
+  ]
+}

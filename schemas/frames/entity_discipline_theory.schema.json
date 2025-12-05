@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abstractwiki.org/schemas/frames/entity_discipline_theory.schema.json",
+  "title": "Academic Discipline / Field / Theory Frame",
+  "description": "JSON schema for academic discipline / field / theory frames (`discipline-theory`).",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "discipline-theory",
+      "description": "Canonical frame family identifier for this frame."
+    },
+
+    "main_entity": {
+      "$ref": "#/definitions/Entity",
+      "description": "The discipline / field / theory itself (canonical label, IDs, etc.)."
+    },
+
+    "discipline_kind": {
+      "type": ["string", "null"],
+      "description": "Coarse kind of discipline or theory, e.g. \"academic_discipline\", \"scientific_field\", \"theory\"."
+    },
+
+    "parent_disciplines": {
+      "type": "array",
+      "description": "List of broader disciplines / fields that this discipline or theory is considered a part of.",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "subdisciplines": {
+      "type": "array",
+      "description": "List of subdisciplines / subfields / specializations commonly treated as parts of this discipline.",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "origin_timespan": {
+      "anyOf": [
+        { "$ref": "#/definitions/TimeSpan" },
+        { "type": "null" }
+      ],
+      "description": "Approximate period when the discipline or theory emerged as a distinct concept or field."
+    },
+
+    "origin_region_lemmas": {
+      "type": "array",
+      "description": "Neutral lemmas describing the main cultural / geographic regions associated with the origin (e.g. [\"europe\"], [\"ancient_greece\"], [\"united_states\"]).",
+      "items": { "type": "string" }
+    },
+
+    "key_figures": {
+      "type": "array",
+      "description": "Prominent people associated with the discipline or theory (e.g. \"Albert Einstein\", \"Noam Chomsky\").",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "core_concept_lemmas": {
+      "type": "array",
+      "description": "Lemmas naming central concepts, constructs, or topics of the field (e.g. [\"manifold\"], [\"continuous_function\"], [\"metric_space\"], [\"attention\"], [\"memory\"], [\"perception\"]).",
+      "items": { "type": "string" }
+    },
+
+    "applications_lemmas": {
+      "type": "array",
+      "description": "Lemmas describing major application areas of the discipline / theory (e.g. [\"engineering\"], [\"medicine\"], [\"artificial_intelligence\"], [\"economics\"]).",
+      "items": { "type": "string" }
+    },
+
+    "schools_traditions_lemmas": {
+      "type": "array",
+      "description": "Lemmas naming major internal schools, traditions, or approaches (e.g. [\"behaviorism\"], [\"structuralism\"], [\"functionalism\"]).",
+      "items": { "type": "string" }
+    },
+
+    "influenced_disciplines": {
+      "type": "array",
+      "description": "List of disciplines / fields that this discipline or theory has significantly influenced.",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "influenced_by": {
+      "type": "array",
+      "description": "List of disciplines / theories / schools that influenced the emergence or development of this discipline or theory.",
+      "items": { "$ref": "#/definitions/Entity" }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Additional, structured properties that do not justify their own fields (e.g. domain classification, typical degree levels, classification codes).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary metadata, typically used for provenance or storing the original source representation. Not interpreted by the core semantics layer.",
+      "additionalProperties": true
+    }
+  },
+
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "description": "Minimal entity representation used in discipline / theory frames.",
+      "properties": {
+        "id": {
+          "type": ["string", "integer", "null"],
+          "description": "Source-specific identifier for the entity (e.g. Wikidata QID, internal ID)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Canonical label for the entity."
+        },
+        "entity_type": {
+          "type": ["string", "null"],
+          "description": "Optional coarse entity type (e.g. \"person\", \"organization\", \"field\")."
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "TimeSpan": {
+      "type": "object",
+      "description": "Loose representation of a time span or single date.",
+      "properties": {
+        "start_year": { "type": ["integer", "null"] },
+        "end_year": { "type": ["integer", "null"] },
+        "start_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "start_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "end_month": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 12
+        },
+        "end_day": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "Whether the date / span is approximate."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata (e.g. original string, calendar system).",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Relational role / position / office",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier for the role / position / office family.",
+      "enum": [
+        "rel.role",
+        "relational_role_position_office"
+      ]
+    },
+
+    "holder": {
+      "type": "object",
+      "description": "Entity holding the role or office (typically a person). Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "title_lemma": {
+      "type": "string",
+      "description": "Lemma-level label for the role, position, or office, e.g. 'prime minister', 'president', 'professor of physics'."
+    },
+
+    "organization": {
+      "type": ["object", "null"],
+      "description": "Organization, institution, or body associated with the role (e.g. a government, university, or club). Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "jurisdiction": {
+      "type": ["object", "null"],
+      "description": "Jurisdiction or territorial unit over which the office has authority (e.g. country, region, department). Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "start": {
+      "type": ["object", "null"],
+      "description": "Time span for the start of the term in office. Shape follows semantics.types.TimeSpan.",
+      "additionalProperties": true
+    },
+
+    "end": {
+      "type": ["object", "null"],
+      "description": "Time span for the end of the term in office, if applicable. Shape follows semantics.types.TimeSpan.",
+      "additionalProperties": true
+    },
+
+    "predecessor": {
+      "type": ["object", "null"],
+      "description": "Entity representing the predecessor in this role or office, if known.",
+      "additionalProperties": true
+    },
+
+    "successor": {
+      "type": ["object", "null"],
+      "description": "Entity representing the successor in this role or office, if known.",
+      "additionalProperties": true
+    },
+
+    "acting": {
+      "type": ["boolean", "null"],
+      "description": "Whether the role holder is/was serving in an acting or interim capacity."
+    },
+
+    "status": {
+      "type": ["string", "null"],
+      "description": "Optional status label for the role-holding, such as 'current', 'former', 'designate'."
+    },
+
+    "certainty": {
+      "description": "Optional certainty / confidence score for this role relation. Numeric scores should be between 0 and 1.",
+      "oneOf": [
+        {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+
+    "source_id": {
+      "type": ["string", "null"],
+      "description": "Optional identifier for the source record from which this role relation was derived."
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for additional, lightly structured information not yet promoted to first-class fields (e.g. method of appointment, portfolio details).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Reserved for pipeline- or source-specific metadata that should not affect generation but may be useful for debugging or analysis.",
+      "additionalProperties": true
+    },
+
+    "office_lemma": {
+      "type": ["string", "null"],
+      "description": "Legacy field: office title lemma. Prefer 'title_lemma' for new data."
+    },
+
+    "office_holder": {
+      "type": ["object", "null"],
+      "description": "Legacy field: office holder entity. Prefer 'holder' for new data.",
+      "additionalProperties": true
+    },
+
+    "body": {
+      "type": ["object", "null"],
+      "description": "Legacy field: body or organization associated with the office. Prefer 'organization' and/or 'jurisdiction' for new data.",
+      "additionalProperties": true
+    },
+
+    "start_time": {
+      "type": ["object", "null"],
+      "description": "Legacy field: term start time. Prefer 'start' (TimeSpan).",
+      "additionalProperties": true
+    },
+
+    "end_time": {
+      "type": ["object", "null"],
+      "description": "Legacy field: term end time. Prefer 'end' (TimeSpan).",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "holder",
+    "title_lemma"
+  ]
+}

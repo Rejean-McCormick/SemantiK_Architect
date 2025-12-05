@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abstractwiki.org/schemas/frames/entity_facility.schema.json",
+  "title": "Entity Facility Frame",
+  "description": "JSON schema for facility / infrastructure entity frames (`entity.facility`).",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "entity.facility",
+      "description": "Canonical frame type identifier for facility / infrastructure entities."
+    },
+
+    "main_entity": {
+      "$ref": "#/definitions/Entity",
+      "description": "The facility itself (canonical label, IDs, etc.)."
+    },
+
+    "facility_kind": {
+      "type": "string",
+      "description": "Coarse type label such as \"airport\", \"railway station\", \"stadium\", \"bridge\", \"dam\", \"power plant\", etc."
+    },
+
+    "location": {
+      "anyOf": [
+        { "$ref": "#/definitions/Location" },
+        { "type": "null" }
+      ],
+      "description": "Main geographic anchor for the facility (city / region / country, etc.)."
+    },
+
+    "owner_or_operator": {
+      "anyOf": [
+        { "$ref": "#/definitions/Entity" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Entity" }
+        },
+        { "type": "null" }
+      ],
+      "description": "Legal owner(s) or day-to-day operator(s) of the facility."
+    },
+
+    "capacity": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Abstract capacity value (seats, passengers per year, MW, etc.); interpretation depends on downstream conventions."
+    },
+
+    "opened_event": {
+      "anyOf": [
+        { "$ref": "#/definitions/Event" },
+        { "type": "null" }
+      ],
+      "description": "Event corresponding to opening / inauguration, if available."
+    },
+
+    "closed_event": {
+      "anyOf": [
+        { "$ref": "#/definitions/Event" },
+        { "type": "null" }
+      ],
+      "description": "Event corresponding to closure / decommissioning, if applicable."
+    },
+
+    "attributes": {
+      "$ref": "#/definitions/FacilityAttributes"
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata hook for callers; not interpreted by the core semantics layer.",
+      "additionalProperties": true
+    }
+  },
+
+  "required": [
+    "frame_type",
+    "main_entity",
+    "facility_kind"
+  ],
+
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "description": "Lightweight entity reference (person, organization, place, etc.).",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Canonical label for the entity."
+        },
+        "qid": {
+          "type": "string",
+          "description": "Optional Wikidata QID or similar global identifier."
+        },
+        "ids": {
+          "type": "object",
+          "description": "Optional map of source-specific IDs (e.g. Wikidata, Wikipedia, internal).",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"]
+          }
+        },
+        "meta": {
+          "type": "object",
+          "description": "Optional additional metadata about the entity.",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "Location": {
+      "type": "object",
+      "description": "Generic location object used across entity frames.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable label for the location (city, region, country, etc.)."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Coarse kind such as \"city\", \"country\", \"district\", etc."
+        },
+        "entity": {
+          "anyOf": [
+            { "$ref": "#/definitions/Entity" },
+            { "type": "null" }
+          ],
+          "description": "Optional backing entity reference for this location."
+        },
+        "coords": {
+          "$ref": "#/definitions/Coordinates"
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata for the location.",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": true
+    },
+
+    "Coordinates": {
+      "type": "object",
+      "description": "Simple latitude / longitude coordinate pair.",
+      "properties": {
+        "lat": {
+          "type": "number"
+        },
+        "lon": {
+          "type": "number"
+        }
+      },
+      "required": ["lat", "lon"],
+      "additionalProperties": false
+    },
+
+    "Event": {
+      "type": "object",
+      "description": "Generic event object used in entity frames (openings, closures, etc.).",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Short human-readable label, e.g. \"opening\", \"closure\", \"reopening\"."
+        },
+        "timespan": {
+          "anyOf": [
+            { "$ref": "#/definitions/TimeSpan" },
+            { "type": "null" }
+          ],
+          "description": "Approximate date or period when the event occurred."
+        },
+        "participants": {
+          "type": "array",
+          "description": "Optional participants or parties in the event.",
+          "items": { "$ref": "#/definitions/Entity" }
+        },
+        "location": {
+          "anyOf": [
+            { "$ref": "#/definitions/Location" },
+            { "type": "null" }
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "description": "Optional coarse event kind (e.g. \"construction\", \"inauguration\", \"renovation\")."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata for the event.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "TimeSpan": {
+      "type": "object",
+      "description": "Loose representation of a time span or single date.",
+      "properties": {
+        "start_year": { "type": "integer" },
+        "start_month": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "start_day": { "type": "integer", "minimum": 1, "maximum": 31 },
+        "end_year": { "type": "integer" },
+        "end_month": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "end_day": { "type": "integer", "minimum": 1, "maximum": 31 },
+        "precision": {
+          "type": "string",
+          "description": "Optional precision hint such as \"year\", \"month\", \"day\"."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form metadata, e.g. original string, calendar system.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "FacilityAttributes": {
+      "type": "object",
+      "description": "Optional attribute map for facility-specific secondary facts.",
+      "properties": {
+        "architects": {
+          "type": "array",
+          "description": "Architects, designers or principal engineers associated with the facility.",
+          "items": { "$ref": "#/definitions/Entity" }
+        },
+        "lines_served": {
+          "type": "array",
+          "description": "Lines or services using the facility (e.g. rail lines, metro lines).",
+          "items": { "$ref": "#/definitions/Entity" }
+        },
+        "surface": {
+          "type": "string",
+          "description": "Playing surface or primary material, e.g. \"grass\", \"artificial turf\"."
+        },
+        "height_m": {
+          "type": "number",
+          "description": "Height of the facility in meters, where applicable."
+        },
+        "span_m": {
+          "type": "number",
+          "description": "Span length in meters (bridges and similar structures)."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

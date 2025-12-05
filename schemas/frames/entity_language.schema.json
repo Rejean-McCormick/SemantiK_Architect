@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame Schema: Language",
+  "description": "JSON schema for the LanguageFrame semantic structure used for natural languages, constructed languages, sign languages, and dialects.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "entity.language",
+      "description": "Stable frame identifier; must be \"entity.language\" for LanguageFrame instances."
+    },
+
+    "main_entity": {
+      "type": "object",
+      "description": "The language entity this frame describes, typically mirroring semantics.types.Entity (id, name, entity_type, extra, etc.).",
+      "additionalProperties": true
+    },
+
+    "parent_language": {
+      "type": ["object", "null"],
+      "description": "Optional parent or macrolanguage entity (e.g. for dialects or closely related varieties).",
+      "additionalProperties": true
+    },
+
+    "language_family_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for the language family / subgrouping (e.g. \"indo_european\", \"germanic\", \"bantu\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "typological_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for typological classification (e.g. \"fusional\", \"agglutinative\", \"tonal\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "regions": {
+      "type": "array",
+      "description": "Location-like objects representing main regions / countries where the language is used.",
+      "items": {
+        "type": "object",
+        "description": "Location-like object, typically mirroring semantics.types.Location (id, name, kind, extra, etc.).",
+        "additionalProperties": true
+      }
+    },
+
+    "iso_639_1": {
+      "type": ["string", "null"],
+      "description": "ISO 639-1 two-letter code, if assigned."
+    },
+
+    "iso_639_2": {
+      "type": ["string", "null"],
+      "description": "ISO 639-2 three-letter code, if assigned."
+    },
+
+    "iso_639_3": {
+      "type": ["string", "null"],
+      "description": "ISO 639-3 three-letter code, if assigned."
+    },
+
+    "glottocode": {
+      "type": ["string", "null"],
+      "description": "Glottolog code, if available."
+    },
+
+    "writing_systems": {
+      "type": "array",
+      "description": "Names or identifiers for writing systems / scripts used by the language (e.g. \"Latin\", \"Cyrillic\", \"Devanagari\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "standard_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for standard varieties (e.g. \"standard_german\", \"standard_arabic\"), if applicable.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "speaker_estimate": {
+      "type": ["integer", "null"],
+      "description": "Approximate number of speakers (all varieties), if known."
+    },
+
+    "speaker_estimate_year": {
+      "type": ["integer", "null"],
+      "description": "Reference year for the speaker estimate (e.g. census or survey year)."
+    },
+
+    "status_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels describing vitality / status (e.g. \"living\", \"endangered\", \"extinct\", \"revitalizing\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "regulatory_bodies": {
+      "type": "array",
+      "description": "Entity-like objects for language academies or regulatory bodies (e.g. \"Académie française\").",
+      "items": {
+        "type": "object",
+        "description": "Entity-like object, typically mirroring semantics.types.Entity.",
+        "additionalProperties": true
+      }
+    },
+
+    "standardization_events": {
+      "type": "array",
+      "description": "Event-like objects representing codification / standardization milestones (e.g. publication of grammars, official reforms).",
+      "items": {
+        "type": "object",
+        "description": "Event-like object, typically mirroring semantics.types.Event.",
+        "additionalProperties": true
+      }
+    },
+
+    "other_names": {
+      "type": "array",
+      "description": "Other commonly used names or designations for the language (endonyms or exonyms, as free strings).",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "endonym": {
+      "type": ["string", "null"],
+      "description": "Name of the language in the language itself, if applicable."
+    },
+
+    "exonyms": {
+      "type": "array",
+      "description": "Exonyms: names used by other languages for this language.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Open-ended attribute map for additional structured facts about the language (e.g. SVO/SOV order, phonological inventory size). Keys should be strings.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata bag for provenance, debug info, or original-source fields that are not directly interpreted by NLG.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ]
+}

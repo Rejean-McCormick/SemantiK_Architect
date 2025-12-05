@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AbstractWiki Architect Frame Schema: Relational – Membership / affiliation",
+  "description": "Schema for the rel.membership-affiliation frame: group membership and affiliation relations (member–group).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "frame_type",
+    "member",
+    "group"
+  ],
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "rel.membership-affiliation",
+      "description": "Canonical frame type identifier for membership / affiliation relations."
+    },
+    "frame_family": {
+      "type": "string",
+      "enum": [
+        "relational"
+      ],
+      "description": "Optional high-level family label; always relational for this frame."
+    },
+    "member": {
+      "$ref": "#/definitions/entity",
+      "description": "The entity that is a member or affiliate (X)."
+    },
+    "group": {
+      "$ref": "#/definitions/entity",
+      "description": "The group, organization, party, or team that X belongs to (Y)."
+    },
+    "id": {
+      "type": "string",
+      "description": "Optional identifier for this membership relation (e.g. upstream statement ID)."
+    },
+    "relation_type": {
+      "type": "string",
+      "description": "High-level label for the relation, e.g. member, player, supporter, employee."
+    },
+    "role_label": {
+      "type": "string",
+      "description": "Optional more specific role label within the group, e.g. goalkeeper, chairperson."
+    },
+    "start": {
+      "$ref": "#/definitions/timespan",
+      "description": "Optional coarse timespan indicating when the membership or affiliation begins."
+    },
+    "end": {
+      "$ref": "#/definitions/timespan",
+      "description": "Optional coarse timespan indicating when the membership or affiliation ends."
+    },
+    "status": {
+      "type": "string",
+      "description": "Optional status label such as current, former, honorary."
+    },
+    "certainty": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence in the fact, between 0.0 and 1.0."
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Optional identifier for the upstream source (e.g. Wikidata statement ID) from which this relation was derived."
+    },
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata bag for project-specific extensions.",
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "entity": {
+      "type": "object",
+      "description": "Generic entity reference (person, organization, place, etc.).",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Local identifier for the entity, if any."
+        },
+        "qid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "External identifier such as a Wikidata QID."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Human-readable label for the entity."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional kind label (e.g. person, organization, party, team)."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata attached to the entity.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "timespan": {
+      "type": "object",
+      "description": "Coarse time span with optional year, month, and day fields.",
+      "additionalProperties": false,
+      "properties": {
+        "start_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "start_month": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "start_day": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_month": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "end_day": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "approximate": {
+          "type": "boolean"
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

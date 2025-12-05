@@ -1,0 +1,269 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/frames/entity_vehicle.schema.json",
+  "title": "Abstract Wiki Architect – Vehicle Entity Frame",
+  "description": "JSON schema for the VehicleFrame semantic type used to describe individual vehicles and craft (ships, aircraft, locomotives, spacecraft, etc.).",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "vehicle",
+      "description": "Constant identifier for this frame family. Must be \"vehicle\"."
+    },
+
+    "main_entity": {
+      "$ref": "#/definitions/Entity",
+      "description": "The vehicle, craft, or rolling stock the article or summary is about."
+    },
+
+    "vehicle_kind": {
+      "type": "string",
+      "description": "Optional coarse type label for the vehicle (e.g. \"ship\", \"aircraft\", \"locomotive\", \"spacecraft\")."
+    },
+
+    "class_designation": {
+      "$ref": "#/definitions/Entity",
+      "description": "Optional entity representing the vehicle class or series (e.g. a ship class, aircraft type, locomotive class)."
+    },
+
+    "series_name": {
+      "type": "string",
+      "description": "Optional neutral lemma for the series or class when treated as a label rather than an entity (e.g. \"type_45\", \"boeing_747\")."
+    },
+
+    "manufacturer": {
+      "$ref": "#/definitions/Entity",
+      "description": "Main manufacturer, builder, or constructor (e.g. \"Boeing\", \"Harland and Wolff\")."
+    },
+
+    "builders": {
+      "type": "array",
+      "description": "List of entities for builders / shipyards / factories responsible for this particular unit.",
+      "items": {
+        "$ref": "#/definitions/Entity"
+      }
+    },
+
+    "operators": {
+      "type": "array",
+      "description": "List of entities that operate or have operated the vehicle (navies, air forces, airlines, railway companies, space agencies, etc.).",
+      "items": {
+        "$ref": "#/definitions/Entity"
+      }
+    },
+
+    "registration_identifiers": {
+      "type": "array",
+      "description": "Tail numbers, pennant numbers, registration marks, hull numbers, or similar identifiers in canonical string form (e.g. [\"G-BOAC\"], [\"S102\"], [\"OV-102\"]).",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "home_port_or_base": {
+      "$ref": "#/definitions/Location",
+      "description": "Home port, air base, depot, or equivalent primary base of operations."
+    },
+
+    "role_lemmas": {
+      "type": "array",
+      "description": "Neutral lemmas for the vehicle’s primary roles or functions (e.g. [\"destroyer\"], [\"airliner\"], [\"research_vessel\"], [\"cargo_ship\"]).",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "status_lemmas": {
+      "type": "array",
+      "description": "Neutral lemmas describing current or final status (e.g. [\"in_service\"], [\"retired\"], [\"scrapped\"], [\"museum_ship\"]).",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "construction_timespan": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "Timespan covering the design or build period of the vehicle."
+    },
+
+    "launch_timespan": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "Timespan for launch / first flight / rollout, depending on vehicle type."
+    },
+
+    "service_entry": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "Timespan for entry into service or commissioning."
+    },
+
+    "service_end": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "Timespan for withdrawal, retirement, or end of service."
+    },
+
+    "loss_or_disposition_timespan": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "Timespan for loss, scrapping, preservation as a museum object, or other final disposition."
+    },
+
+    "primary_theater_locations": {
+      "type": "array",
+      "description": "List of primary operational theaters or regions (locations) in which the vehicle served.",
+      "items": {
+        "$ref": "#/definitions/Location"
+      }
+    },
+
+    "technical_specs": {
+      "type": "object",
+      "description": "Free-form key/value map of technical specifications (e.g. displacement, mass, speed, range), using conventional keys rather than dedicated top-level fields.",
+      "additionalProperties": true
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Frame-specific attribute map for additional structured data that does not fit elsewhere (e.g. registration_numbers, callsign, class labels).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Opaque metadata bag for carrying through original source structures or IDs. Not interpreted by the core NLG pipeline.",
+      "additionalProperties": true
+    }
+  },
+
+  "required": ["frame_type", "main_entity"],
+
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "description": "Core discourse entity, matching semantics.types.Entity. Used for people, organizations, classes, etc.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the entity, if any (e.g. Wikidata QID or local ID)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Preferred surface name or label for the entity."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Coarse gender label where relevant (e.g. \"male\", \"female\", \"nonbinary\")."
+        },
+        "human": {
+          "type": "boolean",
+          "description": "Flag indicating whether the entity is a human person."
+        },
+        "entity_type": {
+          "type": "string",
+          "description": "Coarse type label for the entity (e.g. \"ship\", \"aircraft\", \"company\", \"city\")."
+        },
+        "lemmas": {
+          "type": "array",
+          "description": "Neutral lemma keys associated with the entity, for lexicon lookup.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature map for language-independent attributes (e.g. grammatical gender, number, animacy).",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Opaque metadata for original source representation, IDs, etc.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "Location": {
+      "type": "object",
+      "description": "Location entity, matching semantics.types.Location. Used for ports, bases, cities, regions, etc.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the location, if any."
+        },
+        "name": {
+          "type": "string",
+          "description": "Preferred surface name of the location."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Coarse kind of location (e.g. \"city\", \"port\", \"base\", \"country\", \"region\")."
+        },
+        "country_code": {
+          "type": "string",
+          "description": "Optional ISO 3166-1 alpha-2 country code, where applicable."
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature map for location attributes.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Opaque metadata for original source representation, IDs, etc.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "TimeSpan": {
+      "type": "object",
+      "description": "Coarse-grained time interval, matching semantics.types.TimeSpan. Used for approximate years or dates.",
+      "properties": {
+        "start_year": {
+          "type": "integer",
+          "description": "Start year of the interval, if known."
+        },
+        "end_year": {
+          "type": "integer",
+          "description": "End year of the interval, if known."
+        },
+        "start_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Start month (1–12), if known."
+        },
+        "start_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Start day of month (1–31), if known."
+        },
+        "end_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "End month (1–12), if known."
+        },
+        "end_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "End day of month (1–31), if known."
+        },
+        "approximate": {
+          "type": "boolean",
+          "description": "If true, the timespan is approximate or uncertain."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Opaque metadata for original time expressions or source-specific details.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

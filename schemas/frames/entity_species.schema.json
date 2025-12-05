@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Architect – Entity: species / taxon frame",
+  "description": "Canonical semantic frame for biological taxa (species, genera, families, etc.) used by Abstract Wiki Architect.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame type name. Normalization code treats several aliases, but JSON authored against this schema should prefer 'entity.taxon'.",
+      "enum": [
+        "entity.taxon",
+        "species",
+        "taxon"
+      ]
+    },
+
+    "main_taxon": {
+      "description": "The primary taxon this frame describes (species, genus, family, etc.).",
+      "$ref": "#/definitions/Entity"
+    },
+
+    "rank": {
+      "type": ["string", "null"],
+      "description": "Taxonomic rank label, e.g. 'species', 'genus', 'family'."
+    },
+
+    "parent_taxon": {
+      "description": "Optional parent taxon in the hierarchy (e.g. genus for a species, family for a genus).",
+      "anyOf": [
+        { "$ref": "#/definitions/Entity" },
+        { "type": "null" }
+      ]
+    },
+
+    "common_name_lemmas": {
+      "type": "array",
+      "description": "Lexical keys or lemmas for common names of the taxon in the target language.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "scientific_name": {
+      "type": ["string", "null"],
+      "description": "Canonical scientific name (binomial or higher-rank name), if distinct from the main label."
+    },
+
+    "distribution": {
+      "type": "array",
+      "description": "Geographic distribution of the taxon, typically as region-like entities (countries, bioregions, etc.).",
+      "items": {
+        "$ref": "#/definitions/Entity"
+      }
+    },
+
+    "habitat_lemmas": {
+      "type": "array",
+      "description": "Lexical keys / lemmas describing the typical habitats (e.g. 'forest', 'grassland', 'freshwater').",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "conservation_status": {
+      "type": ["string", "null"],
+      "description": "Conservation status label (e.g. 'LC', 'VU', 'EN', 'CR'), usually following a recognized system such as IUCN."
+    },
+
+    "conservation_system": {
+      "type": ["string", "null"],
+      "description": "Name or identifier of the conservation status system in use (e.g. 'IUCN3.1')."
+    },
+
+    "population_trend": {
+      "type": ["string", "null"],
+      "description": "High-level population trend, e.g. 'increasing', 'decreasing', 'stable', 'unknown'."
+    },
+
+    "description_event": {
+      "description": "Optional reference to a key event describing the taxon (e.g. first formal description in a publication). The structure is intentionally loose and is normalized by higher-level tooling.",
+      "anyOf": [
+        { "$ref": "#/definitions/EventRef" },
+        { "type": "null" }
+      ]
+    },
+
+    "fossil_range": {
+      "type": ["string", "null"],
+      "description": "Optional textual fossil range (e.g. 'Late Cretaceous–Recent')."
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for extensibility (e.g. 'trophic_level', 'domesticated', internal tags). Keys should be snake_case strings.",
+      "additionalProperties": true
+    }
+  },
+
+  "required": [
+    "frame_type",
+    "main_taxon"
+  ],
+
+  "definitions": {
+    "Entity": {
+      "description": "Lightweight entity reference used inside frames. It can carry Wikidata IDs, gender, and other semantic hints, but only 'name' is strictly required.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Primary surface name or label for the entity in the relevant language."
+        },
+        "qid": {
+          "type": ["string", "null"],
+          "description": "Optional Wikidata Q-identifier (e.g. 'Q146')."
+        },
+        "entity_type": {
+          "type": ["string", "null"],
+          "description": "Optional coarse entity type label (e.g. 'place', 'person', 'taxon')."
+        },
+        "human": {
+          "type": ["boolean", "null"],
+          "description": "If set, indicates whether the entity is a human individual."
+        },
+        "gender": {
+          "type": ["string", "null"],
+          "description": "Optional grammatical / referential gender code, e.g. 'm', 'f', 'n', 'nb'."
+        },
+        "extra": {
+          "type": ["object", "null"],
+          "description": "Implementation-defined extra metadata associated with the entity.",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name"]
+    },
+
+    "EventRef": {
+      "description": "Loose reference to an event frame (e.g. a discovery or description event). Typically carries enough information to identify or briefly characterize the event.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "frame_type": {
+          "type": ["string", "null"],
+          "description": "Optional frame type of the referenced event (e.g. 'event.scientific_milestone')."
+        },
+        "id": {
+          "type": ["string", "null"],
+          "description": "Optional external or internal identifier for the event."
+        },
+        "label": {
+          "type": ["string", "null"],
+          "description": "Optional short human-readable label for the event."
+        }
+      }
+    }
+  }
+}

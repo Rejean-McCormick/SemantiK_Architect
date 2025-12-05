@@ -1,0 +1,138 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame Schema: Product / Brand",
+  "description": "JSON schema for the ProductBrandFrame semantic structure used for commercial products and brands.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "entity.product_brand",
+      "description": "Stable frame identifier; must be \"entity.product_brand\" for ProductBrandFrame instances."
+    },
+
+    "main_entity": {
+      "type": "object",
+      "description": "The product or brand entity this frame describes, typically mirroring semantics.types.Entity (id, name, entity_type, extra, etc.).",
+      "additionalProperties": true
+    },
+
+    "owner_entity": {
+      "type": ["object", "null"],
+      "description": "Optional owning or parent organization, e.g. the company that manufactures or owns the product/brand. Entity-like object.",
+      "additionalProperties": true
+    },
+
+    "product_type_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for the type of product (e.g. \"soft_drink\", \"smartphone\", \"running_shoe\"). These are language-neutral keys.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "brand_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for brand names or brand families associated with the product (e.g. \"coca_cola\", \"iphone\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "market_segment_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels describing market segment or positioning (e.g. \"premium\", \"budget\", \"mid_range\", \"sportswear\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "launch_event": {
+      "type": ["object", "null"],
+      "description": "Optional Event-like object representing the launch or introduction, typically mirroring semantics.types.Event (id, event_type, time, location, participants, properties, extra).",
+      "additionalProperties": true
+    },
+
+    "launch_time": {
+      "type": ["object", "null"],
+      "description": "Optional TimeSpan-like object for when the product/brand was first introduced.",
+      "properties": {
+        "start_year": {
+          "type": ["integer", "null"],
+          "description": "Approximate start year for the launch."
+        },
+        "end_year": {
+          "type": ["integer", "null"],
+          "description": "Optional end year if the launch is represented as a range."
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "Whether the time span is approximate."
+        },
+        "extra": {
+          "type": ["object", "null"],
+          "description": "Optional additional metadata for the time span.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "launch_location": {
+      "type": ["object", "null"],
+      "description": "Optional Location-like object for where the product/brand was first launched (e.g. country, city, market).",
+      "additionalProperties": true
+    },
+
+    "regions_of_sale": {
+      "type": "array",
+      "description": "Zero or more Location-like objects representing regions/markets where the product is/was sold.",
+      "items": {
+        "type": "object",
+        "description": "Location-like object, typically mirroring semantics.types.Location (id, name, kind, extra, etc.).",
+        "additionalProperties": true
+      }
+    },
+
+    "discontinued_time": {
+      "type": ["object", "null"],
+      "description": "Optional TimeSpan-like object describing when the product/brand was discontinued, if applicable.",
+      "properties": {
+        "start_year": {
+          "type": ["integer", "null"],
+          "description": "Approximate start year for the discontinuation period (often the discontinuation year)."
+        },
+        "end_year": {
+          "type": ["integer", "null"],
+          "description": "Optional end year for the discontinuation period."
+        },
+        "approximate": {
+          "type": ["boolean", "null"],
+          "description": "Whether the time span is approximate."
+        },
+        "extra": {
+          "type": ["object", "null"],
+          "description": "Optional additional metadata for the discontinuation time span.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Open-ended attribute map for additional structured facts about the product or brand (e.g. technical specs, variants, sizes, flavours). Keys should be strings.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata bag for provenance, debug info, or original-source fields that are not directly interpreted by NLG.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ]
+}

@@ -1,4 +1,3 @@
-
 # Frontend API
 
 This document describes the simple frontend API for generating text from semantic frames.
@@ -8,7 +7,7 @@ The goal is to provide a small, stable set of entry points for integrators and l
 > **Current implementation status**
 >
 > - The `bio` / biography pipeline is fully wired end-to-end (via `router.render_bio` and the family engines).
-> - `event` and other frame types are **API-level placeholders**: the types and signatures exist, but there is no concrete engine implementation yet. Calls will typically produce empty text until those engines are added.
+> - `event` and all other frame families are currently **API-level placeholders**: the types and signatures exist (or are being introduced), but most do not yet have concrete engines. Until engines are wired for a frame family, calls are expected to return empty strings or very minimal output.
 
 ---
 
@@ -18,10 +17,22 @@ The goal is to provide a small, stable set of entry points for integrators and l
 ISO 639-1 language code, e.g. `"en"`, `"fr"`, `"sw"`.
 
 **Frame (`Frame`)**  
-Semantic object representing what should be expressed (e.g. `BioFrame`, `EventFrame`).
+Semantic object representing what should be expressed (e.g. `BioFrame`, `EventFrame`, various entity / relation / timeline frames). Frames are grouped into *frame families* (biography, event, relation, etc.), but the frontend API treats them uniformly.
+
+**Frame family**  
+Coherent group of related frame types with similar semantics and target constructions, for example:
+
+- biography / person-centric frames,
+- entity-centric frames (places, organizations, works, etc.),
+- event-centric frames (wars, elections, disasters, etc.),
+- relational frames (membership, office-holding, part–whole, etc.),
+- temporal / aggregate frames (timelines, seasons, careers, etc.),
+- meta frames (article / section summaries, citation metadata).
+
+Each individual frame is a small dataclass (or equivalent) implementing the `Frame` protocol and carrying a `frame_type` string that identifies its family and subtype.
 
 **Generation options (`GenerationOptions`)**  
-Optional high-level controls (style, length, etc.).
+Optional high-level controls (style, length, discourse mode, etc.).
 
 **Generation result (`GenerationResult`)**  
 Structured output containing the realized text and metadata.
@@ -63,7 +74,7 @@ result = generate(lang="fr", frame=bio)
 print(result.text)
 ```
 
-> **Note:** At the moment, this generic path is effectively backed by the biography engine via a router adapter. Other frame types (e.g. `EventFrame`) will only start producing meaningful text once their engines are wired.
+> **Note:** At the moment, this generic path is effectively backed by the biography engine via a router adapter. Other frame families (e.g. event, relation, timeline) will only start producing meaningful text once their engines are wired.
 
 ---
 
@@ -92,7 +103,7 @@ def generate(
 **Parameters**
 
 * `lang`: Target language code (e.g. `"en"`, `"fr"`, `"sw"`).
-* `frame`: Any supported frame (e.g. `BioFrame`, `EventFrame`).
+* `frame`: Any supported frame instance (e.g. `BioFrame`, `EventFrame`, membership frame, timeline frame).
 * `options`: Optional `GenerationOptions`.
 * `debug`: If `True`, debug information is included in the result (if available from the engine).
 
@@ -181,7 +192,9 @@ Behaves like:
 generate(lang=lang, frame=event, options=options, debug=debug)
 ```
 
-> **Status:** The function exists and routes through `generate`, but there is currently **no concrete event engine**. Until the event pipeline is implemented, you should expect empty strings / placeholder behavior for `EventFrame` inputs.
+> **Status:** The function exists and routes through `generate`, but there is currently **no concrete event engine**. Until the event and other non-biography pipelines are implemented, you should expect empty strings / placeholder behavior for those frame families.
+
+As additional frame families become available (e.g. relational frames, timeline frames), more specialized helpers may be added, but the generic `generate` entry point will remain the primary and stable interface.
 
 ---
 
@@ -214,7 +227,7 @@ class NLGSession:
         ...
 ```
 
-Under the hood, `NLGSession` maintains an internal cache of per-language engines; if the router does not expose a dedicated engine factory, it falls back to a small adapter that delegates biography generation to `router.render_bio`.
+Under the hood, `NLGSession` maintains an internal cache of per-language engines. If the router does not expose a dedicated engine factory for a frame family, it falls back to a small adapter that currently delegates biography generation to `router.render_bio`.
 
 **Usage**
 
@@ -237,7 +250,7 @@ result_fr = session.generate("fr", bio)
 
 ## 4. Data models
 
-The concrete semantic types live under `semantics.types` and related modules. The snippets below illustrate the expected shape.
+The concrete semantic types live under `semantics.types` (and are re-exported from `nlg.semantics`). The snippets below illustrate the expected shape.
 
 ### 4.1 Frames
 
@@ -247,8 +260,208 @@ Frames implement a common protocol:
 from typing import Protocol
 
 class Frame(Protocol):
-    frame_type: str  # e.g. "bio", "event"
+    frame_type: str  # e.g. "bio", "event", "rel_membership", "timeline"
 ```
+
+The `frame_type` string identifies the family and subtype. Engines and routers use this to choose the right family engine and constructions.
+
+Concrete frames are small dataclasses (or equivalent) defined in `semantics.types` (and typically re-exported from `nlg.semantics`). They are grouped into a finite inventory of frame families.
+
+#### 4.1.1 Frame families (inventory overview)
+
+Conceptually, the final system aims to cover the following families. Each bullet represents one *frame family* and is backed by one or more concrete frame classes:
+
+##### 1. Entity-centric frame families
+
+(Things that are “entities” you can write a lead sentence about.)
+
+1. **Person / biography frame**
+   Biographical subjects (real or fictional people). E.g. `BioFrame`.
+
+2. **Organization / group frame**
+   Companies, NGOs, political parties, sports clubs, bands, research groups.
+
+3. **Geopolitical entity frame**
+   Countries, regions, cities, municipalities, dependencies.
+
+4. **Other place / geographic feature frame**
+   Mountains, rivers, lakes, seas, islands, national parks, non-political regions.
+
+5. **Facility / infrastructure frame**
+   Buildings, bridges, dams, airports, railway stations, power plants, stadiums, monuments.
+
+6. **Astronomical object frame**
+   Planets, moons, stars, galaxies, nebulae, minor planets, exoplanets.
+
+7. **Species / taxon frame**
+   Species, genera, higher taxa.
+
+8. **Chemical / material frame**
+   Elements, compounds, materials.
+
+9. **Physical object / artifact frame**
+   Individual artifacts or artifact types (tools, machines, notable objects).
+
+10. **Vehicle / craft frame**
+    Ships, aircraft, spacecraft, train classes, car models.
+
+11. **Creative work frame**
+    Books, films, TV series, episodes, albums, songs, paintings, games, etc.
+
+12. **Software / website / protocol / standard frame**
+    Software packages, websites, internet protocols, standards.
+
+13. **Product / brand frame**
+    Commercial product lines and brands.
+
+14. **Sports team / club frame**
+    Clubs, franchise teams, national teams.
+
+15. **Competition / tournament / league frame**
+    Recurring tournaments, leagues, championship series.
+
+16. **Language frame**
+    Natural languages, constructed languages, dialects.
+
+17. **Religion / belief system / ideology frame**
+    Religions, denominations, belief systems, political ideologies.
+
+18. **Academic discipline / field / theory frame**
+    Academic fields and major theories.
+
+19. **Law / treaty / policy / constitution frame**
+    Statutes, treaties, constitutions, major policies.
+
+20. **Project / program / initiative frame**
+    Government programs, research projects, campaigns, missions.
+
+21. **Fictional entity / universe / franchise frame**
+    Fictional characters, settings, universes, franchises.
+
+##### 2. Event-centric frame families
+
+(Things that happen in time.)
+
+22. **Generic event frame**
+    Base event type (participants, roles, time, location, type).
+
+23. **Historical event frame**
+    Revolutions, coups, reforms, political transitions.
+
+24. **Conflict / battle / war frame**
+    Wars, battles, campaigns, operations.
+
+25. **Election / referendum frame**
+    Elections, referendums, leadership contests.
+
+26. **Disaster / accident frame**
+    Earthquakes, floods, epidemics, industrial accidents, transport crashes.
+
+27. **Scientific / technical milestone frame**
+    Discoveries, inventions, major experiments, firsts.
+
+28. **Cultural event frame**
+    Festivals, exhibitions, premieres, ceremonies.
+
+29. **Sports event / match / season frame**
+    Individual matches, races, rounds, seasons.
+
+30. **Legal proceeding / case frame**
+    Trials, appeals, landmark cases.
+
+31. **Economic / financial event frame**
+    Crises, bubbles, crashes, mergers, IPOs, sanctions episodes.
+
+32. **Exploration / expedition / mission frame**
+    Expeditions, voyages, space missions.
+
+33. **Life-event subframes (biographical episodes)**
+    Education, marriages, appointments, awards, relocations.
+
+##### 3. Relational / statement-level frame families
+
+(Reusable across entity and event articles.)
+
+34. **Definition / classification frame**
+    “X is a Y Z” statements.
+
+35. **Attribute / property frame**
+    Simple attributes (“X is democratic”, “X is red”).
+
+36. **Quantitative measure frame**
+    Numerical values (population, area, GDP, counts, scores).
+
+37. **Comparative / ranking frame**
+    Comparisons and rankings (“largest city in…”, “second-highest…”).
+
+38. **Membership / affiliation frame**
+    Membership or affiliation in groups (“X is a member of Y”).
+
+39. **Role / position / office frame**
+    Office-holding, appointments, terms of office.
+
+40. **Part–whole / composition frame**
+    Part–whole and composition relations.
+
+41. **Ownership / control frame**
+    Ownership and control relations.
+
+42. **Spatial relation frame**
+    Spatial relations (“in”, “near”, “north of”, etc.).
+
+43. **Temporal relation frame**
+    Ordering and duration relations between events.
+
+44. **Causal / influence frame**
+    Cause / effect and influence relations.
+
+45. **Change-of-state frame**
+    Becoming, conversion, abolition, etc.
+
+46. **Communication / statement / quote frame**
+    Attributed statements, quotations.
+
+47. **Opinion / evaluation frame**
+    Opinions or evaluations with explicit sources (used carefully for NPOV).
+
+48. **Relation-bundle / multi-fact frame**
+    Bundles of closely related facts about one subject in one or two sentences.
+
+##### 4. Temporal / narrative / aggregate frame families
+
+49. **Timeline / chronology frame**
+    Ordered sequence of key events for a subject.
+
+50. **Career / season / campaign summary frame**
+    Summaries of a coherent trajectory (career, season, campaign).
+
+51. **Development / evolution frame**
+    How something changes over time (city, product, theory).
+
+52. **Reception / impact frame**
+    Critical / public reception and impact.
+
+53. **Structure / organization frame**
+    Internal structure of organizations and systems.
+
+54. **Comparison-set / contrast frame**
+    Multi-entity comparisons.
+
+55. **List / enumeration frame**
+    Enumerations and list-like sentences.
+
+##### 5. Meta / wrapper frame families
+
+56. **Article / document frame**
+    Representation of a whole article: subject, sections, ordering.
+
+57. **Section summary frame**
+    Summaries of sections (e.g. “Early life”, “Career”, “Legacy”).
+
+58. **Source / citation frame**
+    Provenance and citation metadata for other frames.
+
+From the frontend’s point of view, all of these are just `Frame` instances with a `frame_type` string. The engine/router layer decides which concrete family engine to use based on `frame_type`.
 
 #### Example: `BioFrame`
 
@@ -375,7 +588,7 @@ nlg-cli generate \
   Target language code, e.g. `en`, `fr`, `sw`.
 
 * `--frame-type`
-  Frame type, e.g. `bio`, `event`. If omitted, the JSON must contain `frame_type`.
+  Frame type, e.g. `bio`, `event`, `rel_membership`, `timeline`. If omitted, the JSON must contain `frame_type`.
 
 * `--input`
   Path to a JSON file describing the frame. If omitted or `-`, input is read from stdin.
@@ -425,10 +638,11 @@ nlg-cli generate \
 ## 6. Integration guidelines
 
 * Use `nlg.api.generate` or `NLGSession.generate` as the only entry points for frontend or service code.
-* Construct frames using the models in `semantics.types` (e.g. `BioFrame`, `EventFrame`) or via your own JSON → frame conversion based on those types.
+* Construct frames using the models in `semantics.types` (e.g. `BioFrame`, `EventFrame`, and the other frame families listed above), or via your own JSON → frame conversion based on those types.
+* Always set a meaningful `frame_type` string on your frames to identify the frame family; this is how the router selects the appropriate family engine.
 * Prefer `GenerationOptions` to control output style and length; low-level morphological or discourse behavior is handled internally by engines and the router.
 * Treat `debug_info` as optional and implementation-specific; do not rely on it for core functionality.
-* For now, treat `EventFrame` and other non-bio frames as **experimental** until their engines are wired. The biography pipeline is the reference implementation.
+* For now, treat `EventFrame` and all non-biography frame families as **experimental** until their engines are wired. The biography pipeline is the reference implementation.
 
 This frontend API is intentionally thin: it presents a simple, stable surface over a complex multilingual NLG stack while keeping internal modules flexible and evolvable.
 

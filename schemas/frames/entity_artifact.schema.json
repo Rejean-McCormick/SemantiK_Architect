@@ -1,0 +1,416 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Architect Frame Schema — Entity: Artifact",
+  "description": "JSON shape for the entity-level ArtifactFrame (physical object / artifact), as described in docs/FRAMES_ENTITY.md and implemented in semantics/entity/artifact_frame.py. This frame models individual artifacts such as buildings, monuments, artworks, tools, vehicles-as-objects, etc., for use in encyclopedic lead sentences and short summaries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Frame family identifier. For artifact frames the canonical value is \"entity.artifact\". The shorter internal variant \"artifact\" is also accepted for compatibility with older code.",
+      "enum": [
+        "entity.artifact",
+        "artifact"
+      ]
+    },
+
+    "id": {
+      "type": "string",
+      "description": "Optional stable identifier for this frame instance (e.g. an internal ID, page ID, or statement cluster ID). This is NOT the same as the artifact entity's own identifier."
+    },
+
+    "main_entity": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "The artifact being described (typically a physical object, building, monument, tool, etc.). This is the subject that article text will be about."
+    },
+
+    "entity_role": {
+      "type": "string",
+      "description": "Optional role label for how main_entity functions in this frame. For article-level entity frames this is usually \"subject\".",
+      "default": "subject"
+    },
+
+    "artifact_type_lemmas": {
+      "type": "array",
+      "description": "Free-form lemmas describing the general artifact type or classification, such as [\"painting\"], [\"cathedral\"], [\"statue\"], [\"bridge\"]. Downstream code may normalize these against a controlled inventory.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+
+    "function_lemmas": {
+      "type": "array",
+      "description": "Short free-form phrases describing the primary function or use of the artifact, such as [\"railway station\"], [\"suspension bridge\"], [\"military fortress\"].",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+
+    "makers": {
+      "type": "array",
+      "description": "Entities primarily responsible for creating or constructing the artifact: architects, artists, manufacturers, etc.",
+      "items": {
+        "$ref": "#/definitions/EntityRef"
+      }
+    },
+
+    "owners": {
+      "type": "array",
+      "description": "Current or notable historical owners or custodians, if relevant for the lead sentence (e.g. \"owned by the Louvre\").",
+      "items": {
+        "$ref": "#/definitions/EntityRef"
+      }
+    },
+
+    "current_location": {
+      "description": "Where the artifact is currently located (museum, city, site, etc.). Can be a generic Entity or a more specific Location.",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/EntityRef"
+        },
+        {
+          "$ref": "#/definitions/LocationRef"
+        }
+      ]
+    },
+
+    "creation_event": {
+      "$ref": "#/definitions/EventRef",
+      "description": "Optional explicit creation / construction event, if modeled separately (e.g. a founding or construction semantic Event)."
+    },
+
+    "production_timespan": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "Time span over which the artifact was created or constructed. For many artifacts this is a single year; large projects may span multiple years."
+    },
+
+    "materials_lemmas": {
+      "type": "array",
+      "description": "List of primary materials used, expressed as free-form lemmas such as [\"granodiorite\"], [\"marble\"], [\"steel\"], [\"concrete\"].",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+
+    "heritage_designations": {
+      "type": "array",
+      "description": "Important heritage or protection statuses and designations, such as [\"UNESCO World Heritage Site\"], [\"national monument\"]. When possible, these should align with source terminology.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+
+    "usage_notes": {
+      "type": "string",
+      "description": "Short free-form description of noteworthy usage, context, or constraints (e.g. \"still in active use\", \"now a museum\", \"partially ruined\")."
+    },
+
+    "dimensions": {
+      "type": "array",
+      "description": "List of physical dimensions associated with the artifact. Common dimensions include height, length, width, depth, span, diameter, area, volume, etc.",
+      "items": {
+        "$ref": "#/definitions/Dimension"
+      }
+    },
+
+    "weight_kg": {
+      "type": "number",
+      "description": "Approximate overall weight of the artifact in kilograms, when such a figure is notable and reliably sourced."
+    },
+
+    "technical_specs": {
+      "type": "object",
+      "description": "Optional structured technical specification dictionary for artifact-specific parameters (e.g. number_of_spans, engine_power, capacity). Keys are free-form, values are arbitrary JSON.",
+      "additionalProperties": true
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Additional attribute-style facts that are not modeled as dedicated top-level fields but may be useful for surface realization. Example keys include: \"designer\", \"architectural_style\", \"movement\", \"collection\", \"inventory_numbers\", \"inscriptions\", \"condition_status\".",
+      "additionalProperties": true
+    },
+
+    "key_events": {
+      "type": "array",
+      "description": "Optional list of notable events directly connected to this artifact that might be mentioned in lead sentences or short summaries (e.g. discovery, relocation, major restoration).",
+      "items": {
+        "$ref": "#/definitions/EventRef"
+      }
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary extra metadata carried through normalization; not interpreted by the NLG layer but preserved for traceability.",
+      "additionalProperties": true
+    }
+  },
+
+  "definitions": {
+    "EntityRef": {
+      "type": "object",
+      "description": "Lightweight reference to a discourse entity, following the shape of semantics.types.Entity. This is used for persons, organizations, places, and generic entities.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the entity, e.g. a Wikidata QID (\"Q42\"), local database ID, or URI."
+        },
+        "name": {
+          "type": "string",
+          "description": "Preferred surface name or label, such as \"Rosetta Stone\" or \"Eiffel Tower\"."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Coarse gender category for human entities (e.g. \"female\", \"male\", \"nonbinary\", \"unknown\")."
+        },
+        "human": {
+          "type": "boolean",
+          "description": "Whether this entity is a human (useful for pronoun selection)."
+        },
+        "entity_type": {
+          "type": "string",
+          "description": "Optional coarse type hint such as \"person\", \"organization\", \"place\", \"building\", \"artwork\"."
+        },
+        "lemmas": {
+          "type": "array",
+          "description": "Optional list of lexeme lemmas associated with the entity, such as [\"physicist\", \"chemist\"].",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary for morphology / constructions (e.g. grammatical person, number, animacy).",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata (IDs, codes, raw source row, etc.).",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "LocationRef": {
+      "type": "object",
+      "description": "Reference to a location, following the shape of semantics.types.Location. Can be used interchangeably with EntityRef where appropriate.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the location (e.g. QID, geocode)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable label (e.g. \"Paris\", \"Louvre Museum\")."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Optional location kind, such as \"city\", \"country\", \"region\", \"museum\"."
+        },
+        "country_code": {
+          "type": "string",
+          "description": "Optional ISO country code, such as \"FR\"."
+        },
+        "features": {
+          "type": "object",
+          "description": "Arbitrary feature dictionary, e.g. for preposition choice.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata.",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "TimeSpan": {
+      "type": "object",
+      "description": "Coarse time span or single date, following semantics.types.TimeSpan. Used for creation/production periods and event times.",
+      "additionalProperties": false,
+      "properties": {
+        "start_year": {
+          "type": "integer",
+          "description": "Starting year, e.g. 1867. For a single date, this is the main year of interest."
+        },
+        "end_year": {
+          "type": "integer",
+          "description": "Optional end year, e.g. 1882 for a construction period."
+        },
+        "start_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Optional start month (1–12)."
+        },
+        "start_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Optional start day (1–31)."
+        },
+        "end_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Optional end month (1–12)."
+        },
+        "end_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Optional end day (1–31)."
+        },
+        "approximate": {
+          "type": "boolean",
+          "description": "If true, the timespan is approximate (e.g. \"around 1800\")."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary metadata or source-specific fields.",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "EventRef": {
+      "type": "object",
+      "description": "Lightweight reference to a semantic event (semantics.types.Event), such as a construction, discovery, relocation, or restoration event involving the artifact.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the event."
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Free-form event type label, such as \"construction\", \"discovery\", \"relocation\", \"restoration\"."
+        },
+        "time": {
+          "$ref": "#/definitions/TimeSpan",
+          "description": "When the event took place."
+        },
+        "location": {
+          "description": "Where the event took place (entity or location).",
+          "oneOf": [
+            {
+              "$ref": "#/definitions/EntityRef"
+            },
+            {
+              "$ref": "#/definitions/LocationRef"
+            }
+          ]
+        },
+        "participants": {
+          "type": "object",
+          "description": "Optional mapping from participant roles (e.g. \"subject\", \"agent\") to entities involved in the event.",
+          "additionalProperties": {
+            "$ref": "#/definitions/EntityRef"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "description": "Arbitrary event metadata.",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "Dimension": {
+      "type": "object",
+      "description": "Single named physical dimension of the artifact, such as height, length, or span, with an associated quantity.",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Label for the dimension, such as \"height\", \"length\", \"width\", \"depth\", \"span\", \"diameter\", \"area\"."
+        },
+        "value": {
+          "type": "number",
+          "description": "Numeric value of the dimension."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit for the value, e.g. \"m\", \"km\", \"cm\", \"m2\", \"m3\", \"ft\"."
+        },
+        "approximate": {
+          "type": "boolean",
+          "description": "If true, the dimension is approximate.",
+          "default": false
+        },
+        "extra": {
+          "type": "object",
+          "description": "Optional metadata for this dimension (e.g. \"as_of\", source notes).",
+          "additionalProperties": true
+        }
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "frame_type": "entity.artifact",
+      "main_entity": {
+        "id": "Q1474884",
+        "name": "Rosetta Stone",
+        "entity_type": "artifact"
+      },
+      "artifact_type_lemmas": [
+        "granodiorite stele"
+      ],
+      "function_lemmas": [
+        "inscribed with a decree"
+      ],
+      "makers": [],
+      "owners": [
+        {
+          "name": "British Museum",
+          "entity_type": "organization"
+        }
+      ],
+      "current_location": {
+        "name": "British Museum",
+        "kind": "museum"
+      },
+      "production_timespan": {
+        "start_year": -196,
+        "approximate": true
+      },
+      "materials_lemmas": [
+        "granodiorite"
+      ],
+      "heritage_designations": [
+        "iconic artifact of Egyptology"
+      ],
+      "dimensions": [
+        {
+          "kind": "height",
+          "value": 1.14,
+          "unit": "m"
+        }
+      ],
+      "usage_notes": "Key to modern understanding of Egyptian hieroglyphs.",
+      "attributes": {
+        "inscriptions": "Hieroglyphic, Demotic, and Greek",
+        "condition_status": "fragmentary"
+      },
+      "extra": {
+        "wikidata_qid": "Q1474884"
+      }
+    }
+  ]
+}

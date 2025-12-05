@@ -1,0 +1,244 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Software / protocol / standard entity",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier.",
+      "enum": [
+        "software_protocol_standard",
+        "entity.software_or_standard"
+      ]
+    },
+
+    "main_entity": {
+      "type": "object",
+      "description": "Core entity being described (typically the software, website, protocol, or standard itself). The exact shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "product_kind": {
+      "type": ["string", "null"],
+      "description": "Coarse product kind label, e.g. 'software', 'website', 'protocol', 'standard'. For most cases this will simply be 'software'."
+    },
+
+    "category_lemmas": {
+      "type": "array",
+      "description": "Lemmas describing the coarse category or categories of the artifact, e.g. 'operating system', 'web browser', 'cryptocurrency exchange'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "descriptor_lemmas": {
+      "type": "array",
+      "description": "Additional descriptor lemmas that refine the type, e.g. 'open-source', 'free', 'proprietary', 'distributed', 'client–server'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "developers": {
+      "type": "array",
+      "description": "Entities primarily responsible for developing the artifact (individuals, companies, or organizations).",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "maintainers": {
+      "type": "array",
+      "description": "Entities currently maintaining the artifact, if distinct from the original developers.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "standards_bodies": {
+      "type": "array",
+      "description": "Entities (standards bodies, consortia, etc.) that formally own or steward the standard or protocol.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "origin_location": {
+      "type": ["object", "null"],
+      "description": "Optional place or jurisdiction associated with the origin of the software or standard (e.g. 'United States', 'European Union', a city).",
+      "additionalProperties": true
+    },
+
+    "initial_release": {
+      "type": ["object", "null"],
+      "description": "Optional time span or date structure representing the initial public release (or adoption) of the artifact.",
+      "additionalProperties": true
+    },
+
+    "latest_release": {
+      "type": ["object", "null"],
+      "description": "Optional time span or date structure representing the latest notable release of the artifact.",
+      "additionalProperties": true
+    },
+
+    "current_version": {
+      "type": ["string", "null"],
+      "description": "Human-readable label for the current version or specification, if applicable (e.g. '3.2.1', 'HTTP/2')."
+    },
+
+    "current_version_time": {
+      "type": ["object", "null"],
+      "description": "Optional time span or date structure representing when the current version was released or adopted.",
+      "additionalProperties": true
+    },
+
+    "target_platform_entities": {
+      "type": "array",
+      "description": "Entities representing platforms or environments that this software/protocol targets, e.g. operating systems, browsers, or hardware platforms.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "target_platform_tags": {
+      "type": "array",
+      "description": "String tags for target platforms, e.g. 'Windows', 'Linux', 'Android', 'iOS', when entity modelling is not available or not needed.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "license_lemmas": {
+      "type": "array",
+      "description": "Lemmas naming the license(s) used by the software or standard, e.g. 'GPL', 'MIT License', 'proprietary'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "programming_language_lemmas": {
+      "type": "array",
+      "description": "Lemmas naming main implementation or interface languages, e.g. 'C++', 'Python', 'JavaScript'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "protocol_layers": {
+      "type": "array",
+      "description": "Textual labels indicating protocol stack layers or roles, e.g. 'application layer', 'transport layer', 'network layer'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "domains": {
+      "type": "array",
+      "description": "Application or industry domains for the artifact, e.g. 'web', 'cryptography', 'networking', 'finance', 'messaging'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "status": {
+      "type": ["string", "null"],
+      "description": "Lifecycle status of the artifact, e.g. 'active', 'deprecated', 'discontinued', 'draft', 'standard'."
+    },
+
+    "open_standard": {
+      "type": ["boolean", "null"],
+      "description": "Whether the protocol or standard is considered an open standard (true), clearly not open (false), or unknown (null)."
+    },
+
+    "website_url": {
+      "type": ["string", "null"],
+      "description": "Official website or project homepage URL, if known.",
+      "format": "uri"
+    },
+
+    "related_entities": {
+      "type": "object",
+      "description": "Mapping from relation labels (e.g. 'predecessor', 'successor', 'compatible_with', 'implements') to lists of related entities.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for additional, lightly structured information not yet promoted to first-class fields.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Reserved for pipeline- or source-specific metadata that should not affect generation but may be useful for debugging or analysis.",
+      "additionalProperties": true
+    },
+
+    "artifact_kind": {
+      "type": ["string", "null"],
+      "description": "Legacy field: coarse artifact kind, e.g. 'software', 'website', 'protocol', 'standard'. Prefer 'product_kind' and 'category_lemmas' for new data."
+    },
+
+    "developer_or_maintainer": {
+      "type": "array",
+      "description": "Legacy field: combined list of entities that develop or maintain the artifact. Prefer 'developers' and 'maintainers' in new data.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "initial_release_event": {
+      "type": ["object", "null"],
+      "description": "Legacy field: event-style structure describing the initial release. Prefer 'initial_release' (time span) plus narrative events for detailed histories.",
+      "additionalProperties": true
+    },
+
+    "latest_release_version": {
+      "type": ["string", "null"],
+      "description": "Legacy field: textual label for the latest release version. Prefer 'current_version'."
+    },
+
+    "latest_release_time": {
+      "type": ["object", "null"],
+      "description": "Legacy field: time span or date structure for latest release. Prefer 'latest_release' or 'current_version_time'.",
+      "additionalProperties": true
+    },
+
+    "license": {
+      "type": ["string", "null"],
+      "description": "Legacy field: main license label. Prefer 'license_lemmas' for structured data."
+    },
+
+    "platforms": {
+      "type": "array",
+      "description": "Legacy field: string list of supported platforms. Prefer 'target_platform_entities' and 'target_platform_tags'.",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "supported_protocols_or_standards": {
+      "type": "array",
+      "description": "Legacy field: list of protocol or standard names supported or implemented by the artifact. New data may prefer explicit 'related_entities' relations or narrative frames.",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ]
+}

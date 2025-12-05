@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abstract-wiki.org/schemas/frames/relational_opinion_evaluation.schema.json",
+  "title": "Abstract Wiki Frame: Relational opinion / evaluation",
+  "description": "Schema for OpinionFrame: evaluative statements about a subject, optionally with a scalar rating and provenance.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable identifier for this opinion fact (for merging / cross-reference)."
+    },
+
+    "evaluator": {
+      "type": ["object", "null"],
+      "description": "Entity expressing the opinion, e.g. critics, scholars, the public. May be omitted or null if generic/implicit.",
+      "additionalProperties": true
+    },
+
+    "subject": {
+      "type": "object",
+      "description": "Entity being evaluated (film, person, team, product, etc.).",
+      "additionalProperties": true
+    },
+
+    "aspect": {
+      "type": "string",
+      "description": "Specific aspect being evaluated, e.g. performance, design, story."
+    },
+
+    "polarity": {
+      "type": "string",
+      "description": "Coarse polarity of the opinion.",
+      "enum": ["positive", "negative", "mixed", "neutral"],
+      "default": "positive"
+    },
+
+    "rating_value": {
+      "type": "number",
+      "description": "Optional scalar rating value (e.g. 7.5, 4, 92)."
+    },
+
+    "rating_scale": {
+      "type": "string",
+      "description": "Scale or system used for rating, e.g. out_of_10, stars, percentage."
+    },
+
+    "time": {
+      "type": ["object", "null"],
+      "description": "When the opinion was expressed or is taken to hold.",
+      "additionalProperties": true
+    },
+
+    "basis": {
+      "type": "string",
+      "description": "Basis for the evaluation, e.g. reviews, polls, awards, critical consensus."
+    },
+
+    "certainty": {
+      "type": "number",
+      "description": "System-internal confidence in this opinion statement (0.0–1.0).",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 1.0
+    },
+
+    "source_id": {
+      "type": "string",
+      "description": "Provenance identifier, e.g. Wikidata statement ID or upstream node ID."
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Open-ended metadata from upstream. Unknown keys should be stored here rather than dropped.",
+      "additionalProperties": true,
+      "default": {}
+    }
+  },
+  "required": ["subject"]
+}

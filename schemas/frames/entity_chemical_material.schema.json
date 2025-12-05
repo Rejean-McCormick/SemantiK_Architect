@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema#",
+  "$id": "schemas/frames/entity_chemical_material.schema.json",
+  "title": "EntityChemicalMaterialFrame",
+  "description": "Schema for the ChemicalMaterialFrame, representing a single chemical substance or material.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "chemical_material",
+      "description": "Constant identifier for this frame family; always \"chemical_material\"."
+    },
+    "entity": {
+      "type": "object",
+      "description": "Underlying entity this frame describes (e.g. the Wikidata item for the compound or material)."
+    },
+    "formula": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Preferred chemical formula (ASCII or Unicode), e.g. \"NaCl\", \"C6H6\", \"H₂O\"."
+    },
+    "iupac_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "IUPAC systematic name, if available (e.g. \"sodium chloride\")."
+    },
+    "common_names": {
+      "type": "array",
+      "description": "List of common names and synonyms; language-neutral labels.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "phase_at_stp": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Aggregate state at standard temperature and pressure, e.g. \"solid\", \"liquid\", \"gas\"."
+    },
+    "appearance": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Short free-form description of appearance, e.g. \"white crystalline solid\"."
+    },
+    "molar_mass": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Molar mass represented as a Quantity-like object (number + unit + optional qualifiers)."
+    },
+    "density": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Density near room conditions, represented as a Quantity-like object."
+    },
+    "melting_point": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Melting point represented as a temperature Quantity-like object."
+    },
+    "boiling_point": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Boiling point represented as a temperature Quantity-like object."
+    },
+    "categories": {
+      "type": "array",
+      "description": "High-level classification labels, such as \"alkali metal\", \"polymer\", \"alloy\".",
+      "items": {
+        "type": "string"
+      }
+    },
+    "uses": {
+      "type": "array",
+      "description": "List of salient applications / uses as short phrases.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "hazards": {
+      "type": "array",
+      "description": "List of salient hazards or safety concerns as short phrases.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "extra": {
+      "type": "object",
+      "description": "Arbitrary metadata or source-specific payload (e.g. original statements, IDs, mapping info).",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "entity"
+  ]
+}

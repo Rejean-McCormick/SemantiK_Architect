@@ -1,0 +1,263 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Architect Frame Schema: Law / Treaty / Policy",
+  "description": "JSON schema for `entity.legal_instrument` frames used by the Abstract Wiki Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `LawTreatyPolicyFrame`.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "enum": [
+        "entity.legal_instrument"
+      ],
+      "description": "Canonical frame type identifier. Must be `entity.legal_instrument`."
+    },
+    "main_entity": {
+      "$ref": "#/definitions/EntityRef"
+    },
+    "instrument_kind": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "High-level kind of legal instrument. After normalization typically one of `treaty`, `law`, `constitution`, `policy`, `agreement`, `convention`, `charter`, `statute`, but arbitrary non-empty strings are allowed."
+    },
+    "jurisdiction": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "Jurisdiction in which the instrument applies (e.g. a country, state, or supranational body)."
+    },
+    "signing_event": {
+      "$ref": "#/definitions/EventRef",
+      "description": "Event representing the signing or adoption of the instrument."
+    },
+    "coming_into_force_event": {
+      "$ref": "#/definitions/EventRef",
+      "description": "Event representing the entry into force of the instrument."
+    },
+    "repeal_event": {
+      "$ref": "#/definitions/EventRef",
+      "description": "Event representing the repeal, expiry, or supersession of the instrument, if applicable."
+    },
+    "status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Short label for the current legal status (e.g. 'in force', 'repealed', 'partially in force', 'superseded')."
+    },
+    "parties": {
+      "type": "array",
+      "description": "For treaties / agreements: parties or signatories (states, organizations). For purely domestic laws this is usually empty.",
+      "items": {
+        "$ref": "#/definitions/EntityRef"
+      }
+    },
+    "subjects": {
+      "type": "array",
+      "description": "High-level subject domains or policy areas as simple lemmas (e.g. 'trade', 'environment', 'healthcare').",
+      "items": {
+        "type": "string"
+      }
+    },
+    "articles_or_sections": {
+      "type": "array",
+      "description": "Identifiers of key articles / sections (e.g. 'Article 1', 'Section 2'); primarily for reference and usually not surfaced in a short lead sentence.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "legal_citations": {
+      "type": "array",
+      "description": "Legal citation strings such as official publication references, docket numbers, or standard citation formats (e.g. 'Pub. L. 111–148').",
+      "items": {
+        "type": "string"
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Arbitrary attribute map for additional structured properties.\n\nRecommended keys include:\n- `scope` (string): e.g. 'international', 'national', 'local'.\n- `binding` (boolean): whether the instrument is legally binding.\n- `subject_matter` (array[string]): more fine-grained subject tags.\n- `language_versions` (array[string]): languages in which the text is officially available.\n\nUnknown keys are preserved and may or may not be surfaced by NLG.",
+      "properties": {
+        "scope": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "binding": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "subject_matter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "language_versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Opaque source-specific metadata not interpreted by the core semantics/NLG layer. Use this to carry original IDs, raw fields, or debugging information.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+  "definitions": {
+    "EntityRef": {
+      "type": "object",
+      "description": "Lightweight reference to an entity in the Abstract Wiki knowledge graph or an external source. At least one identifier (`id`, `qid`, or `name`) SHOULD be provided.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Opaque internal identifier for the entity (database or graph ID)."
+        },
+        "qid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional Wikidata QID, e.g. 'Q42'."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Surface name of the entity in a reference language."
+        },
+        "entity_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Loose entity type label, e.g. 'country', 'organization', 'legal_instrument'."
+        },
+        "lang": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional BCP-47-like language tag for `name`, e.g. 'en', 'fr'."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form payload attached to the entity reference.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true,
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "qid"
+          ]
+        },
+        {
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "TimeSpan": {
+      "type": "object",
+      "description": "Approximate or exact time span for an event. All fields are optional; callers may encode a single point (`point`) or an interval (`start`/`end`).",
+      "properties": {
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Start of the interval in ISO-8601 form, e.g. '1995-01-01' or '1995-01-01T00:00:00Z'."
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "End of the interval in ISO-8601 form."
+        },
+        "point": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Instantaneous timestamp in ISO-8601 form when appropriate."
+        },
+        "precision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional precision hint such as 'year', 'month', 'day', 'hour'."
+        }
+      },
+      "additionalProperties": true
+    },
+    "EventRef": {
+      "type": "object",
+      "description": "Lightweight representation or reference for an event.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Opaque internal identifier for the event (database or graph ID)."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Short human-readable label for the event."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Informal event type label, e.g. 'signing', 'ratification', 'repeal'."
+        },
+        "time": {
+          "$ref": "#/definitions/TimeSpan"
+        },
+        "location": {
+          "$ref": "#/definitions/EntityRef"
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityRef"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form payload attached to the event reference.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

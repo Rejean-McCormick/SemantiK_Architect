@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Architect Frame Schema: Scientific / Technical Milestone Event",
+  "description": "JSON schema for `event.scientific_milestone` frames used by the Abstract Wiki Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `ScientificTechnicalMilestoneEventFrame`.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "enum": [
+        "event.scientific_milestone"
+      ],
+      "description": "Canonical frame type identifier. Must be `event.scientific_milestone`."
+    },
+    "main_event": {
+      "$ref": "#/definitions/EventRef"
+    },
+    "subject": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "Optional discourse-level subject that the milestone is \"about\" (e.g. a scientist, organization, theory, or product)."
+    },
+    "domain_lemmas": {
+      "type": "array",
+      "description": "High-level scientific / technical domain labels, represented as lemma-like keys.\nExamples: ['physics'], ['biology'], ['computer_science'].",
+      "items": {
+        "type": "string"
+      }
+    },
+    "topic_keywords": {
+      "type": "array",
+      "description": "Finer-grained topic or phenomenon labels as key strings, e.g. ['radioactivity'], ['special_relativity'], ['dna_structure'].",
+      "items": {
+        "type": "string"
+      }
+    },
+    "time": {
+      "$ref": "#/definitions/TimeSpan",
+      "description": "Optional time span overriding or supplementing `main_event.time` for high-level summaries."
+    },
+    "location": {
+      "$ref": "#/definitions/EntityRef",
+      "description": "Optional location overriding or supplementing `main_event.location`. Typically a place or institution."
+    },
+    "related_events": {
+      "type": "array",
+      "description": "Other salient events closely tied to the milestone, such as follow-up experiments, commercialization, or prize/award events.",
+      "items": {
+        "$ref": "#/definitions/EventRef"
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Machine-readable indicators associated with the milestone, e.g. citation counts, impact factors, or deployment metrics.\nKeys are free-form; values are JSON-serializable.",
+      "additionalProperties": true
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Generic attribute map for additional structured semantic features (e.g. methodology, instruments).",
+      "properties": {
+        "methodology": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Labels for methods or experimental designs (e.g. 'double_blind', 'randomized_controlled_trial')."
+        },
+        "instrument": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Labels for major instruments or facilities (e.g. 'hadron_collider')."
+        }
+      },
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Opaque source-specific metadata not interpreted by the core semantics/NLG layer. Use this to carry original IDs, raw fields, or debugging information.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_event"
+  ],
+  "definitions": {
+    "EntityRef": {
+      "type": "object",
+      "description": "Lightweight reference to an entity in the Abstract Wiki knowledge graph or an external source. At least one identifier (`id`, `qid`, or `name`) SHOULD be provided.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Opaque internal identifier for the entity (database or graph ID)."
+        },
+        "qid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional Wikidata QID, e.g. 'Q42'."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Surface name of the entity in a reference language."
+        },
+        "entity_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Loose entity type label, e.g. 'person', 'organization', 'place', 'astronomical_object'."
+        },
+        "lang": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional BCP-47-like language tag for `name`, e.g. 'en', 'fr'."
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form payload attached to the entity reference.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true,
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "qid"
+          ]
+        },
+        {
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "TimeSpan": {
+      "type": "object",
+      "description": "Approximate or exact time span for an event. All fields are optional; callers may encode a single point (`point`) or an interval (`start`/`end`).",
+      "properties": {
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Start of the interval in ISO-8601 form, e.g. '1995-01-01' or '1995-01-01T00:00:00Z'."
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "End of the interval in ISO-8601 form."
+        },
+        "point": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Instantaneous timestamp in ISO-8601 form when appropriate."
+        },
+        "precision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional precision hint such as 'year', 'month', 'day', 'hour'."
+        }
+      },
+      "additionalProperties": true
+    },
+    "EventRef": {
+      "type": "object",
+      "description": "Lightweight representation or reference for an event.",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Opaque internal identifier for the event (database or graph ID)."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Short human-readable label for the event."
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Informal event type label, e.g. 'discovery', 'invention', 'publication', 'launch'."
+        },
+        "time": {
+          "$ref": "#/definitions/TimeSpan"
+        },
+        "location": {
+          "$ref": "#/definitions/EntityRef"
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityRef"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "description": "Free-form payload attached to the event reference.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

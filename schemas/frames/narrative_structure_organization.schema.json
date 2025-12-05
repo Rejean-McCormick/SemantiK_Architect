@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://abstractwiki.org/schemas/frames/narrative_structure_organization.schema.json",
+  "title": "StructureOrganizationFrame",
+  "description": "Narrative frame describing the internal structure of an entity such as an organization, government, academic department, large project, or document.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "narr.structure-organization",
+      "description": "Canonical frame type discriminator for this narrative family."
+    },
+    "main_entity": {
+      "$ref": "#/$defs/entity",
+      "description": "The entity whose internal structure is being described (organization, government, department, project, document, etc.)."
+    },
+    "structure_type_lemmas": {
+      "type": "array",
+      "description": "Optional lemmas describing the type of structure, e.g. \"organizational structure\", \"government\", \"corporate structure\".",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "unit_index_key": {
+      "type": "string",
+      "description": "Name of the field used as the primary key for units, typically \"key\". Allows future alternative indexing schemes.",
+      "default": "key",
+      "minLength": 1
+    },
+    "units": {
+      "type": "array",
+      "description": "Hierarchical or flat list of organizational units that make up the structure (divisions, departments, branches, committees, chapters, sections, etc.).",
+      "items": {
+        "$ref": "#/$defs/organizational_unit_node"
+      }
+    },
+    "key_positions": {
+      "type": "object",
+      "description": "Mapping from human-readable position labels to one or more entities holding those positions within the structure. Keys are label-like identifiers (e.g. \"president\", \"ceo\", \"board_chair\"), values are lists of entities.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/entity"
+        }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Open-ended map for structured properties about the structure as a whole, e.g. {\"levels\": 3, \"has_board\": true}. Intended for downstream planners; unknown keys are ignored by the NLG layer.",
+      "additionalProperties": true
+    },
+    "extra": {
+      "type": "object",
+      "description": "Opaque metadata for downstream systems (source IDs, raw JSON fragments, debug info). Not interpreted by the NLG layer.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ],
+  "$defs": {
+    "entity": {
+      "type": "object",
+      "description": "Lightweight entity reference used across frames. This mirrors the semantics.types.Entity shape in a permissive way.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "description": "Local or external identifier for the entity (Wikidata Q-ID, internal ID, etc.).",
+          "type": [
+            "string",
+            "integer"
+          ]
+        },
+        "name": {
+          "description": "Canonical or display name of the entity in some language.",
+          "type": "string",
+          "minLength": 1
+        },
+        "wikidata_id": {
+          "description": "External Wikidata identifier for the entity, if available (e.g. \"Q42\").",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "High-level type hint for the entity (e.g. \"organization\", \"person\", \"office\", \"department\").",
+          "type": "string"
+        },
+        "language_code": {
+          "description": "BCP 47 / ISO language code of the name, when relevant.",
+          "type": "string"
+        },
+        "extra": {
+          "description": "Arbitrary metadata attached to this entity reference.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "organizational_unit_node": {
+      "type": "object",
+      "description": "Node in the internal structure of an entity (division, department, branch, committee, chapter, section, etc.).",
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/entity",
+          "description": "Entity representing this unit (e.g. a named department, committee, division, or office)."
+        },
+        "key": {
+          "type": "string",
+          "description": "Stable local key for this unit, unique within the frame. Used by parent_key and key_positions mappings.",
+          "minLength": 1
+        },
+        "parent_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Key of the parent unit, if any. Null or omitted for top-level units.",
+          "minLength": 1
+        },
+        "unit_type_lemmas": {
+          "type": "array",
+          "description": "Lemmas describing the kind of unit, e.g. [\"department\"], [\"division\"], [\"committee\"], [\"ministry\"].",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "responsibility_lemmas": {
+          "type": "array",
+          "description": "Lemmas summarizing responsibilities or functions of the unit, e.g. [\"finance\", \"research\", \"governance\"].",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "attributes": {
+          "type": "object",
+          "description": "Structured properties specific to this unit, such as {\"staff_count\": 120, \"region\": \"Europe\"}. Unknown keys are ignored by the NLG layer.",
+          "additionalProperties": true
+        },
+        "extra": {
+          "type": "object",
+          "description": "Opaque metadata attached to this unit node, preserved for downstream systems.",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "entity",
+        "key"
+      ]
+    }
+  }
+}

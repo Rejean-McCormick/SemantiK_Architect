@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame: Narrative comparison-set / contrast",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "description": "Canonical frame identifier for the comparison-set / contrast family. In the global frame inventory this corresponds to \"aggregate.comparison_set\".",
+      "enum": [
+        "aggregate.comparison_set",
+        "narrative.comparison_set_contrast",
+        "narrative_comparison_set_contrast"
+      ]
+    },
+
+    "compared_entities": {
+      "type": "array",
+      "description": "Entities that are being compared or contrasted (cities, countries, organizations, products, etc.). Shape of each element follows semantics.types.Entity.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "minItems": 2
+    },
+
+    "group_label_lemma": {
+      "type": ["string", "null"],
+      "description": "Optional lemma-level label describing the group as a whole, e.g. 'bank', 'river', 'political party', 'European capital'."
+    },
+
+    "topic_scope": {
+      "type": ["object", "null"],
+      "description": "Optional entity that provides a shared scope or context, e.g. a country, region, competition, or time period in which the comparison is made. Shape follows semantics.types.Entity.",
+      "additionalProperties": true
+    },
+
+    "comparison_basis_lemmas": {
+      "type": "array",
+      "description": "Lemma-level labels for the main dimensions along which the entities are being compared (e.g. 'size', 'population', 'GDP', 'religious affiliation', 'political orientation').",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "contrast_focus": {
+      "type": ["string", "null"],
+      "description": "Optional label indicating whether the narrative focuses on similarities, differences, or both. Suggested values: 'similarities', 'differences', 'mixed'."
+    },
+
+    "ordering_dimension_lemma": {
+      "type": ["string", "null"],
+      "description": "Optional lemma for the dimension used to order the set in the narrative (e.g. 'population', 'area', 'GDP'), if a particular ordering is desired."
+    },
+
+    "shared_properties": {
+      "type": "array",
+      "description": "Properties that apply to all (or almost all) members of the comparison set, suitable for sentences like 'All three cities are major industrial centres'.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "property_lemma": {
+            "type": ["string", "null"],
+            "description": "Lemma-level label for the shared property (e.g. 'coastal', 'industrial', 'capital city')."
+          },
+          "value": {
+            "description": "Optional value associated with the shared property (e.g. a threshold or categorical label).",
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "integer" },
+              { "type": "boolean" },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              { "type": "null" }
+            ]
+          },
+          "value_unit": {
+            "type": ["string", "null"],
+            "description": "Optional unit for numeric values (e.g. 'km', 'million_inhabitants')."
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "Optional short note clarifying the property or its scope."
+          }
+        }
+      }
+    },
+
+    "member_properties": {
+      "type": "array",
+      "description": "Per-entity properties that highlight contrasts between members of the set, suitable for sentences like 'X is the largest, while Y is the most populous'.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity": {
+            "type": "object",
+            "description": "Entity for which this property is being specified. Shape follows semantics.types.Entity.",
+            "additionalProperties": true
+          },
+          "property_lemma": {
+            "type": ["string", "null"],
+            "description": "Lemma-level label for the property being contrasted (e.g. 'population', 'area', 'founded')."
+          },
+          "value": {
+            "description": "Value of the property for this entity.",
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "integer" },
+              { "type": "boolean" },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              { "type": "null" }
+            ]
+          },
+          "value_unit": {
+            "type": ["string", "null"],
+            "description": "Optional unit for the value, if numeric."
+          },
+          "relative_rank": {
+            "type": ["integer", "null"],
+            "description": "Optional rank of this entity with respect to the given property among the comparison set (e.g. 1 for largest, 2 for second-largest)."
+          },
+          "qualifier": {
+            "type": ["string", "null"],
+            "description": "Optional short qualifier (e.g. 'by population', 'within the EU', 'as of 2020')."
+          }
+        }
+      }
+    },
+
+    "summary_gloss": {
+      "type": ["string", "null"],
+      "description": "Optional short, language-specific gloss that summarizes the intended comparison narrative. Engines may ignore or rephrase this."
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Free-form attribute bag for additional structured information not yet promoted to first-class fields (e.g. numeric indicator bundles, flags).",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Reserved for pipeline- or source-specific metadata that should not affect generation but may be useful for debugging or analysis.",
+      "additionalProperties": true
+    },
+
+    "items": {
+      "type": "array",
+      "description": "Legacy field: list of compared entities, possibly with ad-hoc properties. Prefer 'compared_entities' and 'member_properties' for new data.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+
+    "basis": {
+      "type": ["string", "null"],
+      "description": "Legacy field: textual description of the comparison basis. Prefer 'comparison_basis_lemmas' and 'ordering_dimension_lemma'."
+    }
+  },
+  "required": [
+    "frame_type",
+    "compared_entities"
+  ]
+}

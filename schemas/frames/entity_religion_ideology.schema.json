@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Abstract Wiki Frame Schema: Religion / Belief System / Ideology",
+  "description": "JSON schema for the ReligionIdeologyFrame semantic structure used for religions, belief systems, denominations, and ideologies.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "frame_type": {
+      "type": "string",
+      "const": "entity.belief_system",
+      "description": "Stable frame identifier; must be \"entity.belief_system\" for ReligionIdeologyFrame instances (frame family ID in semantics.all_frames)."
+    },
+
+    "main_entity": {
+      "type": "object",
+      "description": "The religion / belief system / ideology entity this frame describes, typically mirroring semantics.types.Entity (id, name, entity_type, extra, etc.).",
+      "additionalProperties": true
+    },
+
+    "classification_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for the broad class of the system (e.g. \"religion\", \"political_ideology\", \"philosophical_system\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "tradition_family_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for higher-level tradition / family (e.g. \"abrahamic\", \"dharmic\", \"christian\", \"marxist\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "origin_location": {
+      "type": ["object", "null"],
+      "description": "Optional Location-like object describing where the system originated (e.g. region, city).",
+      "additionalProperties": true
+    },
+
+    "origin_event": {
+      "type": ["object", "null"],
+      "description": "Optional Event-like object describing emergence / founding / codification, mirroring semantics.types.Event (id, event_type, time, location, participants, properties, extra).",
+      "additionalProperties": true
+    },
+
+    "founder_entities": {
+      "type": "array",
+      "description": "List of Entity-like objects representing founders or origin figures (e.g. \"Gautama Buddha\", \"Karl Marx\").",
+      "items": {
+        "type": "object",
+        "description": "Entity-like object, typically mirroring semantics.types.Entity.",
+        "additionalProperties": true
+      }
+    },
+
+    "core_figures": {
+      "type": "array",
+      "description": "List of Entity-like objects representing central figures (deities, prophets, emblematic figures) distinct from historical founders when needed.",
+      "items": {
+        "type": "object",
+        "description": "Entity-like object, typically mirroring semantics.types.Entity.",
+        "additionalProperties": true
+      }
+    },
+
+    "key_belief_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for core beliefs / themes (e.g. \"monotheism\", \"nonviolence\", \"class_struggle\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "key_practice_lemmas": {
+      "type": "array",
+      "description": "Lemma-like labels for characteristic practices (e.g. \"prayer\", \"meditation\", \"sacraments\", \"pilgrimage\").",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "primary_text_entities": {
+      "type": "array",
+      "description": "Entity-like objects representing scriptures / canonical texts (e.g. \"Bible\", \"Qur'an\", \"Communist Manifesto\").",
+      "items": {
+        "type": "object",
+        "description": "Entity-like object, typically mirroring semantics.types.Entity with entity_type indicating a work.",
+        "additionalProperties": true
+      }
+    },
+
+    "institutional_entities": {
+      "type": "array",
+      "description": "Entity-like objects representing major institutions associated with the system (e.g. churches, councils, parties).",
+      "items": {
+        "type": "object",
+        "description": "Entity-like object, typically mirroring semantics.types.Entity.",
+        "additionalProperties": true
+      }
+    },
+
+    "geographic_scope": {
+      "type": "array",
+      "description": "Location-like objects representing the main regions where the system is practiced or influential (e.g. \"worldwide\", \"South Asia\").",
+      "items": {
+        "type": "object",
+        "description": "Location-like object, typically mirroring semantics.types.Location (id, name, kind, extra, etc.).",
+        "additionalProperties": true
+      }
+    },
+
+    "estimated_adherents": {
+      "type": ["integer", "null"],
+      "description": "Approximate number of adherents / followers, if known (e.g. total adherents worldwide)."
+    },
+
+    "adherent_estimate_year": {
+      "type": ["integer", "null"],
+      "description": "Reference year for the adherent estimate (e.g. survey or estimate year)."
+    },
+
+    "parent_traditions": {
+      "type": "array",
+      "description": "Entity-like objects representing conceptual or historical parent traditions or sources.",
+      "items": {
+        "type": "object",
+        "description": "Entity-like object, typically mirroring semantics.types.Entity.",
+        "additionalProperties": true
+      }
+    },
+
+    "derived_traditions": {
+      "type": "array",
+      "description": "Entity-like objects representing derived traditions, denominations, or ideologies that grow out of this system.",
+      "items": {
+        "type": "object",
+        "description": "Entity-like object, typically mirroring semantics.types.Entity.",
+        "additionalProperties": true
+      }
+    },
+
+    "branches": {
+      "type": "array",
+      "description": "Entity-like objects representing major internal branches / denominations considered part of the same umbrella belief system.",
+      "items": {
+        "type": "object",
+        "description": "Entity-like object, typically mirroring semantics.types.Entity.",
+        "additionalProperties": true
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+      "description": "Open-ended attribute map for additional structured facts (e.g. sacred_languages, organizational_structure, major_festivals). Keys should be strings.",
+      "additionalProperties": true
+    },
+
+    "extra": {
+      "type": "object",
+      "description": "Free-form metadata bag for provenance, debug info, or original-source fields that are not directly interpreted by NLG.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "frame_type",
+    "main_entity"
+  ]
+}
