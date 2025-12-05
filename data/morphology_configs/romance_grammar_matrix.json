@@ -1,264 +1,202 @@
 {
   "_meta": {
     "family": "romance",
-    "version": 1,
-    "description": "Shared Romance Grammar Matrix used by the prototype shared_romance_engine.",
-    "notes": "Each language payload provides articles, gender/number morphology, and simple phonological triggers."
+    "version": 2,
+    "description": "Shared Romance grammar matrix for the new RomanceMorphology-based bio renderer.",
+    "notes": "Each language payload provides articles, simple gender inflection rules, and phonological triggers for the shared Romance engine."
   },
   "languages": {
     "it": {
       "name": "Italian",
       "articles": {
-        "definite": {
-          "masc_sg": {
-            "before_vowel": "l'",
-            "before_impure_s_or_z": "lo",
-            "default": "il"
-          },
-          "fem_sg": {
-            "before_vowel": "l'",
-            "default": "la"
-          },
-          "masc_pl": {
-            "before_impure_s_or_z": "gli",
-            "before_vowel": "gli",
-            "default": "i"
-          },
-          "fem_pl": {
-            "default": "le"
-          }
+        "m": {
+          "default": "un",
+          "vowel": "un",
+          "s_impure": "uno"
         },
-        "indefinite": {
-          "masc_sg": {
-            "before_impure_s_or_z": "uno",
-            "default": "un"
-          },
-          "fem_sg": {
-            "before_vowel": "un'",
-            "default": "una"
-          }
+        "f": {
+          "default": "una",
+          "vowel": "un'"
         }
       },
       "morphology": {
-        "gender_from_lemma": {
-          "default": "masc",
-          "suffix_rules": [
-            { "pattern": "a$", "gender": "fem" },
-            { "pattern": "trice$", "gender": "fem" },
-            { "pattern": "essa$", "gender": "fem" }
-          ]
-        },
-        "masc_to_fem": [
-          { "from": "ore$", "to": "rice" },
-          { "from": "tore$", "to": "trice" },
-          { "from": "o$", "to": "a" }
+        "suffixes": [
+          { "ends_with": "tore", "replace_with": "trice" },
+          { "ends_with": "ore",  "replace_with": "rice"  },
+          { "ends_with": "o",    "replace_with": "a"     }
         ],
-        "plural_from_singular": [
-          { "from": "o$", "to": "i" },
-          { "from": "a$", "to": "e" },
-          { "from": "e$", "to": "i" }
-        ]
+        "irregulars": {
+          "poeta":   "poetessa",
+          "duca":    "duchessa",
+          "re":      "regina",
+          "attore":  "attrice",
+          "scrittore": "scrittrice",
+          "fisico":  "fisica",
+          "medico":  "medica"
+        }
       },
-      "phonology": {
-        "impure_s_clusters": ["sp", "st", "sc", "sg", "sb", "sf", "sm", "sn"],
-        "z_clusters": ["z"],
-        "vowel_initial_letters": ["a", "e", "i", "o", "u", "à", "è", "é", "ì", "ò", "ù"]
+      "phonetics": {
+        "impure_triggers": [
+          "s_consonant",
+          "z",
+          "ps",
+          "gn"
+        ],
+        "stressed_a_words": [],
+        "elision": true
       },
-      "syntax": {
-        "adjective_position": "post",
-        "nationality_as_adjective": true
-      }
+      "structure": "{name} è {article}{sep}{profession} {nationality}."
     },
+
     "es": {
       "name": "Spanish",
       "articles": {
-        "definite": {
-          "masc_sg": { "default": "el" },
-          "fem_sg": { "default": "la" },
-          "masc_pl": { "default": "los" },
-          "fem_pl": { "default": "las" }
+        "m": {
+          "default": "un",
+          "vowel": "un"
         },
-        "indefinite": {
-          "masc_sg": { "default": "un" },
-          "fem_sg": { "default": "una" },
-          "masc_pl": { "default": "unos" },
-          "fem_pl": { "default": "unas" }
+        "f": {
+          "default": "una",
+          "stressed_a": "un"
         }
       },
       "morphology": {
-        "gender_from_lemma": {
-          "default": "masc",
-          "suffix_rules": [
-            { "pattern": "a$", "gender": "fem" },
-            { "pattern": "ción$", "gender": "fem" },
-            { "pattern": "sión$", "gender": "fem" },
-            { "pattern": "dad$", "gender": "fem" }
-          ]
-        },
-        "masc_to_fem": [
-          { "from": "o$", "to": "a" },
-          { "from": "or$", "to": "ora" },
-          { "from": "án$", "to": "ana" }
+        "suffixes": [
+          { "ends_with": "or", "replace_with": "ora" },
+          { "ends_with": "án", "replace_with": "ana" },
+          { "ends_with": "o",  "replace_with": "a"   }
         ],
-        "plural_from_singular": [
-          { "from": "[aeiouáéíóú]$", "to": "\\0s" },
-          { "from": "[^aeiouáéíóú]$", "to": "\\0es" }
-        ]
-      },
-      "phonology": {
-        "vowel_initial_letters": ["a", "e", "i", "o", "u", "á", "é", "í", "ó", "ú"],
-        "hiato_articles": {
-          "fem_sg_def_before_stressed_a": "el"
+        "irregulars": {
+          "rey":       "reina",
+          "actor":     "actriz",
+          "emperador": "emperatriz",
+          "héroe":     "heroína",
+          "escritor":  "escritora",
+          "doctor":    "doctora",
+          "fisico":    "fisica",
+          "quimico":   "quimica",
+          "matematico":"matematica"
         }
       },
-      "syntax": {
-        "adjective_position": "post",
-        "nationality_as_adjective": true
-      }
+      "phonetics": {
+        "impure_triggers": [],
+        "stressed_a_words": [
+          "águila",
+          "agua",
+          "arma",
+          "alma",
+          "área",
+          "hacha",
+          "hambre"
+        ],
+        "elision": false
+      },
+      "structure": "{name} es {article}{sep}{profession} {nationality}."
     },
+
     "fr": {
       "name": "French",
       "articles": {
-        "definite": {
-          "masc_sg": {
-            "before_vowel_or_h_muet": "l'",
-            "default": "le"
-          },
-          "fem_sg": {
-            "before_vowel_or_h_muet": "l'",
-            "default": "la"
-          },
-          "masc_pl": { "default": "les" },
-          "fem_pl": { "default": "les" }
+        "m": {
+          "default": "un",
+          "vowel": "un"
         },
-        "indefinite": {
-          "masc_sg": { "default": "un" },
-          "fem_sg": { "default": "une" },
-          "masc_pl": { "default": "des" },
-          "fem_pl": { "default": "des" }
+        "f": {
+          "default": "une",
+          "vowel": "une"
         }
       },
       "morphology": {
-        "gender_from_lemma": {
-          "default": "masc",
-          "suffix_rules": [
-            { "pattern": "euse$", "gender": "fem" },
-            { "pattern": "trice$", "gender": "fem" },
-            { "pattern": "tion$", "gender": "fem" }
-          ]
-        },
-        "masc_to_fem": [
-          { "from": "eur$", "to": "euse" },
-          { "from": "teur$", "to": "trice" },
-          { "from": "ien$", "to": "ienne" },
-          { "from": "on$", "to": "onne" },
-          { "from": "el$", "to": "elle" }
+        "suffixes": [
+          { "ends_with": "eur", "replace_with": "euse"  },
+          { "ends_with": "teur","replace_with": "trice" },
+          { "ends_with": "ien", "replace_with": "ienne" },
+          { "ends_with": "on",  "replace_with": "onne"  },
+          { "ends_with": "el",  "replace_with": "elle"  }
         ],
-        "plural_from_singular": [
-          { "from": "al$", "to": "aux" },
-          { "from": "ail$", "to": "aux" },
-          { "from": "$", "to": "s" }
-        ]
+        "irregulars": {
+          "roi":      "reine",
+          "acteur":   "actrice",
+          "auteur":   "auteure",
+          "docteur":  "docteure",
+          "écrivain": "écrivaine",
+          "scientifique": "scientifique"
+        }
       },
-      "phonology": {
-        "vowel_initial_letters": ["a", "e", "i", "o", "u", "y", "à", "â", "é", "è", "ê", "ë", "î", "ï", "ô", "ù", "û", "ü"],
-        "h_muet_initials": ["h"],
-        "elision_articles": ["le", "la", "de", "que", "je", "me", "te", "se", "ne"]
+      "phonetics": {
+        "impure_triggers": [],
+        "stressed_a_words": [],
+        "elision": true
       },
-      "syntax": {
-        "adjective_position": "post",
-        "adjective_position_exceptions": ["grand", "petit", "jeune", "vieux", "beau", "nouveau"],
-        "nationality_as_adjective": true
-      }
+      "structure": "{name} est {article}{sep}{profession} {nationality}."
     },
+
     "pt": {
       "name": "Portuguese",
       "articles": {
-        "definite": {
-          "masc_sg": { "default": "o" },
-          "fem_sg": { "default": "a" },
-          "masc_pl": { "default": "os" },
-          "fem_pl": { "default": "as" }
+        "m": {
+          "default": "um",
+          "vowel": "um"
         },
-        "indefinite": {
-          "masc_sg": { "default": "um" },
-          "fem_sg": { "default": "uma" },
-          "masc_pl": { "default": "uns" },
-          "fem_pl": { "default": "umas" }
+        "f": {
+          "default": "uma",
+          "vowel": "uma"
         }
       },
       "morphology": {
-        "gender_from_lemma": {
-          "default": "masc",
-          "suffix_rules": [
-            { "pattern": "a$", "gender": "fem" },
-            { "pattern": "ção$", "gender": "fem" },
-            { "pattern": "dade$", "gender": "fem" }
-          ]
-        },
-        "masc_to_fem": [
-          { "from": "o$", "to": "a" },
-          { "from": "or$", "to": "ora" },
-          { "from": "ês$", "to": "esa" }
+        "suffixes": [
+          { "ends_with": "or",  "replace_with": "ora" },
+          { "ends_with": "ês",  "replace_with": "esa" },
+          { "ends_with": "o",   "replace_with": "a"   }
         ],
-        "plural_from_singular": [
-          { "from": "[aeiou]$", "to": "\\0s" },
-          { "from": "m$", "to": "ns" },
-          { "from": "l$", "to": "is" },
-          { "from": "$", "to": "es" }
-        ]
+        "irregulars": {
+          "rei":        "rainha",
+          "ator":       "atriz",
+          "escritor":   "escritora",
+          "doutor":     "doutora",
+          "médico":     "médica",
+          "físico":     "física",
+          "químico":    "química",
+          "matemático": "matemática"
+        }
       },
-      "phonology": {
-        "vowel_initial_letters": ["a", "e", "i", "o", "u", "á", "â", "ã", "é", "ê", "í", "ó", "ô", "õ", "ú"]
+      "phonetics": {
+        "impure_triggers": [],
+        "stressed_a_words": [],
+        "elision": false
       },
-      "syntax": {
-        "adjective_position": "post",
-        "nationality_as_adjective": true
-      }
+      "structure": "{name} é {article}{sep}{profession} {nationality}."
     },
+
     "ro": {
       "name": "Romanian",
       "articles": {
-        "definite": {
-          "postposed": true,
-          "masc_sg": { "default": "-ul" },
-          "fem_sg": { "default": "-a" },
-          "masc_pl": { "default": "-ii" },
-          "fem_pl": { "default": "-le" }
+        "m": {
+          "default": "un",
+          "vowel": "un"
         },
-        "indefinite": {
-          "masc_sg": { "default": "un" },
-          "fem_sg": { "default": "o" },
-          "masc_pl": { "default": "niște" },
-          "fem_pl": { "default": "niște" }
+        "f": {
+          "default": "o",
+          "vowel": "o"
         }
       },
       "morphology": {
-        "gender_from_lemma": {
-          "default": "masc",
-          "suffix_rules": [
-            { "pattern": "ă$", "gender": "fem" },
-            { "pattern": "ție$", "gender": "fem" }
-          ]
-        },
-        "masc_to_fem": [
-          { "from": "ian$", "to": "iană" },
-          { "from": "an$", "to": "ană" }
+        "suffixes": [
+          { "ends_with": "ian", "replace_with": "iană" },
+          { "ends_with": "an",  "replace_with": "ană"  }
         ],
-        "plural_from_singular": [
-          { "from": "ă$", "to": "e" },
-          { "from": "e$", "to": "e" },
-          { "from": "u$", "to": "i" },
-          { "from": "$", "to": "i" }
-        ]
+        "irregulars": {
+          "rege":     "regină",
+          "doctor":   "doctoriță",
+          "scriitor": "scriitoare"
+        }
       },
-      "phonology": {
-        "vowel_initial_letters": ["a", "e", "i", "o", "u", "ă", "â", "î"]
+      "phonetics": {
+        "impure_triggers": [],
+        "stressed_a_words": [],
+        "elision": false
       },
-      "syntax": {
-        "adjective_position": "post",
-        "nationality_as_adjective": true
-      }
+      "structure": "{name} este {article}{sep}{profession} {nationality}."
     }
   }
 }

@@ -5,6 +5,16 @@
     "family": "germanic"
   },
   "name": "Swedish",
+
+  "syntax": {
+    "basic_word_order": "SVO",
+    "allows_null_subject": false,
+    "adjective_position": "pre",
+    "relative_clause_position": "postnominal",
+    "relative_marker": "som",
+    "bio_default_tense": "present"
+  },
+
   "articles": {
     "indefinite": {
       "m": "en",
@@ -13,6 +23,7 @@
       "pl": ""
     }
   },
+
   "morphology": {
     "generic_feminine_suffix": "inna",
     "gender_suffixes": [
@@ -32,6 +43,7 @@
       "prins": "prinsessa"
     }
   },
+
   "adjectives": {
     "inflects": true,
     "indefinite_endings": {
@@ -47,18 +59,23 @@
       "pl": "a"
     }
   },
+
   "verbs": {
     "copula": {
       "present": {
+        "3sg": "är",
         "default": "är"
       },
       "past": {
+        "3sg": "var",
         "default": "var"
       }
     }
   },
+
   "casing": {
     "capitalize_nouns": false
   },
-  "structure": "{name} {is_verb} {article} {nationality} {profession}."
+
+  "structure": "{name} {copula} {article} {nationality} {profession}."
 }

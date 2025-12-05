@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "version": "1.0",
+    "language": "no",
+    "family": "germanic"
+  },
+  "name": "Norwegian",
+
+  "syntax": {
+    "bio_default_tense": "past"
+  },
+
+  "articles": {
+    "indefinite": "en",
+    "definite": {
+      "default": "den"
+    }
+  },
+
+  "morphology": {
+    "generic_feminine_suffix": "",
+    "gender_suffixes": [],
+    "grammatical_gender_map": {},
+    "irregulars": {}
+  },
+
+  "adjectives": {
+    "inflects": false,
+    "indefinite_endings": {},
+    "definite_endings": {}
+  },
+
+  "verbs": {
+    "copula": {
+      "present": "er",
+      "past": "var"
+    }
+  },
+
+  "phonology": {
+    "vowels": "aeiouyæøå"
+  },
+
+  "casing": {
+    "capitalize_nouns": false
+  },
+
+  "structure": "{name} {copula} {article} {nationality} {profession}."
+}

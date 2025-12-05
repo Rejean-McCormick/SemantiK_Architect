@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional, Protocol
 import router
 from .semantics import Frame, BioFrame, EventFrame
 
+import re
+
 
 # ---------------------------------------------------------------------------
 # Public data models
@@ -123,13 +125,31 @@ class NLGSession:
         raw = engine.generate(frame, **engine_kwargs)
 
         text = str(raw.get("text", ""))
-        sentences = raw.get("sentences")
 
+        sentences = raw.get("sentences")
         if sentences is None:
-            # Simple fallback: naive split on period. Engines are encouraged
-            # to provide proper sentence segmentation.
-            sentences = [s for s in text.split(".") if s.strip()]
-            sentences = [s.strip() + "." for s in sentences] if text.strip() else []
+            # Simple, language-agnostic fallback.
+            # Engines are encouraged to provide proper sentence segmentation.
+            if text.strip():
+                # Split on ., ! or ? while keeping the punctuation.
+                chunks = re.split(r"([.!?])", text)
+                sentences = []
+                buf = ""
+                for piece in chunks:
+                    if not piece:
+                        continue
+                    buf += piece
+                    if piece in ".!?":
+                        sentence = buf.strip()
+                        if sentence:
+                            sentences.append(sentence)
+                        buf = ""
+                # Any leftover text without final punctuation:
+                leftover = buf.strip()
+                if leftover:
+                    sentences.append(leftover)
+            else:
+                sentences = []
 
         debug_info = raw.get("debug_info") if debug else None
 
@@ -147,52 +167,71 @@ class NLGSession:
         """
         Retrieve or initialize the engine for a given language.
 
-        This assumes that `router.get_engine(lang)` exists and returns an
-        object implementing the `Engine` protocol above. If your router uses
-        a different API, adapt this method accordingly.
+        This assumes that `router.get_engine(lang)` MAY exist and return an
+        object implementing the `Engine` protocol. If not, we fall back to a
+        thin adapter around `router.render_bio(...)` for BioFrame-only usage.
         """
         if lang in self._engine_cache:
             return self._engine_cache[lang]
 
-        # Note: router.get_engine might need to be implemented in router.py
-        # For now, we might bridge it via the router's existing methods
-        # or assume router.py has been updated to provide get_engine.
-        # If router only has get_morphology/render_bio, we need an adapter.
-        
-        # Assuming router has a factory or we wrap it here:
-        # For this fix, let's assume we add get_engine to router or
-        # wrap the existing render logic.
-        
-        # Temporary fix: direct use of router's high-level render if get_engine missing
         if hasattr(router, "get_engine"):
-             engine = router.get_engine(lang)
+            # If/when router exposes a proper engine factory, prefer that.
+            engine: Engine = router.get_engine(lang)  # type: ignore[assignment]
         else:
-             # Fallback adapter
-             engine = _RouterAdapter(lang)
-             
+            # Current codebase path: use a simple adapter around router.render_bio.
+            engine = _RouterAdapter(lang)
+
         self._engine_cache[lang] = engine
         return engine
 
+
 class _RouterAdapter:
-    def __init__(self, lang: str):
+    """
+    Minimal adapter so the new frontend API can talk to the current router.
+
+    For now this only supports BioFrame → `router.render_bio(...)`.
+    Other frame types are left to future, richer integrations.
+    """
+
+    def __init__(self, lang: str) -> None:
         self.lang = lang
-    
-    def generate(self, frame: Frame, **kwargs) -> Dict[str, Any]:
-        # Basic adapter for BioFrame -> router.render_bio
+
+    def generate(self, frame: Frame, **kwargs: Any) -> Dict[str, Any]:
+        # BioFrame → single biography sentence via router.render_bio
         if isinstance(frame, BioFrame):
-             # Extract lemma strings
-             prof = frame.primary_profession_lemmas[0] if frame.primary_profession_lemmas else ""
-             nat = frame.nationality_lemmas[0] if frame.nationality_lemmas else ""
-             
-             text = router.render_bio(
-                 name=frame.main_entity.name,
-                 gender=frame.main_entity.gender,
-                 profession_lemma=prof,
-                 nationality_lemma=nat,
-                 lang_code=self.lang
-             )
-             return {"text": text, "sentences": [text]}
+            prof = (
+                frame.primary_profession_lemmas[0]
+                if frame.primary_profession_lemmas
+                else ""
+            )
+            nat = (
+                frame.nationality_lemmas[0]
+                if frame.nationality_lemmas
+                else ""
+            )
+
+            # Guard against missing main entity to avoid AttributeError.
+            name = getattr(frame.main_entity, "name", "") or ""
+            gender = getattr(frame.main_entity, "gender", "") or ""
+
+            text = router.render_bio(
+                name=name,
+                gender=gender,
+                profession_lemma=prof,
+                nationality_lemma=nat,
+                lang_code=self.lang,
+            )
+            return {"text": text, "sentences": [text]}
+
+        # Placeholder for future EventFrame / other frames integration.
+        if isinstance(frame, EventFrame):
+            # Until router exposes a general `render_from_semantics` API,
+            # we return an empty shell here.
+            return {"text": "", "sentences": []}
+
+        # Fallback for unknown frame types
         return {"text": "", "sentences": []}
+
 
 # ---------------------------------------------------------------------------
 # Module-level convenience functions
@@ -256,3 +295,14 @@ def generate_event(
         options=options,
         debug=debug,
     )
+
+
+__all__ = [
+    "GenerationOptions",
+    "GenerationResult",
+    "Engine",
+    "NLGSession",
+    "generate",
+    "generate_bio",
+    "generate_event",
+]

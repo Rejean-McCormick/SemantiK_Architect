@@ -5,6 +5,14 @@
     "family": "germanic"
   },
   "name": "English",
+
+  "syntax": {
+    "basic_word_order": "SVO",
+    "allows_null_subject": false,
+    "adjective_position": "pre",
+    "bio_default_tense": "present"
+  },
+
   "articles": {
     "indefinite": {
       "default": "a",
@@ -14,6 +22,7 @@
       "default": "the"
     }
   },
+
   "morphology": {
     "generic_feminine_suffix": "",
     "gender_suffixes": [
@@ -34,22 +43,27 @@
       "heir": "heiress"
     }
   },
+
   "adjectives": {
     "inflects": false,
     "indefinite_endings": {},
     "definite_endings": {}
   },
+
   "verbs": {
     "copula": {
       "present": "is",
       "past": "was"
     }
   },
+
   "phonetics": {
     "vowels": "aeiou"
   },
+
   "casing": {
     "capitalize_nouns": false
   },
+
   "structure": "{name} {is_verb} {article} {nationality} {profession}."
 }

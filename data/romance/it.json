@@ -4,7 +4,13 @@
     "language": "it",
     "family": "romance"
   },
+
   "name": "Italian",
+
+  "syntax": {
+    "bio_default_tense": "present"
+  },
+
   "articles": {
     "m": {
       "default": "un",
@@ -16,6 +22,7 @@
       "vowel": "un'"
     }
   },
+
   "morphology": {
     "suffixes": [
       { "ends_with": "tore", "replace_with": "trice" },
@@ -34,9 +41,20 @@
       "conte": "contessa"
     }
   },
+
   "phonetics": {
-    "impure_triggers": ["s_consonant", "z", "gn", "ps", "pn", "x", "y"],
-    "elision": true
+    "impure_triggers": [
+      "s_consonant",
+      "z",
+      "gn",
+      "ps",
+      "pn",
+      "x",
+      "y"
+    ],
+    "elision": true,
+    "stressed_a_words": []
   },
+
   "structure": "{name} è {article}{sep}{profession} {nationality}."
 }

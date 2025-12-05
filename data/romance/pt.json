@@ -31,7 +31,9 @@
     }
   },
   "phonetics": {
-    "elision": false
+    "elision": false,
+    "impure_triggers": [],
+    "stressed_a_words": []
   },
   "structure": "{name} é {article}{sep}{profession} {nationality}."
 }

@@ -19,12 +19,12 @@
     "suffixes": [
       { "ends_with": "dor", "replace_with": "dora" },
       { "ends_with": "tor", "replace_with": "tora" },
-      { "ends_with": "or", "replace_with": "ora" },
-      { "ends_with": "o", "replace_with": "a" },
-      { "ends_with": "és", "replace_with": "esa" },
-      { "ends_with": "ín", "replace_with": "ina" },
-      { "ends_with": "án", "replace_with": "ana" },
-      { "ends_with": "ol", "replace_with": "ola" }
+      { "ends_with": "or",  "replace_with": "ora" },
+      { "ends_with": "o",   "replace_with": "a" },
+      { "ends_with": "és",  "replace_with": "esa" },
+      { "ends_with": "ín",  "replace_with": "ina" },
+      { "ends_with": "án",  "replace_with": "ana" },
+      { "ends_with": "ol",  "replace_with": "ola" }
     ],
     "irregulars": {
       "actor": "actriz",
@@ -43,9 +43,17 @@
   },
   "phonetics": {
     "stressed_a_words": [
-      "agua", "hacha", "águila", "alma", "arte", "ave", "hambre", "aula", "arma"
+      "agua",
+      "hacha",
+      "águila",
+      "alma",
+      "arte",
+      "ave",
+      "hambre",
+      "aula",
+      "arma"
     ],
     "elision": false
   },
-  "structure": "{name} es {article} {profession} {nationality}."
+  "structure": "{name} es {article}{sep}{profession} {nationality}."
 }

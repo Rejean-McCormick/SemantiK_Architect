@@ -20,7 +20,7 @@ Responsibilities
 - [cite_start]For a given construction ID, import and call the right construction function[cite: 1725, 1732].
 - Provide a simple entrypoint:
 
-[cite_start]      render(construction_id, slots, lang_code) -> str [cite: 1725]
+[cite_start]      render(construction_id, slots, lang_code) -> str [cite: 1725]
 
 This router is **family-agnostic** at the construction level: it only cares
 [cite_start]about which construction to call and which morphology module to bind to it[cite: 1725].
@@ -35,58 +35,58 @@ Expected environment
 
 [cite_start]1) language_profiles/profiles.json [cite: 1726]
 
-   [cite_start]A JSON object mapping language codes to profiles, e.g.: [cite: 1726]
+   [cite_start]A JSON object mapping language codes to profiles, e.g.: [cite: 1726]
 
-       {
-         "ja": {
-           "language_code": "ja",
-           "morphology_family": "japonic",
-           "basic_word_order": "SOV",
-           "default_style": "formal",
-           "possession_existential": { ... },
-           "coordination_clauses": { ... },
-           ...
-         },
-         "fr": {
-           "language_code": "fr",
-           "morphology_family": "romance",
-           ...
-         }
-       }
+       {
+         "ja": {
+           "language_code": "ja",
+           "morphology_family": "japonic",
+           "basic_word_order": "SOV",
+           "default_style": "formal",
+           "possession_existential": { ... },
+           "coordination_clauses": { ... },
+           ...
+        },
+        "fr": {
+          "language_code": "fr",
+          "morphology_family": "romance",
+          ...
+        }
+       }
 
-[cite_start]   The canonical field is `morphology_family`[cite: 1727]. A legacy field `family`
-[cite_start]   (with the same values) is also accepted for backwards compatibility[cite: 1727].
-   An optional `morphology_family_override` can force a different family
-[cite_start]   for a particular language/profile if needed[cite: 1727].
+[cite_start]   The canonical field is `morphology_family`[cite: 1727]. A legacy field `family`
+[cite_start]   (with the same values) is also accepted for backwards compatibility[cite: 1727].
+   An optional `morphology_family_override` can force a different family
+[cite_start]   for a particular language/profile if needed[cite: 1727].
 
 2) Morphology modules:
 
-[cite_start]   Each family has a morphology module and a primary class, e.g.: [cite: 1728]
+[cite_start]   Each family has a morphology module and a primary class, e.g.: [cite: 1728]
 
-       [cite_start]morphology/romance.py       -> class RomanceMorphology [cite: 1728]
-       [cite_start]morphology/agglutinative.py -> class AgglutinativeMorphology [cite: 1728]
-       [cite_start]morphology/japonic.py       -> class JaponicMorphology [cite: 1728]
-       [cite_start]... [cite: 1728]
+       [cite_start]morphology/romance.py       -> class RomanceMorphology [cite: 1728]
+       [cite_start]morphology/agglutinative.py -> class AgglutinativeMorphology [cite: 1728]
+       [cite_start]morphology/japonic.py       -> class JaponicMorphology [cite: 1728]
+       [cite_start]... [cite: 1728]
 
-   [cite_start]The router instantiates them as: [cite: 1728]
+   [cite_start]The router instantiates them as: [cite: 1728]
 
-       [cite_start]morph_cls(config_dict) [cite: 1728]
-       [cite_start]morph_api = morph_cls(config_dict) [cite: 1728]
+       [cite_start]morph_cls(config_dict) [cite: 1728]
+       [cite_start]morph_api = morph_cls(config_dict) [cite: 1728]
 
-   [cite_start]where `config_dict` is the language profile for the target language[cite: 1728].
+   [cite_start]where `config_dict` is the language profile for the target language[cite: 1728].
 
 3) Construction modules:
 
-[cite_start]   Each construction module provides a `realize_*` function, e.g.: [cite: 1732]
+[cite_start]   Each construction module provides a `realize_*` function, e.g.: [cite: 1732]
 
-       [cite_start]constructions/possession_existential.py [cite: 1732]
-           [cite_start]-> realize_possession_existential(slots, lang_profile, morph_api) [cite: 1732]
+       [cite_start]constructions/possession_existential.py [cite: 1732]
+           [cite_start]-> realize_possession_existential(slots, lang_profile, morph_api) [cite: 1732]
 
-       [cite_start]constructions/coordination_clauses.py [cite: 1732]
-           [cite_start]-> realize_coordination_clauses(clauses, lang_profile, morph_api, ...) [cite: 1732]
+       [cite_start]constructions/coordination_clauses.py [cite: 1732]
+           [cite_start]-> realize_coordination_clauses(clauses, lang_profile, morph_api, ...) [cite: 1732]
 
-   The router uses a registry from construction IDs to
-[cite_start]   (module_path, function_name)[cite: 1732].
+   The router uses a registry from construction IDs to
+[cite_start]   (module_path, function_name)[cite: 1732].
 
 Extendibility
 -------------
@@ -152,7 +152,7 @@ CONSTRUCTION_REGISTRY: Dict[str, tuple[str, str]] = {
         "constructions.coordination_clauses",
         "realize_coordination_clauses",
     ),
-    # Added core construction types to match expected usage:
+    # Core construction types:
     "copula_equative_simple": (
         "constructions.copula_equative_simple",
         "realize",
@@ -232,7 +232,6 @@ CONSTRUCTION_REGISTRY: Dict[str, tuple[str, str]] = {
 def _default_profiles_path() -> str:
     """Return the absolute path to language_profiles/profiles.json."""
     here = os.path.dirname(os.path.abspath(__file__))
-    # Assumes profiles.json is up one level from router.py, inside 'language_profiles'
     return os.path.join(here, "language_profiles", "profiles.json")
 
 
@@ -240,8 +239,6 @@ def _load_profiles(path: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     """Load language profiles from JSON file."""
     profiles_path = path or _default_profiles_path()
     if not os.path.exists(profiles_path):
-        # We need to assume the file exists, as the profiles.json file was explicitly provided.
-        # This checks the default path relative to router.py, which is correct based on the structure.
         raise FileNotFoundError(f"Language profiles file not found: {profiles_path}")
 
     with open(profiles_path, "r", encoding="utf-8") as f:
@@ -253,7 +250,6 @@ def _load_profiles(path: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
             f"got {type(data)}"
         )
 
-    # Ensure keys are strings and values are dicts
     profiles: Dict[str, Dict[str, Any]] = {}
     for code, prof in data.items():
         if not isinstance(code, str):
@@ -318,7 +314,6 @@ class NLGRouter:
         try:
             return self._profiles[lang_code]
         except KeyError:
-            # This is the line that caused the error in the test runner.
             raise KeyError(f"No language profile found for code: {lang_code!r}")
 
     # --------------------- morphology ---------------------------
@@ -341,10 +336,7 @@ class NLGRouter:
             return morph_family
 
         legacy_family = profile.get("family")
-        if (
-            isinstance(legacy_family, str)
-            and legacy_family in MORPHOLOGY_CLASS_REGISTRY
-        ):
+        if isinstance(legacy_family, str) and legacy_family in MORPHOLOGY_CLASS_REGISTRY:
             return legacy_family
 
         raise ValueError(
@@ -458,8 +450,6 @@ class NLGRouter:
         morph_api = self.get_morphology(lang_code)
 
         construction_fn = self.get_construction_callable(construction_id)
-        # Note: The 'render' call here will use the appropriate signature
-        # as defined by the target construction's module.
         return construction_fn(slots, lang_profile, morph_api)
 
 
@@ -467,7 +457,6 @@ class NLGRouter:
 # Convenience singleton + top-level helpers
 # ---------------------------------------------------------------------------
 
-# Lazily initialized singleton router
 _default_router: Optional[NLGRouter] = None
 
 
@@ -480,13 +469,7 @@ def get_router() -> NLGRouter:
 
 
 def get_language_profile(lang_code: str) -> Dict[str, Any]:
-    """
-    Convenience helper to fetch a language profile via the global router.
-
-    Equivalent to:
-
-        get_router().get_language_profile(lang_code)
-    """
+    """Convenience helper to fetch a language profile via the global router."""
     return get_router().get_language_profile(lang_code)
 
 
@@ -494,10 +477,6 @@ def get_morphology(lang_code: str) -> Any:
     """
     Convenience helper to fetch the morphology API for a language
     via the global router.
-
-    Equivalent to:
-
-        get_router().get_morphology(lang_code)
     """
     return get_router().get_morphology(lang_code)
 
@@ -528,6 +507,45 @@ def render(
 # High-Level Biography Helper (Bridge to Engines)
 # ---------------------------------------------------------------------------
 
+# Simple cache for per-language cards to avoid re-reading JSON on every call.
+_LANG_CARD_CACHE: Dict[tuple[str, str], Dict[str, Any]] = {}
+
+
+def _load_language_card(family: str, lang_code: str) -> Dict[str, Any]:
+    """
+    Load the language card from data/<family>/<lang_code>.json,
+    with a small in-memory cache.
+    """
+    key = (family, lang_code)
+    if key in _LANG_CARD_CACHE:
+        return _LANG_CARD_CACHE[key]
+
+    # In this repository, router.py lives at the project root:
+    #   C:\MyCode\AbstractWiki\abstract-wiki-architect\router.py
+    # and data/ is a sibling of router.py.
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(project_root, "data", family, f"{lang_code}.json")
+
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(
+            f"Language card not found for {lang_code} at {config_path}. "
+            f"Please ensure '{family}' folder exists in 'data/' "
+            f"and contains '{lang_code}.json'."
+        )
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    if not isinstance(config, dict):
+        raise ValueError(
+            f"Language card {config_path} must be a JSON object, "
+            f"got {type(config)}"
+        )
+
+    _LANG_CARD_CACHE[key] = config
+    return config
+
+
 def render_bio(
     name: str,
     gender: str,
@@ -544,34 +562,18 @@ def render_bio(
     """
     router = get_router()
     profile = router.get_language_profile(lang_code)
-    
-    # Determine family (e.g. "romance", "agglutinative")
-    family = profile.get("morphology_family") or profile.get("family")
+
+    # Determine family (e.g. "romance", "germanic")
+    family: Optional[str] = profile.get("morphology_family") or profile.get("family")
     if not family:
-        raise ValueError(f"No family defined for language '{lang_code}'")
+        raise ValueError(f"No morphology family defined for language '{lang_code}'")
 
     # 1. Load the Language Card (Config)
-    # Expected path (given your repo layout):
-    #   <repo_root>/data/{family}/{lang_code}.json
-    #
-    # Here, <repo_root> is the directory containing router.py,
-    # i.e. C:\MyCode\AbstractWiki\abstract-wiki-architect
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = root_dir  # data/ lives inside the repo directory, not its parent
-
-    config_path = os.path.join(project_root, "data", family, f"{lang_code}.json")
-
-    # Final check before attempting to load
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(
-            f"Language card not found for {lang_code} at {config_path}. "
-            f"Please ensure {family} folder exists in 'data/' and contains {lang_code}.json."
-        )
-
-    with open(config_path, "r", encoding="utf-8") as f:
-        lang_config = json.load(f)
+    lang_config = _load_language_card(family, lang_code)
 
     # 2. Import the Engine Module
+    # By default we map directly from family to engines.<family>,
+    # but this can later be made overridable via the profile if needed.
     engine_module_name = f"engines.{family}"
     try:
         engine_module = importlib.import_module(engine_module_name)
@@ -587,9 +589,12 @@ def render_bio(
         )
 
     return engine_module.render_bio(
-        name, gender, profession_lemma, nationality_lemma, lang_config
+        name,
+        gender,
+        profession_lemma,
+        nationality_lemma,
+        lang_config,
     )
-
 
 
 # Alias for universal test runner compatibility

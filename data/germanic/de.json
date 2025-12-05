@@ -5,6 +5,11 @@
     "family": "germanic"
   },
   "name": "German",
+
+  "syntax": {
+    "bio_default_tense": "present"
+  },
+
   "articles": {
     "indefinite": {
       "m": "ein",
@@ -18,6 +23,7 @@
       "pl": "die"
     }
   },
+
   "morphology": {
     "generic_feminine_suffix": "in",
     "gender_suffixes": [
@@ -48,6 +54,7 @@
       "franzose": "französin"
     }
   },
+
   "adjectives": {
     "inflects": true,
     "indefinite_endings": {
@@ -63,14 +70,17 @@
       "pl": "en"
     }
   },
+
   "verbs": {
     "copula": {
       "present": "ist",
       "past": "war"
     }
   },
+
   "casing": {
     "capitalize_nouns": true
   },
+
   "structure": "{name} {is_verb} {article} {nationality} {profession}."
 }

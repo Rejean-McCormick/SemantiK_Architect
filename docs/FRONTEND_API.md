@@ -1,23 +1,29 @@
+
 # Frontend API
 
 This document describes the simple frontend API for generating text from semantic frames.
 
-The goal is to provide a small, stable set of entry points for integrators and linguists, while keeping the internal routing, engines, morphology, constructions, discourse, and lexicon modules as implementation details. 
+The goal is to provide a small, stable set of entry points for integrators and linguists, while keeping the internal routing, engines, morphology, constructions, discourse, and lexicon modules as implementation details.
+
+> **Current implementation status**
+>
+> - The `bio` / biography pipeline is fully wired end-to-end (via `router.render_bio` and the family engines).
+> - `event` and other frame types are **API-level placeholders**: the types and signatures exist, but there is no concrete engine implementation yet. Calls will typically produce empty text until those engines are added.
 
 ---
 
 ## 1. Concepts
 
-**Language (`lang`)**
+**Language (`lang`)**  
 ISO 639-1 language code, e.g. `"en"`, `"fr"`, `"sw"`.
 
-**Frame (`Frame`)**
+**Frame (`Frame`)**  
 Semantic object representing what should be expressed (e.g. `BioFrame`, `EventFrame`).
 
-**Generation options (`GenerationOptions`)**
+**Generation options (`GenerationOptions`)**  
 Optional high-level controls (style, length, etc.).
 
-**Generation result (`GenerationResult`)**
+**Generation result (`GenerationResult`)**  
 Structured output containing the realized text and metadata.
 
 ---
@@ -28,34 +34,36 @@ Assuming the package name is `nlg`:
 
 ```python
 from nlg.api import generate_bio
-from nlg.semantics import BioFrame
+from semantics.types import BioFrame, Entity
 
 bio = BioFrame(
-    person={"qid": "Q42"},
-    occupations=[{"lemma": "writer"}],
-    nationalities=[{"lemma": "British"}],
+    main_entity=Entity(name="Douglas Adams", gender="male", human=True),
+    primary_profession_lemmas=["writer"],
+    nationality_lemmas=["British"],
 )
 
 result = generate_bio(lang="en", bio=bio)
 
 print(result.text)       # "Douglas Adams was a British writer."
 print(result.sentences)  # ["Douglas Adams was a British writer."]
-```
+````
 
 Generic entry point:
 
 ```python
 from nlg.api import generate
-from nlg.semantics import BioFrame
+from semantics.types import BioFrame, Entity
 
 bio = BioFrame(
-    person={"qid": "Q42"},
-    occupations=[{"lemma": "writer"}],
+    main_entity=Entity(name="Douglas Adams", gender="male", human=True),
+    primary_profession_lemmas=["writer"],
 )
 
 result = generate(lang="fr", frame=bio)
 print(result.text)
 ```
+
+> **Note:** At the moment, this generic path is effectively backed by the biography engine via a router adapter. Other frame types (e.g. `EventFrame`) will only start producing meaningful text once their engines are wired.
 
 ---
 
@@ -69,7 +77,7 @@ General entry point for turning a frame into text.
 
 ```python
 from nlg.api import generate
-from nlg.semantics import Frame
+from semantics.types import Frame  # Protocol base
 
 def generate(
     lang: str,
@@ -86,7 +94,7 @@ def generate(
 * `lang`: Target language code (e.g. `"en"`, `"fr"`, `"sw"`).
 * `frame`: Any supported frame (e.g. `BioFrame`, `EventFrame`).
 * `options`: Optional `GenerationOptions`.
-* `debug`: If `True`, debug information is included in the result.
+* `debug`: If `True`, debug information is included in the result (if available from the engine).
 
 **Returns**
 
@@ -96,11 +104,11 @@ def generate(
 
 ```python
 from nlg.api import generate, GenerationOptions
-from nlg.semantics import BioFrame
+from semantics.types import BioFrame, Entity
 
 bio = BioFrame(
-    person={"qid": "Q42"},
-    occupations=[{"lemma": "writer"}],
+    main_entity=Entity(name="Douglas Adams", gender="male", human=True),
+    primary_profession_lemmas=["writer"],
 )
 
 options = GenerationOptions(
@@ -127,7 +135,7 @@ Convenience wrapper for biography frames.
 
 ```python
 from nlg.api import generate_bio
-from nlg.semantics import BioFrame
+from semantics.types import BioFrame
 
 def generate_bio(
     lang: str,
@@ -145,6 +153,8 @@ Behaves like:
 generate(lang=lang, frame=bio, options=options, debug=debug)
 ```
 
+> **Status:** Fully implemented and backed by the family-specific biography engines via `router.render_bio`.
+
 ---
 
 ### 3.3 `generate_event`
@@ -153,7 +163,7 @@ Convenience wrapper for event frames.
 
 ```python
 from nlg.api import generate_event
-from nlg.semantics import EventFrame
+from semantics.types import EventFrame
 
 def generate_event(
     lang: str,
@@ -171,6 +181,8 @@ Behaves like:
 generate(lang=lang, frame=event, options=options, debug=debug)
 ```
 
+> **Status:** The function exists and routes through `generate`, but there is currently **no concrete event engine**. Until the event pipeline is implemented, you should expect empty strings / placeholder behavior for `EventFrame` inputs.
+
 ---
 
 ### 3.4 `NLGSession`
@@ -179,7 +191,7 @@ Optional stateful interface for long-running processes and services.
 
 ```python
 from nlg.api import NLGSession
-from nlg.semantics import Frame
+from semantics.types import Frame
 
 class NLGSession:
     def __init__(self, *, preload_langs: list[str] | None = None):
@@ -202,17 +214,19 @@ class NLGSession:
         ...
 ```
 
+Under the hood, `NLGSession` maintains an internal cache of per-language engines; if the router does not expose a dedicated engine factory, it falls back to a small adapter that delegates biography generation to `router.render_bio`.
+
 **Usage**
 
 ```python
 from nlg.api import NLGSession
-from nlg.semantics import BioFrame
+from semantics.types import BioFrame, Entity
 
 session = NLGSession(preload_langs=["en", "fr"])
 
 bio = BioFrame(
-    person={"qid": "Q42"},
-    occupations=[{"lemma": "writer"}],
+    main_entity=Entity(name="Douglas Adams", gender="male", human=True),
+    primary_profession_lemmas=["writer"],
 )
 
 result_en = session.generate("en", bio)
@@ -223,9 +237,11 @@ result_fr = session.generate("fr", bio)
 
 ## 4. Data models
 
+The concrete semantic types live under `semantics.types` and related modules. The snippets below illustrate the expected shape.
+
 ### 4.1 Frames
 
-Frames live in `nlg.semantics`. All frames implement a common interface:
+Frames implement a common protocol:
 
 ```python
 from typing import Protocol
@@ -238,24 +254,22 @@ class Frame(Protocol):
 
 ```python
 from dataclasses import dataclass, field
-from nlg.semantics import Frame
+from semantics.types import Frame, Entity
 
 @dataclass
 class BioFrame(Frame):
     frame_type: str = "bio"
-    person: dict
-    birth_event: dict | None = None
-    death_event: dict | None = None
-    occupations: list[dict] = field(default_factory=list)
-    nationalities: list[dict] = field(default_factory=list)
-    # Additional biography-specific fields as needed
+    main_entity: Entity
+    primary_profession_lemmas: list[str] = field(default_factory=list)
+    nationality_lemmas: list[str] = field(default_factory=list)
+    extra: dict | None = None   # optional extra info
 ```
 
 #### Example: `EventFrame`
 
 ```python
 from dataclasses import dataclass
-from nlg.semantics import Frame
+from semantics.types import Frame
 
 @dataclass
 class EventFrame(Frame):
@@ -263,7 +277,7 @@ class EventFrame(Frame):
     # Event-specific fields (participants, time, location, etc.)
 ```
 
-Concrete field sets are defined in `nlg.semantics` and should be treated as the source of truth.
+Concrete field sets are defined in `semantics.types` / `semantics.normalization` and should be treated as the source of truth.
 
 ---
 
@@ -330,13 +344,15 @@ print(result.lang)
 # "en"
 ```
 
-If `debug=True` was passed to the generating function, `debug_info` may contain implementation-specific details such as engine identifiers, selected constructions, or intermediate forms.
+If `debug=True` was passed to the generating function, `debug_info` may contain implementation-specific details such as engine identifiers, selected constructions, or intermediate forms (when the underlying engine chooses to expose them).
 
 ---
 
 ## 5. CLI
 
-A small CLI is provided for quick experiments and linguistic work.
+A small CLI is provided for quick experiments and linguistic work. It lives in `nlg/cli_frontend.py` and exposes the `nlg-cli` entry point (via your packaging / tooling).
+
+> **Current limitation:** The CLI only has a fully wired path for `frame_type="bio"`. Other frame types are accepted syntactically but will not yet produce meaningful output until their engines are implemented.
 
 ### 5.1 Command: `nlg-cli generate`
 
@@ -348,6 +364,8 @@ nlg-cli generate \
   --frame-type <FRAME_TYPE> \
   --input <PATH_TO_JSON> \
   [--max-sentences N] \
+  [--register neutral|formal|informal] \
+  [--discourse-mode MODE] \
   [--debug]
 ```
 
@@ -357,27 +375,36 @@ nlg-cli generate \
   Target language code, e.g. `en`, `fr`, `sw`.
 
 * `--frame-type`
-  Frame type, e.g. `bio`, `event`. Determines how the JSON is parsed.
+  Frame type, e.g. `bio`, `event`. If omitted, the JSON must contain `frame_type`.
 
 * `--input`
-  Path to a JSON file describing the frame.
+  Path to a JSON file describing the frame. If omitted or `-`, input is read from stdin.
 
 * `--max-sentences` (optional)
   Passed through as `GenerationOptions.max_sentences`.
 
+* `--register` (optional)
+  Passed through as `GenerationOptions.register`.
+
+* `--discourse-mode` (optional)
+  Passed through as `GenerationOptions.discourse_mode`.
+
 * `--debug` (optional)
-  If set, debug information is printed in addition to the main text.
+  If set, debug information is printed in addition to the main text (when available).
 
 **Example frame JSON (`frame.json`)**
 
 ```json
 {
   "frame_type": "bio",
-  "person": { "qid": "Q42" },
-  "occupations": [{ "lemma": "writer" }],
-  "nationalities": [{ "lemma": "British" }]
+  "name": "Douglas Adams",
+  "gender": "male",
+  "profession_lemma": "writer",
+  "nationality_lemma": "British"
 }
 ```
+
+(This is the normalized JSON shape expected by `semantics.normalization.normalize_bio_semantics`, which the CLI uses for `frame_type == "bio"`.)
 
 **Example command**
 
@@ -398,8 +425,10 @@ nlg-cli generate \
 ## 6. Integration guidelines
 
 * Use `nlg.api.generate` or `NLGSession.generate` as the only entry points for frontend or service code.
-* Construct frames using the models in `nlg.semantics` (e.g. `BioFrame`, `EventFrame`).
-* Prefer `GenerationOptions` to control output style and length; low-level morphological or discourse behavior is handled internally.
+* Construct frames using the models in `semantics.types` (e.g. `BioFrame`, `EventFrame`) or via your own JSON → frame conversion based on those types.
+* Prefer `GenerationOptions` to control output style and length; low-level morphological or discourse behavior is handled internally by engines and the router.
 * Treat `debug_info` as optional and implementation-specific; do not rely on it for core functionality.
+* For now, treat `EventFrame` and other non-bio frames as **experimental** until their engines are wired. The biography pipeline is the reference implementation.
 
 This frontend API is intentionally thin: it presents a simple, stable surface over a complex multilingual NLG stack while keeping internal modules flexible and evolvable.
+

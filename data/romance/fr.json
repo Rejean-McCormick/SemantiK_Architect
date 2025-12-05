@@ -1,7 +1,8 @@
 {
   "meta": {
-    "version": "1.0",
+    "version": "1.1",
     "language": "fr",
+    "language_code": "fr",
     "family": "romance"
   },
   "name": "French",

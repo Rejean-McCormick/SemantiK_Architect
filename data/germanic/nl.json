@@ -4,7 +4,13 @@
     "language": "nl",
     "family": "germanic"
   },
+
   "name": "Dutch",
+
+  "syntax": {
+    "bio_default_tense": "present"
+  },
+
   "articles": {
     "indefinite": {
       "m": "een",
@@ -19,6 +25,7 @@
       "pl": "de"
     }
   },
+
   "morphology": {
     "generic_feminine_suffix": "e",
     "gender_suffixes": [
@@ -58,6 +65,7 @@
       "advocaat": "advocate"
     }
   },
+
   "adjectives": {
     "inflects": true,
     "indefinite_endings": {
@@ -73,14 +81,17 @@
       "pl": "e"
     }
   },
+
   "verbs": {
     "copula": {
       "present": "is",
       "past": "was"
     }
   },
+
   "casing": {
     "capitalize_nouns": false
   },
+
   "structure": "{name} {is_verb} {article} {nationality} {profession}."
 }

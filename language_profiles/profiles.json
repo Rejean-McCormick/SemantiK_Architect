@@ -1,91 +1,311 @@
 {
   "en": {
+    "name": "English",
     "language_code": "en",
+
+    "family": "germanic",
     "morphology_family": "germanic",
+    "engine": "germanic",
+
+    "morphology_config_path": "data/morphology_configs/germanic_matrix.json",
+    "lexicon_path": "data/lexicon/en_lexicon.json",
+
+    "features": {
+      "pro_drop": false,
+      "has_gender": false,
+      "uses_postposed_definite_article": false,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "be" }
   },
+
   "fr": {
+    "name": "French",
     "language_code": "fr",
+
+    "family": "romance",
     "morphology_family": "romance",
+    "engine": "romance",
+
+    "morphology_config_path": "data/morphology_configs/romance_grammar_matrix.json",
+    "lexicon_path": "data/lexicon/fr_lexicon.json",
+
+    "features": {
+      "pro_drop": false,
+      "has_gender": true,
+      "uses_postposed_definite_article": false,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "être" }
   },
+
   "it": {
+    "name": "Italian",
     "language_code": "it",
+
+    "family": "romance",
     "morphology_family": "romance",
+    "engine": "romance",
+
+    "morphology_config_path": "data/morphology_configs/romance_grammar_matrix.json",
+    "lexicon_path": "data/lexicon/it_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": true,
+      "uses_postposed_definite_article": false,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "essere" }
   },
+
   "es": {
+    "name": "Spanish",
     "language_code": "es",
+
+    "family": "romance",
     "morphology_family": "romance",
+    "engine": "romance",
+
+    "morphology_config_path": "data/morphology_configs/romance_grammar_matrix.json",
+    "lexicon_path": "data/lexicon/es_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": true,
+      "uses_postposed_definite_article": false,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "ser" }
   },
+
   "pt": {
+    "name": "Portuguese",
     "language_code": "pt",
+
+    "family": "romance",
     "morphology_family": "romance",
+    "engine": "romance",
+
+    "morphology_config_path": "data/morphology_configs/romance_grammar_matrix.json",
+    "lexicon_path": "data/lexicon/pt_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": true,
+      "uses_postposed_definite_article": false,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "ser" }
   },
+
   "ro": {
+    "name": "Romanian",
     "language_code": "ro",
+
+    "family": "romance",
     "morphology_family": "romance",
+    "engine": "romance",
+
+    "morphology_config_path": "data/morphology_configs/romance_grammar_matrix.json",
+    "lexicon_path": "data/lexicon/ro_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": true,
+      "uses_postposed_definite_article": true,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "fi" }
   },
+
   "ja": {
+    "name": "Japanese",
     "language_code": "ja",
+
+    "family": "japonic",
     "morphology_family": "japonic",
+    "engine": "japonic",
+
+    "morphology_config_path": "data/japonic/ja.json",
+    "lexicon_path": "data/lexicon/ja_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": false,
+      "uses_postposed_definite_article": false,
+      "default_order": "SOV",
+      "topic_comment_preference": "strong"
+    },
+
     "basic_word_order": "SOV",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "da" }
   },
+
   "sw": {
+    "name": "Swahili",
     "language_code": "sw",
+
+    "family": "bantu",
     "morphology_family": "bantu",
+    "engine": "bantu",
+
+    "morphology_config_path": "data/bantu/sw.json",
+    "lexicon_path": "data/lexicon/sw_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": false,
+      "uses_postposed_definite_article": false,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "kuwa" }
   },
+
   "ko": {
+    "name": "Korean",
     "language_code": "ko",
+
+    "family": "koreanic",
     "morphology_family": "koreanic",
+    "engine": "koreanic",
+
+    "morphology_config_path": "data/koreanic/ko.json",
+    "lexicon_path": "data/lexicon/ko_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": false,
+      "uses_postposed_definite_article": false,
+      "default_order": "SOV",
+      "topic_comment_preference": "strong"
+    },
+
     "basic_word_order": "SOV",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "이다" }
   },
+
   "tr": {
+    "name": "Turkish",
     "language_code": "tr",
+
+    "family": "agglutinative",
     "morphology_family": "agglutinative",
+    "engine": "agglutinative",
+
+    "morphology_config_path": "data/morphology_configs/agglutinative_matrix.json",
+    "lexicon_path": "data/lexicon/tr_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": false,
+      "uses_postposed_definite_article": false,
+      "default_order": "SOV",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SOV",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "ol" }
   },
+
   "de": {
+    "name": "German",
     "language_code": "de",
+
+    "family": "germanic",
     "morphology_family": "germanic",
+    "engine": "germanic",
+
+    "morphology_config_path": "data/morphology_configs/germanic_matrix.json",
+    "lexicon_path": "data/lexicon/de_lexicon.json",
+
+    "features": {
+      "pro_drop": false,
+      "has_gender": true,
+      "uses_postposed_definite_article": false,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "sein" }
   },
+
   "hi": {
+    "name": "Hindi",
     "language_code": "hi",
+
+    "family": "indo_aryan",
     "morphology_family": "indo_aryan",
+    "engine": "indo_aryan",
+
+    "morphology_config_path": "data/indo_aryan/hi.json",
+    "lexicon_path": "data/lexicon/hi_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": true,
+      "uses_postposed_definite_article": false,
+      "default_order": "SOV",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SOV",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "hona" }
   },
+
   "ru": {
+    "name": "Russian",
     "language_code": "ru",
+
+    "family": "slavic",
     "morphology_family": "slavic",
+    "engine": "slavic",
+
+    "morphology_config_path": "data/morphology_configs/slavic_matrix.json",
+    "lexicon_path": "data/lexicon/ru_lexicon.json",
+
+    "features": {
+      "pro_drop": true,
+      "has_gender": true,
+      "uses_postposed_definite_article": false,
+      "default_order": "SVO",
+      "topic_comment_preference": "neutral"
+    },
+
     "basic_word_order": "SVO",
     "intransitive_adverb_position": "sentence_final",
     "copula": { "lemma": "byt" }

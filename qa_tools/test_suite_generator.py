@@ -2,36 +2,63 @@ import json
 import csv
 import os
 import sys
+from typing import Dict, Any
 
-# Add project root to path to find data
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# ---------------------------------------------------------------------------
+# Path setup: make sure project root is importable so we can use qa.config_extractor
+# ---------------------------------------------------------------------------
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+# Shared loader for the Romance grammar matrix (with multiple fallback paths)
+# see: qa/config_extractor.py (DEFAULT_MATRIX_CANDIDATES + load_matrix)
+from qa.config_extractor import load_matrix
 
 
-def load_grammar_config():
-    """Loads the master grammar matrix."""
-    config_path = os.path.join("data", "romance_grammar_matrix.json")
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print(f"Error: Could not find {config_path}")
-        sys.exit(1)
-
-
-def generate_csv_templates():
+def load_grammar_config(matrix_path: str | None = None) -> Dict[str, Any]:
     """
-    Generates CSV testing templates for each supported language.
-    """
-    config = load_grammar_config()
-    languages = config["languages"].keys()
+    Load the Romance grammar matrix using the shared helper from qa.config_extractor.
 
-    output_dir = os.path.join("qa_tools", "generated_datasets")
+    This reuses the same search logic as the QA runner, trying (in order):
+
+        - data/morphology_configs/romance_grammar_matrix.json
+        - data/romance_grammar_matrix.json
+        - romance_grammar_matrix.json
+
+    An explicit matrix_path can be passed to override the default search.
+    """
+    return load_matrix(matrix_path)
+
+
+def generate_csv_templates(matrix_path: str | None = None) -> None:
+    """
+    Generates CSV testing templates for each Romance language defined
+    in the grammar matrix.
+
+    Each CSV goes to:
+        qa_tools/generated_datasets/test_suite_<lang>.csv
+    and uses a standard schema consumed by qa/test_runner.py.
+    """
+    config = load_grammar_config(matrix_path)
+    languages = config.get("languages", {})
+
+    if not isinstance(languages, dict) or not languages:
+        raise ValueError(
+            "Grammar matrix must contain a non-empty 'languages' object."
+        )
+
+    # Output directory (always under project root, even if script is run elsewhere)
+    output_dir = os.path.join(PROJECT_ROOT, "qa_tools", "generated_datasets")
     os.makedirs(output_dir, exist_ok=True)
 
     # Standard Lemmas to test across all languages
-    # These are English concepts. The human/AI task is to:
-    # 1. Translate Lemma to Target Language (Masculine Singular Base)
-    # 2. Generate the full sentence based on Gender/Rules
+    # These are *concepts* in English. For each target language:
+    #   1. Translate Profession/Nationality to masculine singular lemmas
+    #   2. Fill EXPECTED_FULL_SENTENCE with the fully inflected sentence
     base_test_cases = [
         # (Concept Name, Concept Gender, Profession Concept, Nationality Concept)
         ("Roberto", "Male", "Actor", "Italian"),
@@ -42,21 +69,25 @@ def generate_csv_templates():
         ("Frida", "Female", "Painter", "Spanish"),
         ("Jean", "Male", "Writer", "French"),
         ("Simone", "Female", "Writer", "French"),
-        ("Dante", "Male", "Poet", "Italian"),  # Trap: Irregular (Poeta)
-        ("Alda", "Female", "Poet", "Italian"),  # Trap: Irregular (Poetessa)
+        ("Dante", "Male", "Poet", "Italian"),  # Trap: Irregular (poeta -> poetessa)
+        ("Alda", "Female", "Poet", "Italian"),
         ("Sigmund", "Male", "Psychologist", "Austrian"),  # Trap: ps- start
         ("Marie", "Female", "Physicist", "Polish"),
     ]
 
-    print(f"🏭 QA Factory started. Generating templates for: {', '.join(languages)}")
+    lang_codes = list(languages.keys())
+    print(f"🏭 QA Factory started. Generating templates for: {', '.join(lang_codes)}")
 
-    for lang in languages:
-        lang_name = config["languages"][lang]["name"]
-        filename = os.path.join(output_dir, f"test_suite_{lang}.csv")
+    for lang_code, lang_cfg in languages.items():
+        # Human-friendly language name (fallback to code)
+        lang_name = lang_cfg.get("name", lang_code)
+
+        filename = os.path.join(output_dir, f"test_suite_{lang_code}.csv")
 
         with open(filename, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            # Header Columns
+
+            # Header Columns — must match what qa/test_runner.py expects
             writer.writerow(
                 [
                     "Test_ID",
@@ -70,9 +101,7 @@ def generate_csv_templates():
 
             # Write rows
             for i, case in enumerate(base_test_cases, 1):
-                # We pre-fill the name and gender, leaving lemmas and output blank/hinted
-                # User/AI must translate 'Actor' -> 'Attore' (IT) or 'Acteur' (FR)
-                test_id = f"{lang.upper()}_{i:03d}"
+                test_id = f"{lang_code.upper()}_{i:03d}"
                 name, gender, prof_concept, nat_concept = case
 
                 writer.writerow(
@@ -82,7 +111,7 @@ def generate_csv_templates():
                         gender,
                         f"[{prof_concept}]",  # Placeholder hint
                         f"[{nat_concept}]",  # Placeholder hint
-                        "",  # Empty for Ground Truth
+                        "",  # Ground truth to be filled by human/AI
                     ]
                 )
 
@@ -90,10 +119,6 @@ def generate_csv_templates():
 
 
 if __name__ == "__main__":
-    # Ensure we are running from project root context if possible, or handle paths relative to script
-    # Changing working directory to project root for simplicity
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(script_dir)
-    os.chdir(project_root)
-
+    # Normalise CWD to project root so relative paths behave as expected
+    os.chdir(PROJECT_ROOT)
     generate_csv_templates()

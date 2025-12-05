@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "family": "germanic",
+    "language_code": "da",
+    "name": "Danish"
+  },
+  "syntax": {
+    "basic_word_order": "SVO",
+    "allows_null_subject": false,
+    "adjective_position": "pre",
+    "relative_clause_position": "postnominal",
+    "relative_marker": "som",
+    "bio_default_tense": "past"
+  },
+  "articles": {
+    "definite_suffix": true,
+    "indefinite": {
+      "common": "en",
+      "neuter": "et"
+    }
+  },
+  "verbs": {
+    "copula": {
+      "present": {
+        "3sg": "er",
+        "default": "er"
+      },
+      "past": {
+        "3sg": "var",
+        "default": "var"
+      },
+      "zero_present": false
+    }
+  }
+}
