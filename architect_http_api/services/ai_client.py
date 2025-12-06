@@ -352,4 +352,11 @@ class AIClient:
         return f"(offline AI fallback) Based on your input: {preview}"
 
 
-__all__ = ["AIClientConfig", "AIClient"]
+class AiClient(AIClient):
+    """
+    Backwards-compatibility alias for older code importing `AiClient`.
+    """
+    pass
+
+
+__all__ = ["AIClientConfig", "AIClient", "AiClient"]

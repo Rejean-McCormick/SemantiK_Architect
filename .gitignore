@@ -53,3 +53,32 @@ qa/generated_datasets/
 # OS-specific
 .DS_Store
 Thumbs.db
+
+# ---------------------------------
+# Node / frontend artefacts
+# ---------------------------------
+node_modules/
+**/node_modules/
+
+# Next.js / React build output
+.next/
+out/
+.next/cache/
+
+# Frontend tooling caches
+.npm/
+.yarn/
+.pnp.*
+.turbo/
+.eslintcache
+.stylelintcache
+
+# Local env / config for frontend
+*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Misc
+*.tsbuildinfo
