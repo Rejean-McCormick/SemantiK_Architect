@@ -19,18 +19,14 @@ from . import generations as generations  # noqa: F401
 from . import entities as entities  # noqa: F401
 from . import frames_metadata as frames_metadata  # noqa: F401
 
+# ---------------------------------------------------------------------------
 # Re-export selected Pydantic models from submodules.
 # Adjust these names to whatever actually exists in your codebase.
+# ---------------------------------------------------------------------------
 
-# Common / generic primitives
+# Common primitives / error envelope
 from .common import (  # type: ignore[attr-defined]
     ErrorResponse,
-    Pagination,
-    SortDirection,
-)
-from .generic import (  # type: ignore[attr-defined]
-    IdModel,
-    TimestampedModel,
 )
 
 # AI / intent / generation related
@@ -68,12 +64,8 @@ __all__ = [
     "entities",
     "frames_metadata",
 
-    # Common / generic primitives
+    # Common primitives / error envelope
     "ErrorResponse",
-    "Pagination",
-    "SortDirection",
-    "IdModel",
-    "TimestampedModel",
 
     # AI / intents / generations
     "IntentKind",

@@ -1,10 +1,8 @@
-# architect_http_api/schemas/common.py
-
 from __future__ import annotations
 
 from typing import Any, Dict, Mapping, Optional
 
-from pydantic import BaseModel, Field, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, conint, constr
 
 
 # ---------------------------------------------------------------------------
@@ -18,20 +16,29 @@ class APIModel(BaseModel):
 
     Common config:
     - forbid extra fields so the frontend gets early feedback on mistakes
-    - allow_population_by_field_name to make future renames easier
+    - allow_population_by_field_name / from_attributes equivalents for v2
     """
 
-    class Config:
-        extra = "forbid"
-        allow_population_by_field_name = True
-        orm_mode = True
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_by_name=True,   # was allow_population_by_field_name in v1
+        from_attributes=True,    # was orm_mode in v1
+    )
+
+
+# Backwards-compat: older code imports BaseApiModel from here.
+class BaseApiModel(APIModel):
+    """
+    Backwards compatible alias for the old BaseApiModel.
+    """
+    pass
 
 
 # BCP-47-ish language code ("en", "fr", "de", "pt-BR", etc.)
 LangCode = constr(
     min_length=2,
     max_length=32,
-    regex=r"^[A-Za-z]{2,3}(-[A-Za-z0-9]+)*$",
+    pattern=r"^[A-Za-z]{2,3}(-[A-Za-z0-9]+)*$",  # NOTE: 'pattern', NOT 'regex'
 )
 
 
@@ -39,6 +46,41 @@ PositiveInt = conint(ge=1)
 
 
 JsonObject = Dict[str, Any]
+
+
+# ---------------------------------------------------------------------------
+# Pagination (backwards-compat helper)
+# ---------------------------------------------------------------------------
+
+
+class Pagination(APIModel):
+    """
+    Generic pagination metadata used by list endpoints.
+
+    Minimal, backwards-compatible definition. Extra fields supplied by
+    older code are ignored to avoid runtime errors.
+    """
+
+    # Relax `extra` for this model so that any legacy fields are accepted.
+    model_config = ConfigDict(
+        extra="ignore",
+        validate_by_name=True,
+        from_attributes=True,
+    )
+
+    page: PositiveInt = Field(
+        ...,
+        description="1-based current page number.",
+    )
+    per_page: PositiveInt = Field(
+        ...,
+        description="Requested page size.",
+    )
+    total: int = Field(
+        ...,
+        ge=0,
+        description="Total number of items across all pages.",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -101,6 +143,11 @@ class GenerationResultModel(APIModel):
     )
 
 
+# Backwards-compatibility aliases for older import sites
+GenerationOptions = GenerationOptionsModel
+GenerationResult = GenerationResultModel
+
+
 # ---------------------------------------------------------------------------
 # Error envelope
 # ---------------------------------------------------------------------------
@@ -135,11 +182,15 @@ class ErrorResponse(APIModel):
 
 __all__ = [
     "APIModel",
+    "BaseApiModel",
     "LangCode",
     "PositiveInt",
     "JsonObject",
+    "Pagination",
     "GenerationOptionsModel",
     "GenerationResultModel",
+    "GenerationOptions",
+    "GenerationResult",
     "ErrorDetail",
     "ErrorResponse",
 ]
