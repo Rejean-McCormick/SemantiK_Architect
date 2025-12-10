@@ -1,12 +1,6 @@
-concrete WikiJpn of Wiki = CatJpn, NounJpn ** open SyntaxJpn, (P = ParadigmsJpn) in {
-
+concrete WikiJpn of Wiki = GrammarJpn, ParadigmsJpn ** open SyntaxJpn, (P = ParadigmsJpn) in {
   lin
-    -- Structural
     SimpNP cn = mkNP cn ;
-
-    -- Lexicon
-    -- We use standard Syntax constructors (mkNP, mkCN) directly
-    -- We use Paradigms constructors (P.mkPN, P.mkN, P.mkAdv) via P
     John = mkNP (P.mkPN "John") ; 
     Here = P.mkAdv "here" ;
     apple_N = mkCN (P.mkN "apple") ;

@@ -1,12 +1,6 @@
-concrete WikiEng of Wiki = CatEng, NounEng ** open SyntaxEng, (P = ParadigmsEng) in {
-
+concrete WikiEng of Wiki = GrammarEng, ParadigmsEng ** open SyntaxEng, (P = ParadigmsEng) in {
   lin
-    -- Structural
     SimpNP cn = mkNP cn ;
-
-    -- Lexicon
-    -- We use standard Syntax constructors (mkNP, mkCN) directly
-    -- We use Paradigms constructors (P.mkPN, P.mkN, P.mkAdv) via P
     John = mkNP (P.mkPN "John") ; 
     Here = P.mkAdv "here" ;
     apple_N = mkCN (P.mkN "apple") ;

@@ -1,12 +1,6 @@
-concrete WikiZho of Wiki = CatChi, NounChi ** open SyntaxChi, (P = ParadigmsChi) in {
-
+concrete WikiZho of Wiki = GrammarChi, ParadigmsChi ** open SyntaxChi, (P = ParadigmsChi) in {
   lin
-    -- Structural
     SimpNP cn = mkNP cn ;
-
-    -- Lexicon
-    -- We use standard Syntax constructors (mkNP, mkCN) directly
-    -- We use Paradigms constructors (P.mkPN, P.mkN, P.mkAdv) via P
     John = mkNP (P.mkPN "John") ; 
     Here = P.mkAdv "here" ;
     apple_N = mkCN (P.mkN "apple") ;
