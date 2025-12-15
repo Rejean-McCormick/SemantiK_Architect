@@ -1,3 +1,4 @@
+# semantics\entity\software_protocol_standard_frame.py
 from __future__ import annotations
 
 from dataclasses import dataclass, field

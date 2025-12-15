@@ -1,3 +1,4 @@
+# morphology\isolating.py
 """
 ISOLATING MORPHOLOGY MODULE
 ---------------------------

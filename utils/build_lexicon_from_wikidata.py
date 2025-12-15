@@ -1,3 +1,4 @@
+# utils\build_lexicon_from_wikidata.py
 """
 utils/build_lexicon_from_wikidata.py
 ====================================

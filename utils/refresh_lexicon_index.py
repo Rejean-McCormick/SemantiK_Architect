@@ -1,3 +1,4 @@
+# utils\refresh_lexicon_index.py
 """
 utils/refresh_lexicon_index.py
 ------------------------------

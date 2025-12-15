@@ -1,3 +1,4 @@
+# semantics\entity\place_frame.py
 # semantics/entity/place_frame.py
 
 from __future__ import annotations

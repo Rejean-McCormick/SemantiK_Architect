@@ -1,3 +1,4 @@
+# tests\http_api\test_frames_registry.py
 """
 tests/http_api/test_frames_registry.py
 -------------------------------------

@@ -1,3 +1,4 @@
+// architect_frontend\tailwind.config.js
 // architect_frontend/tailwind.config.js
 
 /** @type {import('tailwindcss').Config} */

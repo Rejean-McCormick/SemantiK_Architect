@@ -1,3 +1,4 @@
+# utils\config_extractor.py
 """
 Config extractor for Wikifunctions deployments.
 

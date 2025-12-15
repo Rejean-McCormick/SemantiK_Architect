@@ -1,3 +1,4 @@
+# build_lexicon_from_wikidata.py
 import requests
 import json
 import time

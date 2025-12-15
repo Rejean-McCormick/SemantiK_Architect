@@ -1,3 +1,4 @@
+# scripts\lexicon\sync_rgl.py
 # scripts/lexicon/sync_rgl.py
 # =========================================================================
 # GF LEXICON SYNCHRONIZER

@@ -1,3 +1,4 @@
+# utils\eval_bios_from_wikidata.py
 # utils/eval_bios_from_wikidata.py
 """
 Evaluate biography rendering on a sample of Wikidata humans.

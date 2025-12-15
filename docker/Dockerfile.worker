@@ -1,0 +1,54 @@
+FROM python:3.11-slim
+
+# Environment Variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    # GF Default Library Path
+    GF_LIB_PATH=/usr/local/lib/gf \
+    # The Worker writes the compiled grammar to this path
+    AW_PGF_PATH=/app/gf/Wiki.pgf \
+    # Add local bin to path
+    PATH="/root/.local/bin:$PATH"
+
+WORKDIR /app
+
+# 1. Install System Dependencies
+# Git is required if the worker needs to clone/update the RGL
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    ca-certificates \
+    git \
+  && rm -rf /var/lib/apt/lists/*
+
+# 2. Install GF (Grammatical Framework)
+# The Worker is the "Compiler" service, so the binary is critical here.
+COPY gf-3.12-ubuntu-24.04.deb /tmp/gf.deb
+
+RUN apt-get update && apt-get install -y /tmp/gf.deb \
+    && rm /tmp/gf.deb \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. Install Python Dependencies
+# Leveraging Docker cache by copying dependency files first
+COPY pyproject.toml README.md ./
+
+# Install 'api' extras to get 'arq', 'redis', and 'structlog'
+RUN pip install --no-cache-dir .[api]
+
+# 4. Copy Application Source Code
+# Copies the Hexagonal Architecture structure (Core + Adapters)
+COPY app ./app
+
+# 5. Copy Static Data & Grammars
+# The Worker needs read/write access to these for compilation jobs
+COPY gf ./gf
+COPY data ./data
+
+# 6. Runtime Configuration
+# The Worker does not expose ports; it connects outbound to Redis.
+
+# Start the ARQ worker process
+# This looks for the 'WorkerSettings' class in app/worker/main.py
+CMD ["arq", "app.worker.main.WorkerSettings"]

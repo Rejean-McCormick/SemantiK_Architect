@@ -1,3 +1,4 @@
+# utils\seed_lexicon_ai.py
 import os
 import sys
 import json

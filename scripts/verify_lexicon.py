@@ -1,3 +1,4 @@
+# scripts\verify_lexicon.py
 """
 scripts/verify_lexicon.py
 =========================

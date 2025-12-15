@@ -1,3 +1,4 @@
+# architect_http_api\schemas\entities.py
 """
 architect_http_api/schemas/entities.py
 

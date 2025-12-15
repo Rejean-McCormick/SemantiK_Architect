@@ -1,3 +1,4 @@
+# generate_path_map.py
 import os
 import json
 import subprocess

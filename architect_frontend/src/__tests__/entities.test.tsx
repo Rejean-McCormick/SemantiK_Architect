@@ -1,3 +1,4 @@
+// architect_frontend\src\__tests__\entities.test.tsx
 // architect_frontend/src/__tests__/entities.test.tsx
 
 import React from "react";

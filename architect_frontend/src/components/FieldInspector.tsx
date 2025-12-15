@@ -1,3 +1,4 @@
+// architect_frontend\src\components\FieldInspector.tsx
 // architect_frontend/src/components/FieldInspector.tsx
 "use client";
 

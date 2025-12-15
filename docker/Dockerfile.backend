@@ -3,10 +3,12 @@ FROM python:3.11-slim
 # Environment Variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    # GF Default Library Path (Where the .deb installs it)
+    # GF Default Library Path
     GF_LIB_PATH=/usr/local/lib/gf \
-    # API Grammar Path
-    AW_PGF_PATH=/app/gf/Wiki.pgf
+    # API Grammar Path (The backend reads this, Worker writes this)
+    AW_PGF_PATH=/app/gf/Wiki.pgf \
+    # Add local bin to path for 'architect-api' script
+    PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
 
@@ -15,64 +17,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     wget \
     ca-certificates \
+    git \
   && rm -rf /var/lib/apt/lists/*
 
 # 2. Install GF (Grammatical Framework)
+# Required for the GFAdapter to interface with the binary
 COPY gf-3.12-ubuntu-24.04.deb /tmp/gf.deb
 
-# This installs the compiler AND the Standard Library (RGL)
 RUN apt-get update && apt-get install -y /tmp/gf.deb \
     && rm /tmp/gf.deb \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# [REMOVED] Step 3 (Install Official RGL Sources)
-# We trust the .deb installed the library correctly. 
-# Overwriting it forces a massive re-compilation that crashes Docker.
+# 3. Install Python Dependencies
+# We copy only the files needed for installation first to leverage Docker caching
+COPY pyproject.toml README.md ./
 
-# 4. TIER 3: Generate Factory Grammars
-# Copy to /app/utils so the script's relative path logic works correctly
-COPY utils/grammar_factory.py /app/utils/grammar_factory.py
+# Install the 'api' optional dependencies group (FastAPI, Redis, OpenTelemetry)
+RUN pip install --no-cache-dir .[api]
 
-# Run factory: Generates files into /app/gf/generated/src
-RUN python utils/grammar_factory.py \
-    && mkdir -p /usr/local/lib/gf/generated \
-    && cp -r gf/generated/src/* /usr/local/lib/gf/generated/ \
-    && rm -rf gf
+# 4. Copy Application Source Code
+# The new Modular Monolith structure
+COPY app ./app
 
-# 5. TIER 2: Install Manual Contrib
-COPY gf/contrib /usr/local/lib/gf/contrib
-
-# 6. Install Python Dependencies
-COPY pyproject.toml requirements.txt* ./
-
-RUN if [ -f requirements.txt ]; then \
-      pip install --no-cache-dir -r requirements.txt; \
-    else \
-      pip install --no-cache-dir .; \
-    fi
-
-# 7. Copy Source Code
-COPY architect_http_api ./architect_http_api
-COPY data ./data
-COPY discourse ./discourse
-COPY engines ./engines
+# 5. Copy Static Data & Grammars
+# The backend needs read access to the PGF and Lexicon data
 COPY gf ./gf
-COPY language_profiles ./language_profiles
-COPY lexicon ./lexicon
-COPY morphology ./morphology
-COPY nlg ./nlg
-COPY semantics ./semantics
-COPY utils ./utils
-COPY router.py ./router.py
-COPY alembic.ini ./alembic.ini
-COPY alembic ./alembic
+COPY data ./data
 
-# 8. COMPILE THE PGF (The Orchestrator)
-# We disable this during build to prevent crashes.
-# You will run it manually: docker run ... python gf/build_orchestrator.py
-# RUN python gf/build_orchestrator.py
-
+# 6. Runtime Configuration
 EXPOSE 8000
 
-CMD ["uvicorn", "architect_http_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# We use the direct uvicorn command to allow easy flag overrides in docker-compose
+# Points to the Primary Adapter (API Main) defined in the Technical Plan
+CMD ["uvicorn", "app.adapters.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

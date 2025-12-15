@@ -1,3 +1,4 @@
+# cleanup_root.py
 import os
 import shutil
 

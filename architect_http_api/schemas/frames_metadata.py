@@ -1,3 +1,4 @@
+# architect_http_api\schemas\frames_metadata.py
 # architect_http_api/schemas/frames_metadata.py
 """
 Pydantic schemas describing the public “frames catalogue” metadata.

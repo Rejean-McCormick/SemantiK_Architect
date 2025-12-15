@@ -1,3 +1,4 @@
+# architect_http_api\__init__.py
 """
 architect_http_api
 ------------------

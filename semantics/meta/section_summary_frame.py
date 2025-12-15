@@ -1,3 +1,4 @@
+# semantics\meta\section_summary_frame.py
 # semantics/meta/section_summary_frame.py
 
 from __future__ import annotations

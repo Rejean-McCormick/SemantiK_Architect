@@ -1,3 +1,4 @@
+// architect_frontend\src\components\everything-matrix\LanguageRow.tsx
 import { LanguageEntry } from '@/types/EverythingMatrix';
 import ScoreCell from './ScoreCell';
 

@@ -1,3 +1,4 @@
+# architect_http_api\registry\frames_registry.py
 # architect_http_api/registry/frames_registry.py
 """
 frames_registry.py

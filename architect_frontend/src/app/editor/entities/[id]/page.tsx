@@ -1,3 +1,4 @@
+// architect_frontend\src\app\editor\entities\[id]\page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';

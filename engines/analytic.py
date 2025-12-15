@@ -1,3 +1,4 @@
+# engines\analytic.py
 # File: engines/analytic.py
 def render_bio(name, gender, profession, nationality, config):
     # Safe defaults if config is empty

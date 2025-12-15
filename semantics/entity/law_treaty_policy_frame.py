@@ -1,3 +1,4 @@
+# semantics\entity\law_treaty_policy_frame.py
 # semantics/entity/law_treaty_policy_frame.py
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+// architect_frontend\src\app\refiner\page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';

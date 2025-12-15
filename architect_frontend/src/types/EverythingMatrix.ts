@@ -1,3 +1,4 @@
+// architect_frontend\src\types\EverythingMatrix.ts
 /**
  * The Root Object for the Everything Matrix
  * Matches data/indices/everything_matrix.json

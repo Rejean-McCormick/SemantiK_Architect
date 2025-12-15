@@ -1,3 +1,4 @@
+# morphology\polysynthetic.py
 """
 POLYSYNTHETIC MORPHOLOGY LAYER
 ------------------------------

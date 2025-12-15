@@ -1,3 +1,4 @@
+# semantics\event\conflict_war_event_frame.py
 from __future__ import annotations
 
 from dataclasses import dataclass

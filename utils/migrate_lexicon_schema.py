@@ -1,3 +1,4 @@
+# utils\migrate_lexicon_schema.py
 """
 utils/migrate_lexicon_schema.py
 -------------------------------

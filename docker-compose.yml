@@ -1,89 +1,82 @@
 version: '3.8'
 
 services:
-  # 1. MESSAGE QUEUE (New)
-  # Handles communication between API and Worker
+  # 1. MESSAGE BROKER
+  # The central nervous system for async tasks (Arq/Celery)
   redis:
     image: redis:alpine
     container_name: aw_redis
     ports:
       - "6379:6379"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-  # 2. API SERVER (Updated)
-  # Now connects to Redis to offload heavy tasks
+  # 2. API BACKEND (Hexagonal Adapter)
+  # Serves HTTP requests, publishes events to Redis
   backend:
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
-    container_name: abstract_wiki_architect_backend
-    env_file:
-      - .env
+    container_name: aw_backend
+    env_file: .env
     environment:
-      - REDIS_URL=redis://redis:6379/0
-    working_dir: /app
-    volumes:
-      - .:/app
-    expose:
-      - "8000"
+      # Override config to use the Docker service name for Redis
+      - REDIS_HOST=redis
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    # Using the new entry point defined in pyproject.toml / technical plan
+    command: uvicorn app.adapters.api.main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
 
-  # 3. BACKGROUND WORKER (New)
-  # Consumes jobs from Redis (compiling grammars) so the API doesn't freeze
+  # 3. ASYNC WORKER (Hexagonal Adapter)
+  # Consumes 'BuildLanguage' and 'Audit' events from Redis
   worker:
     build:
       context: .
-      dockerfile: docker/Dockerfile.backend
+      dockerfile: docker/Dockerfile.worker
     container_name: aw_worker
-    command: python builder/worker.py
-    env_file:
-      - .env
+    env_file: .env
     environment:
-      - REDIS_URL=redis://redis:6379/0
-    working_dir: /app
+      - REDIS_HOST=redis
     volumes:
       - .:/app
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    # Starts the arq worker listening on the specific Redis Settings
+    command: arq app.worker.main.WorkerSettings
     restart: unless-stopped
 
-  # 4. AUDITOR SIDECAR (New)
-  # Runs continuously to check language health and update the Matrix
-  auditor:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.backend
-    container_name: aw_auditor
-    working_dir: /app
-    volumes:
-      - .:/app
-    # Loop checking every 60 seconds
-    command: >
-      sh -c "while true; do python audit_languages.py --fast; sleep 60; done"
-    restart: unless-stopped
-
-  # 5. FRONTEND (Existing)
+  # 4. FRONTEND (UI Layer)
+  # Next.js application consuming the Backend API
   frontend:
     build:
       context: .
       dockerfile: docker/Dockerfile.frontend
-    container_name: abstract_wiki_architect_frontend
-    env_file:
-      - .env
+    container_name: aw_frontend
+    env_file: .env
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
     restart: unless-stopped
 
-  # 6. PROXY (Existing)
+  # 5. REVERSE PROXY (Optional/Prod)
+  # Routes traffic between Frontend and Backend
   nginx:
     image: nginx:alpine
-    container_name: abstract_wiki_architect_nginx
+    container_name: aw_nginx
     depends_on:
       - frontend
       - backend

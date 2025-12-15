@@ -1,3 +1,4 @@
+// architect_frontend\src\components\AIPanel.tsx
 "use client";
 
 import React, { useCallback, useMemo, useState, FormEvent } from "react";

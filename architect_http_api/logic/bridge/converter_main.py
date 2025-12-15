@@ -1,3 +1,4 @@
+# architect_http_api\logic\bridge\converter_main.py
 # architect_http_api/logic/bridge/converter_main.py
 # =========================================================================
 # Z-OBJECT TO GF CONVERTER (MAIN ENTRY POINT)

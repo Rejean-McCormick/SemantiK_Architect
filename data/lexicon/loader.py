@@ -1,3 +1,4 @@
+# data\lexicon\loader.py
 """
 data/lexicon/loader.py
 ======================

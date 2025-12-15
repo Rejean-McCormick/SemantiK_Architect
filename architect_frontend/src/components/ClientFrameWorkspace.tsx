@@ -1,3 +1,4 @@
+// architect_frontend\src\components\ClientFrameWorkspace.tsx
 // architect_frontend/src/components/ClientFrameWorkspace.tsx
 "use client";
 

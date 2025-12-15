@@ -1,3 +1,4 @@
+// architect_frontend\src\components\LanguageSelector.tsx
 // architect_frontend/src/components/LanguageSelector.tsx
 
 import React, { useEffect, useState } from 'react';

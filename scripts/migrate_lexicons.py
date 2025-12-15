@@ -1,3 +1,4 @@
+# scripts\migrate_lexicons.py
 import os
 import json
 import shutil

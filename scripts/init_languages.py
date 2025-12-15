@@ -1,3 +1,4 @@
+# scripts\init_languages.py
 import os
 import json
 

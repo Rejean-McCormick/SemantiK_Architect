@@ -1,3 +1,4 @@
+// architect_frontend\src\components\ErrorBanner.tsx
 // architect_frontend/src/components/ErrorBanner.tsx
 
 type ErrorBannerProps = {

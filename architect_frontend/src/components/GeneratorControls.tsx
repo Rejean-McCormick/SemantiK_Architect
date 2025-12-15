@@ -1,3 +1,4 @@
+// architect_frontend\src\components\GeneratorControls.tsx
 // architect_frontend/src/components/GeneratorControls.tsx
 "use client";
 

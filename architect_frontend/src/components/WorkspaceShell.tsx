@@ -1,3 +1,4 @@
+// architect_frontend\src\components\WorkspaceShell.tsx
 // architect_frontend/src/components/WorkspaceShell.tsx
 
 import type { ReactNode } from "react";

@@ -1,3 +1,4 @@
+// architect_frontend\src\types\language.ts
 // architect_frontend/src/types/language.ts
 
 export interface Language {

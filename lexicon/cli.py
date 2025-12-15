@@ -1,3 +1,4 @@
+# lexicon\cli.py
 # lexicon/cli.py
 
 from __future__ import annotations

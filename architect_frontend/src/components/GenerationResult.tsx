@@ -1,3 +1,4 @@
+// architect_frontend\src\components\GenerationResult.tsx
 // architect_frontend/src/components/GenerationResult.tsx
 
 import type { FC } from "react";

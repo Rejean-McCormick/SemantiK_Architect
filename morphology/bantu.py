@@ -1,3 +1,4 @@
+# morphology\bantu.py
 """
 BANTU MORPHOLOGY MODULE
 -----------------------

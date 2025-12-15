@@ -1,3 +1,4 @@
+# lexicon\schema.py
 """
 lexicon/schema.py
 =================

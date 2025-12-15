@@ -1,3 +1,4 @@
+// architect_frontend\src\lib\frameAdapter.ts
 // architect_frontend/src/lib/frameAdapter.ts
 
 import type { FrameContextConfig, FrameFieldConfig } from "@/components/FrameForm";

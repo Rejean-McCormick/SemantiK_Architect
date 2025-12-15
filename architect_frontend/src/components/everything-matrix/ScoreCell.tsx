@@ -1,3 +1,4 @@
+// architect_frontend\src\components\everything-matrix\ScoreCell.tsx
 import React from 'react';
 
 interface ScoreCellProps {

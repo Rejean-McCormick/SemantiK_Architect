@@ -1,3 +1,4 @@
+# architect_http_api\registry\loaders.py
 # architect_http_api/registry/loaders.py
 """
 Thin loading / adapter layer for semantic frames used by the HTTP API.

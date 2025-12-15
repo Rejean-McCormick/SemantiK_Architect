@@ -1,3 +1,4 @@
+# lexicon\config.py
 """
 lexicon/config.py
 -----------------

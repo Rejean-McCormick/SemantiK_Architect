@@ -1,3 +1,4 @@
+# morphology\japonic.py
 """
 JAPONIC MORPHOLOGY MODULE
 =========================

@@ -1,3 +1,4 @@
+# morphology\koreanic.py
 """
 KOREANIC MORPHOLOGY MODULE
 --------------------------

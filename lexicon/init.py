@@ -1,3 +1,4 @@
+# lexicon\init.py
 """
 lexicon/__init__.py
 -------------------

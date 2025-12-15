@@ -1,3 +1,4 @@
+# semantics\entity\religion_ideology_frame.py
 """
 semantics/entity/religion_ideology_frame.py
 ------------------------------------------

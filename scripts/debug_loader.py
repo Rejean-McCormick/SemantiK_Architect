@@ -1,3 +1,4 @@
+# scripts\debug_loader.py
 # debug_loader.py
 from lexicon import load_lexicon
 

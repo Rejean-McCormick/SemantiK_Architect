@@ -1,3 +1,4 @@
+# semantics\aw_bridge.py
 # semantics/aw_bridge.py
 """
 Bridging layer between external AbstractWiki-style JSON payloads and the

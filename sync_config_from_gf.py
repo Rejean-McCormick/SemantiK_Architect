@@ -1,3 +1,4 @@
+# sync_config_from_gf.py
 import os
 import json
 import pgf

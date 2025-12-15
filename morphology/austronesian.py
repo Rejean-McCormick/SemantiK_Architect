@@ -1,3 +1,4 @@
+# morphology\austronesian.py
 """
 Austronesian morphology module.
 

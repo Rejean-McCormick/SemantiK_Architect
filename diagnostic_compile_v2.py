@@ -1,3 +1,4 @@
+# diagnostic_compile_v2.py
 import os
 import subprocess
 import glob

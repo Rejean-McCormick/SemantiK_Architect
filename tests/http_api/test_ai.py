@@ -1,3 +1,4 @@
+# tests\http_api\test_ai.py
 # tests/http_api/test_ai.py
 
 from fastapi.testclient import TestClient

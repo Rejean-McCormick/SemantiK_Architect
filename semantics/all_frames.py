@@ -1,3 +1,4 @@
+# semantics\all_frames.py
 # semantics/all_frames.py
 #
 # Central catalogue and registry for all semantic frame families.

@@ -1,3 +1,4 @@
+# architect_http_api\schemas\__init__.py
 """
 Top-level export module for HTTP API schemas.
 """

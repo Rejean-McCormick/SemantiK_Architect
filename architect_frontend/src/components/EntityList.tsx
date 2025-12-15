@@ -1,3 +1,4 @@
+// architect_frontend\src\components\EntityList.tsx
 // architect_frontend/src/components/EntityList.tsx
 "use client";
 

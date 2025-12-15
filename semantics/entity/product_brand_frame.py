@@ -1,3 +1,4 @@
+# semantics\entity\product_brand_frame.py
 from __future__ import annotations
 
 from dataclasses import dataclass, field

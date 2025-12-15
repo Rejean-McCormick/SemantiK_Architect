@@ -1,3 +1,4 @@
+# discourse\info_structure.py
 """
 discourse/info_structure.py
 ===========================

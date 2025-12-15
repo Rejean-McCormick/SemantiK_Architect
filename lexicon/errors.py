@@ -1,3 +1,4 @@
+# lexicon\errors.py
 """
 lexicon/errors.py
 -----------------
