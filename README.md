@@ -1,467 +1,234 @@
-# Abstract Wiki Architect
+Abstract Wiki Architect (V2)
+Industrial-grade NLG system for Abstract Wikipedia and Wikifunctions.
 
-Abstract Wiki Architect is a family-based, data-driven NLG toolkit for **Abstract Wikipedia** and **Wikifunctions**.
+Abstract Wiki Architect is a family-based, data-driven NLG toolkit. Instead of writing one renderer per language (“300 scripts for 300 languages”), this project builds:
 
-Instead of writing one renderer per language (“300 scripts for 300 languages”), this project builds:
+Shared Family Engines: ~15 universal engines (Romance, Slavic, Bantu, etc.) implemented as Adapters.
 
-- ~15 shared **family engines** (per language family, in Python),
-- hundreds of per-language **configuration cards** (grammar matrices + language cards, in JSON),
-- a small library of **cross-linguistic constructions** (sentence patterns),
-- a **lexicon subsystem** (with bridges to Wikidata / Abstract Wikipedia-style lexemes),
-- a small, well-defined inventory of **semantic frames**,
-- and a **QA factory** for large, language-specific test suites.
+Configuration Cards: Hundreds of per-language JSON configurations (grammar matrices).
 
-The goal is to provide a **professional, testable architecture** for rule-based NLG across many languages, aligned with the ideas behind Abstract Wikipedia and Wikifunctions, but usable independently.
+Hexagonal Core: A pure Python domain layer containing semantic frames and cross-linguistic constructions.
 
----
+Lexicon Subsystem: A robust persistence layer with bridges to Wikidata.
 
-## Intuition: Consoles, Cartridges, and the Router
+Background Worker: An async system for compiling and onboarding languages.
 
+The goal is to provide a professional, testable architecture for rule-based NLG, aligned with Abstract Wikipedia but usable as a standalone API service.
+
+🏛️ Architecture Overview (Hexagonal)
+The system has moved from a flat script structure to a Modular Monolith organized by technical capability.
+
+Plaintext
+
+app/
+├── core/                   # 🧠 THE BRAIN (Pure Python, No Infrastructure)
+│   ├── domain/             # Models (Frames, Sentences) & Events
+│   ├── ports/              # Interfaces (IMessageBroker, IGrammarEngine)
+│   └── use_cases/          # Business Logic (GenerateText, BuildLanguage)
+│
+├── adapters/               # 🔌 THE PLUGS (Infrastructure)
+│   ├── api/                # FastAPI (Driving Adapter)
+│   ├── worker/             # Background Worker (Driving Adapter)
+│   ├── messaging/          # Redis Pub/Sub (Driven Adapter)
+│   ├── persistence/        # FileSystem & Wikidata (Driven Adapters)
+│   └── engines/            # Grammar Engines (GF & Python Wrappers)
+│
+└── shared/                 # 🛠️ SHARED UTILITIES
+    ├── container.py        # Dependency Injection
+    └── config.py           # Settings (Pydantic)
+💡 Intuition: Consoles, Cartridges, and the Router
 Think of each sentence as a game you want to play.
 
-- Old way  
-  Build **one console per game** (one monolithic renderer per language).
+Old way: Build one console per game (one monolithic renderer per language).
 
-- Abstract Wiki Architect  
-  Build **~15 universal consoles** (family engines: Romance, Slavic, Agglutinative, Bantu, etc.).  
-  Load **hundreds of cartridges** (per-language JSON cards + lexica).  
-  Use a **Router** to plug the right card into the right console.
+Abstract Wiki Architect:
 
-Example (Romance family):
+The Console (Core/Engine): Universal logic (Romance, Slavic, etc.).
 
-- The **Romance engine** knows how to:
-  - feminize nouns/adjectives,
-  - apply plural rules,
-  - pick articles.
-- The **Italian card** (`data/morphology_configs/romance_grammar_matrix.json` + `data/romance/it.json`) tells it:
-  - `-o` → `-a` for feminine,
-  - “use `uno` before /z/ or /sC/”.
-- The **Spanish card** tweaks only what differs:
-  - feminization also `-o` → `-a`,
-  - but the singular masculine indefinite article is always `un`.
+The Cartridge (Config/Lexicon): Per-language JSON files loaded dynamically.
 
-The **router** sees `lang="it"`, picks the Romance engine, loads the Italian card and lexicon, and calls the appropriate constructions to build the sentence.
+The Router (API/Use Case): Plugs the right cartridge into the console based on the request.
 
----
+Example (Romance Family):
 
-## Architecture Overview
+The Romance Engine (Adapter) knows how to feminize nouns and apply plural rules generically.
 
-Very roughly, the architecture is:
+The Italian Cartridge (data/lexicon/it.json) tells it: "-o" -> "-a" for feminine.
 
-> **Engines (families)** + **Configs (languages)** + **Constructions (sentence patterns)**  
-> + **Lexica** + **Frames (semantics)** + **Discourse** + **Router/API**
+The Spanish Cartridge tweaks only what differs: Indefinite articles differ, but pluralization is similar.
 
-### 1. Engines and Morphology
+🧩 Components
+1. Semantic Frames (The Input)
+Located in app/core/domain/models.py. These are the abstract representations of intent, independent of language.
 
-Family engines in `engines/` (Romance, Slavic, Agglutinative, Germanic, Bantu, Semitic, Indo-Aryan, Iranic, Austronesian, Japonic, Koreanic, Polysynthetic, Celtic, Dravidian, …):
+Entity Frames: People, Organizations, Places.
 
-- implement family-level logic (gender systems, cases, agreement, noun classes, etc.),
-- do **not** hard-code per-language endings; they consult configuration and lexicon.
+Event Frames: Actions with participants and time.
 
-Family-specific morphology modules in `morphology/`:
+Relational Frames: Definitions, attributes, measurements.
 
-- use grammar matrices in `data/morphology_configs/`  
-  (e.g. `romance_grammar_matrix.json`, `slavic_matrix.json`, `agglutinative_matrix.json`),
-- use per-language configs (e.g. `data/romance/it.json`, `data/slavic/ru.json`),
-- use lemma features from the lexicon,
-- expose a small API to constructions (inflect NP, choose article, inflect verb, join tokens).
+Example Payload:
 
-### 2. Constructions (Sentence Patterns)
+JSON
 
-Under `constructions/` you get cross-linguistic sentence patterns, for example:
-
-- `copula_equative_simple.py` — “X is a Y”
-- `copula_equative_classification.py` — “X is a Polish physicist”
-- `copula_attributive_np.py` / `copula_attributive_adj.py`
-- `copula_existential.py` — “There is a Y in X”
-- `copula_locative.py`
-- `possession_have.py` — “X has Y”
-- `intransitive_event.py`, `transitive_event.py`, `ditransitive_event.py`, `passive_event.py`
-- `relative_clause_subject_gap.py` — “the scientist who discovered Y”
-- `coordination_clauses.py`
-- `comparative_superlative.py`
-- `causative_event.py`
-- `topic_comment_copular.py`
-- `apposition_np.py`
-- …
-
-Constructions are **family-agnostic**:
-
-- they choose roles (SUBJ, PRED, LOC, OBJ, etc.),
-- they call morphology + lexicon to realise noun phrases and verbs,
-- they can consult discourse state (topic vs focus) when available.
-
-### 3. Frames and Semantics
-
-Under `semantics/` and `docs/FRAMES_*.md`:
-
-- **Core value types**
-  - `Entity`, `Location`, `TimeSpan`, `Event`, quantities, etc.
-- **Frame families**
-  - **Entity frames** (article subjects: persons, organisations, places, works, products, laws, projects, …),
-  - **Event frames** (single events / episodes with participants, time, and location),
-  - **Relational frames** (statement-level facts: definitions, attributes, measurements, memberships, roles, part–whole, comparisons, …),
-  - **Narrative / aggregate frames** (timelines, careers, developments, receptions, comparisons, lists),
-  - **Meta frames** (article / section structure, sources).
-
-Normalisation and AW bridge:
-
-- `semantics/normalization.py` turns “loose” input (dicts, CSV rows, JSON) into typed frames.
-- `semantics/aw_bridge.py` maps Abstract Wikipedia-style structures (Z-objects, typed slots) into these frames.
-
-Example (biography frame):
-
-```python
-from semantics.types import Entity, BioFrame
-
-marie = Entity(
-    id="Q7186",
-    name="Marie Curie",
-    gender="female",
-    human=True,
-)
-
-frame = BioFrame(
-    main_entity=marie,
-    primary_profession_lemmas=["physicist"],
-    nationality_lemmas=["polish"],
-)
-````
-
-### 4. Discourse and Information Structure
-
-Under `discourse/`:
-
-* `DiscourseState` for mentioned entities, current topic, and simple salience,
-* information-structure helpers (topic vs focus),
-* referring expression selection (full name vs short name vs pronoun vs zero subject),
-* simple planners to order multiple frames into short multi-sentence descriptions.
-
-This is what lets you move from:
-
-> “Marie Curie is a Polish physicist. Marie Curie discovered radium.”
-
-to:
-
-> “Marie Curie is a Polish physicist. **She** discovered radium.”
-
-and to topic–comment variants for languages where that matters.
-
-### 5. Lexicon Subsystem
-
-Under `lexicon/`:
-
-* types (`Lexeme`, `Form`, …),
-* loaders and indices,
-* normalisation helpers for lemma lookup,
-* bridges to Wikidata Lexemes and Abstract Wikipedia-style lexeme data.
-
-Lexicon data (`data/lexicon/*.json`) typically includes:
-
-* `lemma`, `pos` (`NOUN`, `ADJ`, `VERB`, …),
-* features (gender, number, noun class, etc.),
-* flags (e.g. `human`, `nationality`),
-* cross-links (feminine/masculine, plural/singular),
-* optional IDs (`wikidata_qid`, `wikidata_lexeme_id`),
-* language-specific details needed by morphology.
-
-Supporting tools:
-
-* build/update lexica from Wikidata (`utils/build_lexicon_from_wikidata.py`),
-* schema validation & smoke tests,
-* coverage reports relative to QA test suites (`qa_tools/lexicon_coverage_report.py`),
-* per-language lexicon statistics (`utils/dump_lexicon_stats.py`).
-
-### 6. Router and NLG API
-
-`language_profiles/profiles.json` defines per-language profiles (family, default constructions, key settings).
-
-`router.py` is the internal entry point:
-
-* given a language and either:
-
-  * higher-level arguments (name, profession, nationality, …), or
-  * explicit semantic frames,
-* loads the language profile and lexicon,
-* selects the family engine and constructions,
-* returns a surface string.
-
-Typical internal usages:
-
-```python
-from router import render_bio
-
-print(
-    render_bio(
-        name="Marie Curie",
-        gender="female",
-        profession_lemma="physicist",
-        nationality_lemma="polish",
-        lang_code="fr",
-    )
-)
-# → "Marie Curie est une physicienne polonaise."
-```
-
-```python
-from semantics.types import BioFrame, Entity
-from router import render_from_semantics
-
-frame = BioFrame(
-    main_entity=Entity(name="Marie Curie", gender="female", human=True),
-    primary_profession_lemmas=["physicist"],
-    nationality_lemmas=["polish"],
-)
-
-print(render_from_semantics(frame, lang_code="it"))
-# → "Marie Curie è una fisica polacca."
-```
-
-On top of this, there is a small **public NLG API** (see `docs/FRONTEND_API.md` and `NLG Frontend API Documentation.md`):
-
-```python
-from nlg.api import generate_bio, generate
-from semantics.types import Entity, BioFrame
-
-bio = BioFrame(
-    main_entity=Entity(name="Douglas Adams", gender="male", human=True),
-    primary_profession_lemmas=["writer"],
-    nationality_lemmas=["british"],
-)
-
-result = generate_bio(lang="en", bio=bio)
-print(result.text)       # "Douglas Adams was a British writer."
-print(result.sentences)  # ["Douglas Adams was a British writer."]
-
-result2 = generate(lang="fr", frame=bio)
-print(result2.text)
-```
-
-The API returns a `GenerationResult` (final text, sentence list, debug info) and hides router/engine/lexicon internals from callers.
-
----
-
-## Quick Start
-
-### 1. Setup environment
-
-From the project root:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pip install -e ".[dev]"
-```
-
-This installs (via `pyproject.toml`):
-
-* `pytest`, `pandas` (for QA),
-* `black`, `flake8`, `mypy` (for code quality).
-
-### 2. Minimal example
-
-```python
-from nlg.api import generate_bio
-from semantics.types import Entity, BioFrame
-
-albert = Entity(name="Albert Einstein", gender="male", human=True)
-
-bio = BioFrame(
-    main_entity=albert,
-    primary_profession_lemmas=["physicist"],
-    nationality_lemmas=["german"],
-)
-
-result = generate_bio(lang="en", bio=bio)
-print(result.text)
-# Example: "Albert Einstein was a German physicist."
-```
-
-### 3. Generate test suites
-
-Use the test-suite generator to create CSV templates:
-
-```bash
-python qa_tools/test_suite_generator.py
-```
-
-Example outputs:
-
-* `qa_tools/generated_datasets/test_suite_it.csv`
-* `qa_tools/generated_datasets/test_suite_fr.csv`
-* `qa_tools/generated_datasets/test_suite_tr.csv`
-* …
-
-Fill the `EXPECTED_OUTPUT` (or `EXPECTED_FULL_SENTENCE`) column with gold sentences (LLM-assisted or native speakers).
-
-### 4. Run the test runner
-
-```bash
-python qa/test_runner.py
-```
-
-The test runner:
-
-* scans `qa_tools/generated_datasets/` (or `qa/generated_datasets/`) for `test_suite_*.csv`,
-* builds frames from each row,
-* calls the renderer,
-* compares actual vs expected outputs,
-* prints per-language and global pass/fail statistics and a mismatch report.
-
-### 5. Inspect lexicon coverage (optional)
-
-```bash
-python utils/dump_lexicon_stats.py
-```
-
-For test-suite alignment:
-
-```bash
-python qa_tools/lexicon_coverage_report.py
-```
-
----
-
-## Mapping to Wikifunctions
-
-### Z-Object mock
-
-`utils/wikifunctions_api_mock.py` provides a small Z-Object mock:
-
-* `Z6(text)` to wrap a string as Z6,
-* `Z9(zid)` to wrap a reference as Z9,
-* `unwrap` / `unwrap_recursive` to convert nested Z-objects to plain Python.
-
-Example (simulated Wikifunctions call):
-
-```python
-from utils.wikifunctions_api_mock import Z6, unwrap_recursive
-from router import render_bio
-
-z_args = {
-    "name": Z6("Marie Curie"),
-    "gender": Z6("female"),
-    "profession_lemma": Z6("physicist"),
-    "nationality_lemma": Z6("polish"),
-    "lang_code": Z6("it"),
+{
+  "frame_type": "bio",
+  "subject": { "name": "Marie Curie", "qid": "Q7186" },
+  "properties": { "profession": "physicist", "nationality": "polish" }
 }
+2. Constructions (Sentence Patterns)
+Located in app/core/domain/constructions/ (Conceptually). These are family-agnostic patterns that orchestrate the generation:
 
-args = unwrap_recursive(z_args)
-print(render_bio(**args))
-# → "Marie Curie è una fisica polacca."
-```
+copula_equative: "X is Y"
 
-### JSON cards for Wikifunctions
+transitive_event: "X did Y to Z"
 
-Language-specific JSON cards can be extracted for use as Z-data:
+passive_event: "Z was done by X"
 
-```bash
-# Extract Italian Romance configuration payload for Wikifunctions
-python utils/config_extractor.py it
-```
+3. Grammar Engines (The Generators)
+Located in app/adapters/engines/. We support multiple backend engines:
 
-The printed JSON can be passed as an argument to Z-implementations of family engines on Wikifunctions (logic in Z-functions, cards as Z-data).
+GF (Grammatical Framework): For high-precision, resource-heavy generation (Full Strategy).
 
----
+Python/Jinja (Simple): For rapid prototyping and pidgin generation (Fast Strategy).
 
-## Adding a New Language (High-Level Recipe)
+4. Lexicon Subsystem
+Located in app/adapters/persistence/.
 
-1. **Choose a family**
+FileSystemRepo: Loads local JSON lexicons.
 
-   * pick or create a family engine in `engines/<family>.py`,
-   * ensure there is a matching morphology module in `morphology/`.
+WikidataAdapter: Fetches live data from SPARQL endpoints to hydrate missing lexemes.
 
-2. **Add lexicon entries**
+🚀 Quick Start (Docker)
+The easiest way to run the full stack (API + Worker + Redis) is via Docker Compose.
 
-   * create or edit `data/lexicon/<lang>_lexicon.json`,
-   * include common professions, nationality adjectives, country/city names, basic biography verbs.
+1. Start the System
+Bash
 
-3. **Add or extend morphology config**
+docker-compose up --build
+API: http://localhost:8000
 
-   * for Romance:
+Docs: http://localhost:8000/docs
 
-     * add the language entry to `data/morphology_configs/romance_grammar_matrix.json`,
-     * optionally add `data/romance/<lang>.json` for overrides.
-   * for other families:
+Redis: localhost:6379
 
-     * add a similar entry under `data/morphology_configs/` (and `data/<family>/` if used).
+2. Verify Health
+Bash
 
-4. **Create a language profile**
+curl http://localhost:8000/health/ready
+# {"broker":"up", "storage":"up", "engine":"up"}
+💻 API Usage
+Instead of calling Python functions directly, you now interact via REST API.
 
-   * add an entry in `language_profiles/profiles.json`:
+1. Generate Text (Synchronous)
+POST /generate/{lang_code}
 
-     * family,
-     * default constructions,
-     * key flags (e.g. postposed definite articles, topic-marker language).
+Bash
 
-5. **Generate and fill test suite**
+curl -X POST http://localhost:8000/generate/fra \
+  -H "x-api-key: secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "frame_type": "bio",
+    "subject": {"name": "Marie Curie"},
+    "properties": {"profession": "physicist", "nationality": "polish"}
+  }'
+Response: Marie Curie est une physicienne polonaise.
 
-   * run `qa_tools/test_suite_generator.py`,
-   * fill `EXPECTED_OUTPUT` for `test_suite_<lang>.csv`.
+2. Onboard New Language (Async Saga)
+POST /languages/
 
-6. **Run tests and iterate**
+Triggers the Onboarding Saga which:
 
-   * `python qa/test_runner.py`,
-   * refine configs + lexicon until the language passes most tests.
+Registers the language in the system.
 
-More details are in `docs/ADDING_A_LANGUAGE.md`.
+Scaffolds initial JSON configuration files.
 
----
+Dispatches a build event to the Background Worker.
 
-## Project Structure (High-Level)
+Bash
 
-```text
-abstract-wiki-architect/
-├── router.py
-├── language_profiles/
-├── engines/           # family engines
-├── morphology/        # family-level morphology
-├── constructions/     # sentence patterns
-├── semantics/         # frames and core types
-├── discourse/         # discourse and information structure
-├── lexicon/           # lexicon subsystem
-├── data/              # configs, cards, lexica
-├── qa_tools/          # test suite generator & helpers
-├── qa/                # test runner & unit tests
-├── utils/             # tools (Wikifunctions mock, lexicon builders, etc.)
-├── docs/              # architecture, frames, lexicon, API, hosting
-└── pyproject.toml
-```
+curl -X POST http://localhost:8000/languages/ \
+  -H "x-api-key: secret" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "zul", "name": "Zulu", "family": "Bantu"}'
+🛠️ Development (Local)
+If you are developing core logic without Docker:
 
-For a more detailed description, see the wiki:
+Bash
 
-* [https://github.com/Rejean-McCormick/abstract-wiki-architect/wiki](https://github.com/Rejean-McCormick/abstract-wiki-architect/wiki)
+# 1. Install
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev,api]"
 
----
+# 2. Run API
+python -m app.adapters.api.main
 
-## Status (December 2025)
+# 3. Run Worker (Requires Redis)
+python -m app.worker.main
+🧪 Testing
+We use pytest with a strict separation of Unit and Integration tests.
 
-**Works reasonably well**
+Bash
 
-* first-sentence biography generation from `BioFrame` across several families,
-* end-to-end path (frames → constructions → engines → morphology → lexicon → text),
-* JSON lexica and Wikidata bridges,
-* CSV-based QA and test-suite tooling,
-* basic Z-Object mock and config extractors for Wikifunctions.
+# Run all tests
+pytest
 
-**Still in progress**
+# Run only Core Unit tests (Fast, Mocked Infrastructure)
+pytest tests/core
 
-* full coverage beyond biographies (events, roles, awards, membership, etc.),
-* deeper lexicon and morphology coverage per language,
-* richer discourse and multi-sentence output,
-* more tooling for non-coders (card/lexicon/test editors),
-* tighter integration with real Wikifunctions Z-implementations and data.
+# Run Integration tests (Requires Redis/Internet)
+pytest tests/integration
+🗺️ Mapping to Wikifunctions
+The system includes utilities to mock Wikifunctions Z-Objects, facilitating future export.
 
----
+Z-Object Mock
+Located in app/shared/wikifunctions_mock.py. Wraps Python dictionaries in Z-Object structures (Z6 for strings, Z9 for references) to simulate how the Abstract Wikipedia renderer calls functions.
 
-## Links
+Config Extraction
+You can extract the internal JSON configurations to use as Z-Data on Wikifunctions:
 
-* Repository:
-  [https://github.com/Rejean-McCormick/abstract-wiki-architect](https://github.com/Rejean-McCormick/abstract-wiki-architect)
+Bash
 
-* Wiki (architecture, frames, lexicon, API):
-  [https://github.com/Rejean-McCormick/abstract-wiki-architect/wiki](https://github.com/Rejean-McCormick/abstract-wiki-architect/wiki)
+python -m app.utils.config_extractor it
+Outputs the Italian configuration JSON compatible with Z-Function inputs.
 
-* Meta-Wiki tools page:
-  [https://meta.wikimedia.org/wiki/Abstract_Wikipedia/Tools/abstract-wiki-architect](https://meta.wikimedia.org/wiki/Abstract_Wikipedia/Tools/abstract-wiki-architect)
+🌐 Related Projects & Ecosystem
+Abstract Wiki Architect is designed to work in concert with a suite of tools for information deconstruction and secure exchange.
 
+SenTient: A powerful integration of Falcon 2.0, OpenTapioca, and OpenRefine. It deconstructs information to improve system circulation and acts as the intelligence layer alongside Architect.
+
+Orgo: A closed-loop, secure application for resilience. Architect and SenTient operate within Orgo to ensure robust internal operations. (Note: Orgo is an independent project with distinct organizational affiliations outside the scope of the Wikimedia Foundation).
+
+Konnaxion: The open counterpart to Orgo, focused on constructive, philanthropic exchanges solidly anchored in ethical principles.
+
+The Senior Architect's Codex: Advanced Jupyter notebooks and utilities for AI empowerment.
+
+Core Modules: Ariane (Navigation) and Ame-Artificielle.
+
+🔮 Roadmap & Status
+Current Status (V2 - Dec 2025):
+
+✅ Hexagonal Architecture: Full separation of concerns.
+
+✅ Async Worker: Long-running compilations no longer block the API.
+
+✅ Biography Generation: BioFrame supported across Romance and Germanic families.
+
+✅ Dockerized: One-command deploy.
+
+Upcoming:
+
+[ ] LLM Refiner: Post-processing step to smooth rule-based output.
+
+[ ] Web UI: Next.js frontend for managing languages.
+
+[ ] Observability: OpenTelemetry tracing.
+
+🔗 Links
+Repository: github.com/Rejean-McCormick/abstract-wiki-architect
+
+Wiki: Architecture deep dives and frame definitions.
+
+Meta-Wiki: Abstract Wikipedia Tools Hub
