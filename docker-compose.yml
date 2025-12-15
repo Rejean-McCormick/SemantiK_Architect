@@ -1,4 +1,17 @@
+version: '3.8'
+
 services:
+  # 1. MESSAGE QUEUE (New)
+  # Handles communication between API and Worker
+  redis:
+    image: redis:alpine
+    container_name: aw_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # 2. API SERVER (Updated)
+  # Now connects to Redis to offload heavy tasks
   backend:
     build:
       context: .
@@ -6,16 +19,54 @@ services:
     container_name: abstract_wiki_architect_backend
     env_file:
       - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
     working_dir: /app
-    # Mounts local folder to /app so generated grammars sync back to host
     volumes:
       - .:/app
     expose:
       - "8000"
     ports:
       - "8000:8000"
+    depends_on:
+      - redis
     restart: unless-stopped
 
+  # 3. BACKGROUND WORKER (New)
+  # Consumes jobs from Redis (compiling grammars) so the API doesn't freeze
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: aw_worker
+    command: python builder/worker.py
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    working_dir: /app
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # 4. AUDITOR SIDECAR (New)
+  # Runs continuously to check language health and update the Matrix
+  auditor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: aw_auditor
+    working_dir: /app
+    volumes:
+      - .:/app
+    # Loop checking every 60 seconds
+    command: >
+      sh -c "while true; do python audit_languages.py --fast; sleep 60; done"
+    restart: unless-stopped
+
+  # 5. FRONTEND (Existing)
   frontend:
     build:
       context: .
@@ -29,6 +80,7 @@ services:
       - "3000"
     restart: unless-stopped
 
+  # 6. PROXY (Existing)
   nginx:
     image: nginx:alpine
     container_name: abstract_wiki_architect_nginx

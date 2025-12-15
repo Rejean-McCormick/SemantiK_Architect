@@ -1,6 +1,19 @@
 import os
 import json
+import sys
 from . import config
+
+# -----------------------------------------------------------------------------
+# SENIOR DEV UPGRADE: Strategy Hierarchy
+# -----------------------------------------------------------------------------
+# Defines the quality rank. Higher is better.
+STRATEGY_RANK = {
+    "GOLD": 4,
+    "SILVER": 3,
+    "BRONZE": 2,
+    "IRON": 1,
+    "SKIP": 0
+}
 
 def load_json(path, default_type=dict):
     """
@@ -30,7 +43,7 @@ def get_build_context(rgl_code):
     return {
         "code": rgl_code,
         "simp_np": simp_np_val,
-        # Future-proofing: Add more vars here if needed (e.g. "author": "Gemini")
+        # Future-proofing: Add more vars here if needed
     }
 
 def generate_blueprint(rgl_code, modules, strategies):
@@ -56,7 +69,6 @@ def generate_blueprint(rgl_code, modules, strategies):
 
             try:
                 # 1. Expand Imports
-                # Uses .format() to replace {code}, {simp_np}, etc.
                 blueprint["imports"] = [
                     imp.format(**context) for imp in strat.get("imports", [])
                 ]
@@ -82,13 +94,42 @@ def generate_blueprint(rgl_code, modules, strategies):
 
     return {"status": "SKIP", "imports": [], "lincats": {}, "rules": {}}
 
-def generate_plan():
+def detect_drift(rgl_code, new_status, old_plan):
+    """
+    Checks if the quality of a language has degraded compared to the previous build.
+    """
+    if not old_plan:
+        return None
+
+    prev_entry = old_plan.get(rgl_code)
+    if not prev_entry:
+        return None  # New language, no drift possible
+
+    prev_status = prev_entry.get("status", "SKIP")
+    
+    new_rank = STRATEGY_RANK.get(new_status, 0)
+    prev_rank = STRATEGY_RANK.get(prev_status, 0)
+
+    if new_rank < prev_rank:
+        return f"🔻 REGRESSION: {prev_status} -> {new_status}"
+    elif new_rank > prev_rank:
+        return f"🚀 UPGRADE: {prev_status} -> {new_status}"
+    
+    return None
+
+def generate_plan(fail_on_regression=False):
     print("🧠 Strategist: Calculating optimal build paths (Template-Driven)...")
     
-    # Load inputs (inventory is dict, strategies is list)
+    # Paths
+    plan_path = os.path.join("builder", "build_plan.json")
+
+    # Load inputs
     inventory_data = load_json(config.RGL_INVENTORY_FILE, dict)
     inventory = inventory_data.get("languages", {})
     strategies = load_json(config.STRATEGIES_FILE, list)
+    
+    # Load PREVIOUS plan for Drift Detection
+    old_plan = load_json(plan_path, dict)
     
     if not inventory:
         print(f"❌ Inventory missing or empty: {config.RGL_INVENTORY_FILE}")
@@ -100,12 +141,26 @@ def generate_plan():
     build_plan = {}
     stats = {s["name"]: 0 for s in strategies}
     stats["SKIP"] = 0
+    
+    regressions = []
+    upgrades = []
+
+    print(f"   Analyzing {len(inventory)} languages...")
 
     for rgl_code, data in inventory.items():
         modules = data.get("modules", {})
         
+        # Calculate NEW Plan
         blueprint = generate_blueprint(rgl_code, modules, strategies)
         
+        # Check for Drift
+        drift_msg = detect_drift(rgl_code, blueprint["status"], old_plan)
+        if drift_msg:
+            if "REGRESSION" in drift_msg:
+                regressions.append(f"{rgl_code}: {drift_msg}")
+            else:
+                upgrades.append(f"{rgl_code}: {drift_msg}")
+
         if blueprint["status"] != "SKIP":
             build_plan[rgl_code] = blueprint
         
@@ -113,14 +168,28 @@ def generate_plan():
         st = blueprint.get("status", "SKIP")
         stats[st] = stats.get(st, 0) + 1
 
+    # --- REPORTING ---
+    if upgrades:
+        print(f"\n✨ {len(upgrades)} IMPROVEMENTS DETECTED:")
+        for msg in upgrades[:5]: print(f"   {msg}")
+        if len(upgrades) > 5: print(f"   ...and {len(upgrades)-5} others.")
+
+    if regressions:
+        print(f"\n⚠️  {len(regressions)} REGRESSIONS DETECTED:")
+        for msg in regressions: print(f"   {msg}")
+        
+        if fail_on_regression:
+            print("\n❌ ABORTING BUILD DUE TO QUALITY REGRESSION.")
+            print("   (Fix the broken grammar files or update strategies.json)")
+            sys.exit(1)
+
     # Save Plan
-    plan_path = os.path.join("builder", "build_plan.json")
     try:
         with open(plan_path, 'w', encoding='utf-8') as f:
             json.dump(build_plan, f, indent=2)
         
-        print(f"   📋 Plan saved to {plan_path}")
-        print(f"   Stats: {json.dumps(stats)}")
+        print(f"\n📋 Plan saved to {plan_path}")
+        print(f"📊 Stats: {json.dumps(stats)}")
         return True
     except IOError as e:
         print(f"❌ Error writing build plan: {e}")
