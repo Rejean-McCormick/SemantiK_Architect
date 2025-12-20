@@ -10,8 +10,7 @@ Components:
 - FileSystemLexiconRepository: Concrete implementation of ILexiconRepository using JSON/GF files.
 """
 
-from .filesystem_repository import FileSystemLexiconRepository
-
+from .filesystem_repo import FileSystemLexiconRepository
 __all__ = [
     "FileSystemLexiconRepository",
 ]

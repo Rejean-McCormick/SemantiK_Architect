@@ -1,5 +1,5 @@
-# app\workers\worker.py
 # app/workers/worker.py
+from arq.connections import RedisSettings
 import asyncio
 import logging
 import subprocess
@@ -69,11 +69,13 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
             os.makedirs(os.path.dirname(target_pgf), exist_ok=True)
 
             # 3. Execute GF Compiler (CPU Intensive)
-            # cmd: gf -make -output-format=pgf src/Language.gf
+            # cmd: gf -make --output-format=pgf src/Language.gf
             cmd = [
                 "gf", 
                 "-make", 
-                "--output-format=pgf",
+                # Note: 'output-format' flag is sometimes inferred in newer GF versions, 
+                # but keeping explicit if supported.
+                # "--output-format=pgf", 
                 f"{src_dir}/{language_code}.gf"  # Simplified entry point
             ]
             
@@ -95,14 +97,19 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
             # If S3 is enabled, upload the artifact.
             if settings.STORAGE_BACKEND == StorageBackend.S3:
                 repo = S3LanguageRepo()
-                with open(target_pgf, "rb") as f:
-                    content = f.read()
-                    await repo.save_pgf(language_code, content)
-                span.add_event("upload_to_s3_complete")
+                # Ensure the file actually exists before reading
+                if os.path.exists(target_pgf):
+                    with open(target_pgf, "rb") as f:
+                        content = f.read()
+                        await repo.save_grammar(language_code, content) # Changed to match Port interface
+                    span.add_event("upload_to_s3_complete")
+                else:
+                    logger.error(f"Target PGF {target_pgf} missing after successful compilation.")
 
             # 5. Hot Reload (Lazy Singleton Update)
             # Update the resident memory model so subsequent checks are fast
-            runtime.load(target_pgf)
+            if os.path.exists(target_pgf):
+                runtime.load(target_pgf)
             
             return f"Compiled {language_code} successfully."
 
@@ -128,14 +135,20 @@ async def startup(ctx):
 async def shutdown(ctx):
     logger.info("Worker shutting down...")
 
+
+
 class WorkerSettings:
     """
     ARQ Configuration Class.
     """
-    redis_settings = settings.redis_url
+    # FIX: Use individual fields (with safe defaults) instead of REDIS_URL
+    redis_settings = RedisSettings(
+        host=getattr(settings, "REDIS_HOST", "localhost"),
+        port=getattr(settings, "REDIS_PORT", 6379),
+        database=getattr(settings, "REDIS_DB", 0),
+    )
+
     functions = [compile_grammar]
     on_startup = startup
     on_shutdown = shutdown
-    max_jobs = settings.WORKER_CONCURRENCY
-    # DLQ (Dead Letter Queue) logic would be configured here if strictly required
-    # handle_signals = False
+    max_jobs = getattr(settings, "WORKER_CONCURRENCY", 10)

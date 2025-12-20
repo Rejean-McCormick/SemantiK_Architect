@@ -1,4 +1,4 @@
-# app\core\domain\models.py
+# app/core/domain/models.py
 from enum import Enum
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
@@ -38,10 +38,10 @@ class Language(BaseModel):
     last_build_time: Optional[datetime] = None
     error_log: Optional[str] = None
 
-class Frame(BaseModel):
+class SemanticFrame(BaseModel):
     """
     The input semantic frame representing the abstract intent.
-    This is what the frontend sends to the backend.
+    Renamed from 'Frame' to 'SemanticFrame' to match system-wide imports.
     """
     frame_type: str = Field(..., description="The schema type (e.g., 'bio', 'event')")
     
@@ -53,6 +53,9 @@ class Frame(BaseModel):
     
     # Contextual hints for the renderer (e.g., tense, formality)
     meta: Dict[str, Any] = Field(default_factory=dict)
+
+# Alias for backward compatibility if needed
+Frame = SemanticFrame
 
 class Sentence(BaseModel):
     """
@@ -76,3 +79,12 @@ class LexiconEntry(BaseModel):
     features: Dict[str, Any] = Field(default_factory=dict) # Gender, Number, etc.
     source: str = "manual" # 'wikidata', 'ai', 'manual'
     confidence: float = 1.0
+
+# --- API Payloads ---
+
+class GenerationRequest(BaseModel):
+    """
+    Input payload for the text generation endpoint.
+    """
+    semantic_frame: SemanticFrame
+    target_language: str

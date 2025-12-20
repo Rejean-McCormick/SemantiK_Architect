@@ -1,13 +1,16 @@
-# app\shared\container.py
+# app/shared/container.py
 from dependency_injector import containers, providers
-
 from app.shared.config import settings
+
+# --- Adapters ---
 from app.adapters.messaging.redis_broker import RedisMessageBroker
 from app.adapters.persistence.filesystem_repo import FileSystemLexiconRepository
+from app.adapters.s3_repo import S3LanguageRepo
 from app.adapters.engines.gf_wrapper import GFGrammarEngine
-# We can optionally wire the Python engine as a fallback or alternative
-from app.adapters.engines.python_engine_wrapper import PythonGrammarEngine
+from app.adapters.engines.pidgin_runtime import PidginGrammarEngine
+from app.adapters.llm_adapter import GeminiAdapter
 
+# --- Use Cases ---
 from app.core.use_cases.generate_text import GenerateText
 from app.core.use_cases.build_language import BuildLanguage
 from app.core.use_cases.onboard_language_saga import OnboardLanguageSaga
@@ -15,44 +18,53 @@ from app.core.use_cases.onboard_language_saga import OnboardLanguageSaga
 class Container(containers.DeclarativeContainer):
     """
     Dependency Injection Container.
-    
-    This declarative container defines the assembly instructions for the application.
+    Acts as the "Switchboard" connecting Adapters to Use Cases.
     """
 
-    # 1. Configuration
-    # We load settings directly, but wrapping them allows overriding in tests.
-    config = providers.Configuration(pydantic_settings=[settings])
+    # 1. Wiring Configuration
+    # FIX: Added 'health' to the list so it gets injected properly
+    wiring_config = containers.WiringConfiguration(
+        modules=[
+            "app.adapters.api.routers.generation",
+            "app.adapters.api.routers.management",
+            "app.adapters.api.routers.languages",
+            "app.adapters.api.routers.health",
+            "app.adapters.api.dependencies",
+        ]
+    )
 
-    # 2. Gateways (Infrastructure Adapters)
+    # 2. Infrastructure Gateways
     
-    # Message Broker (Singleton: One connection pool shared)
-    message_broker = providers.Singleton(
-        RedisMessageBroker
-    )
+    # Message Broker
+    message_broker = providers.Singleton(RedisMessageBroker)
 
-    # Persistence (Singleton: One access point to files)
-    lexicon_repository = providers.Singleton(
-        FileSystemLexiconRepository
-    )
-
-    # Grammar Engine (Singleton: Loads the heavy PGF binary once)
-    # In a more complex setup, this could be a 'Selector' provider that chooses 
-    # between GF and Python based on a config flag.
-    grammar_engine = providers.Singleton(
-        GFGrammarEngine
-    )
+    # Persistence (Selector: S3 vs FileSystem)
+    if settings.STORAGE_BACKEND == "s3":
+        language_repo = providers.Singleton(S3LanguageRepo)
+    else:
+        language_repo = providers.Singleton(
+            FileSystemLexiconRepository, 
+            base_path=settings.FILESYSTEM_REPO_PATH
+        )
     
-    # Optional: Bronze-tier engine
-    # python_engine = providers.Singleton(PythonGrammarEngine)
+    # FIX: Create an alias so 'health.py' can find 'lexicon_repository'
+    lexicon_repository = language_repo
+
+    # Grammar Engine (Selector: GF vs Pidgin/Mock)
+    grammar_engine = providers.Selector(
+        settings.USE_MOCK_GRAMMAR,
+        true=providers.Singleton(PidginGrammarEngine),
+        false=providers.Singleton(GFGrammarEngine, lib_path=settings.GF_LIB_PATH),
+    )
+
+    # LLM Client (Gemini BYOK)
+    llm_client = providers.Singleton(GeminiAdapter)
 
     # 3. Use Cases (Application Logic)
     
-    # Factory: New instance created for every request (stateless logic),
-    # but with Singleton dependencies injected.
-    
     generate_text_use_case = providers.Factory(
         GenerateText,
-        grammar_engine=grammar_engine
+        grammar_engine=grammar_engine,
     )
 
     build_language_use_case = providers.Factory(
@@ -63,8 +75,8 @@ class Container(containers.DeclarativeContainer):
     onboard_language_saga = providers.Factory(
         OnboardLanguageSaga,
         broker=message_broker,
-        repo=lexicon_repository
+        repo=language_repo 
     )
 
-# Instantiate the container for global access (e.g. by FastAPI)
+# Global Container Instance
 container = Container()

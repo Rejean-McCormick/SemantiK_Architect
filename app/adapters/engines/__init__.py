@@ -1,4 +1,3 @@
-# app\adapters\engines\__init__.py
 """
 Grammar Engine Adapters.
 
@@ -10,7 +9,8 @@ different strategies:
 2. PidginGrammarEngine: The fallback/prototyping engine using pure Python string manipulation (Low Fidelity).
 """
 
-from .gf_runtime import GFGrammarEngine
+# FIX: Import from 'gf_wrapper', not 'gf_runtime'
+from .gf_wrapper import GFGrammarEngine
 from .pidgin_runtime import PidginGrammarEngine
 
 __all__ = [

@@ -24,17 +24,13 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # --- Security (Phase 1) ---
-    # Critical for locking down the compilation endpoint.
-    # In production, this should be a strong random string.
     API_SECRET: str = "change-me-for-production" 
     
     # --- Logging & Observability (Phase 4) ---
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"  # Options: 'console', 'json'
-    
-    # OpenTelemetry Configuration
     OTEL_SERVICE_NAME: str = "architect-backend"
-    OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str] = None # e.g., "http://jaeger:4317"
+    OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str] = None 
 
     # --- Messaging (Redis) ---
     REDIS_HOST: str = "localhost"
@@ -49,14 +45,14 @@ class Settings(BaseSettings):
 
     # --- External Services (Resilience) ---
     WIKIDATA_SPARQL_URL: str = "https://query.wikidata.org/sparql"
-    # Time in seconds before the Circuit Breaker considers a call failed
     WIKIDATA_TIMEOUT: int = 30
     
     # --- Persistence (Phase 2) ---
     STORAGE_BACKEND: StorageBackend = StorageBackend.FILESYSTEM
     
     # Filesystem Config
-    FILESYSTEM_REPO_PATH: str = "/app/data"
+    # Updated default to your WSL path so it works out of the box
+    FILESYSTEM_REPO_PATH: str = "/mnt/c/MyCode/AbstractWiki/grammars"
     
     # S3 Config (Optional - Active if STORAGE_BACKEND=s3)
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -66,6 +62,18 @@ class Settings(BaseSettings):
 
     # --- Worker Configuration ---
     WORKER_CONCURRENCY: int = 2
+
+    # --- FEATURE FLAGS & PATHS (CRITICAL FIX) ---
+    # These were missing in your snippet but required by container.py
+    
+    # Toggle between Real GF (False) or Python Mock (True)
+    USE_MOCK_GRAMMAR: bool = False 
+
+    # Path to the GF Runtime Library (RGL)
+    GF_LIB_PATH: str = "/mnt/c/MyCode/AbstractWiki/gf-rgl"
+
+    # Google Gemini API Key (Server Default)
+    GOOGLE_API_KEY: Optional[str] = None
 
     # Pydantic Config: Case-insensitive env var matching, ignores extras
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
