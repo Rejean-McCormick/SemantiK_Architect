@@ -1,68 +1,111 @@
+
 # 🌐 Abstract Wikipedia Alignment & Standards
 
-**Abstract Wiki Architect**
+**Abstract Wiki Architect v2.0**
 
 This document defines how the **Abstract Wiki Architect (AWA)** aligns with, diverges from, and integrates with the official technical standards of the **Abstract Wikipedia** project (Wikifunctions, Ninai, and Universal Dependencies).
 
 ---
 
-## 1. The Core Divergence: GF vs. Universal Dependencies
+## 1. The Core Divergence: Hybrid Linearization (GF + UD)
 
-The comment from the community correctly identifies that Wikidata often relies on **Universal Dependencies (UD)** for linguistic modeling. AWA, however, is built on the **Grammatical Framework (GF)**.
+The original Abstract Wikipedia architecture often relies heavily on **Universal Dependencies (UD)** for linguistic modeling (as seen in the `Udiron` project). AWA v1.0 was purely **Grammatical Framework (GF)** based.
 
-### Why we chose GF (The RGL Advantage)
-* **Generation First:** UD is primarily a *dependency* formalism designed for *parsing* (analyzing text). GF is a *constructive* formalism designed for *linearization* (generating text).
-* **The RGL:** The **Resource Grammar Library** provides us with 40+ languages where morphology (inflection) and syntax (word order) are *already solved*. To achieve the same in a UD-based system (like Udiron) often requires training statistical models or writing extensive manual linearizers.
-* **Determinism:** GF guarantees that if the abstract tree is valid, the output text is grammatical. This aligns with the "Verifiable correctness" goal of Abstract Wikipedia.
+In **v2.0**, we have bridged this gap by adopting a **Hybrid Linearization Strategy**.
 
-### Our UD Strategy
-We acknowledge UD as a standard.
-* **Future Interop:** We can implement a "UD Exporter" that converts our internal GF trees into CoNLL-U format for evaluation against UD treebanks.
+### 1.1 Tier 1: Generative Grammar (GF RGL)
+
+For high-resource languages (English, French, Hindi), we use the **GF Resource Grammar Library**.
+
+* **Why:** It handles complex morphology (case declension, gender agreement) perfectly using valid Abstract Syntax Trees.
+* **Alignment:** This provides the "Verifiable Correctness" required by the platform.
+
+### 1.2 Tier 3: Weighted Topology (Udiron Integration)
+
+For under-resourced languages (Zulu, Hausa), we have integrated the **Weighted Topology** approach from the `Udiron` codebase.
+
+* **Why:** Writing full generative grammars for 300 languages is too slow.
+* **Mechanism:** We use `data/config/topology_weights.json` to define relative weights for dependency roles (e.g., `subj=-10`, `obj=-5`, `root=0` for SOV).
+* **Alignment:** This aligns AWA's "Factory" tier directly with the community's preferred method for rapid language expansion.
+
+### 1.3 Evaluation: Universal Dependencies Export
+
+We acknowledge UD as the gold standard for *evaluation*.
+
+* **Feature:** AWA v2.0 supports `Accept: text/x-conllu`.
+* **Logic:** We implement **"Construction-Time Tagging."** Since we generate the sentence, we know exactly which word is the Subject. We map our internal RGL functions (`mkCl`) to UD tags (`nsubj`, `root`) using the **Frozen Ledger** mapping.
+* **Result:** AWA output can be validated against standard UD treebanks.
 
 ---
 
-## 2. Ninai & The Semantic Frame
+## 2. Ninai Protocol Integration
 
-**Ninai** is an experimental abstract notation for constructors in Abstract Wikipedia.
-* *Ninai Example:* `(cons "and" "Q1" "Q2")`
+**Ninai** is the abstract notation used by Abstract Wikipedia to represent meaning.
 
-AWA uses **Semantic Frames** (Python Dataclasses) as its internal abstract representation.
-* *AWA Example:* `{"frame": "bio", "name": "Q1", "prof": "Q2"}`
+* *Legacy Assumption:* LISP-like S-expressions.
+* *Code Reality:* Recursive JSON Object Trees (Constructors).
 
-### The Bridge
-AWA is designed to be a **Renderer Implementation** for Ninai.
-1.  **Input:** AWA accepts a high-level intent.
-2.  **Mapping:** A simple adapter layer can convert Ninai S-expressions into AWA `BioFrames`.
-3.  **Output:** AWA returns the text.
+### 2.1 The Bridge (`NinaiAdapter`)
 
-We view Ninai as the *wire format* (how data is sent) and AWA as the *execution engine* (how data is processed).
+AWA is designed to be a native **Renderer Implementation** for Ninai.
+
+* **Input:** We accept the recursive JSON structure natively.
+* **Mapping:** The `app/adapters/ninai.py` module recursively walks the Ninai tree and flattens it into AWA's internal `BioFrame` or `EventFrame`.
+
+### 2.2 Constructor Mapping
+
+We map Ninai constructors to AWA logic:
+
+| Ninai Constructor | AWA Component |
+| --- | --- |
+| `ninai.constructors.Statement` | `BioFrame` (Root Intent) |
+| `ninai.constructors.List` | Recursive Flattening Logic |
+| `ninai.constructors.Entity` | `DiscourseEntity` (QID Lookup) |
+| `ninai.types.Bio` | `frame_type="bio"` |
+
+We view Ninai as the *wire format* (Z7) and AWA as the *execution engine* (Z1).
 
 ---
 
 ## 3. Z-Object Integration (Wikifunctions)
 
-In the Wikifunctions ecosystem, functions and types are assigned **Z-IDs** (e.g., `Z100` for a function).
+In the Wikifunctions ecosystem, functions and types are assigned **Z-IDs**. AWA's architecture is "Z-Ready" by design.
 
-### Current Mapping
-AWA's architecture is "Z-Ready" by design:
+### 3.1 Component Mapping
 
-| AWA Component | Wikifunctions Equivalent | Mapping Strategy |
-| :--- | :--- | :--- |
-| **Family Engine** (`RomanceEngine`) | **Z-Implementation** | The Python code can be wrapped as a Z-Function implementation. |
-| **Lexicon Entry** (`people.json`) | **Z-Object (Type)** | Words can be mapped to Z-IDs (e.g., `physicist` -> `Z_Physicist`). |
-| **Matrix Config** (`por.json`) | **Z-Configuration** | The JSON config can be stored as a Z-Object. |
+| AWA Component | Wikifunctions Concept | Integration Strategy |
+| --- | --- | --- |
+| **Family Engine** (`RomanceEngine`) | **Z-Implementation** | Python code wrapped as a Z-Function. |
+| **Lexicon Entry** (`people.json`) | **Z-Object (Type)** | Mapped to `Z_Physicist` or Wikidata QIDs. |
+| **Matrix Config** (`por.json`) | **Z-Configuration** | Stored as a JSON Z-Object. |
+| **The Architect Agent** | **Z-Bot** | An automated contributor bot. |
 
-### Immediate Roadmap
-We treat **Wikidata QIDs** (e.g., `Q42`) as the source of truth for entity grounding, which is fully compatible with the current state of Wikifunctions.
+### 3.2 Entity Grounding
+
+We utilize **Wikidata QIDs** (e.g., `Q42`) as the source of truth. The `NinaiAdapter` expects these QIDs in the `Entity` constructor arguments.
 
 ---
 
-## 4. Addressing "Vibe-Coding" (Rigorous Engineering)
+## 4. Discourse & Coherence
 
-To ensure this project is not seen as "vibe-coded" (improvisational), we enforce:
-1.  **Hexagonal Architecture:** Strict isolation of domain logic.
-2.  **Everything Matrix:** Auditable, data-driven build system.
-3.  **Two-Phase Compilation:** Solving the PGF linking bug deterministically.
-4.  **Unit Testing:** `test_gf_dynamic.py` ensures regression testing across all 50+ languages.
+Abstract Wikipedia aims to generate **Articles**, not just sentences. AWA v2.0 addresses this via the **Discourse Planner**.
+
+### 4.1 Centering Theory
+
+We implement a simplified version of Centering Theory to handle **Pronominalization**.
+
+* **Standard:** If an entity is the "Backward-Looking Center" () of the previous utterance, it should be pronominalized.
+* **Implementation:** The `SessionContext` in Redis tracks the current focus. If the incoming Ninai frame references the same QID, AWA renders "She/He" instead of the name.
+
+---
+
+## 5. Addressing "Vibe-Coding" (Rigorous Engineering)
+
+To ensure this project is robust enough for the Wikimedia ecosystem, we enforce:
+
+1. **Hexagonal Architecture:** Strict isolation of domain logic from the Ninai/UD adapters.
+2. **Gold Standard QA:** We ingest the `Udiron` test suite (`tests.json`) to validate our outputs against community-verified strings.
+3. **Two-Phase Compilation:** Solving the PGF linking bug deterministically.
+4. **Self-Healing CI/CD:** The **Surgeon** and **Architect** agents automatically repair broken grammars, ensuring the build pipeline is resilient.
 
 We invite the community to review `docs/01-ENGINE_ARCHITECTURE.md` for a deep dive into these engineering standards.

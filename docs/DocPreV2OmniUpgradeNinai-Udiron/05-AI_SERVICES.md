@@ -1,6 +1,6 @@
 # 🧠 AI Services & Autonomous Agents
 
-**Abstract Wiki Architect v2.0**
+**Abstract Wiki Architect**
 
 ## 1. Overview
 
@@ -13,16 +13,15 @@ These agents are encapsulated in the `ai_services/` package and interact with th
 
 ---
 
-## 2. The Four Personas
+## 2. The Three Personas
 
-The architecture delegates responsibilities to four distinct AI agents.
+The architecture delegates responsibilities to three distinct AI agents.
 
 | Agent | Persona | Role | Trigger Event |
 | --- | --- | --- | --- |
 | **The Lexicographer** | *Data Generator* | Bootstraps dictionaries (`core.json`, `people.json`) for new languages. | `build_index.py` detects `lex_seed < 3`. |
-| **The Architect** | *The Builder* | **[NEW]** Generates entire concrete grammars from scratch for "Factory" (Tier 3) languages. | `build_orchestrator.py` detects a missing language file. |
 | **The Surgeon** | *Code Fixer* | Surgically patches broken `.gf` source files based on compiler error logs. | `build_orchestrator.py` detects a compilation failure. |
-| **The Judge** | *QA Expert* | Grades the naturalness of the generated text against "Gold Standard" reference sentences. | Scheduled CI/CD or `test_gf_dynamic.py`. |
+| **The Judge** | *QA Expert* | Grades the naturalness of the generated text against "Gold Standard" reference sentences. | `test_gf_dynamic.py` runs a regression test. |
 
 ---
 
@@ -34,11 +33,9 @@ All AI logic is centralized to ensure consistent API handling and rate limiting.
 ai_services/
 ├── __init__.py           # Exports the agents
 ├── client.py             # Central Gemini Client (Auth, Rate Limiting, Backoff)
-├── prompts.py            # [NEW] Frozen System Prompts (Source of Truth)
 ├── lexicographer.py      # Logic for seeding dictionaries
-├── architect.py          # Logic for Generative Grammar Creation
 ├── surgeon.py            # Logic for Self-Healing build
-└── judge.py              # Logic for QA & Auto-Ticketing
+└── judge.py              # Logic for Linguistic QA
 
 ```
 
@@ -47,7 +44,6 @@ The client requires the following `env` variables (configured in `app/shared/con
 
 * `GOOGLE_API_KEY`: Your Gemini API Key.
 * `AI_MODEL_NAME`: Defaults to `gemini-1.5-pro` (Reasoning optimized).
-* `GITHUB_TOKEN`: Required for The Judge to open issues.
 
 ---
 
@@ -64,23 +60,11 @@ The client requires the following `env` variables (configured in `app/shared/con
 3. **Generation:** It asks the LLM to generate the JSON entries, including morphological features (e.g., *Zulu noun class prefixes*).
 4. **Output:** Writes `data/lexicon/zul/core.json`.
 
-### B. The Architect (`architect.py`) [NEW]
+**Example Prompt:**
 
-**Goal:** Automate the creation of Tier 3 (Factory) grammars.
+> "Act as an expert Zulu linguist. Generate a JSON lexicon entry for the word 'water'. Include part of speech and noun class."
 
-**Workflow:**
-
-1. **Trigger:** `build_orchestrator.py` finds a language in the Matrix (e.g., `WikiHau.gf`) that does not exist on disk.
-2. **Prompting:** It loads the **Frozen System Prompt** from `prompts.py` to ensure non-chatty, code-only output.
-3. **Constraint:** The prompt includes the **Weighted Topology** (SVO/SOV) from `topology_weights.json`.
-4. **Generation:** The LLM writes the full `concrete WikiHau of AbstractWiki = ...` file.
-5. **Output:** Saves to `generated/src/`.
-
-**System Prompt (Snippet):**
-
-> "You are the Abstract Wiki Architect. Output ONLY raw GF code. Do not use Markdown blocks. Implement the 'AbstractWiki' interface using standard RGL modules (Syntax, Paradigms)."
-
-### C. The Surgeon (`surgeon.py`)
+### B. The Surgeon (`surgeon.py`)
 
 **Goal:** The "Self-Healing" Pipeline.
 
@@ -89,28 +73,27 @@ The client requires the following `env` variables (configured in `app/shared/con
 1. **Trigger:** `build_orchestrator.py` fails to compile `WikiZul.gf`.
 2. **Analysis:** The Surgeon reads the error log (`Error: variable 'mkN' not found`) and the broken source code.
 3. **Patching:** It rewrites the GF code to fix the specific error (e.g., changing `mkN` to `mkN0`).
-4. **Verification:** The build is retried (Max 3 attempts).
+4. **Verification:** The build is retried.
 
-### D. The Judge (`judge.py`)
+### C. The Judge (`judge.py`)
 
 **Goal:** Quality Assurance beyond "It compiles."
 
 **Workflow:**
 
-1. **Trigger:** The `test_gf_dynamic.py` script runs a regression test.
-2. **Reference:** It loads the **Gold Standard** dataset from `data/tests/gold_standard.json` (migrated from Udiron).
-3. **Comparison:** It compares the AWA generation against the ground truth.
-4. **Action:**
-* **Pass:** `similarity > 0.8`.
-* **Fail:** `similarity < 0.8`.
+1. **Trigger:** The `test_gf_dynamic.py` script generates a sentence: *"Shaka is a warrior."*
+2. **Evaluation:** The Judge compares this against the internal logic or a "Gold Standard" translation.
+3. **Scoring:** It returns a JSON verdict:
+```json
+{
+  "valid": true,
+  "score": 9,
+  "critique": "Grammatically correct, but 'warrior' could be more specific."
+}
+
+```
 
 
-5. **Whistleblowing:** If it fails with high confidence, it calls the GitHub API to open an issue automatically.
-
-**Issue Template:**
-
-> **Title:** `[QA] Poor Quality: {Lang} - {Frame}`
-> **Body:** "Expected 'Shaka is a warrior', got 'Me Shaka warrior'. Confidence: 95%."
 
 ---
 
@@ -118,30 +101,28 @@ The client requires the following `env` variables (configured in `app/shared/con
 
 ### Build Pipeline Integration
 
-The **Architect** and **Surgeon** are hooked directly into `gf/build_orchestrator.py`:
+The **Surgeon** is hooked directly into `gf/build_orchestrator.py`:
 
 ```python
 # Pseudo-code example of the hook
-if not file_exists(path):
-    print("🏗️  Calling The Architect...")
-    architect.generate_grammar(lang)
-
-if not compile_success:
+if not success:
     print("🚑 Build Failed. Calling The Surgeon...")
-    fixed_code = surgeon.attempt_repair(source_code, error_log)
+    from ai_services.surgeon import attempt_repair
+    
+    fixed_code = attempt_repair(source_code, error_log)
     if fixed_code:
         write_file(path, fixed_code)
         # Retry compilation...
 
 ```
 
-### CI/CD Integration
+### Data Pipeline Integration
 
-The **Judge** is triggered via the test runner:
+The **Lexicographer** is triggered manually or by the `build_index.py` audit:
 
 ```bash
-# Runs the full regression suite using the Judge Agent
-python -m pytest tests/integration/test_quality.py --use-judge
+# Manual Trigger
+python -m ai_services.lexicographer --lang=zul --domain=core
 
 ```
 
@@ -159,4 +140,5 @@ The `client.py` module implements a robust **Exponential Backoff** strategy to h
 
 ## 7. Future Roadmap
 
-* **Learned Micro-Planning:** Using the LLM to rewrite frame parameters (e.g., synonyms) for stylistic variation *before* rendering.
+* **The Architect Agent:** A higher-level agent capable of writing entire `GrammarX.gf` files from scratch for new languages, effectively automating the "Factory" tier.
+* **Interactive QA:** A feedback loop where the **Judge** automatically opens GitHub Issues for low-scoring languages.

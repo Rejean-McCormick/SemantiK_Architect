@@ -1,8 +1,6 @@
-
-
 # 📜 Decision Log & Architecture Records
 
-**Abstract Wiki Architect**
+**Abstract Wiki Architect v2.0**
 
 This document records the **key architectural choices** behind the Abstract Wiki Architect and the alternatives that were considered. It is meant to be a concise "Why we did it this way" reference for reviewers and future contributors.
 
@@ -10,178 +8,141 @@ This document records the **key architectural choices** behind the Abstract Wiki
 
 ## 1. Overall System Shape
 
-### Decision: Router  Family Engine  Constructions  Morphology  Lexicon
+### Decision: Hexagonal Architecture (Ports & Adapters)
 
 **The Context**
-NLG systems can be built as monoliths (hardcoded strings) or as pipelines. We needed a structure that could handle 300+ languages without 300x code duplication.
+NLG systems can be built as monoliths or pipelines. We needed a structure that could handle 300+ languages and integrate with external AI agents and standards (Ninai, UD) without tight coupling.
 
 **The Decision**
-We adopted a **Hexagonal, Pipeline-based Architecture**:
+We adopted a **Hexagonal Architecture**:
 
-1. **Router:** Selects the correct engine based on the language request.
-2. **Constructions:** Selects the sentence pattern (e.g., "Equative Clause").
-3. **Family Engine:** Applies broad typological rules (e.g., "Romance Adjective Agreement").
-4. **Morphology:** Handles specific inflection (e.g., "French plural 's' vs 'x'").
-5. **Lexicon:** Injects the raw vocabulary.
+1. **Core Domain:** Pure Python logic (`BioFrame`, `GrammarEngine`).
+2. **Input Ports:** `NinaiAdapter` (JSON Trees) and `API` (HTTP).
+3. **Output Ports:** `UDMapping` (CoNLL-U) and `TextRenderer`.
+4. **Adapters:** Redis (State), GF Runtime (C-Bindings), Gemini (AI).
 
 **Why we chose this**
 
-* **Reuse:** Family engines allow us to write the logic for "Adjective Agreement" once for the entire Romance family (French, Spanish, Italian, Portuguese) rather than 4 times.
-* **Modularity:** Lexicon changes do not break grammar rules.
+* **Interoperability:** We can swap the input format from our internal JSON to the **Ninai Protocol** without touching the core linguistic logic.
+* **Testing:** We can test the Core Domain without spinning up the C-runtime or Redis.
 
 ---
 
-## 2. Family Engines Instead of Language-Specific Engines
+## 2. Input Protocol
 
-### Decision: ~15 Family Engines (Romance, Germanic, Bantu...)
+### Decision: Adopting Ninai (Recursive Objects) vs. Flat JSON
 
 **The Context**
-We considered writing a `FrenchEngine`, `EnglishEngine`, `ZuluEngine`, etc.
+v1.0 used a flat `BioFrame`. Abstract Wikipedia uses **Ninai**, a recursive LISP-like object structure (Constructors).
 
 **The Decision**
-We implemented **Family-Level Engines** (e.g., `RomanceEngine`) that read configuration files for specific languages.
+We built the **Ninai Bridge (`app/adapters/ninai.py`)** to transform recursive Ninai objects into our flat internal frames, rather than rewriting the entire engine to work natively on trees.
 
 **Why we chose this**
 
-* **Typology:** Languages within a family share 80-90% of their structural logic.
-* **Maintenance:** Fixing a bug in the `RomanceEngine` fixes it for 5+ languages simultaneously.
-* **Scale:** Managing 15 files is feasible; managing 300 is not.
+* **Standardization:** Allows AWA to function as a compliant renderer for the Abstract Wikipedia ecosystem.
+* **Stability:** Keeps our internal domain logic simple (flat) while supporting complex external inputs (trees).
 
 ---
 
-## 3. The "Everything Matrix" (Data-Driven Build)
+## 3. Tier 3 Linearization (The Factory)
 
-### Decision: Dynamic System Scanning instead of Static Config
+### Decision: Weighted Topology (Udiron) vs. Hardcoded Templates
 
 **The Context**
-Initially, we hardcoded the list of supported languages (`LANGS = [...]`). As the number of languages grew, this became unmanageable and prone to "drift" (config saying a language exists when it doesn't).
+In v1.0, the "Factory" generated hardcoded `SVO` string concatenation. This produced grammatically incorrect output for SOV languages (Japanese) or VSO (Irish). Writing custom code for each was unscalable.
 
 **The Decision**
-We built the **Everything Matrix** (`data/indices/everything_matrix.json`), a dynamic registry populated by scanning the filesystem before every build.
+We adopted **Weighted Topology Sorting** (adapted from the **Udiron** project). We assign relative integer weights to dependency roles (e.g., `subj=-10`, `obj=-5`, `verb=0` for SOV) and sort them at runtime.
 
 **Why we chose this**
 
-* **Truth:** The build system never lies. If the file isn't on disk, the Matrix marks the language as `BROKEN` or `MISSING`.
-
-
-* 
-**Automation:** Adding a new language is as simple as adding the files; the scanner detects and registers it automatically.
-
-
+* **Zero-Code Config:** We can support *any* word order (OVS, VOS, etc.) just by editing `topology_weights.json`.
+* **Simplicity:** The factory logic remains generic; only the weights change per language.
 
 ---
 
-## 4. The "Two-Phase" Build Pipeline
+## 4. Evaluation Standard
 
-### Decision: Verify-then-Link (Solving "Last Man Standing")
+### Decision: Construction-Time Tagging (UD) vs. Post-Hoc Parsing
 
 **The Context**
-We discovered a critical bug in the Grammatical Framework (GF) compiler: running `gf -make` in a loop overwrites the binary, meaning the final `.pgf` file only contained the last language processed.
+To prove our output is "good," we need to evaluate it. Running a 3rd-party dependency parser on our output is slow and error-prone (parsing is guessing).
 
 **The Decision**
-We implemented a strict **Two-Phase Build**:
-
-1. 
-**Phase 1 (Verify):** Run `gf -c -batch` for each language to generate intermediate object files (`.gfo`) and verify correctness.
-
-
-2. 
-**Phase 2 (Link):** Run a *single* `gf -make` command containing *all* valid languages to link them into one binary.
-
-
+We implemented **Construction-Time Tagging**. Since we *build* the sentence using specific functions (`mkCl`, `mkNP`), we know exactly what is a Subject and what is an Object. We map these intents directly to **Universal Dependencies (CoNLL-U)** tags.
 
 **Why we chose this**
 
-* 
-**Correctness:** It is the only way to produce a multi-lingual PGF binary.
-
-
-* 
-**Resilience:** If one language fails verification, it is excluded from the final Link command, preventing the entire build from crashing.
-
-
+* **Accuracy:** 100% accurate tagging because it is based on the generator's intent, not a parser's guess.
+* **Speed:** Zero runtime overhead compared to loading a Neural Parser.
 
 ---
 
-## 5. Usage-Based Lexicon Sharding
+## 5. State Management
 
-### Decision: Domain Shards (`core.json`, `people.json`) vs. Monolith
+### Decision: Redis Session Store vs. Stateless Requests
 
 **The Context**
-Loading a massive dictionary into memory for every request is slow and wasteful. Most requests only need specific words.
+Generating isolated sentences leads to repetition ("Marie Curie is X. Marie Curie is Y."). We needed to implement **Pronominalization** (using "She").
 
 **The Decision**
-We split the lexicon into semantic domains:
-
-* `core.json`: Functional words (always loaded).
-* `people.json`: Biographical terms (loaded for `BioFrame`).
-* `science.json`: Scientific terms (loaded on demand).
+We introduced **Redis** to store a `SessionContext` (ID + History). The **Discourse Planner** checks this context to decide whether to render a Name or a Pronoun.
 
 **Why we chose this**
 
-* **Performance:** Reduced memory footprint and faster startup times.
-* **Organization:** Easier for humans (and AI agents) to manage smaller, focused files.
+* **Performance:** Redis is sub-millisecond, essential for a real-time NLG API.
+* **Decoupling:** The renderer doesn't need to know *why* it's rendering "She," just that the context dictates it.
 
 ---
 
-## 6. Hybrid Factory Architecture
+## 6. The "Everything Matrix" (Data-Driven Build)
 
-### Decision: "Pidgin" Fallback for Missing Languages
+### Decision: Dynamic System Scanning vs. Static Config
 
 **The Context**
-The official GF Resource Grammar Library (RGL) only covers ~40 languages. We need 300+. Manual implementation of the remaining 260 is impossible with current resources.
+Hardcoding `LANGS = ['eng', 'fra']` leads to configuration drift.
 
 **The Decision**
-We adopted a **Tiered System**:
-
-* **Tier 1 (High Road):** Use RGL where available.
-* **Tier 3 (Factory):** Auto-generate simplified "Pidgin" (SVO) grammars for the rest to ensure 100% API coverage.
+We built the **Everything Matrix**, a dynamic registry populated by scanning the filesystem before every build.
 
 **Why we chose this**
 
-* **Availability:** Better to have a simplified output ("Shaka is warrior") than a 404 Error.
-* **Evolution:** We can incrementally upgrade a Tier 3 language to Tier 1 without changing the API contract.
+* **Truth:** The build system never lies. If the file isn't on disk, the Matrix marks it `BROKEN`.
+* **Automation:** Adding a language is as simple as adding the files; the scanner auto-registers it.
 
 ---
 
 ## 7. AI Services Integration
 
-### Decision: "Surgeon" and "Judge" Agents
+### Decision: "The Architect" & "The Judge" Agents
 
 **The Context**
-Rule-based systems are brittle. A single missing semicolon breaks the build. A missing word crashes the renderer.
+
+* **Problem A:** Writing grammar files for 300 languages is too much work.
+* **Problem B:** We can't manually verify quality for 300 languages.
 
 **The Decision**
-We integrated **Gemini-powered Agents**:
+We integrated specialized AI Agents:
 
-* **The Surgeon:** Reads compiler logs and patches broken code.
-* **The Lexicographer:** Generates missing vocabulary entries.
+* **The Architect:** Generates the `.gf` code for Tier 3 languages using the **Frozen System Prompt**.
+* **The Judge:** Validates output against **Gold Standard** data and auto-files GitHub issues.
 
 **Why we chose this**
 
-* **Resilience:** The system can "Self-Heal" minor errors, reducing developer intervention.
-* **Speed:** AI can generate boilerplate lexicon files much faster than humans.
+* **Scale:** AI acts as a force multiplier, writing code and checking quality faster than humans.
+* **Consistency:** The System Prompt ensures the AI writes deterministic GF code, not chatty markdown.
 
 ---
 
 ## 8. Summary
 
-The key design choices are:
+The key design choices defining v2.0 are:
 
-1. 
-**Hexagonal Architecture** for code modularity.
+1. **Hexagonal Architecture:** For Ninai/UD interoperability.
+2. **Weighted Topology:** For solving the "Word Order" problem without code.
+3. **Redis Context:** For Discourse Planning (Pronouns).
+4. **Hybrid Factory:** Combining RGL (Expert) and AI Architect (Automated).
+5. **Construction-Time Tagging:** For reliable evaluation.
 
-
-2. **Family Engines** for linguistic efficiency.
-3. 
-**Data-Driven Build (The Matrix)** for reliability.
-
-
-4. 
-**Two-Phase Compilation** to solve the PGF linking bug.
-
-
-5. **Sharded Lexicons** for performance.
-6. **Hybrid Factory** for 100% language coverage.
-
-Together, these choices create a system that is **scalable, robust, and autonomous**.
+Together, these choices create a system that is **scalable (300+ languages), interoperable (Standard Protocols), and autonomous (AI-Driven)**.

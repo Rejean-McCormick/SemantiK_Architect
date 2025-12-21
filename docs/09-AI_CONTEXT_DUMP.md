@@ -1,22 +1,27 @@
-# SYSTEM CONTEXT: Abstract Wiki Architect
+# SYSTEM CONTEXT: Abstract Wiki Architect v2.0 ("Omni-Upgrade")
 # ==============================================================================
 # INSTRUCTIONS FOR AI:
 # You are acting as the Lead Architect for the "Abstract Wiki Architect" project.
-# This is a Python-based NLG (Natural Language Generation) engine using the
-# Grammatical Framework (GF) via C-bindings. The system is deployed in a Hybrid
-# Environment (Windows Host / WSL 2 Runtime).
+# This is a Hybrid Neuro-Symbolic NLG Engine combining:
+#   1. Grammatical Framework (GF) -> Deterministic Rule-Based Core.
+#   2. Ninai Protocol -> Recursive Abstract Syntax Input.
+#   3. AI Agents (LLMs) -> Autonomous Code Repair & Grammar Generation.
 #
 # REFERENCE THIS CONTEXT FOR ALL FUTURE RESPONSES.
 # ==============================================================================
 
 # 1. CORE ARCHITECTURE
 # ------------------------------------------------------------------------------
-# STYLE: Hexagonal Architecture (Ports & Adapters). Domain logic is isolated.
+# STYLE: Hexagonal Architecture (Ports & Adapters).
+# INPUT PORTS:
+#   - Semantic Frame (Internal Flat JSON).
+#   - Ninai Protocol (External Recursive JSON Object Tree).
 # ENGINE: Hybrid Factory.
 #   - Tier 1: RGL (Resource Grammar Library) -> High Quality (Expert).
-#   - Tier 3: Factory (Generated) -> Pidgin Quality (Automated SVO).
-# PIPELINE: Two-Phase Build (Verify -c -> Link -make) to resolve PGF overwrites.
-# DATA: Usage-Based Sharding (lexicon/{lang}/{domain}.json).
+#   - Tier 3: Weighted Topology (Udiron-based) -> Automated Linearization.
+# STATE: Redis-backed "Discourse Planner" (SessionContext) for Pronominalization.
+# OUTPUT PORTS: Text (String) and Universal Dependencies (CoNLL-U).
+# PIPELINE: Two-Phase Build (Verify -> Link) + Architect Agent Repair Loop.
 
 # 2. FILE SYSTEM & PATHS (Hybrid WSL)
 # ------------------------------------------------------------------------------
@@ -27,45 +32,56 @@
 # KEY DIRECTORIES:
 #   gf/                     -> Build artifacts (AbstractWiki.pgf) & Orchestrator.
 #   gf-rgl/src/             -> Tier 1 Source (External submodule).
-#   generated/src/          -> Tier 3 Source (Auto-generated).
+#   generated/src/          -> Tier 3 Source (AI/Factory generated).
 #   data/indices/           -> "Everything Matrix" (System Registry).
 #   data/lexicon/{iso}/     -> Vocabulary shards (core.json, people.json).
-#   tools/everything_matrix/ -> Audit scripts (build_index.py, rgl_auditor.py).
-#   app/                    -> Application code (FastAPI, Worker).
+#   data/config/            -> Topology Weights (SVO/SOV definitions).
+#   data/tests/             -> Gold Standard QA Data (migrated from Udiron).
+#   app/adapters/           -> Ninai Bridge, API, Redis Bus.
+#   ai_services/            -> Autonomous Agents (Architect, Judge, Surgeon).
 
 # 3. CRITICAL FILES & SCRIPTS
 # ------------------------------------------------------------------------------
-# BUILDER:    gf/build_orchestrator.py
-#             (Implements Two-Phase Verify->Link logic. NEVER use raw 'gf -make' loop).
-# AUDITOR:    tools/everything_matrix/build_index.py
-#             (Scans FS, updates everything_matrix.json. Must run before build).
-# WORKER:     app/workers/worker.py
-#             (Async ARQ worker. Watches 'AbstractWiki.pgf' for Hot-Reload).
-# CONFIG:     app/shared/config.py
-#             (Single Source of Truth. Defines AWS_BUCKET, REDIS_HOST, PGF_PATH).
+# BUILDER:     gf/build_orchestrator.py
+#              (Runs Verify->Link loop. Triggers 'Architect Agent' on failure).
+# FACTORY:     utils/grammar_factory.py
+#              (Implements Weighted Topology sorting for Tier 3).
+# AUDITOR:     tools/everything_matrix/build_index.py
+#              (Scans FS, updates everything_matrix.json).
+# NINAI:       app/adapters/ninai.py
+#              (Recursive JSON parser for Ninai Object Model).
+# MAPPING:     app/core/exporters/ud_mapping.py
+#              (Frozen Dictionary mapping RGL functions to UD Tags).
+# QA:          ai_services/judge.py
+#              (Validates output against 'gold_standard.json').
 
 # 4. DATA CONTRACTS (JSON SCHEMAS)
 # ------------------------------------------------------------------------------
-# SEMANTIC FRAME (Input):
-#   { "frame_type": "bio", "name": "X", "profession": "Y", "nationality": "Z" }
+# NINAI INPUT (Recursive):
+#   { "function": "ninai.constructors.Statement", "args": [...] }
 #
-# LEXICON ENTRY (Data):
-#   "physicist": { "pos": "NOUN", "gender": "m", "qid": "Q169470", "forms": {...} }
+# SEMANTIC FRAME (Internal):
+#   { "frame_type": "bio", "name": "X", "profession": "Y", "context_id": "UUID" }
 #
-# EVERYTHING MATRIX (Registry):
-#   "fra": { "meta": { "tier": 1 }, "status": { "build_strategy": "HIGH_ROAD" } }
+# SESSION CONTEXT (Redis):
+#   { "session_id": "UUID", "current_focus": { "qid": "Q1", "gender": "f" } }
+#
+# TOPOLOGY WEIGHTS (Config):
+#   { "SOV": { "nsubj": -10, "obj": -5, "root": 0 } }
 
 # 5. ENVIRONMENT VARIABLES (.env)
 # ------------------------------------------------------------------------------
 # APP_ENV=development
-# FILESYSTEM_REPO_PATH=/app             # Docker Path (Crucial for Volume Sync)
-# GF_LIB_PATH=/mnt/c/.../gf-rgl         # Path to RGL source
-# REDIS_HOST=redis                      # Docker Service Name
-# WORKER_CONCURRENCY=2
+# REDIS_URL=redis://redis:6379/0          # Replaces old REDIS_HOST
+# SESSION_TTL_SEC=600                     # Context duration
+# GITHUB_TOKEN=ghp_...                    # For Judge Agent Auto-Ticketing
+# GOOGLE_API_KEY=AIza...                  # For Architect/Surgeon Agents
+# REPO_URL=https://github.com/...         # Target for Issue Creation
 
 # 6. KNOWN CONSTRAINTS & RULES
 # ------------------------------------------------------------------------------
-# 1. NO WINDOWS RUNTIME: The backend MUST run in WSL/Linux (libpgf dependency).
-# 2. NO STATIC CONFIG: Languages are detected via 'build_index.py', not hardcoded lists.
-# 3. HOT RELOAD: The Worker does not restart on build; it reloads the memory pointer.
-# 4. LAST MAN STANDING BUG: 'gf -make' overwrites binaries. Use Orchestrator.
+# 1. NO WINDOWS RUNTIME: Backend MUST run in WSL/Linux (libpgf dependency).
+# 2. VARIABLE LEDGER: Use strict variable names from 'docs/14-VAR_FIX_LEDGER.md'.
+# 3. FROZEN PROMPTS: Do not invent LLM prompts. Use 'ai_services/prompts.py'.
+# 4. NINAI PROTOCOL: Input is Object-Based (JSON), NOT Lisp-String based.
+# 5. NO HARDCODED GRAMMAR: Use 'topology_weights.json' for word order.

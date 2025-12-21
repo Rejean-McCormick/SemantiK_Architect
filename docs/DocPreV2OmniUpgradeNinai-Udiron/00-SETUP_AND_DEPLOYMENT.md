@@ -1,14 +1,14 @@
 
 # 🛠️ Setup & Deployment Guide
 
-**Abstract Wiki Architect v2.0**
+**Abstract Wiki Architect**
 
 This guide covers the installation, configuration, and deployment of the Abstract Wiki Architect. Because the core engine depends on the **Grammatical Framework (GF)** C-libraries (`libpgf`), the backend **must run in a Linux environment**.
 
 For developers on Windows, we utilize a **Hybrid Architecture**:
 
 1. **Windows 11:** Source code editing (VS Code), Git operations, Frontend execution.
-2. **WSL 2 (Ubuntu):** Backend execution, Python environment, Redis, and GF compilation.
+2. **WSL 2 (Ubuntu):** Backend execution, Python environment, and GF compilation.
 
 ---
 
@@ -37,11 +37,9 @@ To prevent "Path not found" errors, you must understand the mapping between Wind
 /mnt/c/MyCode/AbstractWiki/
 ├── abstract-wiki-architect/      <-- [REPO ROOT] This repository
 │   ├── .env                      <-- Env variables (Shared)
-│   ├── data/                     <-- [NEW] v2.0 Data Assets
-│   │   ├── config/               <-- topology_weights.json (Udiron)
-│   │   └── tests/                <-- gold_standard.json (QA)
 │   ├── gf/                       <-- Compilation Artifacts
 │   │   └── AbstractWiki.pgf      <-- The Binary (Generated)
+│   ├── docker/                   <-- Container configurations
 │   └── ...
 └── gf-rgl/                       <-- [EXTERNAL] GF Resource Grammar Library
     └── src/                      <-- RGL Source files (French, English, etc.)
@@ -140,7 +138,6 @@ pip install -r requirements.txt
 ## 5. Configuration (`.env`)
 
 Create a `.env` file in the project root. This configures the paths and services.
-**Note:** v2.0 uses `REDIS_URL` instead of separate host/port variables.
 
 **File:** `.env`
 
@@ -159,23 +156,19 @@ FILESYSTEM_REPO_PATH=/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect
 # --- Grammar Engine ---
 # Points to the sibling directory we cloned in Step 3
 GF_LIB_PATH=/mnt/c/MyCode/AbstractWiki/gf-rgl
-PGF_PATH=/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/AbstractWiki.pgf
 
-# --- Messaging & State (Redis) ---
-# When running locally with Docker Redis, use localhost.
-# In Docker Compose, this will be overridden to 'redis://redis:6379/0'
-REDIS_URL=redis://localhost:6379/0
-SESSION_TTL_SEC=600
+# --- Messaging (Redis) ---
+# When running locally with Docker Redis, use localhost
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_QUEUE_NAME=architect_tasks
 
 # --- Worker ---
 WORKER_CONCURRENCY=2
 
-# --- v2.0 AI & DevOps Services ---
-# Required for "Architect Agent" (Grammar Gen) and "Judge Agent" (QA)
-GITHUB_TOKEN=your_github_pat_token
-REPO_URL=https://github.com/your-org/abstract-wiki-architect
-GOOGLE_API_KEY=your_gemini_api_key
-AI_MODEL_NAME=gemini-1.5-pro
+# --- Optional: AI Services ---
+# GOOGLE_API_KEY=your-gemini-key
 
 ```
 
@@ -270,6 +263,15 @@ You should see:
 * `aw_redis`: Port 6379
 * `aw_frontend`: Port 3000
 
+### 3. Trigger a Rebuild (Manual)
+
+If you change code, you usually just need to restart the specific container due to volume mounting.
+
+```bash
+docker-compose restart backend worker
+
+```
+
 ---
 
 ## 8. Troubleshooting
@@ -286,21 +288,26 @@ You should see:
 
 ### "Redis Connection Refused"
 
-* **Cause:** Incorrect `REDIS_URL`.
-* **Fix:** In Hybrid Mode, ensure `.env` has `redis://localhost:6379/0`. In Docker, it should be `redis://redis:6379/0`.
+* **Context:** Running **Hybrid Mode**.
+* **Fix:** Ensure `REDIS_HOST=localhost` in `.env`.
+* **Context:** Running **Docker Mode**.
+* **Fix:** Ensure `REDIS_HOST=redis` (the service name). The `docker-compose.yml` handles this automatically via environment overrides.
 
 ### "Last Man Standing" / PGF only has one language
 
 * **Cause:** You are using the old build loop.
 * **Fix:** Ensure you are using the updated `build_orchestrator.py` which implements the **Two-Phase Build (Verify -> Link)**.
 
+### "Worker not picking up new grammar"
+
+* **Cause:** The worker loads the PGF into RAM on startup.
+* **Fix:** The updated `worker.py` has a file watcher. Ensure the `backend` and `worker` share the same volume (`/app`) in `docker-compose.yml`. Check worker logs for `watcher_triggering_reload`.
+
 ---
 
 ## 9. Verification (Smoke Test)
 
-Run these commands (in WSL) to verify the engine is functioning.
-
-### Test A: Standard BioFrame (JSON)
+Run this command (in WSL) to verify the engine is generating text:
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/generate?lang=eng" \
@@ -314,29 +321,12 @@ curl -X POST "http://localhost:8000/api/v1/generate?lang=eng" \
 
 ```
 
-### Test B: Ninai Protocol (v2.0 Feature)
-
-Verify the new **Ninai Adapter** is working:
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/generate?lang=eng" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "function": "ninai.constructors.Statement",
-           "args": [
-             { "function": "ninai.types.Bio" },
-             { "function": "ninai.constructors.List", "args": ["physicist", "chemist"] }
-           ]
-         }'
-
-```
-
-**Expected Response:**
+**Expected JSON Response:**
 
 ```json
 {
-  "result": "Alan Turing is a physicist and chemist.",
-  "meta": { "engine": "WikiEng", "adapter": "NinaiAdapter" }
+  "result": "Alan Turing is a British computer scientist.",
+  "meta": { "engine": "WikiEng", "latency": "..." }
 }
 
 ```

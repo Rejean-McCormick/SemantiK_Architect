@@ -1,124 +1,133 @@
-
 # 🎓 Linguistics Reference & Theory
 
-**Abstract Wiki Architect**
+**Abstract Wiki Architect v2.0**
 
 ## 1. Purpose & Positioning
 
 This document explains **why** the system is built the way it is. It maps the engineering components (Engines, Matrices, JSON) to their corresponding concepts in linguistic theory.
 
-The Abstract Wiki Architect is designed to be:
+The Abstract Wiki Architect v2.0 is designed to be:
 
-* **Engineered for Scale:** Capable of supporting 300+ languages through automation and hierarchy.
-* **Theory-Aware:** Informed by research-grade formalisms to ensure it can handle the complexity of natural language, not just simple template filling.
+* **Engineered for Scale:** Capable of supporting 300+ languages through automation.
+* **Interoperable:** Native support for the **Ninai** protocol and **Universal Dependencies (UD)** standards.
+* **Theory-Aware:** Informed by research-grade formalisms to ensure it can handle the complexity of natural language.
 
 ### High-Level Analogy
 
-The system sits at the intersection of three traditions:
+The system sits at the intersection of four traditions:
 
-1. **Grammatical Framework (GF):** We adopt the separation of *Abstract Syntax* (Logic) and *Concrete Syntax* (Strings).
-2. **Grammar Matrix:** We use typological hierarchies (Language Families) to share code.
-3. **Frame Semantics:** We use semantic frames (`BioFrame`) as the atomic unit of meaning, rather than raw syntax trees.
+1. **Grammatical Framework (GF):** Separation of *Abstract Syntax* (Logic) and *Concrete Syntax* (Strings).
+2. **Dependency Grammar:** We use "Weighted Topology" (Udiron) to linearize text based on head-dependent relationships.
+3. **Frame Semantics:** We use **Ninai Constructors** as the atomic unit of meaning.
+4. **Discourse Theory:** We explicitly model entity salience (Centering Theory) to handle pronouns.
 
 ---
 
 ## 2. Theoretical Foundations
 
-### 2.1 Grammatical Framework (GF)
+### 2.1 The Ninai Protocol (Abstract Syntax)
 
-The system uses GF as its low-level runtime engine but wraps it in a Pythonic architecture.
+In v2.0, we adopt **Ninai** (Abstract Wikipedia's notation) as our primary representation of meaning.
 
-* **Abstract Syntax:** In our system, this is represented by the **Semantic Frame** (e.g., `BioFrame`). It defines *what* can be said (Subject, Profession, Nationality) without defining *how* it is said.
-* **Concrete Syntax:** In our system, this is split between the **RGL (Resource Grammar Library)** for Tier 1 languages and the **Factory (Generated)** for Tier 3.
+* **Concept:** Language-Independent Logic Form.
+* **Implementation:** `app/adapters/ninai.py`.
+* **Theory:** A Ninai Object Tree represents the *Deep Structure* of a sentence. It uses **Constructors** (e.g., `ninai.constructors.Statement`) to define relationships without committing to a specific word order or morphology.
 
-**Key Difference:**
-We do not force developers to write full GF code for every language. Instead, we use **JSON Configurations** (`data/morphology_configs/`) to parameterize the concrete syntax, making the system accessible to non-linguists.
+### 2.2 Grammatical Framework (Concrete Syntax)
 
-### 2.2 Construction Grammar (CxG)
+We use GF as the low-level runtime engine to realize the Deep Structure into Surface Text.
 
-We explicitly model **Constructions**—pairings of form and meaning—rather than just abstract syntax rules.
-
-* **The Construction Layer:** Located in the `app/core/domain/` logic.
-* **Role:** It maps a Semantic Frame to a syntactic template.
-* *Example:* The **"Equative Construction"** (`X is Y`) is a shared pattern used by the `BioFrame`.
-* *Realization:* The engine knows that in Russian, the Equative Construction in the present tense often omits the copula ("Ivan — doctor"), whereas in English it requires "is".
+* **Role:** Handles the "Morphological Explosion" (e.g., Finnish noun cases).
+* **Hybridization:**
+* **Tier 1 (RGL):** Uses "Hand-Written Grammars" (Chomskyan / Generative).
+* **Tier 3 (Factory):** Uses "Topology Grammars" (Data-Driven).
 
 
 
-### 2.3 Typology & Language Families
+### 2.3 Universal Dependencies (Evaluation)
 
-We reject the idea of writing a unique engine for every language. Instead, we use **Typological Inheritance**.
+We bridge the gap between **Generative Grammar** (building trees) and **Dependency Grammar** (analyzing links).
 
-* **Family Engines:** We group languages not just by genetics (Romance, Germanic) but by structural properties (Typology).
-* **The Romance Matrix:** Handles gender agreement (Noun-Adj), pluralization, and article selection.
-* **The Agglutinative Matrix:** Handles vowel harmony (Front/Back vowels) and suffix chaining (Root + Plural + Case + Possessive).
-* **The Isolating Matrix:** Handles rigid word order and lack of inflection (e.g., for certain Pidgin or Creole implementations).
-
-
-
-This approach reduces code duplication by ~90%. If we fix a bug in the "Romance Adjective Agreement" logic, it fixes Portuguese, Spanish, French, and Romanian simultaneously.
+* **Theory:** "Construction-Time Tagging."
+* **Implementation:** `app/core/exporters/ud_mapping.py`.
+* **Logic:** Since we *build* the sentence, we know exactly which word is the Subject (`nsubj`) and which is the Object (`obj`). We map these intents to **CoNLL-U** tags dynamically, allowing our output to be evaluated against standard treebanks.
 
 ---
 
-## 3. Internal Abstractions
+## 3. Tier 3 Theory: Weighted Topology (Udiron)
 
-### 3.1 The "Everything Matrix" as a Typological Database
+For under-resourced languages, writing a full generative grammar is too slow. We adopt the **Weighted Topology** approach from the `Udiron` project.
 
-The `everything_matrix.json` is not just a build config; it is a **Typological Registry**.
+### 3.1 The Linearization Problem
 
-* **Zone A (Grammar):** Encodes the structural capability of the language (e.g., "Does it have a Noun module?").
-* **Zone B (Lexicon):** Encodes the semantic coverage.
+How do you generate text for 300 languages when some are SVO (English), some SOV (Japanese), and some VSO (Irish)?
 
-### 3.2 Semantics vs. Discourse
+### 3.2 The Topological Solution
 
-We distinguish between the meaning of a sentence and its presentation in context.
+We view a sentence not as a tree, but as a **Field of Slots** sorted by weight.
 
-* **Semantic Frame:** The `BioFrame` contains the raw facts: `Name="Marie Curie", Prof="Physicist"`.
-* **Discourse State:** (Future Roadmap) Tracks information structure (Topic vs. Focus).
-* *First Mention:* "Marie Curie is a physicist."
-* *Second Mention:* "She was born in Poland." (Pronominalization).
+* **The Mechanism:** We assign integer weights to dependency roles relative to the Root (Verb).
+* **Configuration:** `data/config/topology_weights.json`.
 
+**Example: Subject-Object-Verb (SOV)**
 
+* `Subject (nsubj)`: **-10** (Far Left)
+* `Object (obj)`: **-5** (Left)
+* `Verb (root)`: **0** (Center)
 
-Currently, the system focuses on **Sentence-Level Generation**, but the architecture leaves room for a **Discourse Planner** to manage multi-sentence coherence.
-
----
-
-## 4. Design Trade-offs
-
-### 4.1 Expressiveness vs. Maintainability
-
-* **The Choice:** We prioritize **Maintainability**.
-* **The Cost:** We do not implement a "Perfect" grammar for every language. We accept "Good Enough" (Tier 3 / Factory) to ensure coverage.
-* **Rationale:** A Wikipedia that covers 300 languages with 90% accuracy is more valuable than one that covers 20 languages with 100% accuracy.
-
-### 4.2 JSON vs. Code
-
-* **The Choice:** We push as much logic as possible into **JSON Configuration**.
-* **The Benefit:** This allows "Crowdsourcing the Cards." A contributor can add support for Catalan by copying `spa.json` to `cat.json` and tweaking the article rules, without touching the Python engine.
-
-### 4.3 NLG-First
-
-* **The Choice:** The system is strictly **Generation-First** (NLG), not Parsing-First (NLU).
-* **Implication:** We do not need to worry about ambiguity. We know exactly what the input means because it comes as structured JSON. This simplifies the grammar significantly compared to a translation system.
+**Result:** The engine simply sorts the constituents by weight: `[-10, -5, 0]`  `Subject + Object + Verb`.
+This allows us to support any word order configuration purely through configuration, without changing code.
 
 ---
 
-## 5. Future Theoretical Directions
+## 4. Discourse & Context (Centering Theory)
 
-The architecture is built to support future research-grade extensions:
+In v2.0, we moved beyond single sentences to **Discourse Planning**.
 
-1. **UMR / Ninai Integration:** The Semantic Frames are designed to map cleanly to **Uniform Meaning Representation (UMR)** or Abstract Wikipedia's **Ninai** notation.
-2. **Learned Micro-Planning:** While the macro-structure is rule-based, we can inject ML models to handle "Micro-Planning" (e.g., choosing between synonyms based on style).
-3. **Cross-Linguistic QA:** Using the "Judge" agent to perform massive contrastive analysis (e.g., "Does the generated text in Zulu match the semantic intent of the English text?").
+### 4.1 The Problem
+
+* Sentence 1: "Marie Curie is a physicist."
+* Sentence 2: "Marie Curie was born in Poland."
+* *Critique:* Repetitive and unnatural.
+
+### 4.2 The Solution: Entity Salience
+
+We implement a simplified version of **Centering Theory**.
+
+* **Backward-Looking Center ():** The entity currently "in focus" from the previous utterance.
+* **Implementation:** `SessionContext` in Redis.
+* **Rule:** If the **Subject** of the current sentence matches the **** of the session, we apply a **Pronominalization Transformation** (Swap Name  Pronoun).
 
 ---
 
-## 6. Summary
+## 5. Design Trade-offs
 
-* **We separate Semantics (Frames) from Syntax (GF).**
-* **We share logic via Language Families (Matrices).**
-* **We prioritize Coverage via the Hybrid Factory.**
-* **We treat Linguistics as Data (JSON), not Code.**
+### 5.1 Determinism vs. Variation (Micro-Planning)
 
-This document confirms that the Abstract Wiki Architect is not just a script, but a conscious engineering interpretation of long-standing ideas in formal and computational linguistics.
+* **The Tension:** Rule-based systems are repetitive. AI systems are hallucination-prone.
+* **The v2.0 Compromise:** **Learned Micro-Planning**.
+* We use **AI (LLM)** to select the *lexical items* (Style).
+* We use **GF (Rules)** to assemble the *syntax* (Grammar).
+* *Result:* We can vary "died" vs "passed away" (Style) without risking "He passed away" for a female subject (Grammar handles gender).
+
+
+
+### 5.2 NLG-First
+
+* **The Choice:** The system is strictly **Generation-First** (NLG).
+* **Implication:** We do not parse text. We render data. This eliminates the "Ambiguity Problem" common in translation systems because the input (Ninai JSON) is unambiguous by design.
+
+---
+
+## 6. Summary of Systems
+
+| Component | Linguistic Concept | Implementation |
+| --- | --- | --- |
+| **Ninai Adapter** | Deep Structure / Logical Form | Recursive JSON Parser |
+| **Lexicon** | Lexical Semantics | JSON Shards (`people.json`) |
+| **RGL (Tier 1)** | Generative Grammar | `.gf` Source Files |
+| **Factory (Tier 3)** | Topological Fields / Linearization | `topology_weights.json` |
+| **Discourse Planner** | Centering Theory / Coreference | Redis Session Store |
+| **UD Exporter** | Dependency Grammar | `ud_mapping.py` |
+
+This document confirms that the Abstract Wiki Architect v2.0 is a **Hybrid Neuro-Symbolic System**, leveraging the best of formal linguistics (GF/UD) and modern engineering (Redis/AI).

@@ -1,13 +1,18 @@
 # 🔌 API Reference & Semantic Frames
 
-**Abstract Wiki Architect**
+**Abstract Wiki Architect v2.0**
 
 ## 1. Overview
 
-The Abstract Wiki Architect exposes a **Rule-Based Natural Language Generation (NLG) Engine** via a RESTful API. Unlike LLMs, this API is **deterministic**: the same input (Semantic Frame) + the same configuration (Grammar/Lexicon) will *always* produce the exact same output.
+The Abstract Wiki Architect exposes a **Hybrid Natural Language Generation (NLG) Engine** via a RESTful API.
+It supports two primary input modes:
+
+1. **Semantic Frames:** Simple, flat JSON objects (Internal Format).
+2. **Ninai Protocol:** Recursive JSON Object Trees (Abstract Wikipedia Standard).
+
+The engine is **deterministic**: the same input + configuration will always produce the same output, unless "Micro-Planning" (Style Injection) is enabled.
 
 * **Base URL:** `http://localhost:8000/api/v1`
-* **Content-Type:** `application/json`
 * **Encoding:** UTF-8
 
 ---
@@ -30,52 +35,43 @@ In production, if `API_SECRET` is set in the environment variables, you must inc
 
 **`POST /generate`**
 
-Converts an abstract Semantic Frame into a natural language sentence in the target language.
+Converts an abstract intent into natural language.
 
 **Query Parameters**
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `lang` | `string` | **Yes** | The 3-letter ISO 639-3 code (e.g., `eng`, `fra`, `zul`). |
+| `style` | `string` | No | `simple` (default) or `formal`. Triggers Micro-Planning. |
 
-**Request Body**
+**Headers (v2.0 Features)**
 
-The body must be a single **Semantic Frame** object. The schema validation is strict; extra fields are ignored, but missing required fields will trigger a `400 Bad Request`.
-
-**Example Request (cURL)**
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/generate?lang=fra" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "frame_type": "bio",
-           "name": "Marie Curie",
-           "profession": "physicist",
-           "nationality": "polish",
-           "gender": "f"
-         }'
-
-```
+| Header | Value | Description |
+| --- | --- | --- |
+| `Content-Type` | `application/json` | Required for all requests. |
+| `Accept` | `text/plain` | **Default.** Returns a flat string. |
+| `Accept` | `text/x-conllu` | **UD Export.** Returns CoNLL-U dependency tags. |
+| `X-Session-ID` | `<UUID>` | **Context.** Enables multi-sentence pronominalization. |
 
 ---
 
-## 4. Semantic Frame Schemas
+## 4. Input Mode A: Semantic Frames (Internal)
 
-The system uses a "Frame-Based" approach. The `frame_type` field determines which linguistic template is triggered.
+The body must be a single flat JSON object. The `frame_type` field determines the logic.
 
 ### A. Bio Frame (`bio`)
 
-Used for introductory biographical sentences (the "Lead Sentence" of a Wikipedia article). It handles complex morphology like gender agreement for professions and nationalities.
+Used for introductory biographical sentences.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `frame_type` | `str` | **Yes** | Must be `"bio"`. |
 | `name` | `str` | **Yes** | The subject's proper name (e.g., "Alan Turing"). |
-| `profession` | `str` | **Yes** | Lookup key in `people.json`. Must match a valid entry (e.g., "computer_scientist"). |
-| `nationality` | `str` | No | Lookup key in `geography.json` (e.g., "british", "american"). |
-| `gender` | `str` | No | `"m"`, `"f"`, or `"n"`. Critical for Romance/Slavic languages to inflect the profession correctly. |
+| `profession` | `str` | **Yes** | Lookup key in `people.json` (e.g., "computer_scientist"). |
+| `nationality` | `str` | No | Lookup key in `geography.json` (e.g., "british"). |
+| `gender` | `str` | No | `"m"`, `"f"`, or `"n"`. Critical for inflection. |
 
-**JSON Example:**
+**Example:**
 
 ```json
 {
@@ -88,135 +84,115 @@ Used for introductory biographical sentences (the "Lead Sentence" of a Wikipedia
 
 ```
 
-### B. Relational Frame (`relational`)
+### B. Event Frame (`event`)
 
-Used to express a direct relationship between two entities (Subject-Predicate-Object).
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `frame_type` | `str` | **Yes** | Must be `"relational"`. |
-| `subject` | `str` | **Yes** | The agent/subject (e.g., "Pierre Curie"). |
-| `relation` | `str` | **Yes** | Predicate key from `people.json` (e.g., "spouse_of", "advisor_to"). |
-| `object` | `str` | **Yes** | The patient/target (e.g., "Marie Curie"). |
-
-**JSON Example:**
-
-```json
-{
-  "frame_type": "relational",
-  "subject": "Pierre Curie",
-  "relation": "spouse_of",
-  "object": "Marie Curie"
-}
-
-```
-
-### C. Event Frame (`event`)
-
-Used for temporal events. This triggers specific tense logic (Past/Present).
+Used for temporal events.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `frame_type` | `str` | **Yes** | Must be `"event"`. |
 | `event_type` | `str` | **Yes** | `"birth"`, `"death"`, `"award"`, `"discovery"`. |
 | `subject` | `str` | **Yes** | The entity experiencing the event. |
-| `date` | `str` | No | Year or ISO date string (e.g., "1934"). |
-| `location` | `str` | No | Lookup key in `geography.json` (e.g., "Paris"). |
+| `date` | `str` | No | Year or ISO date string. |
 
-**JSON Example:**
+---
+
+## 5. Input Mode B: Ninai Protocol (Standard)
+
+The API natively supports the **Ninai JSON Object Model** used by Abstract Wikipedia. The recursive structure is automatically flattened by the `NinaiAdapter`.
+
+**Schema:**
+The root object must define a `function` key matching the Ninai constructor registry.
+
+**Example Request:**
 
 ```json
 {
-  "frame_type": "event",
-  "event_type": "birth",
-  "subject": "Albert Einstein",
-  "date": "1879",
-  "location": "germany"
+  "function": "ninai.constructors.Statement",
+  "args": [
+    { "function": "ninai.types.Bio" },
+    { 
+      "function": "ninai.constructors.List", 
+      "args": ["physicist", "chemist"] 
+    },
+    { "function": "ninai.constructors.Entity", "args": ["Q42"] }
+  ]
 }
 
 ```
 
 ---
 
-## 5. Response Format
+## 6. Output Formats
 
-### Success (200 OK)
-
-Returns the generated text and engine metadata.
+### Standard Text (`Accept: text/plain`)
 
 ```json
 {
   "result": "Shaka est un guerrier zoulou.",
   "meta": {
     "lang": "fra",
-    "engine": "WikiFra",          // The concrete grammar used
-    "strategy": "HIGH_ROAD",      // Tier 1 (RGL) or Tier 3 (Factory)
+    "engine": "WikiFra",
     "latency_ms": 12
   }
 }
 
 ```
 
-### Error Handling
+### Universal Dependencies (`Accept: text/x-conllu`)
 
-| Status | Error Type | Cause |
-| --- | --- | --- |
-| **400** | `Bad Request` | JSON body is malformed or missing `frame_type`. |
-| **404** | `Not Found` | The requested `lang` is not in the `AbstractWiki.pgf` binary. (Check the **Everything Matrix**). |
-| **422** | `Unprocessable` | A specific word (e.g., "spaceman") is missing from the Lexicon (`people.json`). The error message will specify the missing key. |
-| **500** | `Server Error` | Internal engine failure (e.g., C-runtime crash, missing PGF file). |
+Returns the CoNLL-U representation for evaluation against treebanks.
+
+```json
+{
+  "result": "# text = Shaka est un guerrier zoulou.\n1 Shaka _ PROPN _ _ 3 nsubj _ _\n...",
+  "meta": {
+    "lang": "fra",
+    "exporter": "UDMapping"
+  }
+}
+
+```
 
 ---
 
-## 6. Integration Guide (Python)
+## 7. Error Handling
 
-Below is a robust client function to consume the API.
+| Status | Error Type | Cause |
+| --- | --- | --- |
+| **400** | `Bad Request` | Malformed JSON or Ninai parse error. |
+| **404** | `Not Found` | The requested `lang` is not in the `AbstractWiki.pgf` binary. |
+| **422** | `Unprocessable` | A specific word is missing from the Lexicon. |
+| **424** | `Failed Dependency` | UD Exporter failed to map a function (check `UD_MAP`). |
+| **500** | `Server Error` | Internal engine failure. |
+
+---
+
+## 8. Integration Guide (Python Client)
 
 ```python
 import requests
-from typing import Optional
+import uuid
 
 API_URL = "http://localhost:8000/api/v1/generate"
+SESSION_ID = str(uuid.uuid4())
 
-def generate_bio(
-    name: str, 
-    profession: str, 
-    nationality: str, 
-    lang: str = "eng", 
-    gender: Optional[str] = None
-) -> str:
+def generate_sentence(frame: dict, lang: str = "eng") -> str:
     """
-    Generates a biographical sentence using the Architect API.
+    Generates text with context awareness.
     """
-    payload = {
-        "frame_type": "bio",
-        "name": name,
-        "profession": profession,
-        "nationality": nationality
+    headers = {
+        "Content-Type": "application/json",
+        "X-Session-ID": SESSION_ID  # Enables 'He/She' logic
     }
     
-    if gender:
-        payload["gender"] = gender
-
-    try:
-        response = requests.post(
-            API_URL, 
-            params={"lang": lang}, 
-            json=payload,
-            timeout=5
-        )
-        response.raise_for_status()
-        
-        data = response.json()
-        return data["result"]
-        
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 422:
-            print(f"❌ Lexicon Missing: {e.response.text}")
-        elif e.response.status_code == 404:
-            print(f"❌ Language '{lang}' not supported.")
-        else:
-            print(f"❌ API Error: {e}")
-        return f"{name} ({profession})"  # Fallback
+    response = requests.post(
+        API_URL, 
+        params={"lang": lang}, 
+        json=frame,
+        headers=headers
+    )
+    response.raise_for_status()
+    return response.json()["result"]
 
 ```

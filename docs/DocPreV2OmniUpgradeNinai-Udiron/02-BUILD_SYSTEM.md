@@ -1,7 +1,7 @@
 
 # 🏗️ The Build System & Everything Matrix
 
-**Abstract Wiki Architect v2.0**
+**Abstract Wiki Architect**
 
 ## 1. Overview: Data-Driven Orchestration
 
@@ -13,9 +13,8 @@ Instead, we use a **Data-Driven Architecture**. The system scans its own file sy
 ### Key Principles
 
 * **No Hardcoding:** The build script does not know that "French" exists until the Matrix tells it.
-* **Graceful Degradation:** If a grammar is incomplete (low score), the system automatically downgrades it to "Safe Mode" (Tier 3), utilizing the **Weighted Topology Factory** to ensure valid output.
+* **Graceful Degradation:** If a grammar is broken (low score), the system automatically downgrades it to "Safe Mode" (Tier 3) rather than failing the entire build.
 * **Two-Phase Compilation:** We separate *verification* from *linking* to solve the GF "Last Man Standing" overwriting bug.
-* **AI Intervention:** If a build fails, the **Architect Agent** is triggered automatically to attempt code repair.
 
 ---
 
@@ -95,6 +94,7 @@ Before a build occurs, a suite of Python scripts audits the codebase to populate
 * **Logic:** It parses the JSON shards in `data/lexicon/{lang}/` to count actual words.
 * **Scoring:**
 * **0:** No files. (Status: `data_ready = False`)
+* **3:** Files exist but are empty.
 * **5:** Functional core (< 50 words).
 * **10:** Production ready (> 200 words + Wide Import).
 
@@ -109,7 +109,7 @@ Every language is assigned a `maturity_score` based on the audit.
 | Score | Rating | Meaning | Build Action |
 | --- | --- | --- | --- |
 | **0 - 2** | 🔴 **Broken** | Critical files missing. | **Skip.** Do not attempt to build. |
-| **3 - 5** | 🟡 **Draft** | Auto-generated or incomplete. | **Safe Mode.** Build using **Weighted Topology Factory** (Udiron-style ordering). |
+| **3 - 5** | 🟡 **Draft** | Auto-generated or incomplete. | **Safe Mode.** Build using "Pidgin" factory grammar. |
 | **6 - 7** | 🔵 **Beta** | Manual implementation, potentially buggy. | **Safe Mode.** Use RGL but verify strictly. |
 | **8 - 9** | 🟢 **Stable** | Full RGL support + Lexicon. | **High Road.** Full optimization. |
 | **10** | 🌟 **Gold** | Production verified, unit tests pass. | **High Road.** |
@@ -118,7 +118,7 @@ Every language is assigned a `maturity_score` based on the audit.
 
 ## 5. The Build Orchestrator (`gf/build_orchestrator.py`)
 
-This script reads the Matrix and executes the compilation. It solves the critical "Last Man Standing" bug using a **Two-Phase Pipeline** augmented by AI.
+This script reads the Matrix and executes the compilation. It solves the critical "Last Man Standing" bug using a **Two-Phase Pipeline**.
 
 ### Phase 1: Verification (The "Try" Loop)
 
@@ -126,16 +126,7 @@ The system iterates through every language in the Matrix. It does **not** link t
 
 * **Command:** `gf -batch -c -path ... Wiki{Lang}.gf`
 * **Purpose:** To verify that the code *can* compile without actually creating the final binary.
-
-### Phase 1.5: The Architect Loop (Auto-Repair) [NEW]
-
-If Phase 1 fails for a language:
-
-1. **Capture:** The orchestrator captures the GF compiler error log (e.g., `unknown function 'mkN0'`).
-2. **Trigger:** It calls the **Architect Agent** with the broken code and the error.
-3. **Patch:** The Agent rewrites the `.gf` file to fix the error (e.g., swapping `mkN0` for `mkN`).
-4. **Retry:** The system compiles again. (Max Retries: 3).
-5. **Drop:** If it still fails after 3 tries, the language is removed from the build list.
+* **Handling Failures:** If a language fails Phase 1, it is logged to `gf/build_logs/` and removed from the list. **The build does not stop.**
 
 ### Phase 2: Linking (The "Make" Shot)
 
@@ -163,7 +154,7 @@ python tools/everything_matrix/build_index.py
 
 ### Step 2: Build the Engine
 
-Run this to compile the PGF binary with AI assistance enabled.
+Run this to compile the PGF binary.
 
 ```bash
 # Go to gf directory
@@ -173,7 +164,6 @@ python build_orchestrator.py
 ```
 
 * **Output:** `gf/AbstractWiki.pgf`
-* *Note:* Ensure `GOOGLE_API_KEY` is set in `.env` if you want the Architect Agent to fix errors.
 
 ### Step 3: Verify the Binary
 
@@ -203,10 +193,10 @@ python3 -c "import pgf; print(pgf.readPGF('AbstractWiki.pgf').languages.keys())"
 
 
 
-### "The Architect Agent is consuming too much quota."
+### "The build hangs indefinitely."
 
-* **Cause:** Frequent build failures triggering the repair loop.
-* **Fix:** Check `gf/build_logs/`. If a language is fundamentally broken, set its score to 0 manually in the Matrix (or delete the file) to stop the Agent from trying to fix it.
+* **Cause:** The GF compiler is waiting for user input (a prompt).
+* **Fix:** Ensure `build_orchestrator.py` uses the `-batch` flag in all subprocess calls.
 
 ### "Lexicon score is 0 but I added files."
 
