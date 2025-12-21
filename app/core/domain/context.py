@@ -1,3 +1,4 @@
+# app\core\domain\context.py
 from typing import Optional, Literal
 from pydantic import BaseModel, Field
 import uuid

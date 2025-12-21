@@ -1,4 +1,5 @@
 #!/bin/bash
+# launch_all.sh
 
 # ==============================================================================
 # 🚀 Abstract Wiki Architect v2.0 - Unified Launch Script

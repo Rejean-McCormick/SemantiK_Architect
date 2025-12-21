@@ -1,3 +1,4 @@
+# app\adapters\api\dependencies.py
 # app/adapters/api/dependencies.py
 import secrets
 from typing import Annotated, Optional

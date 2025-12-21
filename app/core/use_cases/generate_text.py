@@ -1,3 +1,4 @@
+# app\core\use_cases\generate_text.py
 # app/core/use_cases/generate_text.py
 import structlog
 from typing import Optional

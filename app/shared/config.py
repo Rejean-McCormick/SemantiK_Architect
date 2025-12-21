@@ -1,3 +1,4 @@
+# app\shared\config.py
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from enum import Enum
@@ -19,9 +20,17 @@ class Settings(BaseSettings):
     """
     
     # --- Application Meta ---
-    APP_NAME: str = "abstract-wiki-architect"
+    APP_NAME: str = "Abstract Wiki Architect"
+    
+    # CRITICAL FIX: Alias 'ENV' to 'APP_ENV' so older code finding settings.ENV works
     APP_ENV: AppEnv = AppEnv.DEVELOPMENT
-    DEBUG: bool = False
+    
+    @property
+    def ENV(self) -> str:
+        """Alias for APP_ENV to support legacy calls (settings.ENV)."""
+        return self.APP_ENV.value
+
+    DEBUG: bool = True
     
     # --- Security ---
     API_SECRET: str = "change-me-for-production" 
@@ -33,10 +42,9 @@ class Settings(BaseSettings):
     OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str] = None 
 
     # --- Messaging & State (Redis) ---
-    # v2.0 Update: Unified URL and Session Context configuration
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     REDIS_QUEUE_NAME: str = "architect_tasks"
-    SESSION_TTL_SEC: int = 600  # Default 10 minutes for Discourse Context
+    SESSION_TTL_SEC: int = 600  # Default 10 minutes
 
     # --- External Services ---
     WIKIDATA_SPARQL_URL: str = "https://query.wikidata.org/sparql"
@@ -44,10 +52,12 @@ class Settings(BaseSettings):
     
     # --- AI & DevOps (v2.0) ---
     # Credentials for The Architect, Surgeon, and Judge agents
-    GOOGLE_API_KEY: Optional[str] = None
+    # CRITICAL FIX: Ensure GEMINI_API_KEY is available
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GOOGLE_API_KEY: Optional[str] = None # Deprecated alias for Gemini
     AI_MODEL_NAME: str = "gemini-1.5-pro"
     
-    # GitHub Integration for The Judge (Auto-Ticketing)
+    # GitHub Integration
     GITHUB_TOKEN: Optional[str] = None
     REPO_URL: str = "https://github.com/your-org/abstract-wiki-architect"
 
@@ -55,8 +65,8 @@ class Settings(BaseSettings):
     STORAGE_BACKEND: StorageBackend = StorageBackend.FILESYSTEM
     
     # FILESYSTEM CONFIG
-    # Default to Docker path (/app), fallback to local dev path if env var missing
-    FILESYSTEM_REPO_PATH: str = "/app"
+    # Default to current working directory if not set
+    FILESYSTEM_REPO_PATH: str = os.getcwd()
     
     # S3 Config
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -69,30 +79,31 @@ class Settings(BaseSettings):
 
     # --- Feature Flags ---
     USE_MOCK_GRAMMAR: bool = False 
-    GF_LIB_PATH: str = "/usr/local/lib/gf" # Default to Docker/Linux path
+    GF_LIB_PATH: str = "/usr/local/lib/gf"
 
     # --- Dynamic Path Resolution ---
     
     @property
     def TOPOLOGY_WEIGHTS_PATH(self) -> str:
-        """v2.0: Path to Udiron linearization weights"""
         return os.path.join(self.FILESYSTEM_REPO_PATH, "data", "config", "topology_weights.json")
 
     @property
     def GOLD_STANDARD_PATH(self) -> str:
-        """v2.0: Path to QA test suite"""
         return os.path.join(self.FILESYSTEM_REPO_PATH, "data", "tests", "gold_standard.json")
 
     @property
     def PGF_PATH(self) -> str:
         """
         Dynamically builds the path to the PGF binary.
-        Ensures consistency between Backend and Worker services.
+        Prioritizes the AW_PGF_PATH env var if set, otherwise builds it from repo path.
         """
-        # CRITICAL FIX: Smart detection of 'gf' folder to prevent 'gf/gf/'
+        # 1. Check direct override from Environment (Critical for Launch Script)
+        env_override = os.getenv("AW_PGF_PATH")
+        if env_override:
+            return env_override
+
+        # 2. Build from filesystem path
         base = self.FILESYSTEM_REPO_PATH.rstrip("/")
-        
-        # The filename MUST match what build_orchestrator.py produces
         filename = "AbstractWiki.pgf" 
         
         # If the base path already points inside 'gf', don't append it again

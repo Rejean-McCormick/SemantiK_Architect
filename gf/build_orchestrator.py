@@ -1,3 +1,4 @@
+# gf\build_orchestrator.py
 import os
 import json
 import subprocess
@@ -228,14 +229,20 @@ def main():
 
     for iso, meta in targets.items():
         try:
+            # 1. Start Log (Diagnostic)
+            log("INFO", f"👉 Processing {iso}...")
+
             file_path, paths = resolve_language_path(iso, meta, rgl_base)
             if not file_path:
                 if attempt_ai_generation(iso, meta): file_path, paths = resolve_language_path(iso, meta, rgl_base)
-            if not file_path: continue
+            if not file_path: 
+                log("DEBUG", f"   Skipping {iso}: No source found.")
+                continue
             
             deduped_paths = list(dict.fromkeys([GF_DIR] + paths))
             path_arg = os.pathsep.join(deduped_paths)
             cmd = ["gf", "-batch", "-c", "-path", path_arg, file_path]
+            
             result = subprocess.run(cmd, cwd=GF_DIR, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             
             if result.returncode == 0:
@@ -243,39 +250,40 @@ def main():
                 valid_files.append(file_path)
                 all_paths.extend(deduped_paths)
             else:
-                log("ERROR", f"❌ {iso}: Compilation Failed.")
+                log("ERROR", f"❌ {iso}: Compilation Failed. Error Output:")
                 
-                # --- AUTO-HEAL: Delete Corrupted Generated Files ---
+                # --- EXPLICIT LOGGING ---
+                log("RAW", "------------------------------------------")
+                log("RAW", result.stderr.strip())
+                log("RAW", "------------------------------------------")
+                
+                # --- AUTO-HEAL BLOCK ---
                 abs_file = os.path.abspath(file_path)
                 abs_gen = os.path.abspath(GENERATED_SRC_DIR)
                 
                 if abs_file.startswith(abs_gen):
-                    log("WARN", f"🧹 Detected broken file in Generated Source: {os.path.basename(file_path)}")
-                    log("WARN", "   -> Auto-deleting to force fresh RGL fallback...")
+                    log("WARN", f"🧹 Deleting broken file to force RGL fallback: {os.path.basename(file_path)}")
                     try:
                         os.remove(file_path)
-                        
-                        # Re-Resolve: Should now find RGL or create fresh empty connector
+                        # Re-Resolve
                         new_file, new_paths = resolve_language_path(iso, meta, rgl_base)
-                        
                         if new_file:
                             log("INFO", f"   -> Retrying with fresh target...")
                             d_paths = list(dict.fromkeys([GF_DIR] + new_paths))
                             p_arg = os.pathsep.join(d_paths)
                             c = ["gf", "-batch", "-c", "-path", p_arg, new_file]
-                            
                             retry = subprocess.run(c, cwd=GF_DIR, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                             if retry.returncode == 0:
                                 log("SUCCESS", f"✅ {iso}: Auto-Healed & Verified")
                                 valid_files.append(new_file)
                                 all_paths.extend(d_paths)
-                                continue # Skip remaining error handling
+                                continue
                             else:
-                                log("ERROR", f"❌ {iso}: Heal failed. RGL issue persists.")
+                                log("ERROR", f"❌ {iso}: Heal failed.")
                     except Exception as e:
                         log("ERROR", f"   -> Deletion failed: {e}")
-                # ---------------------------------------------------
-
+                
+                # --- AI REPAIR ---
                 if attempt_ai_repair(iso, file_path, result.stderr):
                     if subprocess.run(cmd, cwd=GF_DIR).returncode == 0:
                         log("SUCCESS", f"✅ {iso}: Repaired")
@@ -286,17 +294,23 @@ def main():
         except Exception as e:
             log("ERROR", f"Exception {iso}: {e}")
 
-    if not valid_files: log("ERROR", "No languages linked."); sys.exit(1)
+    if not valid_files: 
+        log("ERROR", "No languages linked. Aborting.")
+        sys.exit(1)
     
     final_paths = list(dict.fromkeys(all_paths))
     path_arg = os.pathsep.join(final_paths)
     try:
-        log("INFO", f"\n🔗 Linking {len(valid_files)} languages into PGF binary...")
+        log("INFO", "---------------------------------------------------")
+        log("INFO", f"Linking {len(valid_files)} languages into PGF binary...")
+        log("INFO", "---------------------------------------------------")
         subprocess.run(["gf", "-batch", "-make", "-path", path_arg, "AbstractWiki.gf"] + valid_files, check=True, cwd=GF_DIR)
         pgf = os.path.join(GF_DIR, f"{ABSTRACT_NAME}.pgf")
         if os.path.exists(pgf): shutil.move(pgf, PGF_OUTPUT_FILE)
         log("SUCCESS", f"📦 Binary created: {PGF_OUTPUT_FILE}")
-    except: log("ERROR", "Linking Failed."); sys.exit(1)
+    except Exception as e: 
+        log("ERROR", f"Linking Failed: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

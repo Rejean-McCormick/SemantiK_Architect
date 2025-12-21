@@ -1,3 +1,4 @@
+# app\adapters\api.py
 import logging
 from typing import Any, Dict, Optional, Union
 from uuid import uuid4

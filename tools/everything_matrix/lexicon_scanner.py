@@ -1,3 +1,4 @@
+# tools\everything_matrix\lexicon_scanner.py
 import os
 import json
 import logging

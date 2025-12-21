@@ -1,3 +1,4 @@
+# app\adapters\api\routes.py
 # app/adapters/api/routes.py
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from pydantic import BaseModel, Field

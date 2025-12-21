@@ -1,3 +1,4 @@
+# app\adapters\redis_bus.py
 import json
 import logging
 from typing import Optional

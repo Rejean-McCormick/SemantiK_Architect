@@ -1,3 +1,4 @@
+# tests\integration\test_ninai.py
 import pytest
 from app.adapters.ninai import ninai_adapter
 from app.core.domain.frame import BioFrame

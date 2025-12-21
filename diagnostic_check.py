@@ -1,3 +1,4 @@
+# diagnostic_check.py
 import sys
 import os
 
