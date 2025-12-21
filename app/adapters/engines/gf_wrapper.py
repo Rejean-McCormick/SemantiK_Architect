@@ -25,7 +25,7 @@ class GFGrammarEngine(IGrammarEngine):
     """
 
     def __init__(self, lib_path: str = None):
-        self.pgf_path = settings.AW_PGF_PATH
+        self.pgf_path = settings.PGF_PATH
         self.grammar: Optional[pgf.PGF] = None
         
         # DEBUG: Confirm initialization of the new logic

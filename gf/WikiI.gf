@@ -5,4 +5,5 @@ incomplete concrete WikiI of AbstractWiki = open Syntax in {
     mkIsAProperty s p = mkS (mkCl s (mkVP p));
     FactWithMod f m = mkS m f;
     Entity2NP x = x; Property2AP x = x; VP2Predicate x = x;
+    mkLiteral v = mkNP (mkN v.s); 
 }
