@@ -1,4 +1,3 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
@@ -25,8 +24,10 @@ services:
     container_name: aw_backend
     env_file: .env
     environment:
-      # Override config to use the Docker service name for Redis
       - REDIS_HOST=redis
+      # CRITICAL: Force the container path to match the volume mount
+      # This overrides any Windows paths in your local .env
+      - FILESYSTEM_REPO_PATH=/app
     ports:
       - "8000:8000"
     volumes:
@@ -34,7 +35,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    # [FIX] Use factory flag because 'create_app' is a function, not a global object
+    # Use factory flag because 'create_app' is a function
     command: uvicorn app.adapters.api.main:create_app --host 0.0.0.0 --port 8000 --reload --factory
     restart: unless-stopped
 
@@ -48,13 +49,16 @@ services:
     env_file: .env
     environment:
       - REDIS_HOST=redis
+      # CRITICAL: Must match Backend's path so they see the same PGF file
+      - FILESYSTEM_REPO_PATH=/app
     volumes:
       - .:/app
     depends_on:
       redis:
         condition: service_healthy
-    # [FIX] Run the python module directly, as main.py handles the loop and DI container
-    command: python -m app.worker.main
+    # [FIX] Use the standard 'arq' CLI to run the settings class we just updated
+    # --watch app enables code hot-reloading during dev
+    command: arq app.workers.worker.WorkerSettings --watch app
     restart: unless-stopped
 
   # 4. FRONTEND (UI Layer)

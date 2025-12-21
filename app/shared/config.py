@@ -1,4 +1,3 @@
-# app/shared/config.py
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from enum import Enum
@@ -16,6 +15,7 @@ class StorageBackend(str, Enum):
 class Settings(BaseSettings):
     """
     Central Configuration Registry.
+    Strictly typed and validated via Pydantic.
     """
     
     # --- Application Meta ---
@@ -51,8 +51,8 @@ class Settings(BaseSettings):
     STORAGE_BACKEND: StorageBackend = StorageBackend.FILESYSTEM
     
     # FILESYSTEM CONFIG
-    # Pointing to the project root
-    FILESYSTEM_REPO_PATH: str = "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect"
+    # Default to Docker path (/app), fallback to local dev path if env var missing
+    FILESYSTEM_REPO_PATH: str = "/app"
     
     # S3 Config
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -65,19 +65,25 @@ class Settings(BaseSettings):
 
     # --- Feature Flags ---
     USE_MOCK_GRAMMAR: bool = False 
-    GF_LIB_PATH: str = "/mnt/c/MyCode/AbstractWiki/gf-rgl"
+    GF_LIB_PATH: str = "/usr/local/lib/gf" # Default to Docker/Linux path
     GOOGLE_API_KEY: Optional[str] = None
 
     @property
     def AW_PGF_PATH(self) -> str:
-        """Dynamically builds the path to the PGF binary."""
+        """
+        Dynamically builds the path to the PGF binary.
+        Ensures consistency between Backend and Worker services.
+        """
         # CRITICAL FIX: Smart detection of 'gf' folder to prevent 'gf/gf/'
         base = self.FILESYSTEM_REPO_PATH.rstrip("/")
         
-        filename = "AbstractWiki.pgf"  # Updated based on pathsgf.txt
+        # The filename MUST match what build_orchestrator.py produces
+        filename = "AbstractWiki.pgf" 
         
+        # If the base path already points inside 'gf', don't append it again
         if base.endswith("gf"):
              return os.path.join(base, filename)
+             
         return os.path.join(base, "gf", filename)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

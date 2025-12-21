@@ -1,13 +1,13 @@
-# app/workers/worker.py
 import asyncio
 import os
 import sys
 import subprocess
 import structlog
+import time
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
 
-# Add project root to path
+# Add project root to path for reliable imports
 sys.path.append(os.getcwd())
 
 from arq.connections import RedisSettings
@@ -37,13 +37,16 @@ class GrammarRuntime:
     Prevents 'Cold Start' latency for validation/generation tasks.
     """
     _pgf: Optional[Any] = None
+    _last_mtime: float = 0.0
     
     def load(self, pgf_path: str):
         logger.info("runtime_loading_pgf", path=pgf_path)
         if pgf and os.path.exists(pgf_path):
             try:
+                # Update mtime tracking
+                self._last_mtime = os.path.getmtime(pgf_path)
                 self._pgf = pgf.readPGF(pgf_path)
-                logger.info("runtime_pgf_loaded_success")
+                logger.info("runtime_pgf_loaded_success", languages=list(self._pgf.languages.keys()))
             except Exception as e:
                 logger.error("runtime_pgf_load_failed", error=str(e))
         else:
@@ -54,7 +57,19 @@ class GrammarRuntime:
 
     async def reload(self):
         """Helper to reload the current configured path."""
+        logger.info("runtime_reloading_triggered")
         self.load(settings.AW_PGF_PATH)
+    
+    def check_for_updates(self, pgf_path: str) -> bool:
+        """Checks if the file on disk is newer than the loaded one."""
+        if not os.path.exists(pgf_path):
+            return False
+        
+        current_mtime = os.path.getmtime(pgf_path)
+        if current_mtime > self._last_mtime:
+            logger.info("runtime_detected_file_change", old=self._last_mtime, new=current_mtime)
+            return True
+        return False
 
 # Global Instance
 runtime = GrammarRuntime()
@@ -63,7 +78,8 @@ runtime = GrammarRuntime()
 
 async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context: Dict[str, str] = None) -> str:
     """
-    ARQ Job: Compiles a GF source file into a PGF binary.
+    ARQ Job: Compiles a single GF source file (Tier 2/3 dev mode).
+    Note: Production builds are handled by build_orchestrator.py.
     """
     # 1. Link Telemetry Span (Distributed Tracing)
     ctx_otel = extract(trace_context) if trace_context else None
@@ -75,21 +91,20 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
             logger.info("compilation_started", lang=language_code)
             
             # 2. Define Paths
-            # For the demo, we assume the source files live in 'gf/src' or 'gf'
-            # Adjust 'src_dir' if your folder structure is different
             base_dir = settings.FILESYSTEM_REPO_PATH
+            # Adjusted path to match the orchestrator's structure
             src_file = os.path.join(base_dir, "gf", f"Wiki{language_code.capitalize()}.gf")
             
-            # 3. Execute GF Compiler (CPU Intensive)
-            # Command: gf -make -output-format=pgf gf/WikiFra.gf
+            # 3. Execute GF Compiler
+            # Using -batch to prevent hanging
             cmd = [
                 "gf", 
+                "-batch",
                 "-make", 
                 "--output-format=pgf", 
                 src_file
             ]
             
-            # Only attempt real compilation if 'gf' is installed and source exists
             if os.path.exists(src_file):
                 logger.info("executing_subprocess", cmd=" ".join(cmd))
                 
@@ -97,7 +112,8 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
                     subprocess.run, 
                     cmd, 
                     capture_output=True, 
-                    text=True
+                    text=True,
+                    cwd=os.path.join(base_dir, "gf") # Run inside gf/ dir
                 )
 
                 if process.returncode != 0:
@@ -107,26 +123,23 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
                 
                 logger.info("subprocess_success", output=process.stdout[:100])
             else:
-                logger.warning("source_file_missing", path=src_file, msg="Skipping real compilation, simulating...")
-                await asyncio.sleep(1)
+                logger.warning("source_file_missing", path=src_file)
+                return "Source file missing"
 
             # 4. Persistence (S3)
-            # If configured, upload the artifact to the cloud
-            target_pgf = settings.AW_PGF_PATH
-            
             if settings.STORAGE_BACKEND == StorageBackend.S3 and S3LanguageRepo:
+                target_pgf = settings.AW_PGF_PATH
                 if os.path.exists(target_pgf):
                     repo = S3LanguageRepo()
                     with open(target_pgf, "rb") as f:
                         content = f.read()
                         await repo.save_grammar(language_code, content)
                     logger.info("s3_upload_success", bucket=settings.AWS_BUCKET_NAME)
-                    span.add_event("upload_to_s3_complete")
                 else:
                     logger.warning("s3_upload_skipped", msg="PGF file not found locally")
 
             # 5. Hot Reload
-            # Update the resident memory model so subsequent checks are fast
+            # Explicit reload after compilation job
             if os.path.exists(settings.AW_PGF_PATH):
                 await runtime.reload()
             
@@ -138,6 +151,31 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
             span.record_exception(e)
             raise e
 
+# --- Background Tasks ---
+
+async def watch_grammar_file(ctx):
+    """
+    Background Task: Polls the PGF binary for changes.
+    This ensures the worker picks up builds from build_orchestrator.py.
+    """
+    pgf_path = settings.AW_PGF_PATH
+    logger.info("watcher_started", path=pgf_path)
+    
+    while True:
+        try:
+            if runtime.check_for_updates(pgf_path):
+                logger.info("watcher_triggering_reload")
+                runtime.load(pgf_path)
+            
+            # Poll every 5 seconds (Low overhead)
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            logger.info("watcher_stopped")
+            break
+        except Exception as e:
+            logger.error("watcher_error", error=str(e))
+            await asyncio.sleep(10)
+
 # --- ARQ Worker Configuration ---
 
 async def startup(ctx):
@@ -145,27 +183,29 @@ async def startup(ctx):
     setup_telemetry("architect-worker")
     logger.info("worker_startup", queue=settings.REDIS_QUEUE_NAME)
     
-    # Pre-warm: Load the grammar defined in settings
+    # 1. Initial Load
     runtime.load(settings.AW_PGF_PATH)
+
+    # 2. Start Background Watcher
+    ctx['watcher_task'] = asyncio.create_task(watch_grammar_file(ctx))
 
 async def shutdown(ctx):
     logger.info("worker_shutdown")
+    if 'watcher_task' in ctx:
+        ctx['watcher_task'].cancel()
+        await ctx['watcher_task']
 
 class WorkerSettings:
     """
     ARQ Configuration Class.
     """
-    # 1. Connection
     redis_settings = RedisSettings(
         host=settings.REDIS_HOST,
         port=settings.REDIS_PORT,
         database=settings.REDIS_DB,
     )
 
-    # 2. CRITICAL FIX: Match the Queue Name defined in Config
     queue_name = settings.REDIS_QUEUE_NAME
-
-    # 3. Register Functions
     functions = [compile_grammar]
     
     on_startup = startup

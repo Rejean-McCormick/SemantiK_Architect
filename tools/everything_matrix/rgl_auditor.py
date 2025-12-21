@@ -1,150 +1,90 @@
-# tools\everything_matrix\rgl_auditor.py
-import json
-import csv
 import os
+import logging
 
-# Path to the central configuration
-CONFIG_PATH = 'config/everything_matrix_config.json'
+# Setup Logging
+logger = logging.getLogger(__name__)
 
-def load_config():
-    """Loads the central configuration."""
-    if not os.path.exists(CONFIG_PATH):
-        print(f"❌ Config file not found at {CONFIG_PATH}")
+# Essential RGL Modules required for a "High Road" strategy
+REQUIRED_MODULES = [
+    "Cat",        # Categorization (Nouns, Verbs definitions)
+    "Noun",       # Noun morphology (Inflection)
+    "Grammar",    # The structural core
+    "Paradigms",  # The constructor API (mkN, mkV)
+    "Syntax"      # High-level sentence building
+]
+
+def detect_rgl_suffix(path):
+    """
+    Scans a directory to find the RGL 3-letter suffix (e.g. 'Fre' in 'CatFre.gf').
+    Returns 'Fre', 'Eng', etc., or None if not found.
+    """
+    try:
+        files = os.listdir(path)
+        for f in files:
+            if f.startswith("Cat") and f.endswith(".gf"):
+                # Extract 'Fre' from 'CatFre.gf'
+                return f[3:-3]
+    except FileNotFoundError:
         return None
-    with open(CONFIG_PATH, 'r') as f:
-        return json.load(f)
+    return None
 
-def audit():
-    config = load_config()
-    if not config: return
-
-    # Load file paths from config
-    inventory_file = config.get("inventory_file", "data/indices/rgl_inventory.json")
-    map_file = config.get("map_file", "rgl_map.json")
-    exceptions_file = config.get("exceptions_file", "config/language_exceptions.json")
+def audit_language(iso_code, path):
+    """
+    Physically inspects the RGL folder to determine maturity.
+    Called by build_index.py.
     
-    csv_output = config.get("audit_csv", "data/reports/rgl_matrix_audit.csv")
-    json_output = config.get("strategy_json", "data/reports/rgl_matrix_strategy.json")
-
-    # Validate inputs
-    if not os.path.exists(inventory_file):
-        print(f"❌ Error: Inventory file not found at {inventory_file}")
-        return
-
-    # LOAD DATA
-    with open(inventory_file, 'r') as f:
-        inventory = json.load(f).get("languages", {})
+    Args:
+        iso_code (str): 'fra', 'eng'
+        path (str): '/path/to/gf-rgl/src/french'
+        
+    Returns:
+        dict: {
+            "score": int (0-10),
+            "blocks": { "rgl_cat": 10, "rgl_noun": 0 ... }
+        }
+    """
+    suffix = detect_rgl_suffix(path)
     
-    with open(map_file, 'r') as f:
-        rgl_map = json.load(f).get('module_map', {})
-
-    # LOAD EXCEPTIONS / OVERRIDES
-    exceptions = {}
-    if os.path.exists(exceptions_file):
-        try:
-            with open(exceptions_file, 'r') as f:
-                exceptions = json.load(f)
-            print(f"   Loaded {len(exceptions)} manual overrides.")
-        except Exception as e:
-            print(f"⚠️ Warning: Could not parse exceptions file: {e}")
-
-    matrix_rows = []
-    strategy_map = {}
-
-    print(f"📊 Auditing {len(rgl_map)} languages against RGL Inventory...")
-
-    for wiki_code, rgl_code in rgl_map.items():
-        # Initialize Status Block
-        status = {
-            "Wiki": wiki_code, 
-            "RGL": rgl_code,
-            "Cat": "MISSING", 
-            "Noun": "MISSING", 
-            "Grammar": "MISSING", 
-            "Syntax": "MISSING",
-            "Strategy": "SKIP",
-            "Note": ""
+    if not suffix:
+        logger.warning(f"⚠️  {iso_code}: Could not detect RGL suffix in {path}")
+        return {
+            "score": 0,
+            "blocks": {k: 0 for k in ["rgl_cat", "rgl_noun", "rgl_grammar", "rgl_paradigms", "rgl_syntax"]}
         }
 
-        # --- CHECK MANUAL OVERRIDES FIRST ---
-        if wiki_code in exceptions:
-            override = exceptions[wiki_code]
-            status["Strategy"] = override.get("override_strategy", "BROKEN")
-            status["Note"] = f"OVERRIDE: {override.get('reason', 'Manual exclusion')}"
-            
-            # If manually broken, we stop processing this language
-            if status["Strategy"] == "BROKEN":
-                matrix_rows.append(status)
-                continue
-
-        # Check against Inventory (Auto-Detection)
-        if rgl_code in inventory:
-            data = inventory[rgl_code]
-            modules = data.get("modules", {})
-            
-            if "Cat" in modules: status["Cat"] = "FOUND"
-            if "Noun" in modules: status["Noun"] = "FOUND"
-            if "Grammar" in modules: status["Grammar"] = "FOUND"
-            if "Syntax" in modules: status["Syntax"] = "FOUND"
-
-            # --- DECISION ENGINE ---
-            
-            # If an override set a strategy (like SAFE_MODE) explicitly, we respect it 
-            # BUT we still verify if the files exist. 
-            # If no override, we calculate normally.
-            
-            forced_strat = exceptions.get(wiki_code, {}).get("override_strategy")
-
-            if forced_strat:
-                status["Strategy"] = forced_strat
-            else:
-                # STRATEGY A: HIGH_ROAD (Standard RGL)
-                if (status["Cat"] == "FOUND" and 
-                    status["Noun"] == "FOUND" and 
-                    status["Grammar"] == "FOUND" and 
-                    status["Syntax"] == "FOUND"):
-                    status["Strategy"] = "HIGH_ROAD"
-                
-                # STRATEGY B: SAFE_MODE (Fallback)
-                elif status["Cat"] == "FOUND" and status["Noun"] == "FOUND":
-                    status["Strategy"] = "SAFE_MODE"
-                
-                # STRATEGY C: BROKEN
-                else:
-                    status["Strategy"] = "BROKEN"
+    blocks = {}
+    present_count = 0
+    
+    # Check for physical file existence
+    for module in REQUIRED_MODULES:
+        filename = f"{module}{suffix}.gf"
         
+        # Check standard path
+        file_path = os.path.join(path, filename)
+        
+        # Check 'api' subfolder for Syntax/Paradigms often hidden there
+        api_path = os.path.join(os.path.dirname(path), "api", filename)
+        
+        if os.path.exists(file_path) or os.path.exists(api_path):
+            blocks[f"rgl_{module.lower()}"] = 10
+            present_count += 1
         else:
-            status["Strategy"] = "NOT_INSTALLED"
+            blocks[f"rgl_{module.lower()}"] = 0
+            # logger.debug(f"    Missing: {filename}")
 
-        # Add to CSV list
-        matrix_rows.append(status)
-        
-        # Add to JSON Map (Instructions for Builder)
-        if status["Strategy"] in ["HIGH_ROAD", "SAFE_MODE"]:
-            strategy_map[wiki_code] = {
-                "rgl_code": rgl_code,
-                "strategy": status["Strategy"],
-                "modules": inventory.get(rgl_code, {}).get("modules", {}),
-                "path_root": inventory.get(rgl_code, {}).get("path")
-            }
-
-    # Write CSV Report
-    os.makedirs(os.path.dirname(csv_output), exist_ok=True)
-    with open(csv_output, 'w', newline='', encoding='utf-8') as f:
-        fieldnames = ["Wiki", "RGL", "Cat", "Noun", "Grammar", "Syntax", "Strategy", "Note"]
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(matrix_rows)
-
-    # Write Executable Strategy Map
-    os.makedirs(os.path.dirname(json_output), exist_ok=True)
-    with open(json_output, 'w', encoding='utf-8') as f:
-        json.dump(strategy_map, f, indent=2)
-
-    print(f"✅ Audit Complete.")
-    print(f"   Human Report: {csv_output}")
-    print(f"   Builder Map:  {json_output}")
-    print(f"   Buildable Languages: {len(strategy_map)}")
+    # Scoring Logic
+    # 5 modules * 2 points each = 10
+    score = (present_count / len(REQUIRED_MODULES)) * 10
+    
+    # Bonus: Check for extra stability (Abstract file existence)
+    # This is a heuristic for "Tier 1" stability
+    return {
+        "score": round(score, 1),
+        "blocks": blocks,
+        "suffix": suffix
+    }
 
 if __name__ == "__main__":
-    audit()
+    # Test stub
+    print("Running Auditor Test on current directory...")
+    print(audit_language("test", "."))

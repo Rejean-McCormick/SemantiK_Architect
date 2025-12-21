@@ -1,91 +1,125 @@
-# tools\everything_matrix\lexicon_scanner.py
 import os
 import json
+import logging
 import glob
 
-# Path to the central configuration
-CONFIG_PATH = 'config/everything_matrix_config.json'
+# Setup Logging
+logger = logging.getLogger(__name__)
 
-def load_config():
-    if not os.path.exists(CONFIG_PATH):
-        return {}
-    with open(CONFIG_PATH, 'r') as f:
-        return json.load(f)
+# Standard domains defined in Lexicon Architecture
+DOMAINS = ["core", "people", "science", "geography"]
 
-def scan_lexicon():
+def resolve_lexicon_path(iso_code, root_dir):
     """
-    Scans the existing data/lexicon folder structure.
+    Resolves the directory path, handling the mismatch between 
+    ISO-639-3 (eng, fra) and ISO-639-1 (en, fr) often found in data folders.
     """
-    config = load_config()
+    # Try exact match (3-letter)
+    path_3 = os.path.join(root_dir, iso_code)
+    if os.path.isdir(path_3):
+        return path_3
     
-    # 1. Detect where the data actually lives
-    # Legacy/Current path from your docs: data/lexicon/{lang_code}/...
-    lex_root = "data/lexicon"
-    imports_dir = "data/imports"
-    mappings_dir = "semantics/mappings"
+    # Try 2-letter prefix (if applicable)
+    if len(iso_code) == 3:
+        path_2 = os.path.join(root_dir, iso_code[:2])
+        if os.path.isdir(path_2):
+            return path_2
+            
+    return None
+
+def audit_lexicon(iso_code, lexicon_root):
+    """
+    Audits the vocabulary depth for a specific language.
+    Called by build_index.py.
     
-    scores = {}
-
-    print(f"🔍 Scanning Lexicon Data in {lex_root}...")
-
-    # --- BLOCK 1: LEXICON SEEDS (Existing Data) ---
-    # We look for folders like data/lexicon/en/
-    if os.path.exists(lex_root):
-        # List all subdirectories in data/lexicon
-        subdirs = [d for d in os.listdir(lex_root) if os.path.isdir(os.path.join(lex_root, d))]
+    Args:
+        iso_code (str): 'eng'
+        lexicon_root (str): '/path/to/data/lexicon'
         
-        for lang_code in subdirs:
-            # We assume folder name is the code (e.g. 'en', 'fr', 'Eng')
-            # Normalize to Title Case if it's 3 letters (eng -> Eng), else keep as is
-            # (You might need a map here later, but this is a good heuristic)
-            wiki_code = lang_code.capitalize() if len(lang_code) == 3 else lang_code
-            
-            lang_path = os.path.join(lex_root, lang_code)
-            
-            # Check if it has content (core.json, people.json, etc.)
-            json_files = glob.glob(os.path.join(lang_path, "*.json"))
-            
-            if json_files:
-                if wiki_code not in scores: scores[wiki_code] = {}
-                
-                # Score based on file count? Or just existence?
-                # Let's give 10 if 'core.json' exists, else 5
-                has_core = any("core.json" in f for f in json_files)
-                scores[wiki_code]["lex_seed"] = 10 if has_core else 5
+    Returns:
+        dict: {
+            "seed_score": int (0-10),
+            "wide_score": int (0-10),
+            "total_count": int,
+            "domains": ["core", "people"]
+        }
+    """
+    lang_path = resolve_lexicon_path(iso_code, lexicon_root)
+    
+    stats = {
+        "seed_score": 0,
+        "wide_score": 0,
+        "total_count": 0,
+        "domains_present": []
+    }
 
-    # --- BLOCK 2: WIDE IMPORTS ---
-    if os.path.exists(imports_dir):
-        files = glob.glob(os.path.join(imports_dir, "*_wide.csv"))
-        for f in files:
-            code = os.path.basename(f).replace("_wide.csv", "")
-            # Normalize 'eng' -> 'Eng' if needed
-            if len(code) == 3: code = code.capitalize()
-            
-            if code not in scores: scores[code] = {}
-            scores[code]["lex_wide"] = 10
+    if not lang_path:
+        return stats
 
-    # --- BLOCK 3: SEMANTIC MAPPINGS ---
-    if os.path.exists(mappings_dir):
-        files = glob.glob(os.path.join(mappings_dir, "*.json"))
-        for f in files:
-            code = os.path.splitext(os.path.basename(f))[0]
-            if len(code) == 3: code = code.capitalize()
-            
-            if code not in scores: scores[code] = {}
-            scores[code]["sem_mappings"] = 10
+    # 1. Audit Semantic Domains (JSON Shards)
+    # ----------------------------------------
+    total_words = 0
+    valid_domains = 0
+    
+    for domain in DOMAINS:
+        file_path = os.path.join(lang_path, f"{domain}.json")
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    count = len(data)
+                    if count > 0:
+                        total_words += count
+                        stats["domains_present"].append(domain)
+                        valid_domains += 1
+            except (json.JSONDecodeError, OSError):
+                logger.warning(f"⚠️  {iso_code}: Corrupt JSON in {domain}.json")
 
-    # --- BLOCK 4: CONCRETE DICTIONARIES (Compiled) ---
-    # Check for Wiki{Lang}.gf files generated by the builder
-    for f in glob.glob("Wiki*.gf"):
-        if f == "Wiki.gf": continue
-        code = f.replace("Wiki", "").replace(".gf", "")
-        
-        if code not in scores: scores[code] = {}
-        scores[code]["lex_concrete"] = 10
+    stats["total_count"] = total_words
 
-    return scores
+    # 2. Calculate Seed Score (Zone B Readiness)
+    # ----------------------------------------
+    # Score 0: No data
+    # Score 3: Empty files
+    # Score 5: Minimal Core (>10 words)
+    # Score 8: Core + Bio (>50 words)
+    # Score 10: Rich Vocabulary (>200 words)
+    
+    if total_words == 0:
+        stats["seed_score"] = 0
+    elif total_words < 10:
+        stats["seed_score"] = 3
+    elif "core" in stats["domains_present"] and total_words >= 10:
+        if total_words > 200:
+            stats["seed_score"] = 10
+        elif "people" in stats["domains_present"] and total_words > 50:
+            stats["seed_score"] = 8
+        else:
+            stats["seed_score"] = 5
+    else:
+        stats["seed_score"] = 3  # Has files but missing 'core' is critical
+
+    # 3. Audit Wide Imports (CSV / Raw)
+    # ----------------------------------------
+    # Check for bulk imports (e.g., 'data/imports/eng_wide.csv')
+    # Assuming imports dir is sibling to lexicon dir (standard structure)
+    imports_dir = os.path.join(os.path.dirname(lexicon_root), "imports")
+    
+    wide_files = [
+        os.path.join(imports_dir, f"{iso_code}_wide.csv"),
+        os.path.join(lang_path, "wide_import.json")
+    ]
+    
+    for wf in wide_files:
+        if os.path.exists(wf):
+            stats["wide_score"] = 10
+            break
+
+    return stats
 
 if __name__ == "__main__":
-    results = scan_lexicon()
-    print(json.dumps(results, indent=2))
-    print(f"✅ Scanned lexicon for {len(results)} languages.")
+    # Test Stub
+    test_root = os.path.join(os.path.dirname(__file__), "../../data/lexicon")
+    print(f"Testing lexicon scan in: {test_root}")
+    # Mock a check for 'eng'
+    print(json.dumps(audit_lexicon("eng", test_root), indent=2))
