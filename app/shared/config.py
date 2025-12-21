@@ -71,12 +71,14 @@ class Settings(BaseSettings):
     @property
     def AW_PGF_PATH(self) -> str:
         """Dynamically builds the path to the PGF binary."""
-        # CRITICAL FIX: Smart detection of 'gf' folder to prevent 'gf/gf/Wiki.pgf'
+        # CRITICAL FIX: Smart detection of 'gf' folder to prevent 'gf/gf/'
         base = self.FILESYSTEM_REPO_PATH.rstrip("/")
         
+        filename = "AbstractWiki.pgf"  # Updated based on pathsgf.txt
+        
         if base.endswith("gf"):
-             return os.path.join(base, "Wiki.pgf")
-        return os.path.join(base, "gf", "Wiki.pgf")
+             return os.path.join(base, filename)
+        return os.path.join(base, "gf", filename)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

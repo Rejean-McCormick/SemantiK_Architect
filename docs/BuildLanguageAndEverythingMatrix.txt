@@ -1,0 +1,210 @@
+
+
+# 📜 System Blueprint: Data-Driven Grammar Orchestration
+
+## 1. The "Everything Matrix" Core Logic
+
+The system's "Brain" is not a static configuration file but a dynamic index that must be audited before every build.
+
+* **The Source of Truth**: `data/indices/everything_matrix.json` is the central registry.
+* **Modular Scanning**: Instead of a single script, a suite of scanners in `tools/everything_matrix/` must be run to populate the Matrix.
+* **Zone A (Foundation)**: `rgl_scanner.py` and `rgl_auditor.py` locate and verify RGL source files in `gf-rgl/src`.
+* **Zone B (Lexicon)**: `lexicon_scanner.py` audits `data/lexicon/` for vocabulary coverage.
+* **Zone C (App)**: `app_scanner.py` checks for UI/API readiness.
+
+
+* **The Matrix Builder**: `build_index.py` orchestrates these scanners. If the Matrix returns `null` for a language, the scanners must be re-run from the project root.
+
+## 2. PGF Compilation: The "Last Man Standing" Fix
+
+We discovered that standard `gf -make` commands in a loop overwrite the binary, resulting in a PGF containing only the final language in the list (e.g., `WikiXho`).
+
+* **The Two-Phase Build**:
+1. **Verification Phase**: Use `gf -c -batch` for each language. The `-c` flag generates intermediate `.gfo` files without touching the PGF. The `-batch` flag is mandatory to prevent the terminal from hanging on EOF (User input) prompts for every language.
+2. **Linking Phase**: A single `gf -make` command must then be called, passing the Abstract grammar and **all** valid concrete file paths simultaneously.
+
+
+* **Standardized Output**: The binary must be named `AbstractWiki.pgf` and reside in the `gf/` directory to satisfy the API configuration.
+
+## 3. Path Resolution & Environment Anchoring
+
+The Orchestrator must be "Root-Aware" to bridge the gap between Python and GF.
+
+* **RGL Priority**: The system should prioritize local RGL source files found in `../gf-rgl/src` over system-level installations (e.g., `/usr/share/...`). This ensures Tier 1 languages (English, French, etc.) are compiled from the most recent project source.
+* **Factory Base**: The generated "Factory" grammars live in `root/generated/src/`, which is one level up from the `gf/` build directory.
+* **GF Path Arguments**: When calling the GF compiler, the `-path` argument must be a deduped, `os.pathsep`-joined string of the current `gf/` dir, the RGL source dir, and the specific Factory folder for that language.
+
+## 4. API & Semantic Frame Requirements
+
+The API enforces a strict biographical semantic frame that must be followed for successful generation.
+
+* **Nested Payload Structure**: The endpoint `/api/v1/generate` requires a `language_code` and a `frame` object.
+* **BioFrame Schema**:
+* **`subject`**: Must contain `name` and `gender`.
+* **`properties`**: Must contain `profession` and `nationality`.
+
+
+* **Worker Synchronization**: The `arq` worker loads the PGF into memory only once at startup. **Any update to `AbstractWiki.pgf` requires a manual restart of the worker** (`arq app.workers.worker.WorkerSettings`) to reflect the changes.
+
+## 5. Critical Build stats to Remember
+
+* **Stats Audit**: A successful build of the Tier 1 and Tier 3 languages should result in **30+ valid languages** being linked.
+* **Verification Command**: Always run this Python snippet immediately after a build to verify the binary's contents:
+`python3 -c "import pgf; print(pgf.readPGF('gf/AbstractWiki.pgf').languages.keys())"`
+
+---
+
+
+
+
+
+# Technical Documentation: Universal Orchestration Architecture
+
+## 1. Overview
+
+The **Abstract Wiki Architect** utilizes a data-driven orchestration layer to manage the state and compilation of multilingual grammars. Rather than relying on hardcoded configurations, the system uses a "Source of Truth" known as the **Everything Matrix** to track language maturity across the foundation (RGL), vocabulary (Lexicon), and production (Application) layers.
+
+---
+
+## 2. The Everything Matrix
+
+The Matrix is a centralized JSON artifact located at `data/indices/everything_matrix.json`. It serves as the registry for every supported ISO 639-3 language code and stores metadata including:
+
+* **Tier/Maturity**: Classification (e.g., Tier 1 for RGL-based, Tier 3 for Factory-generated).
+* **Source Paths**: Exact disk locations for grammar source files in `gf-rgl` or `generated/src`.
+* **Maturity Metrics**: Vocabulary coverage, API route availability, and compilation health.
+
+---
+
+## 3. The Modular Scanner Suite
+
+The Matrix is populated by a suite of specialized auditing tools located in `tools/everything_matrix/`.
+
+### A. Matrix Builder (`build_index.py`)
+
+The master orchestrator of the audit process. It executes all sub-scanners, aggregates their findings, and writes the final JSON index.
+
+### B. RGL Scanner (`rgl_scanner.py`)
+
+Responsible for "Zone A" (Foundation). It scans the `gf-rgl/src` directory to identify mature languages and maps them to their respective ISO codes.
+
+### C. Lexicon Scanner (`lexicon_scanner.py`)
+
+Responsible for "Zone B" (Lexicon). It audits the `data/lexicon/` directory to measure vocabulary size and the presence of AI-generated seeds.
+
+### D. Application Scanner (`app_scanner.py`)
+
+Responsible for "Zone C" (Application). It verifies if a language has a corresponding frontend profile and active backend API routes.
+
+### E. RGL Auditor (`rgl_auditor.py`)
+
+Responsible for "Zone D" (Quality). It performs deep-tissue checks on grammar files to ensure they meet the syntactical requirements for the Abstract Wiki project.
+
+---
+
+## 4. Build Orchestration Logic
+
+The **Build Orchestrator** (`gf/build_orchestrator.py`) utilizes the findings of the scanners to perform high-fidelity linking of the Grammatical Framework (GF) files.
+
+### Compilation Strategy
+
+1. **Isolated Verification**: The script uses `gf -c -batch` to verify individual languages in isolation, generating intermediate `.gfo` files without overwriting the master binary.
+2. **Global Linking**: Once all languages are verified, a final `-make` command links all valid languages into a single PGF binary: `gf/AbstractWiki.pgf`.
+3. **Path Resolution**: Paths are resolved dynamically by looking for local `gf-rgl/src` folders first, ensuring the build is independent of system-level library configurations.
+
+---
+
+## 5. Maintenance Procedures
+
+### To Refresh the System State:
+
+Run the indexer from the project root:
+
+```bash
+python3 tools/everything_matrix/build_index.py
+
+```
+
+### To Rebuild the PGF Binary:
+
+Run the orchestrator from the `gf/` directory:
+
+```bash
+cd gf && python3 build_orchestrator.py
+
+```
+
+### To Verify Binary Content:
+
+```bash
+python3 -c "import pgf; print(pgf.readPGF('gf/AbstractWiki.pgf').languages.keys())"
+
+```
+
+---
+
+
+
+### Final Technical Specification: Abstract Wiki Architect (AWA) Orchestration Layer
+
+This document summarizes the non-obvious architectural requirements, discovered bottlenecks, and the structural "Source of Truth" logic necessary to maintain the Abstract Wiki project.
+
+---
+
+## 1. The Source of Truth: The "Everything Matrix"
+
+The system operates on a data-driven model where the build process is a reflection of the system's audited state.
+
+* **The Registry**: All project metadata resides in `data/indices/everything_matrix.json`.
+* **The Scanning Suite**: The Matrix is populated by a modular suite of tools in `tools/everything_matrix/`:
+* **`rgl_scanner.py`**: Maps Tier 1 mature languages in `gf-rgl/src` to ISO codes.
+* **`lexicon_scanner.py`**: Audits `data/lexicon/` to verify vocabulary seeds and AI-generated content.
+* **`app_scanner.py`**: Checks the application layer for UI profiles and active API routes.
+* **`rgl_auditor.py`**: Performs deep-tissue quality checks on the RGL foundation.
+* **`build_index.py`**: The master script that coordinates all scanners to refresh the Matrix.
+
+
+
+---
+
+## 2. PGF Compilation Strategy
+
+We identified a critical "Last Man Standing" bug where sequential `-make` commands overwrite the binary. The solution is a two-phase compilation process.
+
+* **Phase 1: Isolated Verification (`-c`)**: Individual languages are compiled using the `-c` (compile only) flag to generate intermediate `.gfo` files.
+* **Phase 2: Global Linking (`-make`)**: A single, final call to `gf -make` must include the Abstract grammar and *all* valid concrete files simultaneously to produce a complete PGF.
+* **Automation Requirements**: The `-batch` flag is mandatory in all GF calls to prevent the process from hanging on user-input prompts (EOF/Ctrl+D).
+* **Output Standardization**: The final artifact must be named `AbstractWiki.pgf` and placed in the `gf/` directory to ensure API compatibility.
+
+---
+
+## 3. Path Resolution and Environment Anchoring
+
+The Orchestrator bridges the gap between the project root and the `gf/` build directory.
+
+* **RGL Priority**: The builder is configured to prioritize local source files in `../gf-rgl/src` over system-level library installations.
+* **Factory Location**: "Factory" grammars (Tier 3) are located in `root/generated/src/`, which is one level above the compilation directory.
+* **Dynamic Pathing**: The `-path` argument for GF must be a deduped, separator-joined string including the RGL source, the Abstract directory, and specific Factory subfolders.
+
+---
+
+## 4. Operational Requirements (The "Grand Test" Flow)
+
+For the system to function in a live environment, the following state transitions must occur:
+
+1. **Audit**: Run `python3 tools/everything_matrix/build_index.py` to update the Matrix.
+2. **Build**: Run `python3 gf/build_orchestrator.py` to generate the 30+ language PGF.
+3. **Sync**: **Crucial Step:** The `arq` worker must be restarted (`arq app.workers.worker.WorkerSettings`) to load the new PGF into memory.
+4. **Validate**: Use the semantic payload structure for testing:
+* **Endpoint**: `POST /api/v1/generate`
+* **Payload**: Requires a `language_code` and a `frame` object containing a `subject` (name, gender) and `properties` (profession, nationality).
+
+
+
+---
+
+## 5. Verification Checkpoint
+
+Always verify the binary's integrity post-build with this command:
+`python3 -c "import pgf; print(pgf.readPGF('gf/AbstractWiki.pgf').languages.keys())"`
+*A healthy build must return a list containing both Tier 1 (e.g., `WikiFra`, `WikiEng`) and Tier 3 (e.g., `WikiXho`, `WikiZul`) languages.*

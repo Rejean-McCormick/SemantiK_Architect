@@ -11,6 +11,29 @@
     },
     "path_root": "gf-rgl/src/afrikaans"
   },
+  "Amh": {
+    "rgl_code": "Amh",
+    "strategy": "SAFE_MODE",
+    "modules": {
+      "Cat": "gf-rgl/src/amharic/CatAmh.gf",
+      "Grammar": "gf-rgl/src/amharic/GrammarAmh.gf",
+      "Noun": "gf-rgl/src/amharic/NounAmh.gf",
+      "Paradigms": "gf-rgl/src/amharic/ParadigmsAmh.gf"
+    },
+    "path_root": "gf-rgl/src/amharic"
+  },
+  "Ara": {
+    "rgl_code": "Ara",
+    "strategy": "HIGH_ROAD",
+    "modules": {
+      "Syntax": "gf-rgl/src/api/SyntaxAra.gf",
+      "Cat": "gf-rgl/src/arabic/CatAra.gf",
+      "Grammar": "gf-rgl/src/arabic/GrammarAra.gf",
+      "Noun": "gf-rgl/src/arabic/NounAra.gf",
+      "Paradigms": "gf-rgl/src/arabic/ParadigmsAra.gf"
+    },
+    "path_root": "gf-rgl/src/api"
+  },
   "Bul": {
     "rgl_code": "Bul",
     "strategy": "HIGH_ROAD",

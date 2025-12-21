@@ -1,4 +1,4 @@
-# gf\build_orchestrator.py
+# gf/build_orchestrator.py
 import os
 import subprocess
 import sys
@@ -8,7 +8,6 @@ import shutil
 # CONFIGURATION
 # ===========================================================================
 
-# The Master List of ISO 639-3 codes to support.
 TARGET_LANGUAGES = [
     # --- Tier 1: Core RGL (Mature) ---
     "eng", "fra", "deu", "spa", "ita", "swe", "por", "rus", "zho", "jpn",
@@ -75,7 +74,7 @@ VOCAB_STUBS = {
 }
 
 GF_DIR = os.path.dirname(os.path.abspath(__file__))
-PGF_OUTPUT_FILE = os.path.join(GF_DIR, "Wiki.pgf")
+PGF_OUTPUT_FILE = os.path.join(GF_DIR, "AbstractWiki.pgf")
 ABSTRACT_NAME = "AbstractWiki"
 BUILD_LOGS_DIR = os.path.join(GF_DIR, "build_logs")
 
@@ -145,7 +144,14 @@ def generate_rgl_connector(iso_code):
 def get_base_paths():
     rgl_base = os.environ.get("GF_LIB_PATH")
     if not rgl_base:
-        for p in ["/usr/local/lib/gf", r"C:\gf-rgl-20250812", r"C:\Program Files\GF\lib"]:
+        possible_paths = [
+            "/usr/share/x86_64-linux-ghc-9.6.7/gf-3.12.0/lib",
+            "/usr/local/lib/gf", 
+            "/usr/lib/gf",
+            r"C:\gf-rgl-20250812", 
+            r"C:\Program Files\GF\lib"
+        ]
+        for p in possible_paths:
             if os.path.exists(p): rgl_base = p; break
     
     rgl_src_base = None
@@ -161,8 +167,13 @@ def resolve_language_path(iso_code, rgl_src_base):
     target_file = f"Wiki{suffix}.gf"
     
     contrib_base = os.path.join(GF_DIR, "contrib")
-    factory_base = os.path.join(GF_DIR, "generated", "src")
     
+    project_root = os.path.dirname(GF_DIR)
+    factory_base = os.path.join(project_root, "generated", "src")
+    
+    if not os.path.exists(factory_base):
+        factory_base = os.path.join(GF_DIR, "generated", "src")
+
     paths = [GF_DIR, "."] 
 
     if rgl_src_base:
@@ -198,7 +209,9 @@ def resolve_language_path(iso_code, rgl_src_base):
             
             if syntax_exists:
                 generated_file = os.path.join(GF_DIR, target_file)
-                generate_rgl_connector(iso_code)
+                # Only generate if it doesn't exist
+                if not os.path.exists(generated_file):
+                    generate_rgl_connector(iso_code)
                 paths.append(full_rgl_path)
                 shared = ISO_TO_SHARED_LIB.get(iso_code)
                 if shared: paths.append(os.path.join(rgl_src_base, shared))
@@ -207,24 +220,29 @@ def resolve_language_path(iso_code, rgl_src_base):
     return None, None
 
 def main():
-    print("🚀 Abstract Wiki Architect: Assembly Line (Logging Mode)")
+    print("🚀 Abstract Wiki Architect: Assembly Line (Optimization Mode)")
     
-    # 0. Setup Logs Directory
     if os.path.exists(BUILD_LOGS_DIR):
         shutil.rmtree(BUILD_LOGS_DIR)
     os.makedirs(BUILD_LOGS_DIR)
     print(f"[*] Logs initialized at: {BUILD_LOGS_DIR}")
 
-    # 1. Generate & Compile Abstract Grammar FIRST
+    if os.path.exists(PGF_OUTPUT_FILE):
+        os.remove(PGF_OUTPUT_FILE)
+    generated_pgf_temp = os.path.join(GF_DIR, f"{ABSTRACT_NAME}.pgf")
+    if os.path.exists(generated_pgf_temp):
+        os.remove(generated_pgf_temp)
+
+    # 1. Compile Abstract
     print("[-] Compiling AbstractWiki.gf...")
     generate_abstract()
     generate_interface()
     
     abs_path = os.path.join(GF_DIR, "AbstractWiki.gf")
-    
     env = os.environ.copy()
     try:
-        cmd = ["gf", "-make", "-v", abs_path]
+        # -batch needed here too for safety
+        cmd = ["gf", "-batch", "-c", abs_path] 
         subprocess.run(cmd, check=True, cwd=GF_DIR, env=env)
         print("✅ AbstractWiki.gfo created.")
     except subprocess.CalledProcessError:
@@ -241,7 +259,9 @@ def main():
     for iso in TARGET_LANGUAGES:
         file_path, paths = resolve_language_path(iso, rgl_src_base)
         
-        if not file_path:
+        # LOGGING IF SKIPPED (This helps debug missing English/French)
+        if not file_path: 
+            # print(f"⚠️  Skipped {iso}: RGL source not found.") 
             continue
 
         if GF_DIR not in paths: paths.insert(0, GF_DIR)
@@ -252,8 +272,8 @@ def main():
         
         path_arg = os.pathsep.join(deduped_paths)
         
-        # Compile individual language
-        cmd = ["gf", "-make", "-v", "-path", path_arg, file_path]
+        # --- FIXED: Added -batch so it never prompts for user input ---
+        cmd = ["gf", "-batch", "-c", "-path", path_arg, file_path]
         
         try:
             result = subprocess.run(
@@ -265,56 +285,45 @@ def main():
             )
             
             if result.returncode == 0:
-                print(f"✅ {iso}: Compiled")
+                print(f"✅ {iso}: Verified")
                 valid_files.append(file_path)
                 for p in deduped_paths: 
                     if p not in all_paths: all_paths.append(p)
             else:
                 log_file = os.path.join(BUILD_LOGS_DIR, f"{iso}.log")
-                print(f"❌ {iso}: Failed (See {iso}.log)")
-                
-                # Write individual log file
+                print(f"❌ {iso}: Failed")
                 with open(log_file, "w", encoding="utf-8") as f:
-                    f.write(f"--- COMPILE ERROR FOR {iso} ---\n")
-                    f.write(f"COMMAND: {' '.join(cmd)}\n")
-                    f.write("-" * 40 + "\n")
-                    f.write(result.stderr)
-                    f.write(result.stdout)
-                
+                    f.write(result.stderr + "\n" + result.stdout)
                 failed_langs.append(iso)
 
         except Exception as e:
             print(f"❌ {iso}: Process Error {e}")
             failed_langs.append(iso)
 
-    if failed_langs:
-        print(f"\n⚠️  {len(failed_langs)} languages failed. Check {BUILD_LOGS_DIR}/<lang>.log")
-    
     if not valid_files:
         print("❌ Critical: No languages compiled successfully.")
         sys.exit(1)
 
-    print(f"\n🔗 Linking {len(valid_files)} valid languages into Wiki.pgf...")
+    print(f"\n🔗 Linking {len(valid_files)} valid languages into {os.path.basename(PGF_OUTPUT_FILE)}...")
     
     final_paths = list(all_paths)
     if GF_DIR not in final_paths: final_paths.insert(0, GF_DIR)
-    
     path_arg = os.pathsep.join(final_paths)
     
-    build_cmd = ["gf", "-make", "-path", path_arg, "AbstractWiki.gf"] + valid_files
+    # Final link still needs -make, but -batch ensures it exits
+    build_cmd = ["gf", "-batch", "-make", "-path", path_arg, "AbstractWiki.gf"] + valid_files
     
     try:
         subprocess.run(build_cmd, check=True, cwd=GF_DIR, env=env)
         
-        generated_pgf = os.path.join(GF_DIR, f"{ABSTRACT_NAME}.pgf")
-        if os.path.exists(generated_pgf):
-            if os.path.exists(PGF_OUTPUT_FILE):
-                os.remove(PGF_OUTPUT_FILE)
-            os.rename(generated_pgf, PGF_OUTPUT_FILE)
+        if os.path.exists(generated_pgf_temp):
+            if os.path.abspath(generated_pgf_temp) != os.path.abspath(PGF_OUTPUT_FILE):
+                if os.path.exists(PGF_OUTPUT_FILE):
+                    os.remove(PGF_OUTPUT_FILE)
+                os.rename(generated_pgf_temp, PGF_OUTPUT_FILE)
+            
             print(f"📦 SUCCESS! Binary created at: {PGF_OUTPUT_FILE}")
             print(f"📊 Stats: {len(valid_files)} included, {len(failed_langs)} skipped.")
-            
-            # FORCE SUCCESS EXIT for Docker so container starts even with partial languages
             sys.exit(0)
         else:
             print("❌ Linker failed: PGF not created.")

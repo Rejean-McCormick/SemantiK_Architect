@@ -1,3 +1,0 @@
-WikiBul.gf:17:
-  Happened in the renaming of apple_N
-   unknown qualified constant P.mkN
