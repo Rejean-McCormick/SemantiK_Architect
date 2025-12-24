@@ -1,3 +1,4 @@
+# tools/everything_matrix/build_index.py
 import os
 import json
 import time
@@ -11,19 +12,20 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 # --- CONFIGURATION ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DATA_DIR = os.path.join(BASE_DIR, "data", "indices")
-MATRIX_FILE = os.path.join(DATA_DIR, "everything_matrix.json")
-CHECKSUM_FILE = os.path.join(DATA_DIR, "filesystem.checksum")
+BASE_DIR = Path(__file__).parent.parent.parent
+DATA_DIR = BASE_DIR / "data" / "indices"
+MATRIX_FILE = DATA_DIR / "everything_matrix.json"
+CHECKSUM_FILE = DATA_DIR / "filesystem.checksum"
 
-LEXICON_DIR = os.path.join(BASE_DIR, "data", "lexicon")
-RGL_SRC = os.path.join(BASE_DIR, "gf-rgl", "src")
-FACTORY_SRC = os.path.join(BASE_DIR, "gf", "generated", "src") # Adjusted path for correctness
+LEXICON_DIR = BASE_DIR / "data" / "lexicon"
+RGL_SRC = BASE_DIR / "gf-rgl" / "src"
+FACTORY_SRC = BASE_DIR / "gf" / "generated" / "src"
+GF_ARTIFACTS = BASE_DIR / "gf"
 
 # Add current dir to path to import sibling scanners
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Attempt to import scanners
+# Import Scanners (Graceful degradation if missing)
 try:
     import rgl_auditor
 except ImportError:
@@ -33,6 +35,11 @@ try:
     import lexicon_scanner
 except ImportError:
     lexicon_scanner = None
+
+try:
+    import qa_scanner
+except ImportError:
+    qa_scanner = None
 
 # Map ISO codes to RGL folder names (Truncated for brevity, fully supported)
 ISO_TO_RGL_FOLDER = {
@@ -53,19 +60,18 @@ ISO_TO_RGL_FOLDER = {
 def get_directory_fingerprint(paths):
     """
     Calculates a quick MD5 hash of directory states based on modification times.
-    This avoids reading file contents, making the check nearly instant.
     """
     hasher = hashlib.md5()
     for path in paths:
-        if not os.path.exists(path):
+        path = Path(path)
+        if not path.exists():
             continue
         # Walk the tree
         for root, dirs, files in os.walk(path):
             for name in sorted(files):
-                # We hash the filename and the modification time
-                filepath = os.path.join(root, name)
+                filepath = Path(root) / name
                 try:
-                    mtime = os.path.getmtime(filepath)
+                    mtime = filepath.stat().st_mtime
                     raw = f"{name}|{mtime}"
                     hasher.update(raw.encode('utf-8'))
                 except OSError:
@@ -76,13 +82,11 @@ def scan_system():
     # ---------------------------------------------------------
     # 0. Caching Logic (The Optimizer)
     # ---------------------------------------------------------
-    os.makedirs(DATA_DIR, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     
-    # Calculate current state
     current_fingerprint = get_directory_fingerprint([RGL_SRC, LEXICON_DIR, FACTORY_SRC])
     
-    # Check stored state
-    if os.path.exists(CHECKSUM_FILE) and os.path.exists(MATRIX_FILE):
+    if CHECKSUM_FILE.exists() and MATRIX_FILE.exists():
         with open(CHECKSUM_FILE, 'r') as f:
             stored_fingerprint = f.read().strip()
         
@@ -90,106 +94,105 @@ def scan_system():
             logger.info("⚡ Cache Hit: Filesystem unchanged. Skipping scan.")
             return
 
-    logger.info("🧠 Everything Matrix: Deep System Scan Initiated...")
+    logger.info("🧠 Everything Matrix v2.1: Deep System Scan Initiated...")
     
-    languages = {}
-
-    # ---------------------------------------------------------
-    # 1. Scan Tier 1 (RGL - High Quality)
-    # ---------------------------------------------------------
-    if os.path.exists(RGL_SRC):
-        for iso, folder in ISO_TO_RGL_FOLDER.items():
-            path = os.path.join(RGL_SRC, folder)
-            if os.path.exists(path):
-                
-                # Default values
-                rgl_score = 10
-                strategy = "HIGH_ROAD"
-                blocks = {}
-                
-                # Perform Deep Audit if module exists
-                if rgl_auditor:
-                    audit_result = rgl_auditor.audit_language(iso, path)
-                    rgl_score = audit_result.get("score", 0)
-                    blocks = audit_result.get("blocks", {})
-                    
-                    # Downgrade strategy if critical files are missing
-                    if rgl_score < 7:
-                        strategy = "SAFE_MODE"
-                        # logger.warning(f"🔻 Downgrading {iso} to SAFE_MODE (Score: {rgl_score}/10)")
-
-                languages[iso] = {
-                    "meta": {
-                        "iso": iso,
-                        "tier": 1,
-                        "origin": "rgl",
-                        "folder": folder
-                    },
-                    "paths": {
-                        "source": path
-                    },
-                    "blocks": blocks,
-                    "status": {
-                        "build_strategy": strategy,
-                        "maturity_score": rgl_score
-                    }
-                }
+    matrix_langs = {}
     
-    # ---------------------------------------------------------
-    # 2. Scan Tier 3 (Factory - Generated)
-    # ---------------------------------------------------------
-    if os.path.exists(FACTORY_SRC):
-        for item in os.listdir(FACTORY_SRC):
-            # Check if it looks like an ISO code folder
-            if len(item) == 3 and os.path.isdir(os.path.join(FACTORY_SRC, item)):
-                iso = item.lower()
-                path = os.path.join(FACTORY_SRC, item)
-                
-                # If language already exists (Tier 1), just add the factory path
-                if iso in languages:
-                    languages[iso]["paths"]["factory"] = path
-                else:
-                    # New Tier 3 Language
-                    languages[iso] = {
-                        "meta": {
-                            "iso": iso,
-                            "tier": 3,
-                            "origin": "factory"
-                        },
-                        "paths": {
-                            "source": path
-                        },
-                        "blocks": {
-                            "rgl_grammar": 5, 
-                            "rgl_syntax": 5
-                        },
-                        "status": {
-                            "build_strategy": "SAFE_MODE", 
-                            "maturity_score": 5
-                        }
-                    }
+    # Discovery: Collect all unique ISO codes from RGL, Factory, and Lexicon
+    all_isos = set(ISO_TO_RGL_FOLDER.keys())
+    
+    if FACTORY_SRC.exists():
+        all_isos.update([p.name for p in FACTORY_SRC.iterdir() if p.is_dir() and len(p.name) == 3])
+    
+    if LEXICON_DIR.exists():
+        all_isos.update([p.name for p in LEXICON_DIR.iterdir() if p.is_dir() and len(p.name) == 3])
 
     # ---------------------------------------------------------
-    # 3. Zone B: Lexicon Audit
+    # SCAN LOOP
     # ---------------------------------------------------------
-    if lexicon_scanner:
-        # logger.info("📚 Scanning Lexicons...")
-        for iso, data in languages.items():
-            lex_stats = lexicon_scanner.audit_lexicon(iso, LEXICON_DIR)
-            
-            # Merge lexicon stats into blocks
-            data.setdefault("blocks", {}).update({
-                "lex_seed": lex_stats.get("seed_score", 0),
-                "lex_wide": lex_stats.get("wide_score", 0),
-                "vocab_size": lex_stats.get("total_count", 0)
-            })
+    for iso in sorted(all_isos):
+        # --- Zone A: RGL Engine (Logic) ---
+        zone_a = {"CAT": 0, "NOUN": 0, "PARA": 0, "GRAM": 0, "SYN": 0}
+        tier = 3
+        origin = "factory"
+        
+        # Check if it's a Tier 1 RGL language
+        if iso in ISO_TO_RGL_FOLDER and rgl_auditor:
+            rgl_path = RGL_SRC / ISO_TO_RGL_FOLDER[iso]
+            if rgl_path.exists():
+                tier = 1
+                origin = "rgl"
+                # Adapt legacy return format if needed, or assume rgl_auditor returns dict
+                # Assuming rgl_auditor.scan_rgl(iso, rgl_path) returns the Zone A dict
+                if hasattr(rgl_auditor, 'scan_rgl'):
+                    zone_a = rgl_auditor.scan_rgl(iso, rgl_path)
+                elif hasattr(rgl_auditor, 'audit_language'):
+                    # Fallback for older auditor interface
+                    audit = rgl_auditor.audit_language(iso, rgl_path)
+                    zone_a = audit.get("blocks", zone_a)
 
-            # Update overall maturity based on lexicon
-            if lex_stats.get("seed_score", 0) == 0:
-                data["status"]["maturity_score"] = min(data["status"]["maturity_score"], 3)
-                data["status"]["data_ready"] = False
-            else:
-                data["status"]["data_ready"] = True
+        # --- Zone B & C: Lexicon & App (Data) ---
+        zone_b = {"SEED": 0.0, "CONC": 0.0, "WIDE": 0.0, "SEM": 0.0}
+        zone_c = {"PROF": 0.0, "ASST": 0.0, "ROUT": 0.0}
+        
+        if lexicon_scanner:
+            lex_stats = lexicon_scanner.scan_lexicon_health(iso, LEXICON_DIR)
+            # Map flattened scanner output to Zones
+            zone_b = {k: lex_stats.get(k, 0.0) for k in zone_b}
+            zone_c = {k: lex_stats.get(k, 0.0) for k in zone_c}
+
+        # --- Zone D: Quality (Artifacts) ---
+        zone_d = {"BIN": 0.0, "TEST": 0.0}
+        if qa_scanner:
+            zone_d = qa_scanner.scan_artifacts(iso, GF_ARTIFACTS)
+
+        # ---------------------------------------------------------
+        # SCORING & DECISION LOGIC
+        # ---------------------------------------------------------
+        # Calculate Logic Score (Zone A Average)
+        score_a = sum(zone_a.values()) / 5 if zone_a else 0
+        
+        # Calculate Data Score (Zone B weighted: SEED + CONC + SEM)
+        score_b = (zone_b["SEED"] + zone_b["CONC"] + zone_b["SEM"]) / 3
+        
+        # Maturity Score (Logic * 0.6 + Data * 0.4)
+        maturity = round((score_a * 0.6) + (score_b * 0.4), 1)
+
+        # Build Strategy Verdict
+        # > 7.0 + Perfect RGL = HIGH_ROAD
+        # > 2.0 = SAFE_MODE (Factory)
+        # < 2.0 = SKIP
+        build_strategy = "SKIP"
+        if maturity > 7.0 and zone_a.get("CAT", 0) == 10:
+            build_strategy = "HIGH_ROAD"
+        elif maturity > 2.0:
+            build_strategy = "SAFE_MODE"
+
+        # Runnable Verdict (Must have Core Seed to prevent runtime crash)
+        runnable = zone_b["SEED"] >= 2.0 or build_strategy == "HIGH_ROAD"
+
+        # ---------------------------------------------------------
+        # BUILD ENTRY
+        # ---------------------------------------------------------
+        matrix_langs[iso] = {
+            "meta": {
+                "iso": iso,
+                "tier": tier,
+                "origin": origin,
+                "folder": ISO_TO_RGL_FOLDER.get(iso, "generated")
+            },
+            "zones": {
+                "A_RGL": zone_a,
+                "B_LEX": zone_b,
+                "C_APP": zone_c,
+                "D_QA": zone_d
+            },
+            "verdict": {
+                "maturity_score": maturity,
+                "build_strategy": build_strategy,
+                "runnable": runnable
+            }
+        }
 
     # ---------------------------------------------------------
     # 4. Save Matrix & Checksum
@@ -197,22 +200,21 @@ def scan_system():
     matrix = {
         "timestamp": time.time(),
         "stats": {
-            "total_languages": len(languages),
-            "tier_1_count": sum(1 for l in languages.values() if l["meta"]["tier"] == 1),
-            "tier_3_count": sum(1 for l in languages.values() if l["meta"]["tier"] == 3),
-            "production_ready": sum(1 for l in languages.values() if l["status"]["maturity_score"] >= 8)
+            "total_languages": len(matrix_langs),
+            "production_ready": sum(1 for l in matrix_langs.values() if l["verdict"]["maturity_score"] >= 8),
+            "safe_mode": sum(1 for l in matrix_langs.values() if l["verdict"]["build_strategy"] == "SAFE_MODE"),
+            "skipped": sum(1 for l in matrix_langs.values() if l["verdict"]["build_strategy"] == "SKIP"),
         },
-        "languages": languages
+        "languages": matrix_langs
     }
 
     with open(MATRIX_FILE, 'w') as f:
         json.dump(matrix, f, indent=2)
     
-    # Save the new fingerprint
     with open(CHECKSUM_FILE, 'w') as f:
         f.write(current_fingerprint)
     
-    logger.info(f"✅ Matrix Updated: {len(languages)} languages indexed.")
+    logger.info(f"✅ Matrix Updated: {len(matrix_langs)} languages indexed.")
 
 if __name__ == "__main__":
     scan_system()

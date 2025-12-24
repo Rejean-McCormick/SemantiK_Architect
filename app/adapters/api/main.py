@@ -21,7 +21,9 @@ async def lifespan(app: FastAPI):
     1. Startup: Wires DI container, connects to infrastructure.
     2. Shutdown: Closes connections.
     """
-    logger.info("app_startup", env=settings.ENV)
+    # FIX: Use APP_ENV per v2.0 Ledger
+    env_name = getattr(settings, "APP_ENV", "development")
+    logger.info("app_startup", env=env_name)
 
     # 1. Wire the Container
     # We must explicitly tell the container which modules use the @inject decorator.
@@ -52,12 +54,16 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     """Factory function to create the FastAPI application."""
     
+    # Check environment for docs visibility
+    is_dev = getattr(settings, "APP_ENV", "development") == "development"
+    app_name = getattr(settings, "APP_NAME", "Abstract Wiki Architect")
+
     app = FastAPI(
-        title=settings.APP_NAME,
+        title=app_name,
         version="2.0.0",
         description="Abstract Wiki Core Engine (Hexagonal Architecture)",
         lifespan=lifespan,
-        docs_url="/docs" if settings.DEBUG else None,
+        docs_url="/docs" if is_dev else None,
         redoc_url=None
     )
 
@@ -71,9 +77,10 @@ def create_app() -> FastAPI:
     )
 
     # Register Routers
-    app.include_router(health.router)
-    app.include_router(generation.router)
-    app.include_router(management.router)
+    # CRITICAL FIX: Mount under /api/v1 to match v2.0 spec and curl commands
+    app.include_router(health.router, prefix="/api/v1")
+    app.include_router(generation.router, prefix="/api/v1")
+    app.include_router(management.router, prefix="/api/v1")
 
     return app
 
@@ -81,11 +88,13 @@ def start():
     """
     Entry point for the 'architect-api' CLI script defined in pyproject.toml.
     """
+    is_dev = getattr(settings, "APP_ENV", "development") == "development"
+    
     uvicorn.run(
         "app.adapters.api.main:create_app", 
         host="0.0.0.0", 
         port=8000, 
-        reload=settings.DEBUG, 
+        reload=is_dev, 
         factory=True
     )
 

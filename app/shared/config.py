@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # --- Application Meta ---
     APP_NAME: str = "Abstract Wiki Architect"
     
-    # CRITICAL FIX: Alias 'ENV' to 'APP_ENV' so older code finding settings.ENV works
+    # Alias 'ENV' to 'APP_ENV' so older code finding settings.ENV works
     APP_ENV: AppEnv = AppEnv.DEVELOPMENT
     
     @property
@@ -33,13 +33,15 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # --- Security ---
-    API_SECRET: str = "change-me-for-production" 
+    # FIX: Default to None. This enables the "Dev Bypass" in dependencies.py.
+    # If you want security, set API_SECRET in your .env file.
+    API_SECRET: Optional[str] = None
     
     # --- Logging & Observability ---
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
     OTEL_SERVICE_NAME: str = "architect-backend"
-    OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str] = None 
+    OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str] = None
 
     # --- Messaging & State (Redis) ---
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -52,7 +54,7 @@ class Settings(BaseSettings):
     
     # --- AI & DevOps (v2.0) ---
     # Credentials for The Architect, Surgeon, and Judge agents
-    # CRITICAL FIX: Ensure GEMINI_API_KEY is available
+    # Ensure GEMINI_API_KEY is available
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GOOGLE_API_KEY: Optional[str] = None # Deprecated alias for Gemini
     AI_MODEL_NAME: str = "gemini-1.5-pro"
@@ -78,7 +80,7 @@ class Settings(BaseSettings):
     WORKER_CONCURRENCY: int = 2
 
     # --- Feature Flags ---
-    USE_MOCK_GRAMMAR: bool = False 
+    USE_MOCK_GRAMMAR: bool = False
     GF_LIB_PATH: str = "/usr/local/lib/gf"
 
     # --- Dynamic Path Resolution ---
@@ -104,7 +106,7 @@ class Settings(BaseSettings):
 
         # 2. Build from filesystem path
         base = self.FILESYSTEM_REPO_PATH.rstrip("/")
-        filename = "AbstractWiki.pgf" 
+        filename = "AbstractWiki.pgf"
         
         # If the base path already points inside 'gf', don't append it again
         if base.endswith("gf"):

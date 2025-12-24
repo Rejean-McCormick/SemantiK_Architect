@@ -1,4 +1,3 @@
-# app\shared\container.py
 # app/shared/container.py
 from dependency_injector import containers, providers
 from app.shared.config import settings
@@ -23,12 +22,11 @@ class Container(containers.DeclarativeContainer):
     """
 
     # 1. Wiring Configuration
-    # FIX: Added 'health' to the list so it gets injected properly
     wiring_config = containers.WiringConfiguration(
         modules=[
             "app.adapters.api.routers.generation",
             "app.adapters.api.routers.management",
-            "app.adapters.api.routers.languages",
+            # Removed 'languages' router as it is not wired in main.py
             "app.adapters.api.routers.health",
             "app.adapters.api.dependencies",
         ]
@@ -48,7 +46,7 @@ class Container(containers.DeclarativeContainer):
             base_path=settings.FILESYSTEM_REPO_PATH
         )
     
-    # FIX: Create an alias so 'health.py' can find 'lexicon_repository'
+    # Alias so 'health.py' can find 'lexicon_repository'
     lexicon_repository = language_repo
 
     # Grammar Engine (Selector: GF vs Pidgin/Mock)
@@ -65,7 +63,8 @@ class Container(containers.DeclarativeContainer):
     
     generate_text_use_case = providers.Factory(
         GenerateText,
-        grammar_engine=grammar_engine,
+        # CRITICAL FIX: Named argument must match GenerateText.__init__(self, engine, ...)
+        engine=grammar_engine,
     )
 
     build_language_use_case = providers.Factory(

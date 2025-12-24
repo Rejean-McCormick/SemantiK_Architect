@@ -1,202 +1,131 @@
-# utils/grammar_factory.py
-import os
 import json
-import shutil
 from pathlib import Path
-from typing import Dict, List, Tuple
 
-# ===========================================================================
-# CONFIGURATION & PATHS
-# ===========================================================================
+# Load Topology Weights
+ROOT_DIR = Path(__file__).parent.parent
+CONFIG_PATH = ROOT_DIR / "data" / "config" / "topology_weights.json"
 
-# Base Paths (Hybrid WSL/Windows Compatible)
-BASE_DIR = Path(__file__).resolve().parent.parent
-OUTPUT_ROOT = BASE_DIR / "gf" / "generated" / "src"
-CONFIG_DIR = BASE_DIR / "data" / "config"
+DEFAULT_WEIGHTS = {
+    "SVO": {"nsubj": -10, "root": 0, "obj": 10},
+    "SOV": {"nsubj": -10, "obj": -5, "root": 0},
+    "VSO": {"root": -10, "nsubj": 0, "obj": 10},
+    "VOS": {"root": -10, "obj": 5, "nsubj": 10},
+    "OVS": {"obj": -10, "root": 0, "nsubj": 10},
+    "OSV": {"obj": -10, "nsubj": -5, "root": 0}
+}
 
-TOPOLOGY_WEIGHTS_PATH = CONFIG_DIR / "topology_weights.json"
-FACTORY_TARGETS_PATH = CONFIG_DIR / "factory_targets.json"
+# Simple registry for demonstration. In a real system, this comes from 'everything_matrix.json'
+LANG_ORDERS = {
+    "eng": "SVO", "fra": "SVO", "zul": "SVO", "spa": "SVO", "por": "SVO",
+    "jpn": "SOV", "hin": "SOV", "kor": "SOV", "tur": "SOV", "que": "SOV",
+    "gle": "VSO", "ara": "VSO" 
+}
 
-# ===========================================================================
-# LOGIC CLASS
-# ===========================================================================
+def load_weights():
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH) as f:
+            return json.load(f)
+    return DEFAULT_WEIGHTS
 
-class GrammarFactory:
-    def __init__(self):
-        # Load Rules (SVO, SOV definitions)
-        self.weights_db = self._load_json(TOPOLOGY_WEIGHTS_PATH, default={"SVO": {"nsubj": -10, "root": 0, "obj": 10}})
-        # Load Blueprint (Which languages to build)
-        self.targets_db = self._load_json(FACTORY_TARGETS_PATH, default={})
-
-    def _load_json(self, path: Path, default: Dict) -> Dict:
-        """Helper to load JSON config safely."""
-        if not path.exists():
-            print(f"[!] Warning: Config not found at {path}")
-            return default
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            print(f"[!] Error: Corrupt JSON at {path}")
-            return default
-
-    def get_target_config(self, iso_code: str) -> Dict:
-        """Retrieves name and topology order for a language."""
-        return self.targets_db.get(iso_code, {"name": iso_code, "order": "SVO"})
-
-    def create_concrete(self, iso_code: str, order: str = None) -> str:
-        """
-        Public API: Generates the full concrete grammar content string.
-        """
-        target_meta = self.get_target_config(iso_code)
-        
-        human_name = target_meta.get("name", iso_code)
-        # If order is not provided, look it up in targets, fallback to SVO
-        if not order:
-            order = target_meta.get("order", "SVO")
-            
-        gf_name = iso_code.capitalize()
-        
-        # Ensure directories exist
-        out_dir = OUTPUT_ROOT / iso_code.lower()
-        out_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 1. Write Res
-        with open(out_dir / f"Res{gf_name}.gf", "w", encoding="utf-8") as f:
-            f.write(get_res_content(gf_name))
-            
-        # 2. Write Syntax
-        with open(out_dir / f"Syntax{gf_name}.gf", "w", encoding="utf-8") as f:
-            f.write(get_syntax_content(gf_name, order, self.weights_db))
-            
-        # 3. Return Concrete Content (Caller will write this usually, but we return it)
-        return get_concrete_content(gf_name, human_name)
-
-def clean_directory():
-    """Wipes the generated directory to ensure a clean build slate."""
-    if OUTPUT_ROOT.exists():
-        print(f"[*] Cleaning factory output: {OUTPUT_ROOT}")
-        shutil.rmtree(OUTPUT_ROOT)
-    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
-
-# ===========================================================================
-# GF TEMPLATES (The "Pidgin" Generator)
-# ===========================================================================
-
-def get_res_content(gf_name):
+def _build_linearization(components, weights):
     """
-    Generates Res{Lang}.gf - Minimal Type System
+    Sorts components by topological weight and joins them with '++'.
+    components: List of dicts {'code': str, 'role': str}
+    weights: Dict of {role: int}
     """
-    return f"""resource Res{gf_name} = {{
-  param
-    Number = Sg | Pl ;
+    # Sort by the weight of the role (default to 0 if unknown)
+    components.sort(key=lambda x: weights.get(x["role"], 0))
+    # Join the GF code strings
+    return " ++ ".join([item["code"] for item in components])
 
-  oper
-    -- Tier 3 "Pidgin" Type System
-    StrType : Type = {{s : Str}} ;
-    mkStrType : Str -> StrType = \\s -> {{s = s}} ;
-    combine : StrType -> StrType -> StrType = \\a,b -> {{ s = a.s ++ b.s }} ;
-}} ;
-"""
-
-def get_syntax_content(gf_name: str, order_key: str, weights_db: Dict) -> str:
+def generate_safe_mode_grammar(lang_code):
     """
-    Generates Syntax{Lang}.gf using Weighted Topology Sorting.
-    """
-    weights = weights_db.get(order_key, weights_db.get("SVO"))
+    Generates a minimal Safe Mode grammar that implements the 
+    AbstractWiki SEMANTIC interface defined in AbstractWiki.gf.
     
-    # Keys must match topology_weights.json
-    constituents = [
-        {"gf_var": "subj", "role": "nsubj", "weight": weights.get("nsubj", -10)},
-        {"gf_var": "verb", "role": "root",  "weight": weights.get("root", 0)},
-        {"gf_var": "obj",  "role": "obj",   "weight": weights.get("obj", 10)}
+    NOW UPDATED: Uses Weighted Topology for correct word order (SVO/SOV).
+    """
+    weights_db = load_weights()
+    
+    # 1. Determine Language Order (Default to SVO)
+    order = LANG_ORDERS.get(lang_code.lower(), "SVO")
+    weights = weights_db.get(order, weights_db["SVO"])
+    
+    # 2. Construct Linearizations
+    
+    # mkBio: Name (nsubj) + "is a" (root) + Prof/Nat (obj)
+    bio_comps = [
+        {"code": "name",      "role": "nsubj"},
+        {"code": "\"is a\"",  "role": "root"},
+        {"code": "nat ++ prof", "role": "obj"} # Bundle nat+prof as Object
     ]
+    bio_lin = _build_linearization(bio_comps, weights)
+
+    # mkEvent: Subject (nsubj) + "participated in" (root) + Event (obj)
+    event_comps = [
+        {"code": "subject",              "role": "nsubj"},
+        {"code": "\"participated in\"",  "role": "root"},
+        {"code": "event",                "role": "obj"}
+    ]
+    event_lin = _build_linearization(event_comps, weights)
     
-    # Sort by weight (Low -> High = Left -> Right)
-    sorted_constituents = sorted(constituents, key=lambda x: x["weight"])
-    lin_parts = [f"{item['gf_var']}.s" for item in sorted_constituents]
-    lin_rule = " ++ ".join(lin_parts)
-
-    return f"""resource Syntax{gf_name} = open Res{gf_name} in {{
-  oper
-    -- Clause Construction (Weighted Topology: {order_key})
-    mkCl : StrType -> StrType -> StrType -> {{s : Str}} = \\subj, verb, obj -> {{
-      s = {lin_rule}
-    }} ;
+    # mkFact: Subj (nsubj) + Pred (root)
+    # Note: Predicate usually contains the verb, so we treat it as root
+    fact_comps = [
+        {"code": "subj", "role": "nsubj"},
+        {"code": "pred", "role": "root"}
+    ]
+    fact_lin = _build_linearization(fact_comps, weights)
     
-    mkS : {{s : Str}} -> {{s : Str}} = \\cl -> {{ s = cl.s ++ "." }} ;
-    mkNP : StrType -> {{s : Str}} = \\n -> {{s = n.s}} ;
-    mkVP : StrType -> {{s : Str}} = \\v -> {{s = v.s}} ;
-}} ;
-"""
+    # mkIsAProperty: Subj (nsubj) + "is" (root) + Prop (obj)
+    prop_comps = [
+        {"code": "subj",     "role": "nsubj"},
+        {"code": "\"is\"",   "role": "root"},
+        {"code": "prop",     "role": "obj"}
+    ]
+    prop_lin = _build_linearization(prop_comps, weights)
 
-def get_concrete_content(gf_name, human_name, abstract_name="AbstractWiki"):
-    """
-    Generates Wiki{Lang}.gf - The Concrete Implementation
-    """
-    return f"""-- Generated by Grammar Factory for {human_name} ({gf_name})
-concrete Wiki{gf_name} of {abstract_name} = open Res{gf_name}, Syntax{gf_name} in {{
-
+    gf_code = f"""concrete Wiki{lang_code.title()} of AbstractWiki = open Prelude in {{
   lincat
-    Entity = StrType ;
-    Predicate = StrType ;
-    Fact = {{s : Str}} ;
-    Property = StrType ;
-    Modifier = StrType ;
-    Value = StrType ;
+    Entity = Str;
+    Frame = Str;
+    Property = Str;
+    Fact = Str;
+    Predicate = Str;
+    Modifier = Str;
+    Value = Str;
 
   lin
-    mkFact s p = mkS (mkCl s p (mkStrType "")) ;
-    mkIsAProperty s p = mkS (mkCl s (mkStrType ("IS " ++ p.s)) (mkStrType "")) ;
+    -- Dynamic Topology for {lang_code} ({order})
     
-    Entity2NP e = e ;
-    VP2Predicate v = v ;
-    Property2AP p = p ;
-    mkLiteral v = mkStrType v.s ;
-    FactWithMod f m = {{s = f.s ++ m.s}} ; 
+    -- Core Semantics
+    mkFact subj pred = {fact_lin};
+    
+    -- Hardcoded stub for 'is a property'
+    mkIsAProperty subj prop = {prop_lin};
 
-    -- VOCABULARY STUBS (To be replaced by Lexicon/AI)
-    lex_animal_N = mkStrType "{human_name}_Animal" ;
-    lex_cat_N    = mkStrType "{human_name}_Cat" ;
-    lex_walk_V   = mkStrType "{human_name}_Walk" ;
-    lex_blue_A   = mkStrType "{human_name}_Blue" ;
-}} ;
+    -- Specialized Frames (Schema Alignment)
+    -- Bio: Name -> Profession -> Nationality -> Fact
+    mkBio name prof nat = {bio_lin};
+
+    -- Event: Subject -> EventObject -> Fact
+    mkEvent subject event = {event_lin};
+    
+    -- Modifiers
+    FactWithMod fact mod = fact ++ mod;
+    
+    -- Lexical Stubs
+    mkLiteral s = s;
+    
+    -- Type Converters
+    Entity2NP e = e;
+    Property2AP p = p;
+    VP2Predicate p = p;
+
+    -- Required Lexicon Stubs
+    lex_animal_N = "animal";
+    lex_walk_V = "walks";
+    lex_blue_A = "blue";
+}}
 """
-
-# ===========================================================================
-# MAIN EXECUTION (CLI MODE)
-# ===========================================================================
-
-def main():
-    print(f"🏭 Language Factory: Initializing Tier 3 Generation...")
-    
-    factory = GrammarFactory()
-    clean_directory()
-    
-    count = 0
-    # Iterate over the loaded JSON targets
-    for code, config in factory.targets_db.items():
-        human_name = config.get("name", code)
-        order = config.get("order", "SVO")
-        gf_name = code.capitalize()
-        
-        # Write helper files (Res/Syntax)
-        factory.create_concrete(code, order)
-        
-        # Write main file
-        lang_dir = OUTPUT_ROOT / code.lower()
-        concrete_content = get_concrete_content(gf_name, human_name)
-        with open(lang_dir / f"Wiki{gf_name}.gf", "w", encoding="utf-8") as f:
-            f.write(concrete_content)
-
-        count += 1
-
-    # Create dummy API folder
-    api_dir = OUTPUT_ROOT / "api"
-    api_dir.mkdir(exist_ok=True)
-
-    print(f"✅ Generated {count} language grammars in {OUTPUT_ROOT}")
-    print(f"[*] Run 'manage.py build' next to compile the PGF.")
-
-if __name__ == "__main__":
-    main()
+    return gf_code

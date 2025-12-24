@@ -1,4 +1,4 @@
-// architect_frontend\src\components\everything-matrix\LanguageRow.tsx
+// architect_frontend/src/components/everything-matrix/LanguageRow.tsx
 import { LanguageEntry } from '@/types/EverythingMatrix';
 import ScoreCell from './ScoreCell';
 
@@ -7,55 +7,64 @@ interface LanguageRowProps {
 }
 
 export default function LanguageRow({ entry }: LanguageRowProps) {
-  const { meta, blocks, status } = entry;
+  const { meta, zones, verdict } = entry;
 
   // Helper to determine badge color for strategy
   const strategyColor = 
-    status.build_strategy === 'HIGH_ROAD' ? 'bg-green-100 text-green-700' :
-    status.build_strategy === 'SAFE_MODE' ? 'bg-amber-100 text-amber-700' :
+    verdict.build_strategy === 'HIGH_ROAD' ? 'bg-green-100 text-green-700' :
+    verdict.build_strategy === 'SAFE_MODE' ? 'bg-amber-100 text-amber-700' :
     'bg-red-100 text-red-700';
 
+  // "Zombie Languages" (linked but empty) are displayed with low opacity
+  const opacityClass = verdict.runnable ? 'opacity-100' : 'opacity-50 grayscale';
+
   return (
-    <tr className="hover:bg-slate-50 transition-colors">
+    <tr className={`hover:bg-slate-50 transition-colors ${opacityClass}`}>
       {/* Sticky Left Column: Metadata */}
       <td className="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-4 py-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-900">{meta.name}</span>
-            <span className="text-xs text-slate-400">({meta.wiki_code})</span>
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-xs">
-            <span className={`rounded-full px-2 py-0.5 font-medium ${strategyColor}`}>
-              {status.build_strategy}
+            {/* Display Name or ISO code if name missing */}
+            <span className="font-semibold text-slate-900 text-lg">
+              {meta.iso.toUpperCase()}
             </span>
-            <span className="text-slate-500">
-              {status.overall_maturity}/10
+            <span className="text-xs text-slate-400 uppercase tracking-wider">
+              ({meta.origin})
+            </span>
+          </div>
+          
+          <div className="mt-1 flex items-center gap-2 text-xs">
+            <span className={`rounded-full px-2 py-0.5 font-bold text-[10px] uppercase tracking-wide ${strategyColor}`}>
+              {verdict.build_strategy}
+            </span>
+            <span className="font-mono font-bold text-slate-600">
+              {verdict.maturity_score}
             </span>
           </div>
         </div>
       </td>
 
-      {/* ZONE A: RGL FOUNDATION */}
-      <ScoreCell score={blocks.rgl_cat} />
-      <ScoreCell score={blocks.rgl_noun} />
-      <ScoreCell score={blocks.rgl_paradigms} />
-      <ScoreCell score={blocks.rgl_grammar} />
-      <ScoreCell score={blocks.rgl_syntax} isZoneEnd />
+      {/* ZONE A: RGL FOUNDATION (Logic) */}
+      <ScoreCell score={zones.A_RGL.CAT} />
+      <ScoreCell score={zones.A_RGL.NOUN} />
+      <ScoreCell score={zones.A_RGL.PARA} />
+      <ScoreCell score={zones.A_RGL.GRAM} />
+      <ScoreCell score={zones.A_RGL.SYN} isZoneEnd />
 
-      {/* ZONE B: LEXICON */}
-      <ScoreCell score={blocks.lex_seed} />
-      <ScoreCell score={blocks.lex_concrete} />
-      <ScoreCell score={blocks.lex_wide} />
-      <ScoreCell score={blocks.sem_mappings} isZoneEnd />
+      {/* ZONE B: LEXICON (Data) */}
+      <ScoreCell score={zones.B_LEX.SEED} />
+      <ScoreCell score={zones.B_LEX.CONC} />
+      <ScoreCell score={zones.B_LEX.WIDE} />
+      <ScoreCell score={zones.B_LEX.SEM} isZoneEnd />
 
-      {/* ZONE C: APPLICATION */}
-      <ScoreCell score={blocks.app_profile} />
-      <ScoreCell score={blocks.app_assets} />
-      <ScoreCell score={blocks.app_routes} isZoneEnd />
+      {/* ZONE C: APPLICATION (Use Case) */}
+      <ScoreCell score={zones.C_APP.PROF} />
+      <ScoreCell score={zones.C_APP.ASST} />
+      <ScoreCell score={zones.C_APP.ROUT} isZoneEnd />
 
-      {/* ZONE D: QUALITY */}
-      <ScoreCell score={blocks.meta_compile} />
-      <ScoreCell score={blocks.meta_test} />
+      {/* ZONE D: QUALITY (QA) */}
+      <ScoreCell score={zones.D_QA.BIN} />
+      <ScoreCell score={zones.D_QA.TEST} />
     </tr>
   );
 }

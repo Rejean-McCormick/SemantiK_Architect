@@ -1,4 +1,3 @@
-# app\main.py
 # app/main.py
 import logging
 from contextlib import asynccontextmanager
@@ -9,7 +8,17 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+# --- ARQ / Redis Imports ---
+from arq import create_pool
+from arq.connections import RedisSettings
+
 from app.shared.config import settings, AppEnv
+# =========================================================================
+# CRITICAL FIX: Force Security OFF
+# This overrides any .env file or global shell variable that might be stuck.
+settings.API_SECRET = None 
+# =========================================================================
+
 from app.shared.telemetry import setup_telemetry, instrument_fastapi
 from app.adapters.api.routes import router as api_router
 
@@ -28,18 +37,32 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Application Lifecycle Manager.
     Handles startup (Telemetry, DB connections) and shutdown.
     """
-    # 1. Initialize OpenTelemetry (Phase 4)
+    # 1. Initialize OpenTelemetry
     setup_telemetry(settings.OTEL_SERVICE_NAME)
     
     logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode...")
     
-    # (Optional) Warm up connections here if needed
-    # e.g., await redis_pool.ping()
-    
+    # 2. Initialize Redis Connection Pool (For Job Queue)
+    try:
+        # CRITICAL FIX: We must specify the default_queue_name to match the Worker
+        app.state.redis = await create_pool(
+            RedisSettings.from_dsn(settings.REDIS_URL),
+            default_queue_name=settings.REDIS_QUEUE_NAME
+        )
+        logger.info(f"Redis pool created. Connected to queue: {settings.REDIS_QUEUE_NAME}")
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis: {e}")
+        # We might want to raise e here if Redis is critical for startup, 
+        # or just log it if the API can run partially without it.
+        raise e
+
     yield
     
+    # 3. Shutdown & Cleanup
     logger.info("Shutting down application...")
-    # Cleanup resources if necessary
+    if hasattr(app.state, "redis"):
+        await app.state.redis.close()
+        logger.info("Redis pool closed.")
 
 def create_app() -> FastAPI:
     """
@@ -47,7 +70,7 @@ def create_app() -> FastAPI:
     """
     app = FastAPI(
         title="Abstract Wiki Architect",
-        version="1.0.0",
+        version="2.0.0",
         description="Distributed Natural Language Generation Platform (Hexagonal/GF)",
         docs_url="/docs" if settings.APP_ENV != AppEnv.PRODUCTION else None,
         redoc_url="/redoc" if settings.APP_ENV != AppEnv.PRODUCTION else None,

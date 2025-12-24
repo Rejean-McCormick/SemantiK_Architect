@@ -1,7 +1,6 @@
-# app\core\use_cases\generate_text.py
 # app/core/use_cases/generate_text.py
 import structlog
-from typing import Optional
+from typing import Optional, Dict, Any
 from opentelemetry import trace
 
 from app.core.domain.models import Frame, Sentence
@@ -41,10 +40,12 @@ class GenerateText:
             Sentence: The generated text entity.
         """
         with tracer.start_as_current_span("use_case.generate_text") as span:
+            # Safe access to frame_type
+            f_type = getattr(frame, "frame_type", "unknown")
             span.set_attribute("app.lang_code", lang_code)
-            span.set_attribute("app.frame_type", frame.frame_type)
+            span.set_attribute("app.frame_type", f_type)
             
-            logger.info("generation_started", lang=lang_code, frame_type=frame.frame_type)
+            logger.info("generation_started", lang=lang_code, frame_type=f_type)
 
             try:
                 # 1. Validation (Business Rules)
@@ -78,9 +79,23 @@ class GenerateText:
         """
         Enforces strict semantic rules before attempting generation.
         """
-        if not frame.frame_type:
+        # Ensure frame has a type (Pydantic models usually enforce this, but double check)
+        if not hasattr(frame, "frame_type") or not frame.frame_type:
             raise InvalidFrameError("Frame must have a 'frame_type'.")
         
         # Example: Bio frames must have a subject name
-        if frame.frame_type == "bio" and "name" not in frame.subject:
-             raise InvalidFrameError("BioFrame requires a subject with a 'name' field.")
+        if frame.frame_type == "bio":
+            subject = getattr(frame, "subject", None)
+            
+            if not subject:
+                raise InvalidFrameError("BioFrame requires a 'subject'.")
+
+            # V2 FIX: handle both Dict and Entity Object types safely
+            has_name = False
+            if isinstance(subject, dict):
+                has_name = "name" in subject
+            elif hasattr(subject, "name"):
+                has_name = bool(subject.name)
+            
+            if not has_name:
+                 raise InvalidFrameError("BioFrame subject must have a 'name' field.")

@@ -1,1002 +1,12 @@
 {
-  "timestamp": 1766420772.578086,
+  "timestamp": 1766536897.9118588,
   "stats": {
     "total_languages": 77,
-    "tier_1_count": 45,
-    "tier_3_count": 32,
-    "production_ready": 28
+    "production_ready": 0,
+    "safe_mode": 45,
+    "skipped": 32
   },
   "languages": {
-    "eng": {
-      "meta": {
-        "iso": "eng",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "english"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/english"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "fra": {
-      "meta": {
-        "iso": "fra",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "french"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/french"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "deu": {
-      "meta": {
-        "iso": "deu",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "german"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/german"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "spa": {
-      "meta": {
-        "iso": "spa",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "spanish"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/spanish"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "ita": {
-      "meta": {
-        "iso": "ita",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "italian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/italian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "swe": {
-      "meta": {
-        "iso": "swe",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "swedish"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/swedish"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "por": {
-      "meta": {
-        "iso": "por",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "portuguese"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/portuguese"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "rus": {
-      "meta": {
-        "iso": "rus",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "russian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/russian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "zho": {
-      "meta": {
-        "iso": "zho",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "chinese"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/chinese"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "jpn": {
-      "meta": {
-        "iso": "jpn",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "japanese"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/japanese"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "ara": {
-      "meta": {
-        "iso": "ara",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "arabic"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/arabic"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "hin": {
-      "meta": {
-        "iso": "hin",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "hindi"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/hindi"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "fin": {
-      "meta": {
-        "iso": "fin",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "finnish"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/finnish"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "est": {
-      "meta": {
-        "iso": "est",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "estonian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/estonian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "swa": {
-      "meta": {
-        "iso": "swa",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "swahili"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/swahili",
-        "factory": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/swa"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "tur": {
-      "meta": {
-        "iso": "tur",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "turkish"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/turkish"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "bul": {
-      "meta": {
-        "iso": "bul",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "bulgarian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/bulgarian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "pol": {
-      "meta": {
-        "iso": "pol",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "polish"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/polish"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "ron": {
-      "meta": {
-        "iso": "ron",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "romanian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/romanian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "nld": {
-      "meta": {
-        "iso": "nld",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "dutch"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/dutch"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "dan": {
-      "meta": {
-        "iso": "dan",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "danish"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/danish"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "nob": {
-      "meta": {
-        "iso": "nob",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "norwegian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/norwegian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "isl": {
-      "meta": {
-        "iso": "isl",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "icelandic"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/icelandic"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "ell": {
-      "meta": {
-        "iso": "ell",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "greek"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/greek"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 2
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "heb": {
-      "meta": {
-        "iso": "heb",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "hebrew"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/hebrew"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "lav": {
-      "meta": {
-        "iso": "lav",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "latvian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/latvian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 2
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "lit": {
-      "meta": {
-        "iso": "lit",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "lithuanian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/lithuanian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "mlt": {
-      "meta": {
-        "iso": "mlt",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "maltese"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/maltese"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "hun": {
-      "meta": {
-        "iso": "hun",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "hungarian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/hungarian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "cat": {
-      "meta": {
-        "iso": "cat",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "catalan"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/catalan"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 2
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "eus": {
-      "meta": {
-        "iso": "eus",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "basque"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/basque",
-        "factory": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/eus"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "tha": {
-      "meta": {
-        "iso": "tha",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "thai"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/thai"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 2
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "urd": {
-      "meta": {
-        "iso": "urd",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "urdu"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/urdu"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 2
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "fas": {
-      "meta": {
-        "iso": "fas",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "persian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/persian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
-      }
-    },
-    "mon": {
-      "meta": {
-        "iso": "mon",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "mongolian"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/mongolian"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "nep": {
-      "meta": {
-        "iso": "nep",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "nepali"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/nepali"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "pan": {
-      "meta": {
-        "iso": "pan",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "punjabi"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/punjabi"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "snd": {
-      "meta": {
-        "iso": "snd",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "sindhi"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/sindhi"
-      },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
     "afr": {
       "meta": {
         "iso": "afr",
@@ -1004,23 +14,34 @@
         "origin": "rgl",
         "folder": "afrikaans"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/afrikaans"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 2
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
       }
     },
     "amh": {
@@ -1030,23 +51,1218 @@
         "origin": "rgl",
         "folder": "amharic"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/amharic"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "api": {
+      "meta": {
+        "iso": "api",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "ara": {
+      "meta": {
+        "iso": "ara",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "arabic"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "aym": {
+      "meta": {
+        "iso": "aym",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "ben": {
+      "meta": {
+        "iso": "ben",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "bre": {
+      "meta": {
+        "iso": "bre",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "bul": {
+      "meta": {
+        "iso": "bul",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "bulgarian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "cat": {
+      "meta": {
+        "iso": "cat",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "catalan"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "cym": {
+      "meta": {
+        "iso": "cym",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "dan": {
+      "meta": {
+        "iso": "dan",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "danish"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "deu": {
+      "meta": {
+        "iso": "deu",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "german"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "ell": {
+      "meta": {
+        "iso": "ell",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "greek"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "eng": {
+      "meta": {
+        "iso": "eng",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "english"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "est": {
+      "meta": {
+        "iso": "est",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "estonian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "eus": {
+      "meta": {
+        "iso": "eus",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "basque"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "fas": {
+      "meta": {
+        "iso": "fas",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "persian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "fin": {
+      "meta": {
+        "iso": "fin",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "finnish"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "fra": {
+      "meta": {
+        "iso": "fra",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "french"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "fry": {
+      "meta": {
+        "iso": "fry",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "gla": {
+      "meta": {
+        "iso": "gla",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "grn": {
+      "meta": {
+        "iso": "grn",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "hau": {
+      "meta": {
+        "iso": "hau",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "heb": {
+      "meta": {
+        "iso": "heb",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "hebrew"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "hin": {
+      "meta": {
+        "iso": "hin",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "hindi"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "hun": {
+      "meta": {
+        "iso": "hun",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "hungarian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "ibo": {
+      "meta": {
+        "iso": "ibo",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "ind": {
+      "meta": {
+        "iso": "ind",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "isl": {
+      "meta": {
+        "iso": "isl",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "icelandic"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "ita": {
+      "meta": {
+        "iso": "ita",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "italian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "jav": {
+      "meta": {
+        "iso": "jav",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "jpn": {
+      "meta": {
+        "iso": "jpn",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "japanese"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "kaz": {
+      "meta": {
+        "iso": "kaz",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "kin": {
+      "meta": {
+        "iso": "kin",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "kor": {
@@ -1056,24 +1272,71 @@
         "origin": "rgl",
         "folder": "korean"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/korean",
-        "factory": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/kor"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "kur": {
+      "meta": {
+        "iso": "kur",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "lat": {
@@ -1083,23 +1346,441 @@
         "origin": "rgl",
         "folder": "latin"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/latin"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 2
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "lav": {
+      "meta": {
+        "iso": "lav",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "latvian"
       },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 10.0,
-        "data_ready": true
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "lin": {
+      "meta": {
+        "iso": "lin",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "lit": {
+      "meta": {
+        "iso": "lit",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "lithuanian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "lug": {
+      "meta": {
+        "iso": "lug",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "mlt": {
+      "meta": {
+        "iso": "mlt",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "maltese"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "mon": {
+      "meta": {
+        "iso": "mon",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "mongolian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "msa": {
+      "meta": {
+        "iso": "msa",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "nah": {
+      "meta": {
+        "iso": "nah",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "nav": {
+      "meta": {
+        "iso": "nav",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "nep": {
+      "meta": {
+        "iso": "nep",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "nepali"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "nld": {
+      "meta": {
+        "iso": "nld",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "dutch"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
       }
     },
     "nno": {
@@ -1109,23 +1790,330 @@
         "origin": "rgl",
         "folder": "nynorsk"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/nynorsk"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "nob": {
+      "meta": {
+        "iso": "nob",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "norwegian"
       },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "oci": {
+      "meta": {
+        "iso": "oci",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "pan": {
+      "meta": {
+        "iso": "pan",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "punjabi"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "pol": {
+      "meta": {
+        "iso": "pol",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "polish"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "por": {
+      "meta": {
+        "iso": "por",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "portuguese"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "que": {
+      "meta": {
+        "iso": "que",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 1.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "ron": {
+      "meta": {
+        "iso": "ron",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "romanian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "rus": {
+      "meta": {
+        "iso": "rus",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "russian"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
       }
     },
     "slv": {
@@ -1135,23 +2123,71 @@
         "origin": "rgl",
         "folder": "slovenian"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/slovenian"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "snd": {
+      "meta": {
+        "iso": "snd",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "sindhi"
       },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
       }
     },
     "som": {
@@ -1161,728 +2197,663 @@
         "origin": "rgl",
         "folder": "somali"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf-rgl/src/somali",
-        "factory": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/som"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_cat": 10,
-        "rgl_noun": 10,
-        "rgl_grammar": 10,
-        "rgl_paradigms": 10,
-        "rgl_syntax": 10,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "HIGH_ROAD",
-        "maturity_score": 3,
-        "data_ready": false
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
       }
     },
-    "api": {
+    "spa": {
       "meta": {
-        "iso": "api",
-        "tier": 3,
-        "origin": "factory"
+        "iso": "spa",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "spanish"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/api"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
+      "verdict": {
+        "maturity_score": 6.0,
         "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+        "runnable": false
       }
     },
-    "aym": {
+    "swa": {
       "meta": {
-        "iso": "aym",
-        "tier": 3,
-        "origin": "factory"
+        "iso": "swa",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "swahili"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/aym"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
+      "verdict": {
+        "maturity_score": 6.0,
         "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+        "runnable": false
       }
     },
-    "ben": {
+    "swe": {
       "meta": {
-        "iso": "ben",
-        "tier": 3,
-        "origin": "factory"
+        "iso": "swe",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "swedish"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/ben"
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
+      "verdict": {
+        "maturity_score": 6.0,
         "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "bre": {
-      "meta": {
-        "iso": "bre",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/bre"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "cym": {
-      "meta": {
-        "iso": "cym",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/cym"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 5,
-        "data_ready": true
-      }
-    },
-    "fry": {
-      "meta": {
-        "iso": "fry",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/fry"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 5,
-        "data_ready": true
-      }
-    },
-    "gla": {
-      "meta": {
-        "iso": "gla",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/gla"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "grn": {
-      "meta": {
-        "iso": "grn",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/grn"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "hau": {
-      "meta": {
-        "iso": "hau",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/hau"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "ibo": {
-      "meta": {
-        "iso": "ibo",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/ibo"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "ind": {
-      "meta": {
-        "iso": "ind",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/ind"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "jav": {
-      "meta": {
-        "iso": "jav",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/jav"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 5,
-        "data_ready": true
-      }
-    },
-    "kaz": {
-      "meta": {
-        "iso": "kaz",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/kaz"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "kin": {
-      "meta": {
-        "iso": "kin",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/kin"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "kur": {
-      "meta": {
-        "iso": "kur",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/kur"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "lin": {
-      "meta": {
-        "iso": "lin",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/lin"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "lug": {
-      "meta": {
-        "iso": "lug",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/lug"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "msa": {
-      "meta": {
-        "iso": "msa",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/msa"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "nah": {
-      "meta": {
-        "iso": "nah",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/nah"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "nav": {
-      "meta": {
-        "iso": "nav",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/nav"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "oci": {
-      "meta": {
-        "iso": "oci",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/oci"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
-      }
-    },
-    "que": {
-      "meta": {
-        "iso": "que",
-        "tier": 3,
-        "origin": "factory"
-      },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/que"
-      },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+        "runnable": false
       }
     },
     "tam": {
       "meta": {
         "iso": "tam",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "generated"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/tam"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 5,
-        "data_ready": true
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "tat": {
       "meta": {
         "iso": "tat",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "generated"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/tat"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 3,
-        "lex_wide": 0,
-        "vocab_size": 8
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 5,
-        "data_ready": true
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "tel": {
       "meta": {
         "iso": "tel",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "generated"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/tel"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "tgl": {
       "meta": {
         "iso": "tgl",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "tagalog"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/tgl"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "tha": {
+      "meta": {
+        "iso": "tha",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "thai"
       },
-      "status": {
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
         "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+        "runnable": false
+      }
+    },
+    "tur": {
+      "meta": {
+        "iso": "tur",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "turkish"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "urd": {
+      "meta": {
+        "iso": "urd",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "urdu"
+      },
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
       }
     },
     "uzb": {
       "meta": {
         "iso": "uzb",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "generated"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/uzb"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "vie": {
       "meta": {
         "iso": "vie",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "vietnamese"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/vie"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "wol": {
       "meta": {
         "iso": "wol",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "generated"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/wol"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "xho": {
       "meta": {
         "iso": "xho",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "generated"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/xho"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     },
     "yor": {
       "meta": {
         "iso": "yor",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "generated"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/yor"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
+      }
+    },
+    "zho": {
+      "meta": {
+        "iso": "zho",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "chinese"
       },
-      "status": {
+      "zones": {
+        "A_RGL": {
+          "rgl_cat": 10,
+          "rgl_noun": 10,
+          "rgl_grammar": 10,
+          "rgl_paradigms": 10,
+          "rgl_syntax": 10
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "maturity_score": 6.0,
         "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+        "runnable": false
       }
     },
     "zul": {
       "meta": {
         "iso": "zul",
         "tier": 3,
-        "origin": "factory"
+        "origin": "factory",
+        "folder": "generated"
       },
-      "paths": {
-        "source": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/generated/src/zul"
+      "zones": {
+        "A_RGL": {
+          "CAT": 0,
+          "NOUN": 0,
+          "PARA": 0,
+          "GRAM": 0,
+          "SYN": 0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
       },
-      "blocks": {
-        "rgl_grammar": 5,
-        "rgl_syntax": 5,
-        "lex_seed": 0,
-        "lex_wide": 0,
-        "vocab_size": 0
-      },
-      "status": {
-        "build_strategy": "SAFE_MODE",
-        "maturity_score": 3,
-        "data_ready": false
+      "verdict": {
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
+        "runnable": false
       }
     }
   }

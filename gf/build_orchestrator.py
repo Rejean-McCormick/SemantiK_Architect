@@ -1,343 +1,193 @@
+# gf/build_orchestrator.py
 import os
-import json
 import subprocess
 import sys
-import shutil
-import glob
+import json
+import logging
 import concurrent.futures
-import multiprocessing
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
 
-# ===========================================================================
-# CONFIGURATION
-# ===========================================================================
-
-# Paths
-GF_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = GF_DIR.parent
-MATRIX_PATH = PROJECT_ROOT / "data" / "indices" / "everything_matrix.json"
-GENERATED_SRC_DIR = PROJECT_ROOT / "gf" / "generated" / "src"
-BUILD_LOGS_DIR = GF_DIR / "build_logs"
-PGF_OUTPUT_FILE = GF_DIR / "AbstractWiki.pgf"
-ABSTRACT_NAME = "AbstractWiki"
-CONFIG_DIR = PROJECT_ROOT / "data" / "config"
-
-# Add Project Root to Path for Imports
-sys.path.append(str(PROJECT_ROOT))
-
-# Optional: Weighted Topology Factory (Tier 3 Generation)
+# --- Imports ---
+# Allow importing from sibling/parent directories
+sys.path.append(str(Path(__file__).parent.parent))
 try:
-    from utils.grammar_factory import GrammarFactory
-    HAS_FACTORY = True
+    from utils.grammar_factory import generate_safe_mode_grammar
 except ImportError:
-    HAS_FACTORY = False
+    generate_safe_mode_grammar = None
 
-# Logging Colors
-class Colors:
-    INFO = "\033[94m"
-    SUCCESS = "\033[92m"
-    WARN = "\033[93m"
-    ERROR = "\033[91m"
-    RESET = "\033[0m"
+# --- Setup ---
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger("Orchestrator")
 
-def log(level: str, msg: str):
-    c = getattr(Colors, level, Colors.RESET)
-    print(f"{c}[{level}] {msg}{Colors.RESET}")
+ROOT_DIR = Path(__file__).parent.parent
+GF_DIR = ROOT_DIR / "gf"
+RGL_SRC = ROOT_DIR / "gf-rgl" / "src"
+RGL_API = RGL_SRC / "api"  # <--- CRITICAL FIX: Add API path for Syntax.gf
+GENERATED_SRC = ROOT_DIR / "generated" / "src"
+LOG_DIR = GF_DIR / "build_logs"
+MATRIX_FILE = ROOT_DIR / "data" / "indices" / "everything_matrix.json"
 
-# ===========================================================================
-# 1. CORE LOGIC (Picklable for Parallel Execution)
-# ===========================================================================
+# Ensure directories exist
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+GENERATED_SRC.mkdir(parents=True, exist_ok=True)
 
-def generate_abstract_and_interface():
-    """Generates the core Abstract grammar files."""
-    # 1. Abstract
-    abs_path = GF_DIR / f"{ABSTRACT_NAME}.gf"
-    log("INFO", f"Generating Abstract Grammar: {abs_path}")
-    abs_content = f"""abstract {ABSTRACT_NAME} = {{
-  cat Entity; Property; Fact; Predicate; Modifier; Value;
-  fun
-    mkFact : Entity -> Predicate -> Fact;
-    mkIsAProperty : Entity -> Property -> Fact;
-    FactWithMod : Fact -> Modifier -> Fact;
-    mkLiteral : Value -> Entity;
-    Entity2NP : Entity -> Entity; Property2AP : Property -> Property; VP2Predicate : Predicate -> Predicate;
-}}\n"""
-    with open(abs_path, 'w', encoding='utf-8') as f: f.write(abs_content)
-
-    # 2. Interface
-    iface_path = GF_DIR / "WikiI.gf"
-    log("INFO", f"Generating Interface Grammar: {iface_path}")
-    iface_content = f"""incomplete concrete WikiI of {ABSTRACT_NAME} = open Syntax in {{
-  lincat Entity = NP; Property = AP; Fact = S; Predicate = VP; Modifier = Adv; Value = {{s : Str}};
-  lin
-    mkFact s p = mkS (mkCl s p);
-    mkIsAProperty s p = mkS (mkCl s (mkVP p));
-    FactWithMod f m = mkS m f;
-    Entity2NP x = x; Property2AP x = x; VP2Predicate x = x;
-    mkLiteral v = mkNP (mkN v.s); 
-}}\n"""
-    with open(iface_path, 'w', encoding='utf-8') as f: f.write(iface_content)
-
-def get_rgl_base() -> Optional[Path]:
-    """Resolves the location of the RGL library."""
-    # 1. Env Var Override
-    env_path = os.environ.get("GF_LIB_PATH")
-    if env_path and os.path.exists(env_path):
-        return Path(env_path) / "src"
-    
-    # 2. Local Project Sibling
-    internal_path = PROJECT_ROOT / "gf-rgl"
-    if internal_path.exists():
-        return internal_path / "src"
-        
-    return None
-
-def resolve_paths(iso: str, meta: Dict, rgl_base: Optional[Path]) -> Tuple[Optional[Path], List[str]]:
-    """Finds the source file and include paths for a language."""
-    paths = [str(GF_DIR), "."]
-    
-    # Add RGL paths if available
-    if rgl_base:
-        paths.extend([
-            str(rgl_base),
-            str(rgl_base / "api"),
-            str(rgl_base / "prelude"),
-            str(rgl_base / "abstract"),
-            str(rgl_base / "common")
-        ])
-
-    suffix = iso.capitalize()
-    target_file = f"Wiki{suffix}.gf"
-
-    # Strategy A: Check Contrib (Manual Overrides)
-    contrib_path = GF_DIR / "contrib" / iso / target_file
-    if contrib_path.exists():
-        paths.append(str(contrib_path.parent))
-        return contrib_path, paths
-
-    # Strategy B: Check Generated (Factory/AI)
-    gen_path = GENERATED_SRC_DIR / iso.lower() / target_file
-    if gen_path.exists():
-        paths.append(str(gen_path.parent))
-        return gen_path, paths
-
-    # Strategy C: Dynamic RGL Discovery
-    if rgl_base and "folder" in meta:
-        rgl_folder = rgl_base / meta["folder"]
-        if rgl_folder.exists():
-            # 1. Detect actual RGL suffix (e.g. 'Fre' vs 'Fra')
-            # Look for Syntax*.gf
-            candidates = list(rgl_folder.glob("Syntax*.gf"))
-            if candidates:
-                # e.g., SyntaxFre.gf -> Fre
-                detected_suffix = candidates[0].stem.replace("Syntax", "")
-                
-                # 2. Generate Connector if missing
-                connector_path = GF_DIR / f"Wiki{detected_suffix}.gf"
-                if not connector_path.exists():
-                    with open(connector_path, 'w') as f:
-                        f.write(f"concrete Wiki{detected_suffix} of {ABSTRACT_NAME} = WikiI ** open Syntax{detected_suffix}, Paradigms{detected_suffix} in {{}};\n")
-                
-                paths.append(str(rgl_folder))
-                return connector_path, paths
-
-    return None, paths
-
-def attempt_factory_generation(iso: str, meta: Dict) -> bool:
-    """
-    Tier 3 Fallback: Uses Weighted Topology Factory to generate a valid grammar.
-    Replaces the old AI call with a deterministic, local generator.
-    """
-    if not HAS_FACTORY:
-        return False
-        
+def load_matrix():
+    if not MATRIX_FILE.exists():
+        logger.warning("⚠️  Everything Matrix not found. Defaulting to empty.")
+        return {}
     try:
-        # Check if we have topology data
-        topo_file = CONFIG_DIR / "topology_weights.json"
-        if not topo_file.exists():
-            return False
+        with open(MATRIX_FILE) as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        logger.error("❌ Corrupt Everything Matrix. Cannot proceed.")
+        return {}
 
-        # Init Factory
-        factory = GrammarFactory(weights_path=str(topo_file))
-        
-        # Determine Order (default SVO)
-        order = meta.get("blocks", {}).get("topology", "SVO")
-        
-        # Generate Code
-        code = factory.create_concrete(iso, order)
-        
-        # Save
-        out_dir = GENERATED_SRC_DIR / iso.lower()
-        out_dir.mkdir(parents=True, exist_ok=True)
-        
-        suffix = iso.capitalize()
-        with open(out_dir / f"Wiki{suffix}.gf", 'w') as f:
-            f.write(code)
-            
+def ensure_source_exists(lang_code, strategy):
+    """
+    Ensures the .gf source file exists before compilation.
+    If strategy is SAFE_MODE, it triggers the Factory/Architect Agent.
+    """
+    # HIGH_ROAD (Tier 1) assumes files exist in gf/ or are linked RGL files
+    if strategy == "HIGH_ROAD":
         return True
-    except Exception as e:
-        # Silent fail is acceptable here; main loop will catch "file not found"
-        return False
-
-def verify_single_language(args):
-    """
-    Worker Function: Compiles one language in isolation to check validity.
-    Returns: (iso_code, file_path_str, success_bool)
-    """
-    iso, meta, rgl_base_str = args
-    rgl_base = Path(rgl_base_str) if rgl_base_str else None
     
-    # 1. Resolve or Generate
-    file_path, include_paths = resolve_paths(iso, meta, rgl_base)
+    # SAFE_MODE (Tier 3) requires generation
+    target_file = GENERATED_SRC / f"Wiki{lang_code.title()}.gf"
     
-    if not file_path:
-        # Try Factory Generation
-        if attempt_factory_generation(iso, meta):
-            file_path, include_paths = resolve_paths(iso, meta, rgl_base)
-    
-    if not file_path:
-        return iso, None, False
-
-    # 2. Prepare Command
-    # Use -batch -c (Check only)
-    # Deduplicate paths
-    unique_paths = list(dict.fromkeys(include_paths))
-    path_arg = os.pathsep.join(unique_paths)
-    
-    cmd = ["gf", "-batch", "-c", "-path", path_arg, str(file_path)]
-    
-    try:
-        # Run Verification
-        result = subprocess.run(
-            cmd, 
-            cwd=str(GF_DIR), 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
-            text=True
-        )
-        
-        if result.returncode == 0:
-            return iso, str(file_path), True
+    if not target_file.exists():
+        logger.info(f"🔨 Generating grammar for {lang_code} (Factory)...")
+        if generate_safe_mode_grammar:
+            try:
+                code = generate_safe_mode_grammar(lang_code)
+                with open(target_file, "w") as f:
+                    f.write(code)
+                return True
+            except Exception as e:
+                logger.error(f"💥 Generation failed for {lang_code}: {e}")
+                return False
         else:
-            # Log failure to file for the Surgeon to pick up later
-            err_log = BUILD_LOGS_DIR / f"{iso}_error.log"
-            with open(err_log, 'w') as f:
-                f.write(result.stderr)
-            return iso, str(file_path), False
+            logger.error(f"❌ Grammar Factory not imported. Cannot generate {lang_code}.")
+            return False
             
-    except Exception as e:
-        return iso, None, False
+    return True
 
-# ===========================================================================
-# 2. ORCHESTRATOR MAIN
-# ===========================================================================
+def compile_gf(lang_code, strategy):
+    """
+    Compiles a single language to a .gfo object file (Phase 1).
+    """
+    gf_filename = f"Wiki{lang_code.title()}.gf"
+    
+    # Determine Source Path based on Strategy
+    if strategy == "SAFE_MODE":
+        # Factory files live in generated/src
+        file_path = GENERATED_SRC / gf_filename
+    else:
+        # High Road files live in gf/ (manual or rgl wrappers)
+        file_path = GF_DIR / gf_filename
+
+    # Build the Path Arguments
+    # CRITICAL: Must include RGL_SRC (for langs), RGL_API (for Syntax), and GENERATED
+    path_args = f"{RGL_SRC}:{RGL_API}:{GENERATED_SRC}:."
+    
+    cmd = ["gf", "-batch", "-path", path_args, "-c", str(file_path)]
+    
+    # Execute Compiler
+    proc = subprocess.run(cmd, cwd=str(GF_DIR), capture_output=True, text=True)
+    
+    # Log errors if failed
+    if proc.returncode != 0:
+        with open(LOG_DIR / f"Wiki{lang_code.title()}.log", "w") as f:
+            f.write(proc.stderr)
+            
+    return proc
+
+def phase_1_verify(lang_code, strategy):
+    """
+    Phase 1: Verify compilation of individual languages.
+    """
+    if not ensure_source_exists(lang_code, strategy):
+        return (lang_code, False, "Source Missing")
+
+    proc = compile_gf(lang_code, strategy)
+    
+    if proc.returncode == 0:
+        return (lang_code, True, "OK")
+    return (lang_code, False, "Compiler Error")
+
+def phase_2_link(valid_langs_map):
+    """
+    Phase 2: Link all valid .gfo files into a single AbstractWiki.pgf binary.
+    """
+    if not valid_langs_map:
+        logger.error("❌ No valid languages to link! Build aborted.")
+        sys.exit(1)
+
+    # Build the list of concrete grammars to link
+    # We must point GF to the source file location for the linker to find the .gfo
+    targets = []
+    for code, strategy in valid_langs_map.items():
+        lang_name = f"Wiki{code.title()}.gf"
+        
+        if strategy == "SAFE_MODE":
+            # Point to generated folder
+            targets.append(str(GENERATED_SRC / lang_name))
+        else:
+            # Point to local GF folder
+            targets.append(lang_name)
+
+    path_args = f"{RGL_SRC}:{RGL_API}:{GENERATED_SRC}:."
+    
+    # We link against AbstractWiki.gf
+    cmd = ["gf", "-make", "-path", path_args, "-name", "AbstractWiki", "AbstractWiki.gf"] + targets
+
+    logger.info(f"🔗 Linking {len(targets)} languages into PGF binary...")
+    proc = subprocess.run(cmd, cwd=str(GF_DIR), capture_output=True, text=True)
+
+    if proc.returncode == 0:
+        logger.info("✅ BUILD SUCCESS: AbstractWiki.pgf created.")
+    else:
+        logger.error(f"❌ LINK FAILED:\n{proc.stderr}")
 
 def main():
-    log("INFO", "🚀 Abstract Wiki Architect v2.0: Parallel Orchestrator Online")
+    matrix = load_matrix()
+    tasks = []
     
-    # 1. Environment Prep
-    if BUILD_LOGS_DIR.exists(): shutil.rmtree(BUILD_LOGS_DIR)
-    BUILD_LOGS_DIR.mkdir(parents=True)
-    
-    if not MATRIX_PATH.exists():
-        log("ERROR", f"Matrix not found at {MATRIX_PATH}. Run 'build_index.py' first.")
-        sys.exit(1)
-        
-    with open(MATRIX_PATH, 'r') as f:
-        matrix = json.load(f)
-    
-    # Filter active targets
-    targets = {
-        k: v for k, v in matrix.get("languages", {}).items() 
-        if v.get("status", {}).get("build_strategy") != "SKIP"
-    }
-    
-    log("INFO", f"Matrix Loaded: {len(targets)} active targets.")
-
-    # 2. Generate Core Files
-    generate_abstract_and_interface()
-    
-    # 3. Verify Abstract
-    log("INFO", "Verifying Abstract Syntax...")
-    try:
-        subprocess.run(["gf", "-batch", "-c", "AbstractWiki.gf"], check=True, cwd=str(GF_DIR))
-    except subprocess.CalledProcessError:
-        log("ERROR", "Fatal: AbstractWiki.gf failed to compile.")
-        sys.exit(1)
-
-    # 4. Parallel Verification Loop
-    rgl_base = get_rgl_base()
-    rgl_base_str = str(rgl_base) if rgl_base else None
-    
-    # Prepare Arguments for Worker
-    worker_args = [(iso, meta, rgl_base_str) for iso, meta in targets.items()]
-    
-    valid_files = []
-    
-    log("INFO", f"⚡ Verifying {len(targets)} languages in parallel...")
-    
-    # Use CPU count for workers
-    max_workers = multiprocessing.cpu_count()
-    
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        results = list(executor.map(verify_single_language, worker_args))
-        
-    # 5. Process Results
-    for iso, path, success in results:
-        if success:
-            log("SUCCESS", f"✅ {iso}")
-            valid_files.append(path)
-        else:
-            if path:
-                log("ERROR", f"❌ {iso}: Compilation Failed (See logs)")
-            else:
-                log("WARN", f"⚠️  {iso}: Source not found (Skipped)")
-
-    if not valid_files:
-        log("ERROR", "No languages survived verification. Aborting link.")
-        sys.exit(1)
-
-    # 6. Single-Shot Linking (The "Last Man Standing" Fix)
-    log("INFO", "---------------------------------------------------")
-    log("INFO", f"🔗 Linking {len(valid_files)} languages into PGF binary...")
-    
-    # We must construct the path argument again for the final link
-    # This is a bit redundant but ensures the Linker sees everything
-    all_paths = [str(GF_DIR), "."]
-    if rgl_base:
-        all_paths.append(str(rgl_base))
-        # Add subfolders recursively or explicitly
-        all_paths.extend([str(p.parent) for p in [Path(f) for f in valid_files]])
-    
-    # Dedupe
-    final_path_arg = os.pathsep.join(list(dict.fromkeys(all_paths)))
-    
-    link_cmd = [
-        "gf", 
-        "-batch", 
-        "-make",
-        "-path", final_path_arg,
-        "--name", ABSTRACT_NAME,  # Force internal name
-        "AbstractWiki.gf"
-    ] + valid_files
-    
-    try:
-        subprocess.run(link_cmd, check=True, cwd=str(GF_DIR))
-        
-        # Cleanup artifacts
-        generated_pgf = GF_DIR / f"{ABSTRACT_NAME}.pgf"
-        if generated_pgf.exists():
-            # If output is different name, rename/move
-            if generated_pgf != PGF_OUTPUT_FILE:
-                shutil.move(generated_pgf, PGF_OUTPUT_FILE)
-            log("SUCCESS", f"📦 Binary Created: {PGF_OUTPUT_FILE}")
-        else:
-            log("ERROR", "Binary file missing after success return code?")
+    # 1. Parse The Matrix v2.1 (Verdict Driven)
+    if matrix:
+        for code, data in matrix.get("languages", {}).items():
+            # v2.1: Read the 'verdict' object
+            verdict = data.get("verdict", {})
+            strategy = verdict.get("build_strategy", "SKIP")
             
-    except subprocess.CalledProcessError as e:
-        log("ERROR", f"Linking Failed: {e}")
-        sys.exit(1)
+            if strategy in ["HIGH_ROAD", "SAFE_MODE"]:
+                tasks.append((code, strategy))
+    else:
+        # Fallback for bootstrapping
+        logger.info("⚠️  Matrix empty. Using bootstrap defaults.")
+        tasks = [("eng", "HIGH_ROAD")]
+
+    logger.info(f"🏗️  Phase 1: Verifying {len(tasks)} languages...")
+    
+    # 2. Execute Phase 1 (Parallel Compilation)
+    valid_langs_map = {}
+    
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(phase_1_verify, t[0], t[1]): t for t in tasks}
+        
+        for future in concurrent.futures.as_completed(futures):
+            code, strategy = futures[future]
+            try:
+                lang, success, msg = future.result()
+                if success:
+                    valid_langs_map[lang] = strategy
+                    print(f"  [+] {lang}: OK ({strategy})")
+                else:
+                    print(f"  [-] {lang}: FAILED ({msg})")
+            except Exception as e:
+                logger.error(f"  [!] Exception for {code}: {e}")
+
+    # 3. Execute Phase 2 (Linking)
+    phase_2_link(valid_langs_map)
 
 if __name__ == "__main__":
     main()

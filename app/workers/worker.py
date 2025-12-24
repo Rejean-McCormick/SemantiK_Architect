@@ -2,10 +2,12 @@
 import asyncio
 import os
 import sys
+import json
 import subprocess
 import structlog
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
+from pathlib import Path
 
 # Add project root to path for reliable imports
 sys.path.append(os.getcwd())
@@ -26,6 +28,7 @@ except ImportError:
 
 from app.shared.config import settings, StorageBackend
 from app.shared.telemetry import setup_telemetry, get_tracer
+from app.shared.lexicon import lexicon  # <--- NEW: Import the Lexicon Memory Bank
 
 # Conditional Import for S3
 try:
@@ -42,6 +45,7 @@ class GrammarRuntime:
     """
     Singleton that holds loaded PGF binaries in memory.
     Prevents 'Cold Start' latency for validation/generation tasks.
+    Enforces Matrix 'Runnable' verdicts.
     """
     _pgf: Optional[Any] = None
     _last_mtime: float = 0.0
@@ -50,10 +54,45 @@ class GrammarRuntime:
         logger.info("runtime_loading_pgf", path=pgf_path)
         if pgf and os.path.exists(pgf_path):
             try:
-                # Update mtime tracking
+                # 1. Load the Binary (All languages linked)
                 self._last_mtime = os.path.getmtime(pgf_path)
-                self._pgf = pgf.readPGF(pgf_path)
-                logger.info("runtime_pgf_loaded_success", languages=list(self._pgf.languages.keys()))
+                raw_pgf = pgf.readPGF(pgf_path)
+                
+                # 2. v2.1: Enforce Runnable Verdict (The Safety Filter)
+                # We check the Matrix to identify "Zombie Languages" (linked but empty data)
+                # and remove them from the runtime before the application sees them.
+                matrix_path = Path(settings.FILESYSTEM_REPO_PATH) / "data" / "indices" / "everything_matrix.json"
+                
+                if matrix_path.exists():
+                    try:
+                        with open(matrix_path, "r") as f:
+                            matrix = json.load(f)
+                        
+                        # Iterate a copy of keys since we might delete
+                        for lang_name in list(raw_pgf.languages.keys()):
+                            # Map 'WikiFra' -> 'fra'
+                            iso_code = lang_name[-3:].lower()
+                            
+                            lang_data = matrix.get("languages", {}).get(iso_code)
+                            if lang_data:
+                                is_runnable = lang_data.get("verdict", {}).get("runnable", True)
+                                
+                                if not is_runnable:
+                                    logger.warning("runtime_purging_zombie_language", 
+                                                 lang=lang_name, 
+                                                 reason="Matrix verdict.runnable=False")
+                                    # Active Purge: Remove from C-Runtime dictionary
+                                    del raw_pgf.languages[lang_name]
+                                    
+                    except Exception as e:
+                        logger.error("runtime_matrix_filter_failed", error=str(e))
+                else:
+                    logger.warning("runtime_matrix_missing", path=str(matrix_path))
+
+                # 3. Finalize State
+                self._pgf = raw_pgf
+                logger.info("runtime_pgf_loaded_success", active_languages=list(self._pgf.languages.keys()))
+                
             except Exception as e:
                 logger.error("runtime_pgf_load_failed", error=str(e))
         else:
@@ -65,7 +104,8 @@ class GrammarRuntime:
     async def reload(self):
         """Helper to reload the current configured path."""
         logger.info("runtime_reloading_triggered")
-        self.load(settings.AW_PGF_PATH)
+        # FIXED: Updated to PGF_PATH
+        self.load(settings.PGF_PATH)
 
 # Global Instance
 runtime = GrammarRuntime()
@@ -122,7 +162,8 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
 
             # 4. Persistence (S3)
             if settings.STORAGE_BACKEND == StorageBackend.S3 and S3LanguageRepo:
-                target_pgf = settings.AW_PGF_PATH
+                # FIXED: Updated to PGF_PATH
+                target_pgf = settings.PGF_PATH
                 if os.path.exists(target_pgf):
                     repo = S3LanguageRepo()
                     with open(target_pgf, "rb") as f:
@@ -133,7 +174,8 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
                     logger.warning("s3_upload_skipped", msg="PGF file not found locally")
 
             # 5. Hot Reload
-            if os.path.exists(settings.AW_PGF_PATH):
+            # FIXED: Updated to PGF_PATH
+            if os.path.exists(settings.PGF_PATH):
                 await runtime.reload()
             
             logger.info("compilation_complete", lang=language_code)
@@ -151,7 +193,8 @@ async def watch_grammar_file(ctx):
     Background Task: Watches the PGF binary for changes.
     Optimized: Uses 'watchfiles' (OS events) if available, falls back to polling.
     """
-    pgf_path = settings.AW_PGF_PATH
+    # FIXED: Updated to PGF_PATH
+    pgf_path = settings.PGF_PATH
     pgf_dir = os.path.dirname(pgf_path)
     
     # Ensure directory exists to watch
@@ -201,17 +244,29 @@ async def startup(ctx):
     setup_telemetry("architect-worker")
     logger.info("worker_startup", queue=settings.REDIS_QUEUE_NAME)
     
-    # 1. Initial Load
-    runtime.load(settings.AW_PGF_PATH)
+    # 1. Initial Load of PGF (Zone A)
+    # FIXED: Updated to PGF_PATH
+    runtime.load(settings.PGF_PATH)
+    
+    # 2. Pre-load Lexicon (Zone B)
+    # This prevents 'Cold Start' latency on the first QID lookup request.
+    # We load English by default as it is the primary fallback language.
+    lexicon.load_language("eng")
 
-    # 2. Start Background Watcher
+    # 3. Start Background Watcher
     ctx['watcher_task'] = asyncio.create_task(watch_grammar_file(ctx))
 
 async def shutdown(ctx):
     logger.info("worker_shutdown")
     if 'watcher_task' in ctx:
         ctx['watcher_task'].cancel()
-        await ctx['watcher_task']
+        # STABILITY FIX: Catch CancelledError so reloader doesn't think we crashed
+        try:
+            await ctx['watcher_task']
+        except asyncio.CancelledError:
+            logger.info("watcher_task_cancelled_cleanly")
+        except Exception as e:
+            logger.error("watcher_shutdown_error", error=str(e))
 
 class WorkerSettings:
     """

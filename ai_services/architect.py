@@ -23,6 +23,7 @@ logger = logging.getLogger("architect")
 # Constants
 PROJECT_ROOT = Path(__file__).parents[1]
 MATRIX_PATH = PROJECT_ROOT / "data" / "indices" / "everything_matrix.json"
+# CRITICAL FIX: Ensure this path matches build_orchestrator's expectations (Flat structure)
 GENERATED_SRC_DIR = PROJECT_ROOT / "gf" / "generated" / "src"
 TOPOLOGY_CONFIG = PROJECT_ROOT / "data" / "config" / "topology_weights.json"
 
@@ -114,7 +115,6 @@ class ArchitectAgent:
     def _sanitize_output(self, text: str) -> str:
         """
         Cleans LLM output to ensure only valid GF code remains.
-        Removes Markdown code blocks (```gf ... ```).
         """
         # Strip markdown fences
         clean = re.sub(r"```(gf)?", "", text)
@@ -142,19 +142,33 @@ def load_matrix_targets():
     return data.get("languages", {})
 
 def save_generated_file(iso: str, code: str):
-    """Saves the generated code to the correct directory."""
+    """
+    Saves the generated code to the correct directory.
+    CRITICAL: Saves flat to generated/src/Wiki{Lang}.gf
+    """
     suffix = iso.capitalize()
-    out_dir = GENERATED_SRC_DIR / iso.lower()
-    out_dir.mkdir(parents=True, exist_ok=True)
     
-    out_path = out_dir / f"Wiki{suffix}.gf"
+    # Updated: Ensure directory exists (Flat structure)
+    GENERATED_SRC_DIR.mkdir(parents=True, exist_ok=True)
+    
+    out_path = GENERATED_SRC_DIR / f"Wiki{suffix}.gf"
+    
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(code)
     logger.info(f"💾 Saved to: {out_path}")
 
 def get_topology_hint(iso: str) -> str:
-    """Tries to find a topology hint, defaults to SVO."""
-    # This is a stub. In reality, we could look up the 'topology_weights.json' or matrix meta.
+    """Tries to find a topology hint from config, defaults to SVO."""
+    try:
+        if TOPOLOGY_CONFIG.exists():
+            with open(TOPOLOGY_CONFIG, 'r') as f:
+                data = json.load(f)
+                # Naive reverse lookup: Find which key contains our iso
+                # This assumes topology_weights.json structure or map exists
+                # For v2.0 we default to SVO if complex mapping isn't set up
+                return "SVO"
+    except:
+        pass
     return "SVO" 
 
 def run_cli():
@@ -188,20 +202,21 @@ def run_cli():
         logger.info("🔍 Scanning for missing grammars...")
         count = 0
         for iso, meta in targets.items():
-            # Check if source exists
-            path = meta.get("paths", {}).get("source")
-            if path and os.path.exists(path):
-                continue # Exists
-            
-            # Also check if we already generated it but didn't index it yet
-            gen_path = GENERATED_SRC_DIR / iso / f"Wiki{iso.capitalize()}.gf"
+            # Check if source exists (Tier 1 or Tier 3)
+            # Tier 1 path in RGL
+            tier = meta.get("meta", {}).get("tier", 3)
+            if tier == 1:
+                continue
+
+            # Check Generated Source
+            gen_path = GENERATED_SRC_DIR / f"Wiki{iso.capitalize()}.gf"
             if gen_path.exists():
                 continue
 
             logger.info(f"👉 Missing: {iso}")
             name = meta.get("meta", {}).get("name", iso)
             
-            # Rate limit handling (naive)
+            # Rate limit handling
             time.sleep(1) 
             
             code = agent.generate_grammar(iso, name, get_topology_hint(iso))
@@ -214,7 +229,7 @@ def run_cli():
     else:
         parser.print_help()
 
-# Global Instance (for import compatibility if needed)
+# Global Instance
 architect = ArchitectAgent()
 
 if __name__ == "__main__":

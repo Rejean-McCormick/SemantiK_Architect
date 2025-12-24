@@ -1,11 +1,13 @@
-# app\adapters\api\routes.py
 # app/adapters/api/routes.py
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Body
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 
 # Domain & Use Cases
 from app.core.domain.models import Frame
+from app.core.domain.semantic_models import UniversalNode  # <--- NEW: Prototype Path
+from ninai.constructors import Statement                   # <--- NEW: Strict Path
+
 from app.core.use_cases.generate_text import GenerateText
 from app.core.use_cases.build_language import BuildLanguage
 from app.core.use_cases.onboard_language_saga import OnboardLanguageSaga
@@ -24,16 +26,6 @@ tracer = get_tracer(__name__)
 
 # --- Pydantic Schemas (DTOs) ---
 
-class FrameDTO(BaseModel):
-    """Schema for the inner 'frame' object in JSON."""
-    frame_type: str
-    subject: Dict[str, Any] = Field(default_factory=dict)
-    meta: Dict[str, Any] = Field(default_factory=dict)
-
-class GenerationRequest(BaseModel):
-    language_code: str
-    frame: FrameDTO
-
 class OnboardRequest(BaseModel):
     iso_code: str
     english_name: str
@@ -45,40 +37,36 @@ class CompilationRequest(BaseModel):
 # --- Endpoints ---
 
 @router.post(
-    "/generate",
+    "/generate/{lang}",
     summary="Generate Natural Language",
-    description="Converts a Semantic Frame into human-readable text using the GF Engine.",
+    description="Dual-Path Generation: Accepts Strict Ninai Statement OR Prototype UniversalNode.",
     response_model=dict
 )
 async def generate_text(
-    request: GenerationRequest,
+    lang: str,
+    # DUAL-PATH ARGUMENT: Accepts either Strict Ninai OR Prototype Node
+    request: Union[Statement, UniversalNode] = Body(...),
     # Security: Protected by API Key
     _auth: str = Depends(verify_api_key),
     use_case: GenerateText = Depends(get_generate_text_use_case)
 ):
     with tracer.start_as_current_span("api_generate_text") as span:
-        span.set_attribute("gen.language", request.language_code)
+        span.set_attribute("gen.language", lang)
         
         try:
-            # Convert Pydantic DTO -> Domain Entity
-            domain_frame = Frame(
-                frame_type=request.frame.frame_type,
-                subject=request.frame.subject,
-                meta=request.frame.meta
-            )
-
-            result = await use_case.execute(request.language_code, domain_frame)
+            # We pass the object (Strict or Prototype) directly to the Use Case.
+            # The Use Case and Engine Adapter handle the Duck Typing logic.
+            result = await use_case.execute(lang, request)
             
-            return {
-                "status": "success",
-                "text": result.text,
-                "lang_code": result.lang_code,
-                "debug_info": result.debug_info
-            }
+            # The use case usually returns a result object. 
+            # If it returns a plain string, wrapping it might be needed, 
+            # but usually it returns a structured response which FastAPI serializes.
+            return result
+
         except Exception as e:
             span.record_exception(e)
-            # Return 400 for bad requests, 500 for server errors
-            raise HTTPException(status_code=400, detail=str(e))
+            # 422 Unprocessable Entity is appropriate for validation/generation errors
+            raise HTTPException(status_code=422, detail=f"Generation Error: {str(e)}")
 
 @router.post(
     "/languages",

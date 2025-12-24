@@ -68,6 +68,27 @@ RGL_SIGNATURES: Dict[str, Dict[int, str]] = {
     "mkCN_AdjCN": {
         0: TAG_AMOD,
         1: TAG_ROOT
+    },
+
+    # --------------------------------------------------------------------------
+    # ABSTRACT WIKI SPECIALIZED FRAMES (v2.0)
+    # --------------------------------------------------------------------------
+    
+    # mkBio (Name, Profession, Nationality) -> "Marie is a Physicist"
+    # Logic: "Marie" (nsubj) is a "Physicist" (root) [modified by "French" (amod)]
+    # Signature: mkBio name prof nat
+    "mkBio": {
+        0: TAG_NSUBJ,
+        1: TAG_ROOT,  # Profession is the predicate head
+        2: TAG_AMOD   # Nationality modifies the profession
+    },
+
+    # mkEvent (Subject, EventObject) -> "Marie participated in the conference"
+    # Logic: "Marie" (nsubj) participated in "conference" (obj)
+    # Signature: mkEvent subject event
+    "mkEvent": {
+        0: TAG_NSUBJ,
+        1: TAG_OBJ
     }
 }
 
