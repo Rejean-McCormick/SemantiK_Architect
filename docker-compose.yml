@@ -1,4 +1,3 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
@@ -37,6 +36,7 @@ services:
       redis:
         condition: service_healthy
     # Use factory flag because 'create_app' is a function
+    # [CONFIRMED] Points to the new canonical entrypoint
     command: uvicorn app.adapters.api.main:create_app --host 0.0.0.0 --port 8000 --reload --factory
     restart: unless-stopped
 
@@ -57,7 +57,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    # [FIX] Use the standard 'arq' CLI to run the settings class we just updated
+    # Use the standard 'arq' CLI to run the settings class
     # --watch app enables code hot-reloading during dev
     command: arq app.workers.worker.WorkerSettings --watch app
     restart: unless-stopped
@@ -71,15 +71,19 @@ services:
     container_name: aw_frontend
     env_file: .env
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # [UPDATE] Unified API Configuration
+      # We use a relative path here so the browser routes requests via Nginx (Port 4000).
+      # This eliminates CORS and matches the Enterprise Topology.
+      - NEXT_PUBLIC_ARCHITECT_API_BASE_URL=/abstract_wiki_architect/api/v1
     depends_on:
       - backend
     ports:
       - "3000:3000"
     restart: unless-stopped
 
-  # 5. REVERSE PROXY (Optional/Prod)
+  # 5. REVERSE PROXY (Primary Entrypoint)
   # Routes traffic between Frontend and Backend
+  # ACCESS APP HERE: http://localhost:4000/abstract_wiki_architect/
   nginx:
     image: nginx:alpine
     container_name: aw_nginx

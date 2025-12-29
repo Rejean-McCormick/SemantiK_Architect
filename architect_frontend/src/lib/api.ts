@@ -1,4 +1,3 @@
-// architect_frontend\src\lib\api.ts
 // architect_frontend/src/lib/api.ts
 
 /**

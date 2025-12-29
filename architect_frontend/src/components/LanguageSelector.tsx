@@ -1,9 +1,8 @@
-// architect_frontend\src\components\LanguageSelector.tsx
 // architect_frontend/src/components/LanguageSelector.tsx
 
 import React, { useEffect, useState } from 'react';
-import { getLanguages } from '../services/api';
-import { Language } from '../types/language';
+// [UPDATE]: Switch to the canonical API client and types
+import { architectApi, Language } from '../lib/api';
 
 interface LanguageSelectorProps {
   /**
@@ -36,9 +35,13 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
     async function loadLangs() {
       try {
-        const data = await getLanguages();
+        // [UPDATE]: Use the unified method listLanguages()
+        const data = await architectApi.listLanguages();
+        
         if (mounted) {
-          setLanguages(data);
+          // Sort alphabetically by name for better UX
+          const sorted = data.sort((a, b) => a.name.localeCompare(b.name));
+          setLanguages(sorted);
           setLoading(false);
         }
       } catch (err: any) {
@@ -66,11 +69,16 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   if (loading) {
-    return <span className="text-gray-500 text-sm">Loading languages...</span>;
+    return <span className="text-gray-500 text-sm animate-pulse">Loading languages...</span>;
   }
 
   if (error) {
-    return <span className="text-red-500 text-sm">Error: {error}</span>;
+    return (
+        <div className="text-red-500 text-sm flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{error}</span>
+        </div>
+    );
   }
 
   return (
@@ -88,7 +96,6 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           -- Select a Language --
         </option>
         
-        {/* Tier 1: Core / Mature Languages First (Optional heuristic) */}
         {languages.map((lang) => (
           <option key={lang.code} value={lang.code}>
             {lang.name} ({lang.code}) {lang.z_id ? `[${lang.z_id}]` : ''}

@@ -5,7 +5,13 @@ from app.shared.config import settings
 # --- Adapters ---
 from app.adapters.messaging.redis_broker import RedisMessageBroker
 from app.adapters.persistence.filesystem_repo import FileSystemLexiconRepository
-from app.adapters.s3_repo import S3LanguageRepo
+
+# Note: Only import S3 repo if you actually have that file, otherwise comment it out
+try:
+    from app.adapters.s3_repo import S3LanguageRepo
+except ImportError:
+    S3LanguageRepo = None
+
 from app.adapters.engines.gf_wrapper import GFGrammarEngine
 from app.adapters.engines.pidgin_runtime import PidginGrammarEngine
 from app.adapters.llm_adapter import GeminiAdapter
@@ -22,11 +28,12 @@ class Container(containers.DeclarativeContainer):
     """
 
     # 1. Wiring Configuration
+    # This list tells dependency_injector which modules use the @inject decorator
     wiring_config = containers.WiringConfiguration(
         modules=[
             "app.adapters.api.routers.generation",
             "app.adapters.api.routers.management",
-            # Removed 'languages' router as it is not wired in main.py
+            "app.adapters.api.routers.languages",  # [RESTORED] This router exists now
             "app.adapters.api.routers.health",
             "app.adapters.api.dependencies",
         ]
@@ -38,18 +45,19 @@ class Container(containers.DeclarativeContainer):
     message_broker = providers.Singleton(RedisMessageBroker)
 
     # Persistence (Selector: S3 vs FileSystem)
-    if settings.STORAGE_BACKEND == "s3":
+    if settings.STORAGE_BACKEND == "s3" and S3LanguageRepo:
         language_repo = providers.Singleton(S3LanguageRepo)
     else:
+        # This class now implements BOTH LanguageRepo (Metadata) and LexiconRepo (Words)
         language_repo = providers.Singleton(
             FileSystemLexiconRepository, 
             base_path=settings.FILESYSTEM_REPO_PATH
         )
     
-    # Alias so 'health.py' can find 'lexicon_repository'
+    # Aliases for clarity (The Saga asks for 'repo', health checks ask for 'lexicon_repository')
     lexicon_repository = language_repo
 
-    # Grammar Engine (Fixed: Switched from Selector to if/else)
+    # Grammar Engine
     if settings.USE_MOCK_GRAMMAR:
         grammar_engine = providers.Singleton(PidginGrammarEngine)
     else:
@@ -64,6 +72,8 @@ class Container(containers.DeclarativeContainer):
         GenerateText,
         # Named argument must match GenerateText.__init__(self, engine, ...)
         engine=grammar_engine,
+        # Optional: Inject LLM if you want refinement enabled
+        # llm=llm_client 
     )
 
     build_language_use_case = providers.Factory(

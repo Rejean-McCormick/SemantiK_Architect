@@ -3,7 +3,7 @@ import requests
 import json
 
 # Correct URL from previous step
-API_URL = "http://localhost:8000/generate"
+API_URL = "http://localhost:8000/api/v1/generate"
 
 def test_generation(lang, name, prof, nat):
     print(f"\n--- Testing {lang.upper()} ---")

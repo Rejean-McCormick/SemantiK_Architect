@@ -1,10 +1,9 @@
-// architect_frontend\src\app\refiner\page.tsx
+// architect_frontend/src/app/refiner/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-
-interface Language { code: string; name: string; }
+// [UPDATE] Import canonical client and config
+import { architectApi, API_BASE_URL, Language } from '@/lib/api';
 
 export default function RefinerPage() {
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -13,31 +12,46 @@ export default function RefinerPage() {
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    // Load languages just like the editor
-    const fetch = async () => {
+    // [UPDATE] Use the unified client to fetch languages
+    const loadData = async () => {
         try {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/languages`);
-            setLanguages(res.data);
-        } catch(e) {}
+            const data = await architectApi.listLanguages();
+            setLanguages(data);
+        } catch(e) {
+            console.error("Failed to load languages", e);
+        }
     };
-    fetch();
+    loadData();
   }, []);
 
   const handleRefine = async () => {
     setStatus('Sending request...');
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const selectedName = languages.find(l => l.code === lang)?.name || lang;
       
-      const res = await axios.post(`${apiUrl}/grammar/refine`, {
-        lang: lang,
-        lang_name: selectedName,
-        instructions: instructions
+      // [UPDATE] Use native fetch + canonical API_BASE_URL
+      // This ensures we hit http://localhost:8000/api/v1/grammar/refine (or the Docker equivalent)
+      const res = await fetch(`${API_BASE_URL}/grammar/refine`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            lang: lang,
+            lang_name: selectedName,
+            instructions: instructions
+        })
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+         throw new Error(data.detail || 'Request failed');
+      }
       
-      setStatus(`✅ Success: ${res.data.message}`);
+      setStatus(`✅ Success: ${data.message}`);
     } catch (err: any) {
-      setStatus(`❌ Error: ${err.response?.data?.detail || err.message}`);
+      setStatus(`❌ Error: ${err.message}`);
     }
   };
 

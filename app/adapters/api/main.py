@@ -10,8 +10,16 @@ from app.shared.config import settings
 
 # Import Routers
 # Note: We import the modules directly to ensure 'container.wire' works correctly
-# [UPDATE]: Added 'tools' for the new Developer Dashboard
-from app.adapters.api.routers import generation, management, health, tools
+# [UPDATE]: Added 'languages', 'entities', 'frames' for public read endpoints
+from app.adapters.api.routers import (
+    generation, 
+    management, 
+    health, 
+    tools, 
+    languages,
+    entities,  # <--- NEW
+    frames     # <--- NEW
+)
 
 logger = structlog.get_logger()
 
@@ -32,7 +40,10 @@ async def lifespan(app: FastAPI):
         "app.adapters.api.routers.generation",
         "app.adapters.api.routers.management",
         "app.adapters.api.routers.health",
-        "app.adapters.api.routers.tools", # <--- Added: Tools for DI injection
+        "app.adapters.api.routers.tools",
+        "app.adapters.api.routers.languages",
+        "app.adapters.api.routers.entities", # <--- Wired
+        "app.adapters.api.routers.frames",   # <--- Wired
         "app.adapters.api.dependencies"
     ])
 
@@ -80,10 +91,20 @@ def create_app() -> FastAPI:
 
     # Register Routers
     # CRITICAL FIX: Mount under /api/v1 to match v2.0 spec and curl commands
+    
+    # Public Read Endpoints
     app.include_router(health.router, prefix="/api/v1")
+    app.include_router(languages.router, prefix="/api/v1/languages", tags=["Languages"])
+    app.include_router(entities.router, prefix="/api/v1/entities", tags=["Entities"]) # <--- Added
+    app.include_router(frames.router, prefix="/api/v1/frames", tags=["Frames"])       # <--- Added
+
+    # Core Logic
     app.include_router(generation.router, prefix="/api/v1")
+    
+    # Admin / Management (Protected)
     app.include_router(management.router, prefix="/api/v1")
-    # [UPDATE]: Added Tools Router for the frontend dashboard
+
+    # Developer Tools
     app.include_router(tools.router, prefix="/api/v1/tools", tags=["System Tools"])
 
     return app

@@ -48,6 +48,7 @@ To prevent "Path not found" errors, you must understand the mapping between Wind
 └── gf-rgl/                       <-- [EXTERNAL] GF Resource Grammar Library
     └── src/                      <-- RGL Source files
 
+
 ```
 
 > **⚠️ CRITICAL:** Do not clone the repo into the Linux native filesystem (`~/home/user/`) if you plan to edit files in Windows. Clone it to your `C:` drive so both OSs can access it.
@@ -60,6 +61,7 @@ Open your **Ubuntu/WSL Terminal** (NOT PowerShell) and navigate to the project r
 
 ```bash
 cd /mnt/c/MyCode/AbstractWiki/abstract-wiki-architect
+
 
 ```
 
@@ -77,6 +79,7 @@ sudo apt install -y python3-venv python3-dev build-essential libgmp-dev
 # 3. Install dos2unix (Critical for fixing Windows line-ending corruptions)
 sudo apt install -y dos2unix
 
+
 ```
 
 ### Step B: Install the GF Compiler
@@ -93,6 +96,7 @@ sudo apt install ./gf-3.12-ubuntu-22.04.deb
 # Verify
 gf --version
 # Output should be: Grammatical Framework (GF) version 3.12
+
 
 ```
 
@@ -116,6 +120,7 @@ chmod +x Setup.sh
 # 4. Build and Install the RGL (Takes ~5 minutes)
 sudo ./Setup.sh
 
+
 ```
 
 ---
@@ -134,6 +139,7 @@ source venv/bin/activate
 # 3. Install Dependencies
 # This compiles the 'pgf' C-extension locally. If this fails, check Step A.
 pip install -r requirements.txt
+
 
 ```
 
@@ -178,13 +184,14 @@ REPO_URL=https://github.com/your-org/abstract-wiki-architect
 GOOGLE_API_KEY=your_gemini_api_key
 AI_MODEL_NAME=gemini-1.5-pro
 
+
 ```
 
 ---
 
 ## 6. Running Locally (Hybrid Mode)
 
-You will need **4 Terminal Tabs**.
+You will need **4 Terminal Tabs**. The following diagram illustrates how these components interact in a local development environment:
 
 ### Terminal 1: Message Broker (Powershell or WSL)
 
@@ -192,6 +199,7 @@ We use Docker just for Redis, as installing Redis on Windows is messy.
 
 ```powershell
 docker run -p 6379:6379 --name aw_redis -d redis:alpine
+
 
 ```
 
@@ -206,6 +214,7 @@ source venv/bin/activate
 # Run Server (Hot Reload Enabled)
 # Note: Factory pattern is required
 uvicorn app.adapters.api.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
+
 
 ```
 
@@ -222,6 +231,7 @@ source venv/bin/activate
 # Run Arq Worker (Watch Mode Enabled for Hot Reload)
 arq app.workers.worker.WorkerSettings --watch app
 
+
 ```
 
 *Wait for log: `worker_startup*`
@@ -234,6 +244,7 @@ The UI doesn't need Linux, so run it natively for better browser performance.
 cd architect_frontend
 npm install
 npm run dev
+
 
 ```
 
@@ -256,12 +267,14 @@ For production or full-stack testing, use `docker-compose`. This runs everything
 # Build images and start services
 docker-compose up --build -d
 
+
 ```
 
 ### 2. Verify Services
 
 ```bash
 docker-compose ps
+
 
 ```
 
@@ -317,6 +330,7 @@ curl -X POST "http://localhost:8000/api/v1/generate/en" \
            "gender": "m"
          }'
 
+
 ```
 
 ### Test B: Ninai Protocol (v2.1 Feature)
@@ -334,6 +348,7 @@ curl -X POST "http://localhost:8000/api/v1/generate/en" \
            ]
          }'
 
+
 ```
 
 **Expected Response:**
@@ -347,5 +362,6 @@ curl -X POST "http://localhost:8000/api/v1/generate/en" \
       "strategy": "SimpNP"
   }
 }
+
 
 ```

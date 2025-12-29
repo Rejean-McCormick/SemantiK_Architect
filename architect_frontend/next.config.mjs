@@ -14,9 +14,11 @@ const nextConfig = {
 
   // Public env defaults; can be overridden at build time.
   env: {
+    // [UPDATE] Unified API Configuration
+    // Ensure the default points to the /api/v1 root to match backend routers.
     NEXT_PUBLIC_ARCHITECT_API_BASE_URL:
       process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL ||
-      "http://localhost:8000",
+      "http://localhost:8000/api/v1",
   },
 };
 

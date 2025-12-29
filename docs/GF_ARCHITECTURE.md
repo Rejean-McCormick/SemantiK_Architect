@@ -1,7 +1,8 @@
+
 # GF Architecture & Developer Guide
 
 **Version:** 2.1
-**Last Updated:** 2025-12-23
+**Last Updated:** 2025-12-29
 **Context:** Abstract Wiki Architect (Python + Grammatical Framework)
 
 ## 1. Architectural Overview
@@ -18,7 +19,7 @@ The critical challenge is the **Type Mismatch**. Python sees `"Marie Curie"` as 
 | Layer | File/Component | Responsibility |
 | --- | --- | --- |
 | **Abstract** | `gf/AbstractWiki.gf` | Defines the API contract. The "Schema". |
-| **Concrete** | `gf/WikiEng.gf`, `gf/WikiFra.gf` | Implements the schema using the **RGL**. |
+| **Concrete** | `gf/WikiEn.gf`, `gf/WikiFr.gf` | Implements the schema using the **RGL**. |
 | **Library** | `GF Resource Grammar Library` | Provides the linguistic primitives (`mkS`, `mkCl`). |
 | **Adapter** | `app/adapters/engines/gf_wrapper.py` | Converts Pydantic Objects → GF Trees. |
 
@@ -31,14 +32,15 @@ Strict file naming is enforced to match the compiled PGF binary structure.
 ### ✅ Allowed Files
 
 * `gf/AbstractWiki.gf` - The Abstract Syntax.
-* `gf/WikiEng.gf` - English Concrete Grammar.
-* `gf/WikiFra.gf` - French Concrete Grammar (ISO 639-3 code `fra`).
+* `gf/WikiEn.gf` - English Concrete Grammar (ISO 639-1 code `en`).
+* `gf/WikiFr.gf` - French Concrete Grammar (ISO 639-1 code `fr`).
 * `gf/AbstractWiki.pgf` - The compiled binary (Ignored by Git).
 
 ### ❌ Prohibited Files (Delete Immediately)
 
 * `gf/Wiki.gf` - Legacy abstract file.
-* `gf/WikiFre.gf` - Incorrect language code (`fre` vs `fra`).
+* `gf/WikiEng.gf`, `gf/WikiFra.gf` - Old ISO-3 naming convention.
+* `gf/WikiFre.gf` - Incorrect language code (`fre` vs `fr`).
 * `gf/Symbolic*.gf` - **CRITICAL:** These local files conflict with the RGL. Always use the system-installed `Symbolic` module.
 
 ---
@@ -77,6 +79,7 @@ These rules exist to bypass known bugs in the GF Compiler (specifically regardin
 **Solution:** Never use `let` inside a `lin` rule. Inline all expressions.
 
 * ❌ **Bad (Causes Crash):**
+
 ```haskell
 mkEvent subj obj =
   let v = mkV "participate"
@@ -84,15 +87,13 @@ mkEvent subj obj =
 
 ```
 
-
 * ✅ **Good (Safe):**
+
 ```haskell
 mkEvent subj obj =
   mkS (mkCl subj (mkVP (mkV "participate") obj))
 
 ```
-
-
 
 ### Rule #2: The Symbolic Rule (Gluing Safety)
 
@@ -157,36 +158,38 @@ If the build fails, check this table first.
 
 ## 7. Build Commands
 
-Use these exact commands to avoid file naming errors.
+We now use the **Two-Phase Build Orchestrator** to handle dependencies and verification.
 
 **1. Clean Environment:**
 
 ```bash
-rm gf/Symbolic*.gf gf/WikiFre.gf gf/Wiki.gf
+# Removes legacy files and clears the cache
+rm gf/Symbolic*.gf gf/Wiki*.gf gf/AbstractWiki.pgf
 
 ```
 
-**2. Compile Grammar:**
+**2. Orchestrated Build:**
 
 ```bash
-gf -make -output-dir=gf gf/WikiEng.gf gf/WikiFra.gf
+# Generates code from Lexicon JSONs -> Validates -> Compiles
+python gf/build_orchestrator.py
 
 ```
 
 **3. Test Generation (cURL):**
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/generate/fra" \
-     -H "Content-Type: application/json" \
-     -H "X-API-Key: dev-secret-123" \
-     -d '{
-           "function": "ninai.constructors.Statement",
-           "args": [
-             { "function": "ninai.types.Bio" },
-             { "function": "ninai.constructors.Entity", "args": ["Q1", "Marie"] },
-             { "function": "ninai.constructors.Entity", "args": ["Q2", "physicien"] },
-             { "function": "ninai.constructors.Entity", "args": ["Q3", "française"] }
-           ]
-         }'
+curl -X POST "http://localhost:8000/api/v1/generate/fr" \
+      -H "Content-Type: application/json" \
+      -H "x-api-key: secret" \
+      -d '{
+            "function": "ninai.constructors.Statement",
+            "args": [
+              { "function": "ninai.types.Bio" },
+              { "function": "ninai.constructors.Entity", "args": ["Q1", "Marie"] },
+              { "function": "ninai.constructors.Entity", "args": ["Q2", "physicienne"] },
+              { "function": "ninai.constructors.Entity", "args": ["Q3", "française"] }
+            ]
+          }'
 
 ```

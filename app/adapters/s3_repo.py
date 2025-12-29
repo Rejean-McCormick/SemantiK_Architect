@@ -1,26 +1,28 @@
-# app\adapters\s3_repo.py
 # app/adapters/s3_repo.py
 import asyncio
+import json
 import boto3
+from typing import List, Dict, Any, Optional
 from botocore.exceptions import ClientError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from app.core.ports import LanguageRepo
+# [FIX] Import from the consolidated ports package
+from app.core.ports import LanguageRepo, LexiconRepo
+from app.core.domain.models import LexiconEntry
 from app.shared.config import settings
 from app.shared.telemetry import get_tracer
 
 tracer = get_tracer(__name__)
 
-class S3LanguageRepo(LanguageRepo):
+class S3LanguageRepo(LanguageRepo, LexiconRepo):
     """
-    Production Persistence Adapter.
-    Stores compiled PGF grammar binaries in an AWS S3 Bucket.
+    Production Persistence Adapter backed by AWS S3.
+    - Acts as LanguageRepo (Metadata & Grammars)
+    - Acts as LexiconRepo (Vocabulary - currently stubs/limited)
     """
 
     def __init__(self):
         # Initialize Boto3 Client
-        # We don't need to pass credentials explicitly if they are in env vars 
-        # (AWS_ACCESS_KEY_ID, etc.), which boto3 detects automatically.
         self.s3_client = boto3.client(
             "s3",
             region_name=settings.AWS_REGION,
@@ -29,39 +31,80 @@ class S3LanguageRepo(LanguageRepo):
         )
         self.bucket = settings.AWS_BUCKET_NAME
 
-    async def save_pgf(self, language_code: str, binary_content: bytes) -> None:
-        """
-        Uploads the compiled PGF binary to S3.
-        Non-blocking (runs in thread pool).
-        """
-        key = self._get_s3_key(language_code)
-        
-        with tracer.start_as_current_span("s3_upload") as span:
-            span.set_attribute("s3.bucket", self.bucket)
-            span.set_attribute("s3.key", key)
-            
-            await asyncio.to_thread(
-                self._upload_sync, key, binary_content
-            )
+    # =========================================================
+    # PART 1: LanguageRepo Implementation (Zone A)
+    # =========================================================
 
-    async def get_pgf(self, language_code: str) -> bytes:
+    async def list_languages(self) -> List[Dict[str, Any]]:
         """
-        Downloads the PGF binary from S3.
-        Returns bytes or raises FileNotFoundError if missing.
+        Fetches 'data/indices/everything_matrix.json' from S3.
         """
-        key = self._get_s3_key(language_code)
-        
-        with tracer.start_as_current_span("s3_download") as span:
-            span.set_attribute("s3.bucket", self.bucket)
-            span.set_attribute("s3.key", key)
+        key = "data/indices/everything_matrix.json"
+        try:
+            content_bytes = await asyncio.to_thread(self._download_sync, key)
+            data = json.loads(content_bytes.decode('utf-8'))
             
-            try:
-                return await asyncio.to_thread(self._download_sync, key)
-            except ClientError as e:
-                # Map S3 404 to Domain-level NotFound
-                if e.response['Error']['Code'] == "404" or e.response['Error']['Code'] == 'NoSuchKey':
-                    raise FileNotFoundError(f"Grammar for {language_code} not found in S3.")
-                raise e
+            languages = []
+            for iso_code, details in data.get("languages", {}).items():
+                meta = details.get("meta", {})
+                languages.append({
+                    "code": meta.get("iso", iso_code),
+                    "name": meta.get("name", iso_code.upper()),
+                    "z_id": meta.get("z_id", None)
+                })
+            return sorted(languages, key=lambda x: x["name"])
+        except (ClientError, FileNotFoundError):
+            # Fallback if matrix missing
+            return []
+
+    async def save_grammar(self, language_code: str, content: str) -> None:
+        """Saves the GF source file (.gf) to S3."""
+        key = f"sources/{language_code}/Wiki{language_code}.gf"
+        await asyncio.to_thread(self._upload_sync, key, content.encode('utf-8'))
+
+    async def get_grammar(self, language_code: str) -> Optional[str]:
+        """Retrieves the GF source file."""
+        key = f"sources/{language_code}/Wiki{language_code}.gf"
+        try:
+            data = await asyncio.to_thread(self._download_sync, key)
+            return data.decode('utf-8')
+        except (ClientError, FileNotFoundError):
+            return None
+
+    # =========================================================
+    # PART 2: LexiconRepo Implementation (Zone B)
+    # =========================================================
+    # Note: Using S3 for granular word lookups is slow. 
+    # In production, this should likely connect to DynamoDB or cache heavily.
+    
+    async def get_entry(self, iso_code: str, word: str) -> Optional[LexiconEntry]:
+        """Stub: S3 is not optimized for single word lookups."""
+        return None
+
+    async def save_entry(self, iso_code: str, entry: LexiconEntry) -> None:
+        """Stub: Would require reading/writing huge JSON blobs."""
+        pass
+
+    async def get_entries_by_concept(self, lang_code: str, qid: str) -> List[LexiconEntry]:
+        """Stub."""
+        return []
+
+    # =========================================================
+    # PART 3: Infrastructure / Helpers
+    # =========================================================
+
+    async def health_check(self) -> bool:
+        """Checks connection by listing 1 object."""
+        try:
+            await asyncio.to_thread(self.s3_client.list_objects_v2, Bucket=self.bucket, MaxKeys=1)
+            return True
+        except Exception:
+            return False
+
+    async def save_pgf(self, language_code: str, binary_content: bytes) -> None:
+        """Legacy/Extra: Uploads compiled PGF binary."""
+        key = f"grammars/{language_code}.pgf"
+        await asyncio.to_thread(self._upload_sync, key, binary_content)
 
     # --- Synchronous Helpers (executed in thread pool) ---
 
@@ -76,7 +119,7 @@ class S3LanguageRepo(LanguageRepo):
             Bucket=self.bucket,
             Key=key,
             Body=data,
-            ContentType="application/octet-stream"
+            # ContentType="application/octet-stream"
         )
 
     @retry(
@@ -86,12 +129,10 @@ class S3LanguageRepo(LanguageRepo):
     )
     def _download_sync(self, key: str) -> bytes:
         """Sync boto3 download with retries."""
-        response = self.s3_client.get_object(Bucket=self.bucket, Key=key)
-        return response["Body"].read()
-
-    def _get_s3_key(self, language_code: str) -> str:
-        """Standardizes naming convention: e.g., 'grammars/Finnish.pgf'"""
-        # Assuming language_code is ISO or similar (e.g., 'fin', 'ara')
-        # You might want to map 'fin' -> 'Finnish' if your core uses full names,
-        # but using the code is safer for persistence keys.
-        return f"grammars/{language_code}.pgf"
+        try:
+            response = self.s3_client.get_object(Bucket=self.bucket, Key=key)
+            return response["Body"].read()
+        except ClientError as e:
+            if e.response['Error']['Code'] in ("404", "NoSuchKey"):
+                raise FileNotFoundError(f"Key {key} not found.")
+            raise e

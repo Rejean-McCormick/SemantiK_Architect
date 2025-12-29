@@ -1,0 +1,369 @@
+## Abstract Wiki Architect — Enterprise-Grade API/UI Unification Update
+
+### Summary
+
+This update removes contract drift between the frontend and backend by enforcing:
+
+* One canonical backend entrypoint
+* One canonical API base path (`/api/v1`)
+* One canonical frontend API client
+* A consistent reverse-proxy topology for `/abstract_wiki_architect`
+* A stable, versioned language + entity API contract
+* Clear separation of public vs admin endpoints and authentication
+
+This documentation describes the final target state, the exact files to change, the new API contract, deployment wiring (Docker + Nginx), testing, and rollback.
+
+---
+
+## 1) Current problems this update resolves
+
+### 1.1 Multiple backend “apps” with different behavior
+
+You currently have multiple FastAPI apps and patterns:
+
+* `app/main.py` (router-based, mounts `/api/v1/*`, also disables security)
+* `app/adapters/api/main.py` (router-based, used by docker-compose)
+* `app/adapters/api.py` (separate app with a different interface)
+* `app/adapters/api/routes.py` (older router)
+
+Result: “the backend” depends on how it is started. Frontend cannot reliably target it.
+
+### 1.2 Two frontend API clients with different base URLs and endpoints
+
+* `architect_frontend/src/services/api.ts` uses `NEXT_PUBLIC_API_URL` and calls `/api/v1/languages`
+* `architect_frontend/src/lib/api.ts` uses `NEXT_PUBLIC_ARCHITECT_API_BASE_URL` and calls `/languages`, `/entities/`, etc.
+
+Result: UI loads some data from one client and other data from another, with inconsistent configuration and endpoints.
+
+### 1.3 Languages endpoint mismatch
+
+* Frontend expects `Language[]` objects `{code,name,z_id}`
+* Backend languages router returns `List[str]` codes and is not mounted
+* Management router uses `/api/v1/languages` but is protected by `verify_api_key` and provides POST-only endpoints
+
+Result: language selector fails (404/401) and contract mismatch even if mounted.
+
+### 1.4 Reverse-proxy topology mismatch for Docker
+
+`deploy/nginx.conf` proxies to `127.0.0.1:4000` from inside a container, which is not the frontend service.
+
+Result: unstable/infinite loops/connection failures in containerized deployments.
+
+---
+
+## 2) Target architecture (final state)
+
+### 2.1 Canonical API
+
+* Backend serves **only one** HTTP API contract at **`/api/v1`**
+* All client-facing endpoints live under `/api/v1/*`
+* Public read endpoints are accessible without admin credentials (configurable)
+* Admin endpoints require auth (API key or token), enforced per-router or per-endpoint
+
+### 2.2 Canonical frontend API client
+
+* Frontend uses **only** `architect_frontend/src/lib/api.ts` (`architectApi`)
+* `architect_frontend/src/services/api.ts` is removed or becomes a thin re-export (no independent base URL)
+
+### 2.3 Deployment paths
+
+* UI base path: `/abstract_wiki_architect` (already configured via `next.config.mjs basePath`)
+* API path for same-origin calls: `/abstract_wiki_architect/api/v1`
+* Nginx routes `/abstract_wiki_architect/api/*` to backend and `/abstract_wiki_architect/*` to frontend
+
+---
+
+## 3) Decisions and standards
+
+### 3.1 Language code standard (required decision)
+
+Your current frontend types and code use ISO-639-3 (`eng`, `zul`). Keep this standard end-to-end unless you explicitly migrate to ISO-639-1. This update assumes **ISO-639-3 is canonical** because:
+
+* `Language` type docs mention ISO-639-3
+* UI defaults to `eng`
+* Backend onboarding schema already enforces 3-letter codes in `management.py`
+
+If you later choose ISO-639-1, treat it as a separate migration with dual identifiers and a clear canonical field.
+
+---
+
+## 4) File-by-file change list (authoritative)
+
+### 4.1 Backend
+
+**Canonical entrypoint and router mounting**
+
+* `app/adapters/api/main.py`
+
+  * Remains canonical app used by Docker and production
+  * Must mount public languages router under `/api/v1/languages` (GET list)
+  * Keeps admin “management” endpoints under `/api/v1/languages/*` but protected
+
+**Public languages router contract**
+
+* `app/adapters/api/routers/languages.py`
+
+  * Change from `List[str]` to `List[LanguageOut]` objects to match frontend
+  * Provide `GET /api/v1/languages`
+
+**Admin language lifecycle**
+
+* `app/adapters/api/routers/management.py`
+
+  * Either:
+
+    * Keep as admin-only (onboard/build) endpoints (recommended)
+    * Or split into `languages_admin.py` to avoid confusion
+  * Ensure auth is applied only to admin endpoints
+
+**Router exports cleanup**
+
+* `app/adapters/api/routers/__init__.py`
+
+  * Make exports consistent with how routers are imported
+  * Recommended: export router modules, not “*_router” names, or remove misleading exports entirely.
+
+**Deprecate duplicate apps (do not run in production)**
+
+* `app/main.py`
+
+  * Remove “force security off”
+  * Optionally: make it import and expose the canonical `app` from `app/adapters/api/main.py` for local convenience
+* `app/adapters/api.py` and `app/adapters/api/routes.py`
+
+  * Mark deprecated / remove from runtime paths to prevent accidental execution
+
+### 4.2 Frontend
+
+**Single client**
+
+* `architect_frontend/src/components/LanguageSelector.tsx`
+
+  * Switch to `architectApi.listLanguages()` from `src/lib/api.ts`
+  * Remove import of `getLanguages()` from `src/services/api.ts`
+
+**Remove split-brain client**
+
+* `architect_frontend/src/services/api.ts`
+
+  * Recommended: delete or convert to a re-export of `architectApi`
+  * If kept, it must not define its own base URL or endpoints
+
+**Normalize base URL**
+
+* `architect_frontend/src/lib/api.ts`
+
+  * Must target `/api/v1` consistently:
+
+    * If `NEXT_PUBLIC_ARCHITECT_API_BASE_URL=/abstract_wiki_architect/api/v1`, then it should call `request("/languages")`, etc.
+  * Document the required env var in `.env.local` and docker-compose.
+
+**Env + build-time configuration**
+
+* `architect_frontend/.env.local`
+
+  * Replace `NEXT_PUBLIC_API_URL` with `NEXT_PUBLIC_ARCHITECT_API_BASE_URL`
+* `architect_frontend/next.config.mjs`
+
+  * Keep only `NEXT_PUBLIC_ARCHITECT_API_BASE_URL`
+  * Do not inject or rely on `NEXT_PUBLIC_API_URL`
+
+### 4.3 Deployment
+
+**Nginx**
+
+* `deploy/nginx.conf`
+
+  * Must proxy to docker service names (`frontend`, `backend`) not `127.0.0.1`
+  * Must include an API route for `/abstract_wiki_architect/api/`
+
+**Docker compose**
+
+* `docker-compose.yml`
+
+  * Frontend must set `NEXT_PUBLIC_ARCHITECT_API_BASE_URL`
+  * Remove `NEXT_PUBLIC_API_URL`
+
+---
+
+## 5) Final API contract
+
+### 5.1 Health
+
+* `GET /api/v1/health`
+  Response:
+
+  ```json
+  { "status": "ok" }
+  ```
+
+### 5.2 Languages (Public)
+
+* `GET /api/v1/languages`
+  Response:
+
+  ```json
+  [
+    { "code": "eng", "name": "English", "z_id": "Z1002" },
+    { "code": "zul", "name": "Zulu", "z_id": "Z1032" }
+  ]
+  ```
+
+Notes:
+
+* `z_id` may be nullable if not available.
+* `code` is ISO-639-3 (3 letters) in this version.
+
+### 5.3 Languages (Admin)
+
+* `POST /api/v1/languages` (onboard)
+* `POST /api/v1/languages/{lang_code}/build` (trigger build)
+
+Auth:
+
+* Requires admin credentials (API key / token). No public access.
+
+### 5.4 Entities
+
+* `GET /api/v1/entities/` (list)
+* `POST /api/v1/entities/` (create)
+* `GET /api/v1/entities/{id}` (read)
+* `PUT /api/v1/entities/{id}` (update)
+* `DELETE /api/v1/entities/{id}` (delete)
+
+Auth policy:
+
+* Decide based on enterprise requirements:
+
+  * Option A: public reads, protected writes
+  * Option B: all endpoints protected
+  * Option C: role-based
+
+This update does not change entity schemas beyond wiring.
+
+---
+
+## 6) Implementation details (recommended patterns)
+
+### 6.1 Backend router separation
+
+Use two routers for languages:
+
+* `languages.py` — public read endpoints (no auth)
+* `languages_admin.py` or `management.py` — admin endpoints (auth enforced)
+
+Avoid router-level `dependencies=[verify_api_key]` on mixed routers if any endpoints should be public.
+
+### 6.2 Uniform error envelope (recommended)
+
+Standardize errors across backend:
+
+```json
+{
+  "code": "AUTH_REQUIRED",
+  "message": "API key required",
+  "detail": { "reason": "missing_header" },
+  "trace_id": "..." 
+}
+```
+
+This prevents frontend clients from handling multiple error formats.
+
+---
+
+## 7) Configuration (authoritative)
+
+### 7.1 Local development (no nginx)
+
+Frontend:
+
+* `NEXT_PUBLIC_ARCHITECT_API_BASE_URL=http://localhost:8000/api/v1`
+
+Backend:
+
+* runs on `http://localhost:8000`
+
+### 7.2 Docker compose (containers)
+
+Frontend container must not call `localhost:8000` (that’s inside the frontend container).
+Use same-origin via nginx, or service name.
+
+Recommended enterprise configuration:
+
+* `NEXT_PUBLIC_ARCHITECT_API_BASE_URL=/abstract_wiki_architect/api/v1`
+
+Then route via nginx:
+
+* `/abstract_wiki_architect/api/` → backend
+* `/abstract_wiki_architect/` → frontend
+
+### 7.3 Nginx routing (container-safe)
+
+* UI: `/abstract_wiki_architect/` → `http://frontend:3000/`
+* API: `/abstract_wiki_architect/api/` → `http://backend:8000/`
+
+If backend mounts `/api/v1`, then:
+
+* `/abstract_wiki_architect/api/v1/*` proxies to `http://backend:8000/api/v1/*`
+
+---
+
+## 8) Testing and validation
+
+### 8.1 Contract tests (must-have)
+
+Add automated tests that:
+
+* assert `GET /api/v1/languages` returns objects with required fields
+* assert `/api/v1/entities/` returns expected schema
+* assert admin endpoints reject unauthenticated requests
+
+### 8.2 CI checks (recommended)
+
+* OpenAPI snapshot test: compare generated schema between commits
+* Frontend build test: ensures no imports from deprecated client remain
+* Lint rule: forbid `NEXT_PUBLIC_API_URL`
+
+### 8.3 Manual validation checklist
+
+1. Load UI at `/abstract_wiki_architect`
+2. Verify language dropdown loads and shows names/codes
+3. Verify entities table loads
+4. Verify “Create Entity” works (if permitted by auth policy)
+5. Verify dev console health calls succeed
+6. Verify tools endpoints are accessible only with credentials (if enabled)
+
+---
+
+## 9) Rollback plan
+
+Rollback is safe if you keep endpoints backward compatible temporarily.
+
+### Recommended rollback mechanism
+
+* Keep old endpoints as aliases for one release cycle:
+
+  * If any legacy client calls `/languages` (without `/api/v1`), respond with 301 to `/api/v1/languages` or continue to serve it.
+* Deploy with feature flags:
+
+  * `PUBLIC_LANGUAGES_ENABLED=true/false`
+  * `ENTITY_WRITE_AUTH_REQUIRED=true/false`
+
+Rollback steps:
+
+1. revert nginx routing to previous known-good config
+2. revert frontend to last version that matched old API base
+3. keep backend router alias for `/languages` if needed
+
+---
+
+## 10) Deliverables (what “done” looks like)
+
+* One backend app entrypoint used everywhere (docker, prod, local)
+* One frontend API client (no `services/api.ts` divergence)
+* `GET /api/v1/languages` returns `Language[]` objects
+* Nginx routes work in docker-compose using service names
+* Env vars are unified on `NEXT_PUBLIC_ARCHITECT_API_BASE_URL`
+* Security is explicit and not disabled in code paths
+* Contract tests prevent regression
+

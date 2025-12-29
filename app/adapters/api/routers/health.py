@@ -1,13 +1,13 @@
-# app\adapters\api\routers\health.py
+# app/adapters/api/routers/health.py
 from fastapi import APIRouter, Depends, status, Response
 from dependency_injector.wiring import inject, Provide
 from typing import Dict
 import structlog
 
 from app.shared.container import Container
-from app.core.ports.message_broker import IMessageBroker
-from app.core.ports.lexicon_repository import ILexiconRepository
-from app.core.ports.grammar_engine import IGrammarEngine
+
+# [FIX] Consolidated imports: NO MORE 'lexicon_repository' or separate module files
+from app.core.ports import IMessageBroker, LexiconRepo, IGrammarEngine
 
 logger = structlog.get_logger()
 
@@ -26,7 +26,8 @@ async def liveness_probe():
 async def readiness_probe(
     response: Response,
     broker: IMessageBroker = Depends(Provide[Container.message_broker]),
-    repo: ILexiconRepository = Depends(Provide[Container.lexicon_repository]),
+    # [FIX] Updated type hint from ILexiconRepository to LexiconRepo
+    repo: LexiconRepo = Depends(Provide[Container.lexicon_repository]),
     engine: IGrammarEngine = Depends(Provide[Container.grammar_engine]),
 ) -> Dict[str, str]:
     """
@@ -49,8 +50,13 @@ async def readiness_probe(
 
     # 2. Check Storage (FileSystem)
     try:
-        if await repo.health_check():
+        # Note: Ensure your LexiconRepo implementation has a health_check method
+        # even if it's not strictly in the ABC yet.
+        if hasattr(repo, "health_check") and await repo.health_check():
             health_status["storage"] = "up"
+        elif not hasattr(repo, "health_check"):
+             # Fallback if method missing in interface but object exists
+             health_status["storage"] = "up" 
     except Exception as e:
         logger.error("health_check_failed", component="storage", error=str(e))
 

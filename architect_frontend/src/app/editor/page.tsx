@@ -23,7 +23,7 @@ export default function EditorPage() {
   useEffect(() => {
     const fetchLangs = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL || 'http://localhost:8000/api/v1';
         const res = await axios.get(`${apiUrl}/languages`);
         setLanguages(res.data);
       } catch (e) { console.error("Failed to load languages"); }
@@ -35,7 +35,7 @@ export default function EditorPage() {
     setLoading(true);
     setResult('');
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL || 'http://localhost:8000/api/v1';
       const payload = {
         lang: lang,
         frame: {

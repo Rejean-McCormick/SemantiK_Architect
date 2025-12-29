@@ -1,19 +1,25 @@
-# app\adapters\api\routers\__init__.py
+# app/adapters/api/routers/__init__.py
 """
 API Route Definitions.
 
 This package contains the specific route handlers (controllers) organized by domain area.
 - `generation`: Endpoints for text generation (Core Value).
-- `languages`: Endpoints for managing language lifecycles (Onboarding, Building).
+- `languages`: Public endpoints for reading available languages.
+- `management`: Admin endpoints for language lifecycle (Onboarding, Building).
+- `tools`: Developer dashboard tools and utilities.
 - `health`: System health checks.
 """
 
-from .generation import router as generation_router
-from .languages import router as languages_router
-from .health import router as health_router
+from . import generation
+from . import languages
+from . import management
+from . import tools
+from . import health
 
 __all__ = [
-    "generation_router",
-    "languages_router",
-    "health_router",
+    "generation",
+    "languages",
+    "management",
+    "tools",
+    "health",
 ]

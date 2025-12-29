@@ -1,13 +1,12 @@
-# app\core\use_cases\onboard_language_saga.py
+# app/core/use_cases/onboard_language_saga.py
 import structlog
 from datetime import datetime
 from app.core.domain.models import Language, LanguageStatus, GrammarType
 from app.core.domain.events import SystemEvent, EventType, BuildRequestedPayload
 from app.core.domain.exceptions import DomainError
-from app.core.ports.message_broker import IMessageBroker
-# Note: We assume a specific repository for Language metadata exists, 
-# typically separate from the word-level LexiconRepository.
-from app.core.ports.lexicon_repository import ILexiconRepository 
+
+# [FIX] Import interfaces from the unified ports package
+from app.core.ports import IMessageBroker, LanguageRepo
 from app.shared.observability import get_tracer
 
 logger = structlog.get_logger()
@@ -28,9 +27,8 @@ class OnboardLanguageSaga:
     4. Triggers the initial scaffolding/build via the Event Bus.
     """
 
-    def __init__(self, broker: IMessageBroker, repo: ILexiconRepository):
-        # In a larger system, 'repo' might be 'ILanguageRepository' specifically.
-        # Here we use ILexiconRepository assuming it manages language metadata too.
+    # [FIX] Updated type hint to LanguageRepo (metadata) instead of LexiconRepo (words)
+    def __init__(self, broker: IMessageBroker, repo: LanguageRepo):
         self.broker = broker
         self.repo = repo
 
@@ -52,10 +50,10 @@ class OnboardLanguageSaga:
             logger.info("onboarding_started", code=code, name=name)
 
             # 1. Check for duplicates
-            # (Assuming the repo has a method to check existence or we catch an error)
-            # This is a simplification; in real code, we'd query the repo.
-            # existing = await self.repo.get_language(code)
-            # if existing: raise LanguageAlreadyExistsError(code)
+            # In a real scenario, we check the list from the repo.
+            # existing_list = await self.repo.list_languages()
+            # if any(l['code'] == code for l in existing_list):
+            #     raise LanguageAlreadyExistsError(code)
 
             # 2. Create Entity
             language = Language(
@@ -68,8 +66,10 @@ class OnboardLanguageSaga:
             )
 
             # 3. Persist Metadata
-            # This saves the config to 'languages.json' or DB
-            # await self.repo.save_language_config(language)
+            # For the FileSystemRepo, this might mean updating the Everything Matrix
+            # or creating the directory structure. 
+            # Note: save_grammar is a placeholder for saving the definition.
+            # await self.repo.save_grammar(code, "...") 
             logger.info("language_metadata_saved", code=code)
 
             # 4. Trigger the Build (The Side Effect)

@@ -1,8 +1,4 @@
-Here is the updated **`docs/06-ADDING_A_LANGUAGE.md`**.
 
-This version enforces the **ISO 639-1 (2-letter)** standard across all configuration files, directory paths, and CLI commands, aligning with the v2.1 "Code-First" architecture.
-
----
 
 # 🌍 Adding a New Language
 
@@ -37,6 +33,7 @@ You must register the language in the "Wishlist" so the **Architect Agent** know
 ```python
 "ha": {"name": "Hausa", "order": "SVO", "family": "Chadic"}
 
+
 ```
 
 *Note: The `order` field ("SVO", "SOV", "VSO") triggers the specific **Weighted Topology** logic.*
@@ -48,14 +45,13 @@ Run the indexer to confirm the system sees your new language intention.
 ```bash
 python tools/everything_matrix/build_index.py
 
+
 ```
 
 * **Success:** Open `data/indices/everything_matrix.json`. You should see an entry for your new ISO code (e.g., `ha`).
 * **Check:** Verify `build_strategy`.
 * Tier 1 should be `"HIGH_ROAD"`.
 * Tier 3 should be `"SAFE_MODE"`.
-
-
 
 ---
 
@@ -74,6 +70,7 @@ python -m ai_services.lexicographer --lang=ha --domain=core
 # Generate biographical terms (physicist, born, died)
 python -m ai_services.lexicographer --lang=ha --domain=people
 
+
 ```
 
 ### Option B: Manual Creation
@@ -89,6 +86,7 @@ python -m ai_services.lexicographer --lang=ha --domain=people
   }
 }
 
+
 ```
 
 **File:** `data/lexicon/ha/people.json`
@@ -101,6 +99,7 @@ python -m ai_services.lexicographer --lang=ha --domain=people
     "forms": { "sg": "masanin kimiyyar", "pl": "masana kimiyya" }
   }
 }
+
 
 ```
 
@@ -120,6 +119,7 @@ Open `data/config/topology_weights.json`. Ensure the word order you selected in 
   "SOV": { "nsubj": -10, "obj": -5, "root": 0 }
 }
 
+
 ```
 
 *If your language uses a rare order (e.g., OVS for Hixkaryana), add a new entry here.*
@@ -135,6 +135,7 @@ Now you run the build. For Tier 3 languages, this triggers the **Architect Agent
 ```bash
 cd gf
 python build_orchestrator.py
+
 
 ```
 
@@ -152,6 +153,7 @@ Confirm your language is legally inside the binary.
 
 ```bash
 python3 -c "import pgf; print(pgf.readPGF('AbstractWiki.pgf').languages.keys())"
+
 
 ```
 
@@ -174,6 +176,7 @@ Open `data/tests/gold_standard.json` and add a verified translation using the 2-
   "expected": "Shaka jarumi ne."
 }
 
+
 ```
 
 ### Step 2: Run the Regression Suite
@@ -182,6 +185,7 @@ Run the test suite. **The Judge** agent will grade the output.
 
 ```bash
 python -m pytest tests/integration/test_quality.py --lang=ha
+
 
 ```
 
@@ -194,12 +198,13 @@ Use the correct **Path Parameter** (`/ha`) endpoint.
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/generate/ha" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "frame_type": "bio",
-           "name": "Shaka",
-           "profession": "warrior"
-         }'
+      -H "Content-Type: application/json" \
+      -d '{
+            "frame_type": "bio",
+            "name": "Shaka",
+            "profession": "warrior"
+          }'
+
 
 ```
 

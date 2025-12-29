@@ -1,12 +1,13 @@
-# tests\conftest.py
+# tests/conftest.py
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 from app.shared.container import Container
 from app.core.domain.models import Frame, FrameType
-from app.core.ports.grammar_engine import IGrammarEngine
-from app.core.ports.message_broker import IMessageBroker
-from app.core.ports.lexicon_repository import ILexiconRepository
+
+# [FIX] Import all ports from the unified package
+# The individual files (lexicon_repository.py, etc.) are gone.
+from app.core.ports import IGrammarEngine, IMessageBroker, LexiconRepo
 
 @pytest.fixture(scope="function")
 def mock_grammar_engine():
@@ -33,10 +34,15 @@ def mock_broker():
 @pytest.fixture(scope="function")
 def mock_repo():
     """Returns a mock Lexicon Repository."""
-    repo = MagicMock(spec=ILexiconRepository)
+    # [FIX] Updated spec to LexiconRepo (was ILexiconRepository)
+    repo = MagicMock(spec=LexiconRepo)
     repo.get_entry = AsyncMock(return_value=None)
     repo.save_entry = AsyncMock()
     repo.health_check = AsyncMock(return_value=True)
+    
+    # Optional: If your tests also hit 'list_languages' (LanguageRepo), mock it too:
+    # repo.list_languages = AsyncMock(return_value=[])
+    
     return repo
 
 @pytest.fixture(scope="function")
