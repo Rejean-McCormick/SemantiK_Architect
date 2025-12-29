@@ -26,10 +26,42 @@ RGL_API = RGL_SRC / "api"  # <--- CRITICAL FIX: Add API path for Syntax.gf
 GENERATED_SRC = ROOT_DIR / "generated" / "src"
 LOG_DIR = GF_DIR / "build_logs"
 MATRIX_FILE = ROOT_DIR / "data" / "indices" / "everything_matrix.json"
+ISO_MAP_FILE = ROOT_DIR / "config" / "iso_to_wiki.json" # <--- NEW: Single Source of Truth
 
 # Ensure directories exist
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 GENERATED_SRC.mkdir(parents=True, exist_ok=True)
+
+def load_iso_map():
+    """Loads the authoritative ISO -> GF Name mapping."""
+    if not ISO_MAP_FILE.exists():
+        logger.warning("⚠️ ISO Map not found. Falling back to TitleCase.")
+        return {}
+    try:
+        with open(ISO_MAP_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"❌ Failed to load ISO Map: {e}")
+        return {}
+
+# Load the map once at module level
+ISO_MAP = load_iso_map()
+
+def get_gf_name(code):
+    """
+    Standardizes naming using the Chart.
+    Input:  'en' OR 'eng'
+    Output: 'WikiEng.gf'
+    """
+    # 1. Lookup the suffix in the chart (e.g. 'en' -> 'Eng', 'eng' -> 'Eng')
+    # Try exact match first, then lowercase
+    suffix = ISO_MAP.get(code, ISO_MAP.get(code.lower()))
+    
+    # 2. Fallback if not in chart: Title Case (e.g. 'klingon' -> 'Klingon')
+    if not suffix:
+        suffix = code.title()
+        
+    return f"Wiki{suffix}.gf"
 
 def load_matrix():
     if not MATRIX_FILE.exists():
@@ -52,10 +84,11 @@ def ensure_source_exists(lang_code, strategy):
         return True
     
     # SAFE_MODE (Tier 3) requires generation
-    target_file = GENERATED_SRC / f"Wiki{lang_code.title()}.gf"
+    # FIX: Use standardized name logic
+    target_file = GENERATED_SRC / get_gf_name(lang_code)
     
     if not target_file.exists():
-        logger.info(f"🔨 Generating grammar for {lang_code} (Factory)...")
+        logger.info(f"🔨 Generating grammar for {lang_code} -> {target_file.name} (Factory)...")
         if generate_safe_mode_grammar:
             try:
                 code = generate_safe_mode_grammar(lang_code)
@@ -75,7 +108,8 @@ def compile_gf(lang_code, strategy):
     """
     Compiles a single language to a .gfo object file (Phase 1).
     """
-    gf_filename = f"Wiki{lang_code.title()}.gf"
+    # FIX: Use standardized name logic
+    gf_filename = get_gf_name(lang_code)
     
     # Determine Source Path based on Strategy
     if strategy == "SAFE_MODE":
@@ -97,7 +131,7 @@ def compile_gf(lang_code, strategy):
     # Log errors if failed
     if proc.returncode != 0:
         # Log to file for archival
-        with open(LOG_DIR / f"Wiki{lang_code.title()}.log", "w") as f:
+        with open(LOG_DIR / f"{gf_filename}.log", "w") as f:
             f.write(proc.stderr + "\n" + proc.stdout)
             
     return proc
@@ -136,7 +170,8 @@ def phase_2_link(valid_langs_map):
     # We must point GF to the source file location for the linker to find the .gfo
     targets = []
     for code, strategy in valid_langs_map.items():
-        lang_name = f"Wiki{code.title()}.gf"
+        # FIX: Use standardized name logic
+        lang_name = get_gf_name(code)
         
         if strategy == "SAFE_MODE":
             # Point to generated folder
@@ -184,8 +219,6 @@ def main():
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {executor.submit(phase_1_verify, t[0], t[1]): t for t in tasks}
         
-
-
         for future in concurrent.futures.as_completed(futures):
             code, strategy = futures[future]
             try:

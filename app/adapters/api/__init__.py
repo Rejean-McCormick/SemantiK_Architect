@@ -1,4 +1,4 @@
-# app\adapters\api\__init__.py
+# app/adapters/api/__init__.py
 """
 REST API Adapter.
 
@@ -9,6 +9,5 @@ It is built on FastAPI and follows the Hexagonal Architecture principles:
 - It does NOT contain business logic.
 """
 
-from .main import create_app
-
-__all__ = ["create_app"]
+# NOTE: We do NOT import create_app here to avoid circular imports 
+# when the DI container scans this package.

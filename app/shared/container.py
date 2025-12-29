@@ -49,12 +49,11 @@ class Container(containers.DeclarativeContainer):
     # Alias so 'health.py' can find 'lexicon_repository'
     lexicon_repository = language_repo
 
-    # Grammar Engine (Selector: GF vs Pidgin/Mock)
-    grammar_engine = providers.Selector(
-        settings.USE_MOCK_GRAMMAR,
-        true=providers.Singleton(PidginGrammarEngine),
-        false=providers.Singleton(GFGrammarEngine, lib_path=settings.GF_LIB_PATH),
-    )
+    # Grammar Engine (Fixed: Switched from Selector to if/else)
+    if settings.USE_MOCK_GRAMMAR:
+        grammar_engine = providers.Singleton(PidginGrammarEngine)
+    else:
+        grammar_engine = providers.Singleton(GFGrammarEngine, lib_path=settings.GF_LIB_PATH)
 
     # LLM Client (Gemini BYOK)
     llm_client = providers.Singleton(GeminiAdapter)
@@ -63,7 +62,7 @@ class Container(containers.DeclarativeContainer):
     
     generate_text_use_case = providers.Factory(
         GenerateText,
-        # CRITICAL FIX: Named argument must match GenerateText.__init__(self, engine, ...)
+        # Named argument must match GenerateText.__init__(self, engine, ...)
         engine=grammar_engine,
     )
 

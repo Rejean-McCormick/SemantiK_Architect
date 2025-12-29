@@ -1,0 +1,51 @@
+Test_ID,Name,Gender (Male/Female),Profession_Lemma_in_it,Nationality_Lemma_in_it,EXPECTED_FULL_SENTENCE
+IT_BATCH_001,Juan,Male,chimico,americano,Juan è un chimico americano.
+IT_BATCH_002,Alessandro,Male,scrittore,italiano,Alessandro è uno scrittore italiano.
+IT_BATCH_003,Ivan,Male,politico,tedesco,Ivan è un politico tedesco.
+IT_BATCH_004,Mateusz,Male,scrittore,francese,Mateusz è uno scrittore francese.
+IT_BATCH_005,Alda,Female,scrittore,russo,Alda è una scrittrice russa.
+IT_BATCH_006,Mateo,Male,scrittore,tedesco,Mateo è uno scrittore tedesco.
+IT_BATCH_007,Ioana,Female,chimico,americano,Ioana è una chimica americana.
+IT_BATCH_008,Sarah,Female,medico,italiano,Sarah è una medica italiana.
+IT_BATCH_009,Julia,Female,medico,polacco,Julia è una medica polacca.
+IT_BATCH_010,Julia,Female,scrittore,francese,Julia è una scrittrice francese.
+IT_BATCH_011,Alessandro,Male,politico,americano,Alessandro è un politico americano.
+IT_BATCH_012,Mateusz,Male,insegnante,italiano,Mateusz è un insegnante italiano.
+IT_BATCH_013,Hans,Male,medico,russo,Hans è un medico russo.
+IT_BATCH_014,Juan,Male,medico,russo,Juan è un medico russo.
+IT_BATCH_015,Alda,Female,chimico,francese,Alda è una chimica francese.
+IT_BATCH_016,Mateo,Male,scrittore,polacco,Mateo è uno scrittore polacco.
+IT_BATCH_017,Elena,Female,fisico,francese,Elena è una fisica francese.
+IT_BATCH_018,Maria,Female,fisico,polacco,Maria è una fisica polacca.
+IT_BATCH_019,Alessandro,Male,scrittore,russo,Alessandro è uno scrittore russo.
+IT_BATCH_020,Alessandro,Male,medico,polacco,Alessandro è un medico polacco.
+IT_BATCH_021,Sarah,Female,insegnante,tedesco,Sarah è un'insegnante tedesca.
+IT_BATCH_022,Marie,Female,insegnante,tedesco,Marie è un'insegnante tedesca.
+IT_BATCH_023,Sarah,Female,chimico,americano,Sarah è una chimica americana.
+IT_BATCH_024,Sigmund,Male,politico,italiano,Sigmund è un politico italiano.
+IT_BATCH_025,Ana,Female,chimico,francese,Ana è una chimica francese.
+IT_BATCH_026,Alda,Female,chimico,italiano,Alda è una chimica italiana.
+IT_BATCH_027,João,Male,chimico,tedesco,João è un chimico tedesco.
+IT_BATCH_028,Mateusz,Male,chimico,tedesco,Mateusz è un chimico tedesco.
+IT_BATCH_029,Dante,Male,insegnante,tedesco,Dante è un insegnante tedesco.
+IT_BATCH_030,Ana,Female,scrittore,francese,Ana è una scrittrice francese.
+IT_BATCH_031,Ana,Female,fisico,francese,Ana è una fisica francese.
+IT_BATCH_032,Marie,Female,medico,polacco,Marie è una medica polacca.
+IT_BATCH_033,Ivan,Male,insegnante,francese,Ivan è un insegnante francese.
+IT_BATCH_034,Sigmund,Male,insegnante,americano,Sigmund è un insegnante americano.
+IT_BATCH_035,Alda,Female,insegnante,tedesco,Alda è un'insegnante tedesca.
+IT_BATCH_036,Marie,Female,scrittore,francese,Marie è una scrittrice francese.
+IT_BATCH_037,Marie,Female,fisico,polacco,Marie è una fisica polacca.
+IT_BATCH_038,Mateo,Male,scrittore,italiano,Mateo è uno scrittore italiano.
+IT_BATCH_039,Juan,Male,politico,russo,Juan è un politico russo.
+IT_BATCH_040,Hans,Male,scrittore,americano,Hans è uno scrittore americano.
+IT_BATCH_041,Alessandro,Male,politico,polacco,Alessandro è un politico polacco.
+IT_BATCH_042,Alda,Female,chimico,polacco,Alda è una chimica polacca.
+IT_BATCH_043,Mateusz,Male,medico,tedesco,Mateusz è un medico tedesco.
+IT_BATCH_044,Ana,Female,insegnante,polacco,Ana è un'insegnante polacca.
+IT_BATCH_045,Sarah,Female,insegnante,francese,Sarah è un'insegnante francese.
+IT_BATCH_046,Frida,Female,politico,italiano,Frida è una politica italiana.
+IT_BATCH_047,Sarah,Female,chimico,americano,Sarah è una chimica americana.
+IT_BATCH_048,Ioana,Female,insegnante,tedesco,Ioana è un'insegnante tedesca.
+IT_BATCH_049,Dante,Male,insegnante,tedesco,Dante è un insegnante tedesco.
+IT_BATCH_050,Julia,Female,insegnante,russo,Julia è un'insegnante russa.

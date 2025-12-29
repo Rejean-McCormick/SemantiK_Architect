@@ -86,12 +86,25 @@ async def generate_text(
                 logger.info("pronominalization_triggered", session=session_id)
                 
                 # MUTATION: Swap Name for Pronoun based on previous gender
+                # CRITICAL UPDATE: We must also inject GF hints into 'meta' so the 
+                # engine knows to use the PGF pronoun functions (UsePron) instead of proper names.
+                
+                # Ensure meta dict exists
+                if frame.meta is None:
+                    frame.meta = {}
+
                 if context.current_focus.gender == "f":
                     frame.name = "She"
+                    frame.meta['gf_function'] = "UsePron"
+                    frame.meta['gf_arg'] = "she_Pron"
                 elif context.current_focus.gender == "m":
                     frame.name = "He"
+                    frame.meta['gf_function'] = "UsePron"
+                    frame.meta['gf_arg'] = "he_Pron"
                 else:
                     frame.name = "It"
+                    frame.meta['gf_function'] = "UsePron"
+                    frame.meta['gf_arg'] = "it_Pron"
 
             # C. Update Focus for the NEXT turn
             # The subject of this sentence becomes the focus of the next one

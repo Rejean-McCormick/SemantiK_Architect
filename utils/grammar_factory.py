@@ -1,3 +1,4 @@
+# utils/grammar_factory.py
 import json
 import logging
 from pathlib import Path
@@ -8,6 +9,7 @@ ROOT_DIR = Path(__file__).parent.parent
 CONFIG_DIR = ROOT_DIR / "data" / "config"
 FACTORY_TARGETS_FILE = CONFIG_DIR / "factory_targets.json"
 TOPOLOGY_WEIGHTS_FILE = CONFIG_DIR / "topology_weights.json"
+ISO_MAP_FILE = ROOT_DIR / "config" / "iso_to_wiki.json"  # <--- NEW: Single Source of Truth
 
 # Setup Logging
 logger = logging.getLogger("GrammarFactory")
@@ -49,6 +51,22 @@ def get_topology(iso3_code):
     }
     return static_overrides.get(iso3_code, "SVO")
 
+def get_gf_suffix(code):
+    """
+    Retrieves the standard GF suffix (e.g., 'Eng') from the chart.
+    This ensures the generated 'concrete WikiEng' matches the filename.
+    """
+    mapping = load_json_config(ISO_MAP_FILE)
+    
+    # Check exact match or lowercase match (e.g. 'eng' -> 'Eng')
+    suffix = mapping.get(code, mapping.get(code.lower()))
+    
+    if suffix:
+        return suffix
+    
+    # Fallback to TitleCase if not found in map
+    return code.title()
+
 def _build_linearization(components, weights):
     # Sort by the weight of the role
     components.sort(key=lambda x: weights.get(x["role"], 0))
@@ -58,7 +76,7 @@ def _build_linearization(components, weights):
 def generate_safe_mode_grammar(lang_code):
     """
     Generates a Safe Mode grammar.
-    FIX 2.0: Treats 'String' inputs as already-wrapped SS records {s : Str}.
+    FIX 2.1: Uses ISO Chart to determine the correct Grammar Name (WikiEng vs WikiEn).
     """
     iso3 = ISO_2_TO_3.get(lang_code, lang_code).lower()
     order = get_topology(iso3)
@@ -95,18 +113,17 @@ def generate_safe_mode_grammar(lang_code):
 
     # mkEvent: Entity (nsubj) + "participated in" (root) + Event (obj)
     event_lin = _build_linearization([
-        {"code": "entity.s",            "role": "nsubj"},
+        {"code": "entity.s",             "role": "nsubj"},
         {"code": "\"participated in\"", "role": "root"},
-        {"code": "event.s",             "role": "obj"}
+        {"code": "event.s",              "role": "obj"}
     ], weights)
 
     # --- 2. Generate Code ---
-    lang_name = f"Wiki{lang_code.title()}"
     
-    # CRITICAL FIX IN 'lin': 
-    # mkEntityStr s = s; (No 'ss' wrapper, because 's' is already SS)
-    # mkBio... = ss (...); (Wrap the result string back into SS)
-
+    # FIX: Resolve Standard Name (e.g. WikiEng) instead of blind TitleCase (WikiEn)
+    suffix = get_gf_suffix(lang_code)
+    lang_name = f"Wiki{suffix}"
+    
     gf_code = f"""concrete {lang_name} of AbstractWiki = open Prelude in {{
   lincat
     Statement = SS;

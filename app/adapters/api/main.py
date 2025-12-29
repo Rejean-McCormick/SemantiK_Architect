@@ -1,4 +1,4 @@
-# app\adapters\api\main.py
+# app/adapters/api/main.py
 import uvicorn
 import structlog
 from fastapi import FastAPI
@@ -10,7 +10,8 @@ from app.shared.config import settings
 
 # Import Routers
 # Note: We import the modules directly to ensure 'container.wire' works correctly
-from app.adapters.api.routers import generation, management, health
+# [UPDATE]: Added 'tools' for the new Developer Dashboard
+from app.adapters.api.routers import generation, management, health, tools
 
 logger = structlog.get_logger()
 
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
         "app.adapters.api.routers.generation",
         "app.adapters.api.routers.management",
         "app.adapters.api.routers.health",
+        "app.adapters.api.routers.tools", # <--- Added: Tools for DI injection
         "app.adapters.api.dependencies"
     ])
 
@@ -81,6 +83,8 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/api/v1")
     app.include_router(generation.router, prefix="/api/v1")
     app.include_router(management.router, prefix="/api/v1")
+    # [UPDATE]: Added Tools Router for the frontend dashboard
+    app.include_router(tools.router, prefix="/api/v1/tools", tags=["System Tools"])
 
     return app
 
