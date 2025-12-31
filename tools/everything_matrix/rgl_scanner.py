@@ -1,119 +1,369 @@
-import os
+# tools/everything_matrix/rgl_scanner.py
+from __future__ import annotations
+
+import argparse
 import json
+import os
+import re
+import sys
+import time
+from pathlib import Path
+from typing import Any, Dict, Mapping, Optional, Set
 
-# Path to the central configuration
-CONFIG_PATH = 'config/everything_matrix_config.json'
+# Canonical + only supported config location
+CONFIG_PATH = Path("data/config/everything_matrix_config.json")
 
-def load_config():
-    """Loads the central configuration or returns safe defaults."""
-    if not os.path.exists(CONFIG_PATH):
-        print(f"⚠️ Config not found at {CONFIG_PATH}, using defaults.")
-        return {
-            "rgl_base_path": "gf-rgl/src",
-            "inventory_file": "data/indices/rgl_inventory.json",
-            # FIX: Added "api" to the ignored folders list
-            "ignored_folders": ["doc", "examples", "dist", "bin", "boot", "api"]
-        }
-    with open(CONFIG_PATH, 'r') as f:
-        config = json.load(f)
-        # Safety: Ensure "api" is ignored even if config file is loaded
-        # The 'api' folder contains Syntax.gf which looks like a language but isn't.
-        ignored = set(config.get("ignored_folders", []))
-        ignored.add("api")
-        config["ignored_folders"] = list(ignored)
-        return config
+# Module filename patterns: GrammarFre.gf, SyntaxEng.gf, CatFr.gf, etc.
+# Accept both 2-letter (iso2) and 3-letter (wiki/iso3) suffixes.
+_LANG_MODULE_RE = re.compile(r"^(Grammar|Cat|Noun|Nouns|Paradigms|Syntax)([A-Za-z]{2,3})$")
 
-def scan_rgl():
-    config = load_config()
-    
-    # Extract paths from config
-    base_path = config.get("rgl_base_path", "gf-rgl/src")
-    output_file = config.get("inventory_file", "data/indices/rgl_inventory.json")
-    ignored_folders = set(config.get("ignored_folders", []))
-    
-    print(f"🔍 Scanning {base_path} for RGL modules...")
-    
-    inventory = {}
-    family_folders = set()
+# Folders that should never be treated as "families" even if they contain GF files
+_NEVER_FAMILY = {"api"}
 
-    # Walk through every folder in RGL
-    for root, dirs, files in os.walk(base_path):
-        folder_name = os.path.basename(root)
-        
-        # Skip ignored folders
-        if folder_name in ignored_folders:
+SCANNER_VERSION = "rgl_scanner/2.3"
+
+# Allow sibling imports (norm/io_utils live beside this file)
+sys.path.append(str(Path(__file__).resolve().parent))
+
+try:
+    # io_utils.py (canonical shared IO)
+    from io_utils import read_json, write_json_atomic  # type: ignore
+    # norm.py (canonical shared normalization)
+    from norm import build_wiki_to_iso2, load_iso_to_wiki  # type: ignore
+except Exception as e:
+    raise SystemExit(
+        "❌ rgl_scanner requires tools/everything_matrix/io_utils.py and norm.py "
+        f"(import error: {e})"
+    )
+
+
+def _repo_root() -> Path:
+    """
+    Resolve repository root robustly, independent of current working directory.
+
+    Anchor rule:
+      - Must find data/config/everything_matrix_config.json under repo root.
+
+    Secondary anchor:
+      - config/iso_to_wiki.json (useful during refactors if config exists but path probing fails)
+    """
+    here = Path(__file__).resolve()
+    for base in [here.parent, *here.parents]:
+        if (base / CONFIG_PATH).is_file():
+            return base
+        if (base / "config" / "iso_to_wiki.json").is_file():
+            return base
+    return Path.cwd().resolve()
+
+
+def _log(msg: str, *, quiet: bool) -> None:
+    if not quiet:
+        print(msg)
+
+
+def _load_config(repo: Path) -> Dict[str, Any]:
+    """
+    Loads the central configuration.
+
+    Clean-mode behavior:
+      - Only reads data/config/everything_matrix_config.json.
+      - Missing/invalid config => hard fail.
+
+    Supports both shapes inside the canonical file:
+      - v2: cfg["rgl"] block
+      - v1: top-level keys
+    """
+    cfg_path = repo / CONFIG_PATH
+    cfg = read_json(cfg_path)
+    if not isinstance(cfg, dict) or not cfg:
+        raise SystemExit(f"❌ Missing/invalid Everything Matrix config: {cfg_path}")
+
+    rgl = cfg.get("rgl") if isinstance(cfg.get("rgl"), dict) else {}
+
+    def pick(key: str, default: Any) -> Any:
+        if isinstance(rgl, dict) and key in rgl:
+            return rgl.get(key, default)
+        return cfg.get(key, default)
+
+    defaults: Dict[str, Any] = {
+        "rgl_base_path": "gf-rgl/src",
+        "inventory_file": "data/indices/rgl_inventory.json",
+        "iso_map_file": "config/iso_to_wiki.json",
+        "ignored_folders": ["doc", "docs", "examples", "dist", "bin", "boot", "__pycache__"],
+        "include_api_folder": True,
+        # Always emit iso2 keys for downstream compatibility
+        "inventory_key_mode": "iso2",
+    }
+
+    merged: Dict[str, Any] = dict(defaults)
+    merged["rgl_base_path"] = pick("rgl_base_path", defaults["rgl_base_path"])
+    merged["inventory_file"] = pick("inventory_file", defaults["inventory_file"])
+    merged["iso_map_file"] = pick("iso_map_file", defaults["iso_map_file"])
+    merged["ignored_folders"] = pick("ignored_folders", defaults["ignored_folders"])
+    merged["include_api_folder"] = bool(pick("include_api_folder", defaults["include_api_folder"]))
+
+    ignored = set(str(x) for x in (merged.get("ignored_folders") or []))
+    merged["ignored_folders"] = sorted(ignored)
+
+    # Enforce output policy
+    merged["inventory_key_mode"] = "iso2"
+    return merged
+
+
+def _build_iso2_to_iso3(iso_to_wiki: Mapping[str, Any]) -> Dict[str, str]:
+    """
+    Build iso2 -> iso3 preference map from iso_to_wiki.json when possible.
+    If multiple iso3 map to the same wiki code, pick the first seen deterministically.
+    """
+    iso2_to_iso3: Dict[str, str] = {}
+    wiki_to_iso3: Dict[str, str] = {}
+
+    for k in sorted(iso_to_wiki.keys(), key=lambda x: str(x).casefold()):
+        v = iso_to_wiki.get(k)
+        if not (isinstance(k, str) and isinstance(v, Mapping)):
+            continue
+        kk = k.strip().casefold()
+        wiki = v.get("wiki")
+        if not (isinstance(wiki, str) and wiki.strip()):
+            continue
+        wk = wiki.strip().casefold()
+        if len(kk) == 3 and wk not in wiki_to_iso3:
+            wiki_to_iso3[wk] = kk
+
+    for k, v in iso_to_wiki.items():
+        if not (isinstance(k, str) and isinstance(v, Mapping)):
+            continue
+        kk = k.strip().casefold()
+        if len(kk) != 2:
+            continue
+        wiki = v.get("wiki")
+        if not (isinstance(wiki, str) and wiki.strip()):
+            continue
+        wk = wiki.strip().casefold()
+        iso3 = wiki_to_iso3.get(wk)
+        if iso3:
+            iso2_to_iso3[kk] = iso3
+
+    return iso2_to_iso3
+
+
+def _resolve_lang_suffix_to_iso2(
+    suffix: str,
+    *,
+    wiki_to_iso2: Mapping[str, str],
+    iso_to_wiki: Mapping[str, Any],
+) -> Optional[str]:
+    """
+    Convert GF module suffix into ISO-639-1 (iso2).
+
+    Accepted suffix forms:
+      - 2-letter iso2:   "fr", "en" (only if present in iso_to_wiki.json)
+      - 3-letter wiki:   "Fre", "Eng" (via wiki_to_iso2)
+      - 3-letter iso3:   "fra", "eng" (if present in iso_to_wiki.json, via wiki_to_iso2)
+
+    Clean behavior:
+      - Do not invent codes.
+      - Only accept suffixes resolvable via iso_to_wiki.json.
+    """
+    if not isinstance(suffix, str):
+        return None
+    s = suffix.strip()
+    if len(s) not in (2, 3) or not s.isalpha():
+        return None
+
+    key = s.casefold()
+
+    iso2 = wiki_to_iso2.get(key)
+    if isinstance(iso2, str) and len(iso2) == 2:
+        return iso2
+
+    if len(key) == 2 and key in iso_to_wiki:
+        return key
+
+    return None
+
+
+def _compute_blocks_from_modules(modules: Mapping[str, Any]) -> Dict[str, int]:
+    """
+    Zone A proof-of-existence blocks (0/10).
+    Strategy/maturity ladders are applied later by build_index (strategy-map).
+    """
+    m = set(str(k) for k in (modules.keys() if isinstance(modules, Mapping) else []))
+    return {
+        "CAT": 10 if "Cat" in m else 0,
+        "NOUN": 10 if ("Noun" in m or "Nouns" in m) else 0,
+        "PARA": 10 if "Paradigms" in m else 0,
+        "GRAM": 10 if "Grammar" in m else 0,
+        "SYN": 10 if "Syntax" in m else 0,
+    }
+
+
+def scan_rgl(
+    *,
+    repo_root: Optional[Path] = None,
+    write_output: bool = False,
+    output_file: Optional[Path] = None,
+    quiet: bool = True,
+) -> Dict[str, Any]:
+    """
+    Library entrypoint (contract):
+      scan_rgl(...) -> inventory dict
+
+    Side-effect policy:
+      - By default: NO file writes (write_output=False).
+      - If write_output=True: write rgl_inventory.json (or output_file if provided).
+      - CLI uses this function and decides whether to write.
+    """
+    repo = repo_root or _repo_root()
+    config = _load_config(repo)
+
+    base_path = repo / str(config.get("rgl_base_path", "gf-rgl/src"))
+    cfg_out = repo / str(config.get("inventory_file", "data/indices/rgl_inventory.json"))
+    out_path = output_file or cfg_out
+
+    iso_map_path = repo / str(config.get("iso_map_file", "config/iso_to_wiki.json"))
+    ignored_folders: Set[str] = set(str(x) for x in (config.get("ignored_folders") or []))
+    include_api_folder = bool(config.get("include_api_folder", True))
+
+    iso_to_wiki = load_iso_to_wiki(iso_map_path)
+    if not iso_to_wiki:
+        raise SystemExit(f"❌ Missing/invalid iso_to_wiki.json: {iso_map_path}")
+
+    wiki_to_iso2 = build_wiki_to_iso2(iso_to_wiki)
+    iso2_to_iso3 = _build_iso2_to_iso3(iso_to_wiki)
+
+    if not base_path.is_dir():
+        raise SystemExit(f"❌ RGL base path not found: {base_path}")
+
+    _log(f"🔍 Scanning {base_path} for RGL modules...", quiet=quiet)
+
+    inventory: Dict[str, Dict[str, Any]] = {}
+    family_folders: Set[str] = set()
+
+    for root_dir, dirs, files in os.walk(base_path):
+        folder_name = Path(root_dir).name
+
+        # Prune traversal for ignored folders
+        dirs[:] = [d for d in dirs if d not in ignored_folders and not d.startswith(".")]
+
+        # Optionally exclude api traversal (but still never classify it as family)
+        if not include_api_folder and folder_name == "api":
+            dirs[:] = []
             continue
 
-        # Filter for GF files only
-        gf_files_in_folder = [f for f in files if f.endswith(".gf")]
-        if not gf_files_in_folder:
+        gf_files = [f for f in files if f.endswith(".gf")]
+        if not gf_files:
             continue
 
         is_language_folder = False
 
-        for file in gf_files_in_folder:
-            # Normalize path for cross-platform compatibility (Windows/Linux)
-            full_path = os.path.join(root, file)
-            rel_path = os.path.relpath(full_path, start='.')
-            norm_path = rel_path.replace("\\", "/")
-            
-            name_part = file.replace(".gf", "")
-            
-            module_type = None
-            lang_code = None
+        for file in gf_files:
+            name_part = file[:-3]
+            m = _LANG_MODULE_RE.match(name_part)
+            if not m:
+                continue
 
-            # --- DETECT MODULE TYPES ---
-            if name_part.startswith("Grammar"):
-                module_type = "Grammar"
-                lang_code = name_part.replace("Grammar", "")
-            elif name_part.startswith("Cat"):
-                module_type = "Cat"
-                lang_code = name_part.replace("Cat", "")
-            elif name_part.startswith("Noun"):
-                module_type = "Noun"
-                lang_code = name_part.replace("Noun", "")
-            elif name_part.startswith("Paradigms"):
-                module_type = "Paradigms"
-                lang_code = name_part.replace("Paradigms", "")
-            elif name_part.startswith("Syntax"): 
-                # CRITICAL: Detect Syntax modules for 'High Road' eligibility
-                module_type = "Syntax"
-                lang_code = name_part.replace("Syntax", "")
-            
-            # --- LOGIC 1: DETECT LANGUAGES (3-letter codes) ---
-            if module_type and len(lang_code) == 3:
-                is_language_folder = True
-                if lang_code not in inventory:
-                    inventory[lang_code] = {"path": root, "modules": {}}
-                
-                inventory[lang_code]["modules"][module_type] = norm_path
-            
-            # --- LOGIC 2: DETECT FAMILIES (Code > 3 letters) ---
-            # e.g. GrammarRomance -> Code "Romance" -> Family
-            if lang_code and len(lang_code) > 3:
-                 family_folders.add(folder_name)
+            module_type, suffix = m.group(1), m.group(2)
+            iso2 = _resolve_lang_suffix_to_iso2(
+                suffix, wiki_to_iso2=wiki_to_iso2, iso_to_wiki=iso_to_wiki
+            )
+            if not iso2:
+                continue
 
-        # --- LOGIC 3: FALLBACK FAMILY DETECTION ---
-        # If a folder contains GF files but isn't a 3-letter language folder,
-        # it is likely a shared family folder (e.g. 'romance', 'common', 'api').
-        if not is_language_folder and folder_name not in ignored_folders:
-            if not folder_name.startswith("."):
-                family_folders.add(folder_name)
+            is_language_folder = True
 
-    # Prepare Output Data
-    final_data = {
-        "languages": inventory,
-        "families": sorted(list(family_folders))
+            iso3 = iso2_to_iso3.get(iso2)
+            full_path = Path(root_dir) / file
+            norm_module_path = full_path.relative_to(repo).as_posix()
+            norm_folder_path = Path(root_dir).relative_to(repo).as_posix()
+
+            rec = inventory.setdefault(
+                iso2,
+                {
+                    "path": norm_folder_path,
+                    "wiki": suffix,  # observed suffix for debugging
+                    "iso2": iso2,
+                    "iso3": iso3,
+                    "modules": {},
+                },
+            )
+            # Deterministic: keep first discovered path for a module
+            rec["modules"].setdefault(module_type, norm_module_path)
+
+        # Family detection: folder with GF files but not a language folder
+        if (
+            not is_language_folder
+            and folder_name not in ignored_folders
+            and folder_name not in _NEVER_FAMILY
+            and not folder_name.startswith(".")
+        ):
+            family_folders.add(folder_name)
+
+    # Deterministic output ordering + compute blocks
+    final_languages: Dict[str, Any] = {}
+    for iso2 in sorted(inventory.keys(), key=lambda x: str(x).casefold()):
+        rec = inventory[iso2]
+        mods = rec.get("modules", {}) or {}
+        rec["modules"] = {k: mods[k] for k in sorted(mods.keys(), key=lambda x: str(x).casefold())}
+        rec["blocks"] = _compute_blocks_from_modules(rec["modules"])
+        rec["module_count"] = len(rec["modules"])
+        rec["completeness"] = round(sum(rec["blocks"].values()) / 50.0, 2)  # 0.0..1.0
+        final_languages[iso2] = rec
+
+    final_data: Dict[str, Any] = {
+        "meta": {
+            "scanner": SCANNER_VERSION,
+            "generated_at": int(time.time()),
+            "generated_at_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "inventory_key_mode": "iso2",
+            "rgl_base_path": str(base_path.relative_to(repo).as_posix()),
+            "iso_map_file": str(iso_map_path.relative_to(repo).as_posix()),
+        },
+        "stats": {
+            "languages_found": len(final_languages),
+            "families_found": len(family_folders),
+            "full_rgl_5_of_5": sum(
+                1
+                for r in final_languages.values()
+                if isinstance(r.get("blocks"), dict)
+                and all((r["blocks"].get(k, 0) == 10) for k in ("CAT", "NOUN", "PARA", "GRAM", "SYN"))
+            ),
+        },
+        "languages": final_languages,
+        "families": sorted(family_folders, key=lambda x: str(x).casefold()),
     }
 
-    # Write to Disk
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    with open(output_file, 'w') as f:
-        json.dump(final_data, f, indent=2)
-    
-    print(f"✅ Inventory saved to {output_file}")
-    print(f"   Languages found: {len(inventory)}")
-    print(f"   Families/Shared folders detected: {len(family_folders)}")
+    if write_output:
+        write_json_atomic(out_path, final_data)
+        _log(f"✅ Inventory saved to {out_path}", quiet=quiet)
+        _log(f"   Languages found: {len(final_languages)}", quiet=quiet)
+        _log(f"   Families/Shared folders detected: {len(family_folders)}", quiet=quiet)
+
+    return final_data
+
+
+def main() -> None:
+    """
+    Debug CLI:
+      - Default: prints JSON to stdout (NO writes).
+      - Use --write to persist to configured inventory file (or --output).
+    """
+    parser = argparse.ArgumentParser(description="Scan gf-rgl/src and produce rgl_inventory.json (debug tool).")
+    parser.add_argument("--write", action="store_true", help="Write inventory file to disk")
+    parser.add_argument("--output", type=str, default="", help="Override output file path (implies --write)")
+    parser.add_argument("--quiet", action="store_true", help="Suppress progress output (JSON still printed)")
+    args = parser.parse_args()
+
+    repo = _repo_root()
+    out_path = Path(args.output) if args.output.strip() else None
+    write = bool(args.write or (out_path is not None))
+
+    data = scan_rgl(repo_root=repo, write_output=write, output_file=out_path, quiet=bool(args.quiet))
+
+    # Always print JSON to stdout for debug workflows
+    json.dump(data, sys.stdout, indent=2, ensure_ascii=False)
+    sys.stdout.write("\n")
+
 
 if __name__ == "__main__":
-    scan_rgl()
+    main()

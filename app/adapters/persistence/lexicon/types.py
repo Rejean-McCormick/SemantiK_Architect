@@ -87,6 +87,8 @@ class LexiconMeta:
     def __post_init__(self) -> None:
         if not isinstance(self.language, str) or not self.language.strip():
             raise ValueError("LexiconMeta.language must be a non-empty string.")
+        if not isinstance(self.extra, dict):
+            self.extra = {}
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +162,9 @@ class BaseLexicalEntry:
         for attr_name in ("key", "lemma", "pos", "language"):
             val = getattr(self, attr_name)
             if not isinstance(val, str) or not val.strip():
-                raise ValueError(f"{self.__class__.__name__}.{attr_name} must be a non-empty string.")
+                raise ValueError(
+                    f"{self.__class__.__name__}.{attr_name} must be a non-empty string."
+                )
 
         # Sanitize forms: keep only str->str items
         if not isinstance(self.forms, dict):
@@ -168,8 +172,10 @@ class BaseLexicalEntry:
         else:
             cleaned: Dict[str, str] = {}
             for k, v in self.forms.items():
-                if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip():
-                    cleaned[k] = v
+                if isinstance(k, str) and isinstance(v, str):
+                    ks, vs = k.strip(), v.strip()
+                    if ks and vs:
+                        cleaned[ks] = vs
             self.forms = cleaned
 
         if not isinstance(self.extra, dict):
@@ -201,8 +207,7 @@ class BaseLexicalEntry:
         n = (number or "").strip()
 
         if g and n:
-            key = f"{g}.{n}"
-            form = self.forms.get(key)
+            form = self.forms.get(f"{g}.{n}")
             if form:
                 return form
 
@@ -221,8 +226,6 @@ class BaseLexicalEntry:
     def to_dict(self) -> Dict[str, Any]:
         """
         Serialize the entry into a JSON-friendly dict.
-
-        Note: This is a convenience helper; loaders may use their own schema.
         """
         return {
             "key": self.key,
@@ -247,9 +250,7 @@ class BaseLexicalEntry:
 
 @dataclass(slots=True)
 class Lexeme(BaseLexicalEntry):
-    """
-    Backwards-compatible alias for the older `Lexeme` concept.
-    """
+    """Backwards-compatible alias for the older `Lexeme` concept."""
     pass
 
 
@@ -260,17 +261,13 @@ class Lexeme(BaseLexicalEntry):
 
 @dataclass(slots=True)
 class ProfessionEntry(BaseLexicalEntry):
-    """
-    Profession / occupation lexeme (semantic handle for type checking).
-    """
+    """Profession / occupation lexeme (semantic handle for type checking)."""
     sense: Optional[str] = "profession"
 
 
 @dataclass(slots=True)
 class NationalityEntry(BaseLexicalEntry):
-    """
-    Nationality or country-related entry.
-    """
+    """Nationality or country-related entry."""
 
     adjective: Optional[str] = None
     """Adjectival form, e.g. 'Polish', 'French', 'Japanese'."""
@@ -284,9 +281,7 @@ class NationalityEntry(BaseLexicalEntry):
 
 @dataclass(slots=True)
 class TitleEntry(BaseLexicalEntry):
-    """
-    Honorific / title entry such as 'Sir', 'Dr', 'Prof.'.
-    """
+    """Honorific / title entry such as 'Sir', 'Dr', 'Prof.'."""
 
     position: Optional[str] = None
     """
@@ -298,9 +293,7 @@ class TitleEntry(BaseLexicalEntry):
 
 @dataclass(slots=True)
 class HonourEntry:
-    """
-    Non-inflecting honour / award label.
-    """
+    """Non-inflecting honour / award label."""
 
     key: str
     label: str
@@ -313,6 +306,9 @@ class HonourEntry:
             raise ValueError("HonourEntry.key must be a non-empty string.")
         if not isinstance(self.label, str) or not self.label.strip():
             raise ValueError("HonourEntry.label must be a non-empty string.")
+        if self.short_label is not None and (not isinstance(self.short_label, str) or not self.short_label.strip()):
+            # Keep it simple: treat blank/invalid short_label as absent
+            self.short_label = None
         if not isinstance(self.extra, dict):
             self.extra = {}
 
@@ -350,12 +346,11 @@ class NameTemplate:
 
     def required_fields(self) -> Iterable[str]:
         """
-        Yield format field names referenced by the template.
+        Yield top-level format field names referenced by the template.
         """
         fmt = Formatter()
         for _, field_name, _, _ in fmt.parse(self.template):
             if field_name:
-                # field_name may include indexing like "person.given"
                 yield field_name.split("[", 1)[0].split(".", 1)[0]
 
     def format(self, **parts: Any) -> str:
@@ -366,7 +361,6 @@ class NameTemplate:
         """
         safe_parts: Dict[str, Any] = {k: ("" if v is None else v) for k, v in parts.items()}
 
-        # Ensure all referenced fields exist to avoid KeyError
         for k in self.required_fields():
             safe_parts.setdefault(k, "")
 
@@ -418,9 +412,9 @@ class Lexicon:
         if key in table:
             return table[key]
 
-        lower = key.casefold()
+        folded = key.casefold()
         for k, v in table.items():
-            if isinstance(k, str) and k.casefold() == lower:
+            if isinstance(k, str) and k.casefold() == folded:
                 return v
         return None
 

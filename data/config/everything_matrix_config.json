@@ -1,0 +1,67 @@
+{
+  "config_version": "everything_matrix_config/3.0",
+  "notes": "Canonical config location: data/config/everything_matrix_config.json. All paths are repo-root relative.",
+
+  "iso_map_file": "config/iso_to_wiki.json",
+  "exceptions_file": "config/language_exceptions.json",
+
+  "rgl": {
+    "rgl_base_path": "gf-rgl/src",
+    "inventory_file": "data/indices/rgl_inventory.json",
+    "ignored_folders": ["doc", "docs", "examples", "dist", "bin", "boot", "__pycache__"],
+    "include_api_folder": true
+  },
+
+  "matrix": {
+    "everything_index": "data/indices/everything_matrix.json",
+    "output_dir": "data/indices",
+    "report_dir": "data/reports",
+    "scoring_version": "2.4",
+    "zone_weights": {
+      "A_RGL": 0.4,
+      "B_LEX": 0.35,
+      "C_APP": 0.15,
+      "D_QA": 0.1
+    },
+    "high_road": {
+      "min_maturity": 8.0,
+      "min_cat": 10.0,
+      "min_seed": 2.0,
+      "min_bin": 0.0
+    },
+    "skip": {
+      "min_a_avg": 2.0
+    }
+  },
+
+  "reports": {
+    "audit_csv": "data/reports/rgl_matrix_audit.csv",
+    "strategy_json": "data/reports/rgl_matrix_strategy.json"
+  },
+
+  "frontend": {
+    "profiles_path": "architect_frontend/src/config/language_profiles.json",
+    "assets_path": "architect_frontend/public/flags"
+  },
+
+  "backend": {
+    "profiles_path": "app/core/config/profiles/profiles.json"
+  },
+
+  "lexicon": {
+    "lexicon_root": "data/lexicon",
+    "seeds_path": "data/seeds",
+    "imports_path": "data/imports",
+    "mappings_path": "semantics/mappings"
+  },
+
+  "qa": {
+    "gf_root": "gf"
+  },
+
+  "deprecated": {
+    "map_file": "rgl_map.json",
+    "ignored_folders_top_level": ["doc", "examples", "dist", "bin", "boot"],
+    "inventory_key_mode": "iso2"
+  }
+}

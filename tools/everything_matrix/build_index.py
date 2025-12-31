@@ -1,323 +1,501 @@
-import os
-import json
-import time
+# tools/everything_matrix/build_index.py
+from __future__ import annotations
+
+import argparse
 import logging
 import sys
-import hashlib
-import argparse
+import time
 from pathlib import Path
+from typing import Any, Dict, Mapping, Optional, Set
 
-# Setup Logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+# Logging (force so parent processes can't silence it)
+logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout, force=True)
 logger = logging.getLogger(__name__)
 
-# --- CONFIGURATION ---
-BASE_DIR = Path(__file__).parent.parent.parent
-DATA_DIR = BASE_DIR / "data" / "indices"
-CONFIG_DIR = BASE_DIR / "data" / "config"
+# Repo root (tools/everything_matrix/build_index.py -> repo)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Central Registry Files
-MATRIX_FILE = DATA_DIR / "everything_matrix.json"
-CHECKSUM_FILE = DATA_DIR / "filesystem.checksum"
-RGL_INVENTORY_FILE = DATA_DIR / "rgl_inventory.json"
-FACTORY_TARGETS_FILE = CONFIG_DIR / "factory_targets.json"
-ISO_MAP_FILE = BASE_DIR / "config" / "iso_to_wiki.json"
+# Canonical config location (clean; no legacy fallback)
+CONFIG_FILE = BASE_DIR / "data" / "config" / "everything_matrix_config.json"
 
-# Asset Paths
-LEXICON_DIR = BASE_DIR / "data" / "lexicon"
-RGL_SRC = BASE_DIR / "gf-rgl" / "src"
-FACTORY_SRC = BASE_DIR / "gf" / "generated" / "src"
-GF_ARTIFACTS = BASE_DIR / "gf"
+# Sibling imports
+sys.path.append(str(Path(__file__).resolve().parent))
 
-# Add current dir to path to import sibling scanners
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from io_utils import atomic_write_json, directory_fingerprint, read_json  # noqa: E402
+from norm import (  # noqa: E402
+    build_name_map_iso2,
+    build_wiki_to_iso2,
+    load_iso_to_wiki,
+    norm_to_iso2,
+)
+from zones import (  # noqa: E402
+    apply_zone_a_strategy_map,
+    clamp10,
+    compute_maturity,
+    compute_zone_a_from_modules,
+    compute_zone_averages,
+    normalize_weights,
+    choose_build_strategy,
+)
 
-# --- Import Scanners ---
+# --- Import scanners (libraries; build_index is the orchestrator) ---
 try:
-    import rgl_scanner as rgl_auditor 
-except ImportError:
-    logger.warning("⚠️ Could not import rgl_scanner. Zone A will be empty.")
-    rgl_auditor = None
+    import rgl_scanner  # type: ignore
+except Exception:
+    rgl_scanner = None  # type: ignore
 
 try:
-    import lexicon_scanner
-except ImportError:
-    lexicon_scanner = None
+    import lexicon_scanner  # type: ignore
+except Exception:
+    lexicon_scanner = None  # type: ignore
 
 try:
-    import qa_scanner
-except ImportError:
-    qa_scanner = None
+    import app_scanner  # type: ignore
+except Exception:
+    app_scanner = None  # type: ignore
 
-# --- DYNAMIC MAPPING LOADER ---
-def load_iso_map():
-    """
-    Loads the authoritative ISO codes from config/iso_to_wiki.json.
-    Returns a normalization map (iso_lower -> iso_canonical).
-    """
-    if not ISO_MAP_FILE.exists():
-        logger.error(f"❌ ISO Map not found at {ISO_MAP_FILE}")
-        return {}
+try:
+    import qa_scanner  # type: ignore
+except Exception:
+    qa_scanner = None  # type: ignore
 
-    try:
-        with open(ISO_MAP_FILE, 'r') as f:
-            raw_map = json.load(f)
-        
-        mapping = {}
-        # Build mapping: Normalize keys to lowercase for robust lookups
-        for iso_code in raw_map.keys():
-            iso_lower = iso_code.lower()
-            mapping[iso_lower] = iso_lower
-            
-        return mapping
 
-    except Exception as e:
-        logger.error(f"❌ Failed to load ISO Map: {e}")
-        return {}
+# ---------------------------
+# Config normalization (canonical file only, but supports v1 flat keys)
+# ---------------------------
 
-# Load the map dynamically
-ISO_NORM_MAP = load_iso_map()
+def _load_config() -> Dict[str, Any]:
+    cfg = read_json(CONFIG_FILE)
+    if not isinstance(cfg, dict):
+        logger.warning("Config missing/invalid at %s; using defaults.", CONFIG_FILE)
+        cfg = {}
 
-def load_language_names():
-    """
-    Loads official language names from config/iso_to_wiki.json.
-    Now supports the v2.0 object format: {"eng": {"wiki": "Eng", "name": "English"}}
-    """
-    if not ISO_MAP_FILE.exists():
-        logger.warning(f"⚠️ ISO config not found at {ISO_MAP_FILE}")
-        return {}
-    
-    try:
-        with open(ISO_MAP_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            
-        name_map = {}
-        for code, info in data.items():
-            # Handle v2.0 object format
-            if isinstance(info, dict):
-                name = info.get("name")
-                if name:
-                    name_map[code.lower()] = name
-            # v1.0 string format (just code->suffix) has no name data, ignore
-            
-        return name_map
-    except Exception as e:
-        logger.error(f"❌ Failed to load language names: {e}")
-        return {}
+    # v2 preferred shape: {rgl:{...}, matrix:{...}, lexicon:{...}, qa:{...}, frontend:{...}, backend:{...}}
+    if isinstance(cfg.get("matrix"), dict):
+        return cfg
 
-def load_central_registries():
-    """
-    Loads the JSON files that define the language universe.
-    Implements ROBUST SMART FIX for 'api' paths.
-    """
-    rgl_map = {}
-    factory_map = {}
+    # v1 flat shape (in canonical location) -> adapt into v2 in-memory
+    # NOTE: This is NOT “legacy config file” support; it’s in-file shape migration.
+    logger.warning("Config at %s uses v1 flat shape; adapting to v2 shape in-memory.", CONFIG_FILE)
+    out: Dict[str, Any] = dict(cfg)
 
-    # 1. Load RGL Inventory (Tier 1)
-    if RGL_INVENTORY_FILE.exists():
-        try:
-            with open(RGL_INVENTORY_FILE, 'r') as f:
-                data = json.load(f)
-                langs = data.get("languages", {})
-                for rgl_code, info in langs.items():
-                    iso3 = rgl_code.lower()
-                    # Normalize using our map, or default to self
-                    iso_norm = ISO_NORM_MAP.get(iso3, iso3)
-                    
-                    raw_path = info.get("path")
-                    
-                    if raw_path and raw_path.endswith("api"):
-                        modules = info.get("modules", {})
-                        ref_file = modules.get("Cat") or modules.get("Grammar") or modules.get("Noun")
-                        if ref_file:
-                            raw_path = str(Path(ref_file).parent)
+    out.setdefault("rgl", {})
+    out.setdefault("matrix", {})
+    out.setdefault("lexicon", {})
+    out.setdefault("qa", {})
+    out.setdefault("frontend", {})
+    out.setdefault("backend", {})
 
-                    rgl_map[iso_norm] = {
-                        "path": raw_path, 
-                        "rgl_code": rgl_code
-                    }
-        except Exception as e:
-            logger.error(f"❌ Failed to load RGL Inventory: {e}")
+    # RGL
+    if isinstance(out["rgl"], dict):
+        if "inventory_file" not in out["rgl"] and isinstance(cfg.get("inventory_file"), str):
+            out["rgl"]["inventory_file"] = cfg["inventory_file"]
 
-    # 2. Load Factory Targets (Tier 3)
-    if FACTORY_TARGETS_FILE.exists():
-        try:
-            with open(FACTORY_TARGETS_FILE, 'r') as f:
-                data = json.load(f)
-                for iso3, info in data.items():
-                    iso_norm = ISO_NORM_MAP.get(iso3.lower(), iso3.lower())
-                    factory_map[iso_norm] = info
-        except Exception as e:
-            logger.error(f"❌ Failed to load Factory Targets: {e}")
-            
-    return rgl_map, factory_map
+    # MATRIX
+    if isinstance(out["matrix"], dict):
+        if "everything_index" not in out["matrix"] and isinstance(cfg.get("everything_index"), str):
+            out["matrix"]["everything_index"] = cfg["everything_index"]
+        if "output_dir" not in out["matrix"] and isinstance(cfg.get("output_dir"), str):
+            out["matrix"]["output_dir"] = cfg["output_dir"]
+        if "report_dir" not in out["matrix"] and isinstance(cfg.get("report_dir"), str):
+            out["matrix"]["report_dir"] = cfg["report_dir"]
 
-def get_directory_fingerprint(paths):
-    hasher = hashlib.md5()
-    for path in paths:
-        path = Path(path)
-        if not path.exists(): continue
-        for root, dirs, files in os.walk(path):
-            for name in sorted(files):
-                filepath = Path(root) / name
-                try:
-                    mtime = filepath.stat().st_mtime
-                    raw = f"{name}|{mtime}"
-                    hasher.update(raw.encode('utf-8'))
-                except OSError: continue
-    return hasher.hexdigest()
+    # Frontend block already matches v2 naming in your config snippet
+    if isinstance(cfg.get("frontend"), dict) and isinstance(out.get("frontend"), dict):
+        out["frontend"] = cfg["frontend"]
 
-def scan_system():
-    parser = argparse.ArgumentParser(description="Rebuilds the Everything Matrix index.")
-    parser.add_argument("--force", action="store_true", help="Ignore cache and force full rebuild")
-    args, _ = parser.parse_known_args()
+    # ISO map stays top-level in both
+    if "iso_map_file" not in out and isinstance(cfg.get("iso_map_file"), str):
+        out["iso_map_file"] = cfg["iso_map_file"]
 
-    # ---------------------------------------------------------
-    # 0. Caching Logic
-    # ---------------------------------------------------------
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    current_fingerprint = get_directory_fingerprint([RGL_SRC, LEXICON_DIR, FACTORY_SRC])
-    
-    if not args.force and CHECKSUM_FILE.exists() and MATRIX_FILE.exists():
-        with open(CHECKSUM_FILE, 'r') as f:
-            stored_fingerprint = f.read().strip()
-        if current_fingerprint == stored_fingerprint:
-            logger.info("⚡ Cache Hit: Filesystem unchanged. Skipping scan.")
-            logger.info("   (Run with --force to rebuild anyway)")
-            return
+    return out
 
-    logger.info("🧠 Everything Matrix v2.1: Deep System Scan Initiated...")
-    
-    rgl_registry, factory_registry = load_central_registries()
-    name_map = load_language_names()
-    
-    matrix_langs = {}
-    all_isos = set()
 
-    # ---------------------------------------------------------
-    # 1. DISCOVERY PHASE (Normalize everything to System ISO)
-    # ---------------------------------------------------------
-    all_isos.update(rgl_registry.keys())
-    all_isos.update(factory_registry.keys())
-    
-    if FACTORY_SRC.exists():
-        for p in FACTORY_SRC.iterdir():
-            if p.is_dir():
-                norm = ISO_NORM_MAP.get(p.name.lower(), p.name.lower())
-                all_isos.add(norm)
-    
-    if LEXICON_DIR.exists():
-        for p in LEXICON_DIR.iterdir():
-            if p.is_dir():
-                norm = ISO_NORM_MAP.get(p.name.lower(), p.name.lower())
-                all_isos.add(norm)
+def _paths(repo: Path, cfg: Mapping[str, Any]) -> Dict[str, Path]:
+    cfg_matrix = cfg.get("matrix", {}) if isinstance(cfg.get("matrix"), dict) else {}
+    cfg_rgl = cfg.get("rgl", {}) if isinstance(cfg.get("rgl"), dict) else {}
+    cfg_lex = cfg.get("lexicon", {}) if isinstance(cfg.get("lexicon"), dict) else {}
+    cfg_qa = cfg.get("qa", {}) if isinstance(cfg.get("qa"), dict) else {}
+    cfg_fe = cfg.get("frontend", {}) if isinstance(cfg.get("frontend"), dict) else {}
+    cfg_be = cfg.get("backend", {}) if isinstance(cfg.get("backend"), dict) else {}
 
-    # ---------------------------------------------------------
-    # 2. SCAN LOOP
-    # ---------------------------------------------------------
-    for iso in sorted(all_isos):
-        if iso == "api": continue
+    output_dir = repo / str(cfg_matrix.get("output_dir", "data/indices"))
+    matrix_file = repo / str(cfg_matrix.get("everything_index", "data/indices/everything_matrix.json"))
+    checksum_file = output_dir / "filesystem.checksum"
 
-        # --- Zone A: RGL Engine (Logic) ---
-        zone_a = {"CAT": 0, "NOUN": 0, "PARA": 0, "GRAM": 0, "SYN": 0}
-        tier = 3
-        origin = "factory"
-        rgl_folder = "generated"
-        
-        if iso in rgl_registry:
-            entry = rgl_registry[iso]
-            full_path = BASE_DIR / entry["path"]
-            
-            if full_path.exists():
-                tier = 1
-                origin = "rgl"
-                rgl_folder = Path(entry["path"]).name
-                
-                if rgl_auditor:
-                    if hasattr(rgl_auditor, 'scan_rgl'):
-                        zone_a = rgl_auditor.scan_rgl(iso, full_path)
-                    elif hasattr(rgl_auditor, 'audit_language'):
-                        audit = rgl_auditor.audit_language(iso, full_path)
-                        zone_a = audit.get("blocks", zone_a)
+    rgl_inventory_file = repo / str(cfg_rgl.get("inventory_file", "data/indices/rgl_inventory.json"))
+    factory_targets_file = repo / "data" / "config" / "factory_targets.json"
 
-        # --- Zone B & C: Lexicon & App (Data) ---
-        zone_b = {"SEED": 0.0, "CONC": 0.0, "WIDE": 0.0, "SEM": 0.0}
-        zone_c = {"PROF": 0.0, "ASST": 0.0, "ROUT": 0.0}
-        
-        if lexicon_scanner:
-            lex_stats = lexicon_scanner.scan_lexicon_health(iso, LEXICON_DIR)
-            zone_b = {k: lex_stats.get(k, 0.0) for k in zone_b}
-            zone_c = {k: lex_stats.get(k, 0.0) for k in zone_c}
+    lex_root = repo / str(cfg_lex.get("lexicon_root", "data/lexicon"))
+    gf_root = repo / str(cfg_qa.get("gf_root", "gf"))
+    factory_src = gf_root / "generated" / "src"
 
-        # --- Zone D: QA ---
-        zone_d = {"BIN": 0.0, "TEST": 0.0}
-        if qa_scanner:
-            zone_d = qa_scanner.scan_artifacts(iso, GF_ARTIFACTS)
+    flags_dir = repo / str(cfg_fe.get("assets_path", "architect_frontend/public/flags"))
+    fe_profiles = repo / str(cfg_fe.get("profiles_path", "architect_frontend/src/config/language_profiles.json"))
+    be_profiles = repo / str(cfg_be.get("profiles_path", "app/core/config/profiles/profiles.json"))
 
-        # ---------------------------------------------------------
-        # 3. VERDICT
-        # ---------------------------------------------------------
-        score_a = sum(zone_a.values()) / 5 if zone_a else 0
-        score_b = (zone_b["SEED"] + zone_b["CONC"] + zone_b["SEM"]) / 3
-        maturity = round((score_a * 0.6) + (score_b * 0.4), 1)
+    iso_map_file = repo / str(cfg.get("iso_map_file", "config/iso_to_wiki.json"))
 
-        build_strategy = "SKIP"
-        cat_score = zone_a.get("CAT", 0) or zone_a.get("rgl_cat", 0)
-        
-        if maturity > 7.0 and cat_score == 10:
-            build_strategy = "HIGH_ROAD"
-        elif iso in factory_registry:
-            build_strategy = "SAFE_MODE"
-        elif maturity > 2.0:
-            build_strategy = "SAFE_MODE"
-
-        runnable = zone_b["SEED"] >= 2.0 or build_strategy == "HIGH_ROAD"
-
-        # --- Inject Name from Central Config ---
-        display_name = name_map.get(iso, iso.upper()) 
-
-        matrix_langs[iso] = {
-            "meta": {
-                "iso": iso,
-                "name": display_name,
-                "tier": tier,
-                "origin": origin,
-                "folder": rgl_folder
-            },
-            "zones": {
-                "A_RGL": zone_a,
-                "B_LEX": zone_b,
-                "C_APP": zone_c,
-                "D_QA": zone_d
-            },
-            "verdict": {
-                "maturity_score": maturity,
-                "build_strategy": build_strategy,
-                "runnable": runnable
-            }
-        }
-
-    # ---------------------------------------------------------
-    # 4. SAVE
-    # ---------------------------------------------------------
-    matrix = {
-        "timestamp": time.time(),
-        "stats": {
-            "total_languages": len(matrix_langs),
-            "production_ready": sum(1 for l in matrix_langs.values() if l["verdict"]["maturity_score"] >= 8),
-            "safe_mode": sum(1 for l in matrix_langs.values() if l["verdict"]["build_strategy"] == "SAFE_MODE"),
-            "skipped": sum(1 for l in matrix_langs.values() if l["verdict"]["build_strategy"] == "SKIP"),
-        },
-        "languages": matrix_langs
+    return {
+        "output_dir": output_dir,
+        "matrix_file": matrix_file,
+        "checksum_file": checksum_file,
+        "rgl_inventory_file": rgl_inventory_file,
+        "factory_targets_file": factory_targets_file,
+        "lex_root": lex_root,
+        "gf_root": gf_root,
+        "factory_src": factory_src,
+        "flags_dir": flags_dir,
+        "fe_profiles": fe_profiles,
+        "be_profiles": be_profiles,
+        "iso_map_file": iso_map_file,
     }
 
-    with open(MATRIX_FILE, 'w') as f:
-        json.dump(matrix, f, indent=2)
-    
-    with open(CHECKSUM_FILE, 'w') as f:
-        f.write(current_fingerprint)
-    
-    logger.info(f"✅ Matrix Updated: {len(matrix_langs)} languages indexed.")
+
+# ---------------------------
+# Prereq: RGL inventory is an input artifact (regen only if missing or --regen-rgl)
+# ---------------------------
+
+def _ensure_rgl_inventory(*, inventory_file: Path, regen: bool) -> Optional[Dict[str, Any]]:
+    if (not inventory_file.is_file()) or regen:
+        if not rgl_scanner or not hasattr(rgl_scanner, "scan_rgl"):
+            logger.warning("RGL inventory missing/regen requested, but rgl_scanner unavailable. Zone A will be zeros.")
+            return None
+        logger.info("Regenerating RGL inventory via rgl_scanner.scan_rgl()")
+        try:
+            rgl_scanner.scan_rgl()  # type: ignore[attr-defined]
+        except Exception as e:
+            logger.warning("rgl_scanner.scan_rgl() failed: %s", e)
+
+    inv = read_json(inventory_file)
+    return inv if isinstance(inv, dict) else None
+
+
+def _normalize_inventory_by_iso2(
+    languages_obj: Any,
+    *,
+    wiki_to_iso2: Mapping[str, str],
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Accepts rgl_inventory["languages"] which may be keyed by iso2 already (preferred).
+    Best-effort normalization: raw_key -> iso2 via norm_to_iso2().
+    """
+    out: Dict[str, Dict[str, Any]] = {}
+    if not isinstance(languages_obj, Mapping):
+        return out
+
+    for raw_key, rec in languages_obj.items():
+        iso2 = norm_to_iso2(str(raw_key), wiki_to_iso2=wiki_to_iso2)
+        if not iso2 or iso2 in out:
+            continue
+        if isinstance(rec, Mapping):
+            out[iso2] = dict(rec)
+    return out
+
+
+def _load_factory_targets(path: Path, *, wiki_to_iso2: Mapping[str, str]) -> Dict[str, Any]:
+    obj = read_json(path)
+    if not isinstance(obj, dict):
+        return {}
+    out: Dict[str, Any] = {}
+    for k, v in obj.items():
+        iso2 = norm_to_iso2(str(k), wiki_to_iso2=wiki_to_iso2)
+        if iso2 and iso2 not in out:
+            out[iso2] = v
+    return out
+
+
+# ---------------------------
+# One-shot scanners (contracts only; no per-iso rescans here)
+# ---------------------------
+
+def _scan_all_lexicons(lex_root: Path) -> Dict[str, Dict[str, float]]:
+    zeros = {"SEED": 0.0, "CONC": 0.0, "WIDE": 0.0, "SEM": 0.0}
+    if not lexicon_scanner or not hasattr(lexicon_scanner, "scan_all_lexicons"):
+        logger.warning("lexicon_scanner.scan_all_lexicons missing; Zone B will be zeros.")
+        return {}
+    try:
+        out = lexicon_scanner.scan_all_lexicons(lex_root)  # type: ignore[attr-defined]
+    except Exception as e:
+        logger.warning("lexicon_scanner.scan_all_lexicons failed; Zone B will be zeros. (%s)", e)
+        return {}
+    if not isinstance(out, dict):
+        return {}
+    normed: Dict[str, Dict[str, float]] = {}
+    for iso2, blk in out.items():
+        if isinstance(iso2, str) and isinstance(blk, Mapping):
+            k = iso2.strip().casefold()
+            normed[k] = {kk: float(clamp10(blk.get(kk, 0.0))) for kk in zeros}
+    return normed
+
+
+def _scan_all_apps(repo_root: Path) -> Dict[str, Dict[str, float]]:
+    zeros = {"PROF": 0.0, "ASST": 0.0, "ROUT": 0.0}
+    if not app_scanner or not hasattr(app_scanner, "scan_all_apps"):
+        logger.warning("app_scanner.scan_all_apps missing; Zone C will be zeros.")
+        return {}
+    try:
+        out = app_scanner.scan_all_apps(repo_root)  # type: ignore[attr-defined]
+    except Exception as e:
+        logger.warning("app_scanner.scan_all_apps failed; Zone C will be zeros. (%s)", e)
+        return {}
+    if not isinstance(out, dict):
+        return {}
+    normed: Dict[str, Dict[str, float]] = {}
+    for iso2, blk in out.items():
+        if isinstance(iso2, str) and isinstance(blk, Mapping):
+            k = iso2.strip().casefold()
+            normed[k] = {kk: float(clamp10(blk.get(kk, 0.0))) for kk in zeros}
+    return normed
+
+
+def _scan_all_artifacts(gf_root: Path) -> Dict[str, Dict[str, float]]:
+    zeros = {"BIN": 0.0, "TEST": 0.0}
+    if not qa_scanner or not hasattr(qa_scanner, "scan_all_artifacts"):
+        logger.warning("qa_scanner.scan_all_artifacts missing; Zone D will be zeros.")
+        return {}
+    try:
+        out = qa_scanner.scan_all_artifacts(gf_root)  # type: ignore[attr-defined]
+    except Exception as e:
+        logger.warning("qa_scanner.scan_all_artifacts failed; Zone D will be zeros. (%s)", e)
+        return {}
+    if not isinstance(out, dict):
+        return {}
+    normed: Dict[str, Dict[str, float]] = {}
+    for iso2, blk in out.items():
+        if isinstance(iso2, str) and isinstance(blk, Mapping):
+            k = iso2.strip().casefold()
+            normed[k] = {
+                "BIN": float(clamp10(blk.get("BIN", 0.0))),
+                "TEST": float(clamp10(blk.get("TEST", 0.0))),
+            }
+    return normed
+
+
+# ---------------------------
+# Orchestrator
+# ---------------------------
+
+def scan_system() -> None:
+    parser = argparse.ArgumentParser(description="Build the Everything Matrix index (single orchestrator).")
+    parser.add_argument("--force", action="store_true", help="Ignore cache and force rebuild")
+    parser.add_argument("--touch-timestamp", action="store_true", help="Rewrite timestamp on cache hit")
+
+    # explicit regeneration flags
+    parser.add_argument("--regen-rgl", action="store_true", help="Regenerate data/indices/rgl_inventory.json")
+    parser.add_argument("--regen-lex", action="store_true", help="Force Zone B rescan")
+    parser.add_argument("--regen-app", action="store_true", help="Force Zone C rescan")
+    parser.add_argument("--regen-qa", action="store_true", help="Force Zone D rescan")
+
+    args, _ = parser.parse_known_args()
+    if args.regen_rgl or args.regen_lex or args.regen_app or args.regen_qa:
+        args.force = True
+
+    cfg = _load_config()
+    p = _paths(BASE_DIR, cfg)
+
+    cfg_matrix = cfg.get("matrix", {}) if isinstance(cfg.get("matrix"), dict) else {}
+    scoring_version = str(cfg_matrix.get("scoring_version", "2.4"))
+
+    # normalization inputs
+    iso_to_wiki = load_iso_to_wiki(p["iso_map_file"])
+    wiki_to_iso2 = build_wiki_to_iso2(iso_to_wiki)
+    name_map_iso2 = build_name_map_iso2(iso_to_wiki, wiki_to_iso2)
+
+    # fingerprint inputs (what we read/scan on a normal run)
+    content_roots = [p["lex_root"], p["factory_src"], p["gf_root"], p["flags_dir"]]
+    config_files = [
+        CONFIG_FILE,
+        p["iso_map_file"],
+        p["rgl_inventory_file"],
+        p["factory_targets_file"],
+        p["fe_profiles"],
+        p["be_profiles"],
+        Path(__file__),
+    ]
+
+    p["output_dir"].mkdir(parents=True, exist_ok=True)
+    current_fp = directory_fingerprint(content_roots, config_files=config_files)
+
+    # cache check
+    if (not args.force) and p["checksum_file"].is_file() and p["matrix_file"].is_file():
+        stored = p["checksum_file"].read_text(encoding="utf-8").strip()
+        if stored == current_fp:
+            if args.touch_timestamp:
+                matrix = read_json(p["matrix_file"]) or {}
+                if isinstance(matrix, dict):
+                    ts = time.time()
+                    matrix["timestamp"] = ts
+                    matrix["timestamp_iso"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
+                    atomic_write_json(p["matrix_file"], matrix)
+                    logger.info("Cache hit (inputs unchanged). Timestamp refreshed.")
+                else:
+                    logger.info("Cache hit (inputs unchanged). Matrix unreadable; skipping refresh.")
+            else:
+                logger.info("Cache hit (inputs unchanged).")
+            return
+
+    logger.info("Everything Matrix build starting (scoring_version=%s).", scoring_version)
+
+    # 1) Zone A source: rgl_inventory.json (regen only if missing or --regen-rgl)
+    rgl_inventory = _ensure_rgl_inventory(inventory_file=p["rgl_inventory_file"], regen=bool(args.regen_rgl))
+    rgl_by_iso2: Dict[str, Dict[str, Any]] = {}
+    if isinstance(rgl_inventory, dict):
+        rgl_by_iso2 = _normalize_inventory_by_iso2(rgl_inventory.get("languages"), wiki_to_iso2=wiki_to_iso2)
+
+    # 2) Factory targets registry (iso2)
+    factory_registry = _load_factory_targets(p["factory_targets_file"], wiki_to_iso2=wiki_to_iso2)
+
+    # 3) One-shot scans per zone (no per-iso rescans here)
+    # regen flags just force this run; each zone still scanned once.
+    lex_inv = _scan_all_lexicons(p["lex_root"])
+    app_inv = _scan_all_apps(BASE_DIR)
+    qa_inv = _scan_all_artifacts(p["gf_root"])
+
+    # 4) Build universe (iso2)
+    all_isos: Set[str] = set()
+    all_isos.update(rgl_by_iso2.keys())
+    all_isos.update(factory_registry.keys())
+    all_isos.update(lex_inv.keys())
+    all_isos.update(app_inv.keys())
+    all_isos.update(qa_inv.keys())
+
+    if p["factory_src"].is_dir():
+        for d in p["factory_src"].iterdir():
+            if d.is_dir():
+                iso2 = norm_to_iso2(d.name, wiki_to_iso2=wiki_to_iso2)
+                if iso2:
+                    all_isos.add(iso2)
+
+    if p["lex_root"].is_dir():
+        for d in p["lex_root"].iterdir():
+            if d.is_dir():
+                iso2 = norm_to_iso2(d.name, wiki_to_iso2=wiki_to_iso2)
+                if iso2:
+                    all_isos.add(iso2)
+
+    # 5) scoring config
+    zone_weights_cfg = cfg_matrix.get("zone_weights", {}) if isinstance(cfg_matrix.get("zone_weights"), dict) else {}
+    default_weights = {"A_RGL": 0.40, "B_LEX": 0.35, "C_APP": 0.15, "D_QA": 0.10}
+    zone_weights = {**default_weights, **zone_weights_cfg}
+
+    # 6) assemble matrix
+    matrix_langs: Dict[str, Any] = {}
+
+    zeros_b = {"SEED": 0.0, "CONC": 0.0, "WIDE": 0.0, "SEM": 0.0}
+    zeros_c = {"PROF": 0.0, "ASST": 0.0, "ROUT": 0.0}
+    zeros_d = {"BIN": 0.0, "TEST": 0.0}
+
+    for iso2 in sorted(all_isos):
+        if not iso2 or iso2 == "api":
+            continue
+
+        # meta
+        tier = 3
+        origin = "factory"
+        folder = "generated"
+
+        rgl_rec = rgl_by_iso2.get(iso2)
+        if isinstance(rgl_rec, Mapping):
+            tier = 1
+            origin = "rgl"
+            rgl_path = rgl_rec.get("path")
+            folder = Path(rgl_path).name if isinstance(rgl_path, str) and rgl_path.strip() else "rgl"
+        elif (p["lex_root"] / iso2).is_dir():
+            origin = "lexicon"
+            folder = ""
+
+        # Zone A (proof via modules in rgl_inventory.json)
+        zone_a_raw = {"CAT": 0.0, "NOUN": 0.0, "PARA": 0.0, "GRAM": 0.0, "SYN": 0.0}
+        if isinstance(rgl_rec, Mapping) and isinstance(rgl_rec.get("modules"), Mapping):
+            zone_a_raw = compute_zone_a_from_modules(rgl_rec["modules"])  # type: ignore[arg-type]
+
+        # Zone B/C/D from inventories
+        zone_b = dict(lex_inv.get(iso2, zeros_b))
+        zone_c = dict(app_inv.get(iso2, zeros_c))
+        zone_d = dict(qa_inv.get(iso2, zeros_d))
+
+        # pass1
+        avgs_1 = compute_zone_averages(zone_a_raw, zone_b, zone_c, zone_d)
+        maturity_1 = compute_maturity(avgs_1, zone_weights)
+        strat_1 = choose_build_strategy(
+            iso2=iso2,
+            maturity=maturity_1,
+            zone_a=zone_a_raw,
+            zone_b=zone_b,
+            zone_d=zone_d,
+            factory_registry=factory_registry,
+            cfg_matrix=cfg_matrix,
+        )
+
+        # ladder + pass2
+        zone_a = apply_zone_a_strategy_map(zone_a_raw, strat_1)
+        avgs_2 = compute_zone_averages(zone_a, zone_b, zone_c, zone_d)
+        maturity_2 = compute_maturity(avgs_2, zone_weights)
+        strat_2 = choose_build_strategy(
+            iso2=iso2,
+            maturity=maturity_2,
+            zone_a=zone_a,
+            zone_b=zone_b,
+            zone_d=zone_d,
+            factory_registry=factory_registry,
+            cfg_matrix=cfg_matrix,
+        )
+
+        runnable = (float(zone_b.get("SEED", 0.0)) >= 2.0) or (strat_2 == "HIGH_ROAD")
+
+        matrix_langs[iso2] = {
+            "meta": {
+                "iso": iso2,
+                "name": name_map_iso2.get(iso2, iso2.upper()),
+                "tier": tier,
+                "origin": origin,
+                "folder": folder,
+            },
+            "zones": {
+                "A_RGL": {k: float(clamp10(v)) for k, v in zone_a.items()},
+                "B_LEX": {k: float(clamp10(v)) for k, v in zone_b.items()},
+                "C_APP": {k: float(clamp10(v)) for k, v in zone_c.items()},
+                "D_QA": {k: float(clamp10(v)) for k, v in zone_d.items()},
+            },
+            "verdict": {
+                "scoring_version": scoring_version,
+                "zone_weights": normalize_weights(zone_weights, ("A_RGL", "B_LEX", "C_APP", "D_QA")),
+                "zone_averages": avgs_2,
+                "maturity_score": maturity_2,
+                "build_strategy": strat_2,
+                "runnable": bool(runnable),
+            },
+        }
+
+    # 7) save
+    ts = time.time()
+    matrix = {
+        "timestamp": ts,
+        "timestamp_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts)),
+        "scoring_version": scoring_version,
+        "stats": {
+            "total_languages": len(matrix_langs),
+            "production_ready": sum(
+                1
+                for l in matrix_langs.values()
+                if l["verdict"]["maturity_score"] >= 8.0 and l["verdict"]["build_strategy"] == "HIGH_ROAD"
+            ),
+            "high_road": sum(1 for l in matrix_langs.values() if l["verdict"]["build_strategy"] == "HIGH_ROAD"),
+            "safe_mode": sum(1 for l in matrix_langs.values() if l["verdict"]["build_strategy"] == "SAFE_MODE"),
+            "skipped": sum(1 for l in matrix_langs.values() if l["verdict"]["build_strategy"] == "SKIP"),
+            "runnable": sum(1 for l in matrix_langs.values() if bool(l["verdict"]["runnable"])),
+        },
+        "languages": matrix_langs,
+    }
+
+    atomic_write_json(p["matrix_file"], matrix)
+    p["checksum_file"].write_text(current_fp, encoding="utf-8")
+
+    logger.info("Matrix updated: %s languages.", len(matrix_langs))
+    logger.info("Output: %s", p["matrix_file"])
+    logger.info("Fingerprint: %s", p["checksum_file"])
+
 
 if __name__ == "__main__":
     scan_system()

@@ -7,7 +7,7 @@ lexicon/config.py
 Configuration knobs for the lexicon subsystem.
 
 This module centralizes tunable parameters related to lexicon loading,
-validation, indexing, and caching. Settings can be adjusted from:
+validation, normalization, indexing, and caching. Settings can be adjusted from:
 
 - application code (via set_config / direct mutation), or
 - environment variables.
@@ -30,38 +30,43 @@ Core:
     lexicons for frequently-used languages at startup.
     Default: false
 
-Enterprise-grade controls (optional):
+Enterprise-grade controls:
 - AW_LEXICON_STRICT_SCHEMA
-    If true, loaders/bootstrappers may choose to fail hard on schema errors.
+    If true, schema errors should be treated as fatal by loaders.
     Default: false
 
 - AW_LEXICON_VALIDATE_ON_LOAD
-    If true, validate each JSON file before merging.
+    If true, loaders should validate each JSON file before merging.
     Default: false
+
+- AW_LEXICON_NORMALIZE_KEYS
+    If true, loaders may normalize surface keys (casefold/punct/space) for robust lookup.
+    Default: false (preserve legacy keys)
+
+- AW_LEXICON_LOG_COLLISIONS
+    If true, loaders may log per-key collisions when merging.
+    Default: false
+
+- AW_LEXICON_SCHEMA_STRICT
+    Alias of AW_LEXICON_STRICT_SCHEMA (kept for compatibility with older branches).
 
 - AW_LEXICON_LOG_LEVEL
     Override lexicon logger level (DEBUG/INFO/WARNING/ERROR/CRITICAL).
     Default: "" (do not override)
 
+Cache controls:
 - AW_LEXICON_CACHE_ENABLED
-    If false, callers may bypass/disable caching behavior (best-effort; the
-    cache module remains in-memory and can still be used explicitly).
+    If false, applications may choose to bypass caching behavior.
     Default: true
 
 - AW_LEXICON_CACHE_MAX_LANGS
     Soft limit on number of cached language indices (0 = unlimited).
     Default: 0
 
-Typical usage
-=============
-
-    from lexicon.config import get_config
-
-    cfg = get_config()
-    print(cfg.lexicon_dir)
-
-    # Adjust at runtime (e.g. in tests)
-    cfg.lexicon_dir = "tests/data/lexicon"
+Notes
+=====
+- This module does not enforce behavior; it exposes preferences.
+- Callers (loader/cache/bootstrap) decide how to apply them.
 """
 
 from __future__ import annotations
@@ -71,11 +76,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-
 # ---------------------------------------------------------------------------
 # Parsing helpers
 # ---------------------------------------------------------------------------
-
 
 _TRUE_SET = {"1", "true", "yes", "y", "on", "t"}
 _FALSE_SET = {"0", "false", "no", "n", "off", "f"}
@@ -113,15 +116,14 @@ def _parse_log_level(raw: str) -> str:
     return s if s in allowed else ""
 
 
-def _clean_dir(value: str) -> str:
+def _clean_dir(value: str, *, default: str = "data/lexicon") -> str:
     """
     Normalize a directory path string without forcing existence.
     Keeps it as a string for compatibility with existing callers.
     """
     s = (value or "").strip()
     if not s:
-        return "data/lexicon"
-    # Expand ~ and env vars; normalize separators.
+        s = default
     expanded = os.path.expandvars(os.path.expanduser(s))
     try:
         return str(Path(expanded))
@@ -134,7 +136,7 @@ def _clean_dir(value: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(slots=True)
 class LexiconConfig:
     """
     Configuration values for the lexicon subsystem.
@@ -147,15 +149,19 @@ class LexiconConfig:
             0 means "no limit".
         eager_load:
             If True, applications may choose to preload lexicons for common
-            languages at startup. This module does not enforce eager loading.
-
-        strict_schema:
-            If True, code that loads lexicon JSON may choose to fail on schema
-            validation errors (rather than warn and continue).
+            languages at startup.
 
         validate_on_load:
             If True, code that loads lexicon JSON may choose to validate each
             file's structure before merging.
+        strict_schema:
+            If True, schema errors should be treated as fatal by loaders.
+
+        normalize_keys:
+            If True, loaders may normalize output keys (for lookup robustness).
+            Default False to preserve legacy behavior.
+        log_collisions:
+            If True, loaders may log key collisions when merging.
 
         log_level:
             Optional logger level override for lexicon subsystem components.
@@ -171,8 +177,11 @@ class LexiconConfig:
     max_lemmas_per_language: int = 0
     eager_load: bool = False
 
-    strict_schema: bool = False
     validate_on_load: bool = False
+    strict_schema: bool = False
+
+    normalize_keys: bool = False
+    log_collisions: bool = False
 
     log_level: str = ""
     cache_enabled: bool = True
@@ -183,7 +192,7 @@ class LexiconConfig:
         """
         Build a LexiconConfig instance using environment variables as overrides.
         """
-        lex_dir = _clean_dir(os.getenv("AW_LEXICON_DIR", cls.lexicon_dir))
+        lex_dir = _clean_dir(os.getenv("AW_LEXICON_DIR", cls.lexicon_dir), default=cls.lexicon_dir)
 
         max_lemmas = _parse_int(
             os.getenv("AW_LEXICON_MAX_LEMMAS", ""),
@@ -196,14 +205,25 @@ class LexiconConfig:
             cls.eager_load,
         )
 
+        # Compatibility: allow both AW_LEXICON_STRICT_SCHEMA and AW_LEXICON_SCHEMA_STRICT
         strict_schema = _parse_bool(
-            os.getenv("AW_LEXICON_STRICT_SCHEMA", ""),
+            os.getenv("AW_LEXICON_STRICT_SCHEMA", os.getenv("AW_LEXICON_SCHEMA_STRICT", "")),
             cls.strict_schema,
         )
 
         validate_on_load = _parse_bool(
             os.getenv("AW_LEXICON_VALIDATE_ON_LOAD", ""),
             cls.validate_on_load,
+        )
+
+        normalize_keys = _parse_bool(
+            os.getenv("AW_LEXICON_NORMALIZE_KEYS", ""),
+            cls.normalize_keys,
+        )
+
+        log_collisions = _parse_bool(
+            os.getenv("AW_LEXICON_LOG_COLLISIONS", ""),
+            cls.log_collisions,
         )
 
         log_level = _parse_log_level(os.getenv("AW_LEXICON_LOG_LEVEL", ""))
@@ -223,8 +243,10 @@ class LexiconConfig:
             lexicon_dir=lex_dir,
             max_lemmas_per_language=max_lemmas,
             eager_load=eager,
-            strict_schema=strict_schema,
             validate_on_load=validate_on_load,
+            strict_schema=strict_schema,
+            normalize_keys=normalize_keys,
+            log_collisions=log_collisions,
             log_level=log_level,
             cache_enabled=cache_enabled,
             cache_max_langs=cache_max_langs,
@@ -244,6 +266,12 @@ class LexiconConfig:
         if project_root is not None:
             return (project_root / base).resolve()
         return base
+
+    def resolved_cache_max_langs(self) -> int:
+        """
+        Return a safe cache_max_langs (non-negative int).
+        """
+        return max(0, int(self.cache_max_langs or 0))
 
 
 # Singleton configuration instance

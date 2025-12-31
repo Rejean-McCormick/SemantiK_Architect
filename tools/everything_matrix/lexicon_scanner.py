@@ -1,162 +1,528 @@
 # tools/everything_matrix/lexicon_scanner.py
+from __future__ import annotations
+
+import argparse
 import json
 import logging
+from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Iterable, Mapping, Optional, Tuple, Union
 
-# Setup Logging
 logger = logging.getLogger(__name__)
 
-# v2.1 Maturity Targets (Score of 10)
+LEXICON_SCANNER_VERSION = "lexicon_scanner/3.0"
+
+# -----------------------------------------------------------------------------
+# Everything Matrix – Lexicon Scanner (Zone B only)
+#
+# Contract (used by build_index orchestrator):
+#   scan_all_lexicons(lex_root: Path) -> dict[iso2, {"SEED":float,"CONC":float,"WIDE":float,"SEM":float}]
+#
+# Notes:
+# - Side-effect free by default (no writes, no print, no logging config).
+# - Normalizes all discovered lexicon folders to canonical ISO-639-1 (iso2) keys,
+#   using config/iso_to_wiki.json (prefers iso2 when multiple codes map to same wiki).
+# - Deep per-language scan stays available as debug:
+#     scan_lexicon_health(code, lex_root) -> stats (includes diagnostics)
+# -----------------------------------------------------------------------------
+
+# v3.x maturity targets
 TARGETS = {
-    "core": 150,      # "Glue" words needed for basic sentences
-    "conc": 500,      # Domain words needed for specific topics
-    "bio_min": 50     # Entities needed to act as a Biography Generator
+    "core_low": 50,     # "functional" seed floor (5/10)
+    "core_high": 200,   # production-ish seed (10/10)
+    "conc_low": 50,     # "functional" domain floor (5/10)
+    "conc_high": 500,   # production-ish domain (10/10)
 }
 
-# Enterprise Mapping: RGL (3-letter) -> ISO (2-letter)
-# This ensures scanner looks in 'data/lexicon/en' when asking for 'eng'.
-ISO_MAP_3_TO_2 = {
-    "eng": "en", "fra": "fr", "deu": "de", "nld": "nl", 
-    "ita": "it", "spa": "es", "rus": "ru", "swe": "sv",
-    "pol": "pl", "bul": "bg", "ell": "el", "ron": "ro",
-    "zho": "zh", "jpn": "ja", "ara": "ar", "hin": "hi",
-    "por": "pt", "tur": "tr", "vie": "vi", "kor": "ko"
+PRIMARY_DOMAIN_SHARDS = (
+    "people.json",
+    "geography.json",
+    "science.json",
+)
+
+# Non-domain / control files inside a language folder (ignored for domain totals)
+NON_DOMAIN_FILES = {
+    "core.json",
+    "wide.json",
+    "dialog.json",
+    "schema.json",
 }
 
-def _resolve_storage_code(lang_code: str) -> str:
-    """
-    Resolves the ISO 639-1 (2-letter) code for storage lookups.
-    """
-    code = lang_code.lower()
-    
-    # 1. Exact match 2-letter
-    if len(code) == 2:
-        return code
-    
-    # 2. Map 3-letter to 2-letter
-    if code in ISO_MAP_3_TO_2:
-        return ISO_MAP_3_TO_2[code]
-        
-    # 3. Naive Fallback (risky but covers simple cases like 'eng'->'en')
-    if len(code) == 3:
-        return code[:2]
-        
-    return code
+MAX_WIDE_BYTES_TO_LOAD = 5_000_000  # 5 MB
 
-def scan_lexicon_health(lang_code: str, data_dir: Path) -> Dict[str, float]:
+
+# -----------------------------------------------------------------------------
+# Repo/normalization helpers
+# -----------------------------------------------------------------------------
+def _project_root_from_lex_root(lex_root: Path) -> Path:
     """
-    Performs a Deep-Tissue scan of Zone B (Lexicon) and Zone C (Application).
-    
-    Args:
-        lang_code (str): ISO 639-3 code (e.g., 'fra') from the Matrix.
-        data_dir (Path): Path to 'data/lexicon'.
-        
-    Returns:
-        dict: Normalized scores (0.0 - 10.0) for:
-              [Zone B] SEED, CONC, WIDE, SEM
-              [Zone C] PROF, ASST, ROUT
+    lex_root is typically <repo>/data/lexicon.
+    Best-effort derive repo root without relying on CWD.
     """
-    # Initialize Stats with empty values
-    stats = {
-        # Zone B: Data
-        "SEED": 0.0, "CONC": 0.0, "WIDE": 0.0, "SEM": 0.0,
-        # Zone C: Application
-        "PROF": 0.0, "ASST": 0.0, "ROUT": 0.0
+    p = lex_root.resolve()
+    if p.name.lower() == "lexicon" and p.parent.name.lower() == "data":
+        return p.parent.parent
+    # fallback: go up two levels (reasonable for most layouts)
+    try:
+        return p.parents[1]
+    except Exception:
+        return p.parent
+
+
+def _read_json(path: Path) -> Optional[Dict[str, Any]]:
+    if not path.is_file():
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            obj = json.load(f)
+        return obj if isinstance(obj, dict) else None
+    except Exception:
+        return None
+
+
+@lru_cache(maxsize=8)
+def _load_iso_to_wiki(repo_root_str: str) -> Dict[str, Any]:
+    repo = Path(repo_root_str)
+    data = _read_json(repo / "config" / "iso_to_wiki.json")
+    return data if isinstance(data, dict) else {}
+
+
+def _build_wiki_to_iso2(iso_to_wiki: Mapping[str, Any]) -> Dict[str, str]:
+    """
+    Build reverse index: any (iso2/iso3/wiki) -> preferred iso2.
+    Preference: for a given wiki code, choose the 2-letter ISO key if present.
+    """
+    preferred: Dict[str, str] = {}
+
+    for k, v in iso_to_wiki.items():
+        if not (isinstance(k, str) and len(k.strip()) == 2 and isinstance(v, dict)):
+            continue
+        wiki = v.get("wiki")
+        if isinstance(wiki, str) and wiki.strip():
+            preferred[wiki.strip().casefold()] = k.strip().casefold()
+
+    wiki_to_iso2: Dict[str, str] = {}
+    for k, v in iso_to_wiki.items():
+        if not (isinstance(k, str) and isinstance(v, dict)):
+            continue
+        kk = k.strip().casefold()
+        wiki = v.get("wiki")
+        if not (isinstance(wiki, str) and wiki.strip()):
+            continue
+        wk = wiki.strip().casefold()
+        iso2 = preferred.get(wk)
+        if iso2 and len(iso2) == 2:
+            wiki_to_iso2[kk] = iso2
+            wiki_to_iso2[wk] = iso2
+
+    return wiki_to_iso2
+
+
+def _norm_to_iso2(code: str, *, wiki_to_iso2: Mapping[str, str]) -> Optional[str]:
+    if not isinstance(code, str):
+        return None
+    k = code.strip().casefold()
+    if not k:
+        return None
+    iso2 = wiki_to_iso2.get(k)
+    if iso2 and len(iso2) == 2:
+        return iso2
+    if len(k) == 2:
+        return k
+    return None
+
+
+# -----------------------------------------------------------------------------
+# JSON extraction helpers (supports V2 and legacy shapes)
+# -----------------------------------------------------------------------------
+JsonObj = Union[Dict[str, Any], list, str, int, float, bool, None]
+
+
+def _safe_load_json(path: Path) -> Optional[JsonObj]:
+    if not path.exists():
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        # Keep side-effect-free; caller can treat as "unreadable"
+        return {}
+
+
+def _extract_section_maps(payload: JsonObj) -> Tuple[Dict[str, Mapping[str, Any]], Mapping[str, Any]]:
+    """
+    Returns (sections, meta):
+
+    - sections: name -> mapping(lemma_key -> entry_obj)
+      Supports:
+        * V2: {"_meta": {...}, "entries": {...}}
+        * Legacy: {"lemmas": {...}}
+        * Mixed: {"entries": {...}, "professions": {...}, ...}
+        * Flat dict of entries (best-effort)
+    - meta: best-effort "_meta" dict (empty if missing)
+    """
+    meta: Mapping[str, Any] = {}
+    sections: Dict[str, Mapping[str, Any]] = {}
+
+    if not isinstance(payload, dict):
+        return sections, meta
+
+    raw_meta = payload.get("_meta") or payload.get("meta")
+    if isinstance(raw_meta, dict):
+        meta = raw_meta
+
+    for key in ("entries", "lemmas", "lexemes", "items", "professions", "nationalities", "titles"):
+        v = payload.get(key)
+        if isinstance(v, dict):
+            sections[key] = v
+
+    if sections:
+        return sections, meta
+
+    filtered: Dict[str, Any] = {
+        k: v
+        for k, v in payload.items()
+        if isinstance(k, str)
+        and k not in ("_meta", "meta")
+        and not k.startswith("_")
+        and k not in ("timestamp", "version", "schema_version", "language", "domain", "source")
+    }
+    if filtered and all(isinstance(v, dict) for v in filtered.values()):
+        sections["entries"] = filtered
+
+    return sections, meta
+
+
+def _iter_entry_dicts(sections: Mapping[str, Mapping[str, Any]]) -> Iterable[Dict[str, Any]]:
+    for sec in sections.values():
+        for v in sec.values():
+            if isinstance(v, dict):
+                yield v
+
+
+def _looks_like_qid(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    s = value.strip()
+    return s.startswith("Q") and s[1:].isdigit()
+
+
+def _entry_has_qid(entry: Mapping[str, Any]) -> bool:
+    for k in ("qid", "wikidata_qid", "wikidata_id"):
+        if _looks_like_qid(entry.get(k)):
+            return True
+
+    meta = entry.get("metadata")
+    if isinstance(meta, dict):
+        for k in ("qid", "wikidata_qid", "wikidata_id"):
+            if _looks_like_qid(meta.get(k)):
+                return True
+
+    return False
+
+
+def _entry_has_forms(entry: Mapping[str, Any]) -> bool:
+    forms = entry.get("forms")
+    if isinstance(forms, dict) and len(forms) > 0:
+        return True
+    dem = entry.get("demonym")
+    if isinstance(dem, dict) and len(dem) > 0:
+        return True
+    return False
+
+
+def _count_sections(sections: Mapping[str, Mapping[str, Any]]) -> int:
+    return int(sum(len(sec) for sec in sections.values()))
+
+
+def _score_count(count: int, *, low: int, high: int) -> float:
+    """
+    Piecewise scale:
+      - 0 -> 0
+      - low -> 5
+      - high -> 10
+    """
+    if count <= 0:
+        return 0.0
+    if low <= 0 or high <= low:
+        return float(min(10.0, round((count / max(1, high)) * 10.0, 1)))
+
+    if count < low:
+        return float(round((count / low) * 5.0, 1))
+    if count < high:
+        return float(round(5.0 + ((count - low) / (high - low)) * 5.0, 1))
+    return 10.0
+
+
+# -----------------------------------------------------------------------------
+# Single-language deep scan (debug tool)
+# -----------------------------------------------------------------------------
+def scan_lexicon_health(lang_code: str, lex_root: Path) -> Dict[str, float]:
+    """
+    Deep scan of Zone B lexicon health for one language.
+
+    Returns (0..10) scores plus diagnostics:
+      - SEED, CONC, WIDE, SEM
+      - COUNT_* diagnostics and ratios
+
+    NOTE: Zone C is NOT computed here anymore (moved to app_scanner per upgrade plan).
+    """
+    stats: Dict[str, float] = {
+        "SEED": 0.0,
+        "CONC": 0.0,
+        "WIDE": 0.0,
+        "SEM": 0.0,
+        # diagnostics
+        "COUNT_CORE": 0.0,
+        "COUNT_PEOPLE": 0.0,
+        "COUNT_EXTRA": 0.0,
+        "COUNT_TOTAL": 0.0,
+        "COUNT_QID": 0.0,
+        "COUNT_FORMS": 0.0,
+        "QID_RATIO": 0.0,
+        "FORMS_RATIO": 0.0,
+        "WIDE_PRESENT": 0.0,   # 1 if any wide artifact exists
+        "WIDE_BYTES": 0.0,
     }
 
-    # Resolve path using Enterprise Standard (2-letter folder)
-    iso2 = _resolve_storage_code(lang_code)
-    lang_path = data_dir / iso2
+    if not isinstance(lex_root, Path):
+        return stats
+    lex_root = lex_root.resolve()
+    if not lex_root.is_dir():
+        return stats
 
-    if not lang_path.exists():
-        # Fallback: check if strict 3-letter folder exists (Legacy support)
-        legacy_path = data_dir / lang_code
-        if legacy_path.exists():
-            lang_path = legacy_path
-        else:
-            return stats # Path not found, return zeros
+    repo = _project_root_from_lex_root(lex_root)
+    iso_to_wiki = _load_iso_to_wiki(str(repo))
+    wiki_to_iso2 = _build_wiki_to_iso2(iso_to_wiki)
 
+    # Normalize request to iso2 if possible
+    iso2_req = _norm_to_iso2(lang_code, wiki_to_iso2=wiki_to_iso2)
+    if not iso2_req:
+        return stats
+
+    # Find a matching folder:
+    # - prefer exact iso2 folder if present
+    # - otherwise, scan for any folder that normalizes to iso2_req
+    lang_path: Optional[Path] = None
+    exact = lex_root / iso2_req
+    if exact.is_dir():
+        lang_path = exact
+    else:
+        for p in sorted(lex_root.iterdir(), key=lambda x: x.name.casefold()):
+            if not p.is_dir():
+                continue
+            iso2 = _norm_to_iso2(p.name, wiki_to_iso2=wiki_to_iso2)
+            if iso2 == iso2_req:
+                lang_path = p
+                break
+
+    if not lang_path:
+        return stats
+
+    # 1) core.json => SEED
+    core_file = lang_path / "core.json"
+    core_payload = _safe_load_json(core_file)
+    core_sections, _ = _extract_section_maps(core_payload)
+    core_count = _count_sections(core_sections)
+    stats["COUNT_CORE"] = float(core_count)
+    stats["SEED"] = _score_count(core_count, low=TARGETS["core_low"], high=TARGETS["core_high"])
+
+    # 2) domain shards => CONC + SEM inputs
+    domain_files: Dict[str, Path] = {}
+
+    for name in PRIMARY_DOMAIN_SHARDS:
+        p = lang_path / name
+        if p.is_file():
+            domain_files[name] = p
+
+    for p in lang_path.glob("*.json"):
+        if p.name in NON_DOMAIN_FILES:
+            continue
+        if p.name not in domain_files:
+            domain_files[p.name] = p
+
+    people_count = 0
+    extra_count = 0
     total_entries = 0
     qid_entries = 0
+    forms_entries = 0
 
-    # --- SCAN SHARDS (Zone B & C) ---
+    # include core entries in SEM totals too
+    total_entries += core_count
+    for e in _iter_entry_dicts(core_sections):
+        if _entry_has_qid(e):
+            qid_entries += 1
+        if _entry_has_forms(e):
+            forms_entries += 1
 
-    # 1. Core Vocabulary (SEED) -> core.json
-    core_file = lang_path / "core.json"
-    if core_file.exists():
-        data = _safe_load(core_file)
-        count = len(data)
-        # Score calculation: Linear scale up to target
-        stats["SEED"] = min(10.0, round((count / TARGETS["core"]) * 10, 1))
-        total_entries += count
-        qid_entries += _count_qids(data)
+    for fname, p in sorted(domain_files.items(), key=lambda kv: kv[0]):
+        payload = _safe_load_json(p)
+        sections, _ = _extract_section_maps(payload)
+        n = _count_sections(sections)
 
-    # 2. Domain Concepts (CONC) -> people.json
-    people_file = lang_path / "people.json"
-    if people_file.exists():
-        data = _safe_load(people_file)
-        count = len(data)
-        stats["CONC"] = min(10.0, round((count / TARGETS["conc"]) * 10, 1))
-        
-        # Zone C: Biography Readiness (PROF)
-        # We need a minimum number of professions/nationalities to generate bios
-        if count >= TARGETS["bio_min"]:
-            stats["PROF"] = 1.0 # Boolean-like score (Ready)
-        
-        total_entries += count
-        qid_entries += _count_qids(data)
+        total_entries += n
+        for e in _iter_entry_dicts(sections):
+            if _entry_has_qid(e):
+                qid_entries += 1
+            if _entry_has_forms(e):
+                forms_entries += 1
 
-    # 3. Wide Imports (WIDE) -> wide.json (The new standard)
-    # Checks if the massive harvester shard exists
+        if fname == "people.json":
+            people_count += n
+        else:
+            extra_count += n
+
+    stats["COUNT_PEOPLE"] = float(people_count)
+    stats["COUNT_EXTRA"] = float(extra_count)
+
+    domain_total = people_count + extra_count
+    stats["CONC"] = _score_count(domain_total, low=TARGETS["conc_low"], high=TARGETS["conc_high"])
+
+    # 3) WIDE: wide.json OR legacy data/imports/<folder>_wide.csv
     wide_json = lang_path / "wide.json"
-    if wide_json.exists():
+    wide_present = False
+
+    if wide_json.is_file():
+        wide_present = True
+        try:
+            stats["WIDE_BYTES"] = float(wide_json.stat().st_size)
+        except OSError:
+            pass
+
+    imports_dir = repo / "data" / "imports"
+    if imports_dir.is_dir():
+        candidates = {
+            f"{lang_path.name.strip().lower()}_wide.csv",
+            f"{iso2_req}_wide.csv",
+        }
+        for name in candidates:
+            if (imports_dir / name).is_file():
+                wide_present = True
+                break
+
+    if wide_present:
+        stats["WIDE_PRESENT"] = 1.0
         stats["WIDE"] = 10.0
-        # Optional: Deep scan of wide.json could be slow, so we trust existence for score
-        # but for semantic score, we might want to sample or assume.
-        # For now, if wide exists, we give semantic credit.
-        if stats["SEM"] == 0: stats["SEM"] = 5.0 
 
-    # 4. Semantic Alignment (SEM)
-    # Percentage of total entries that have a Wikidata QID
+    # Optional: include wide.json in SEM counts if not huge
+    if wide_json.is_file():
+        try:
+            if wide_json.stat().st_size <= MAX_WIDE_BYTES_TO_LOAD:
+                payload = _safe_load_json(wide_json)
+                sections, _ = _extract_section_maps(payload)
+                wide_entries = _count_sections(sections)
+
+                total_entries += wide_entries
+                for e in _iter_entry_dicts(sections):
+                    if _entry_has_qid(e):
+                        qid_entries += 1
+                    if _entry_has_forms(e):
+                        forms_entries += 1
+        except OSError:
+            pass
+
+    # 4) SEM: QID + small forms lift
+    stats["COUNT_TOTAL"] = float(total_entries)
+    stats["COUNT_QID"] = float(qid_entries)
+    stats["COUNT_FORMS"] = float(forms_entries)
+
     if total_entries > 0:
-        stats["SEM"] = max(stats["SEM"], min(10.0, round((qid_entries / total_entries) * 10, 1)))
+        q_ratio = qid_entries / total_entries
+        f_ratio = forms_entries / total_entries
+        stats["QID_RATIO"] = float(round(q_ratio, 4))
+        stats["FORMS_RATIO"] = float(round(f_ratio, 4))
 
-    # --- SCAN CONFIG (Zone C) ---
+        sem = (0.85 * q_ratio + 0.15 * f_ratio) * 10.0
+        sem = float(round(min(10.0, sem), 1))
 
-    # 5. Assistant Ready (ASST) -> dialog.json (Future)
-    # Currently a placeholder for chat capabilities
-    if (lang_path / "dialog.json").exists():
-        stats["ASST"] = 1.0
+        # If wide import is present, keep SEM from being pinned at 0 due to large wide.json
+        if wide_present:
+            sem = max(sem, 5.0)
 
-    # 6. Routing/Topology (ROUT) -> topology_weights.json
-    # Does the system know how to linearize this language (SVO/SOV)?
-    # We check if we have enough data (SEED) to justify routing.
-    # In V2.1, existence of core data implies routing is possible via Factory.
-    if stats["SEED"] >= 2.0:
-        stats["ROUT"] = 1.0
+        stats["SEM"] = sem
 
     return stats
 
-def _safe_load(path: Path) -> Dict:
-    """Safely loads JSON, returning empty dict on failure."""
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        logger.warning(f"⚠️  Corrupt JSON found at {path}")
+
+# -----------------------------------------------------------------------------
+# Orchestrator contract: scan all lexicons once
+# -----------------------------------------------------------------------------
+def scan_all_lexicons(lex_root: Path) -> Dict[str, Dict[str, float]]:
+    """
+    Contract for build_index.py (one-shot scan):
+      returns {iso2: {"SEED":..,"CONC":..,"WIDE":..,"SEM":..}}
+
+    Determinism:
+      - If both "en/" and "eng/" exist and map to the same iso2, we prefer the
+        2-letter folder ("en") over longer aliases.
+    """
+    if not isinstance(lex_root, Path):
+        return {}
+    lex_root = lex_root.resolve()
+    if not lex_root.is_dir():
         return {}
 
-def _count_qids(data: Dict) -> int:
-    """Counts entries containing a 'qid' field."""
-    return sum(1 for entry in data.values() if isinstance(entry, dict) and "qid" in entry)
+    repo = _project_root_from_lex_root(lex_root)
+    iso_to_wiki = _load_iso_to_wiki(str(repo))
+    wiki_to_iso2 = _build_wiki_to_iso2(iso_to_wiki)
+
+    out: Dict[str, Dict[str, float]] = {}
+    winner_len: Dict[str, int] = {}
+
+    for p in sorted(lex_root.iterdir(), key=lambda x: x.name.casefold()):
+        if not p.is_dir():
+            continue
+
+        iso2 = _norm_to_iso2(p.name, wiki_to_iso2=wiki_to_iso2)
+        if not iso2:
+            continue
+
+        stats = scan_lexicon_health(iso2, lex_root)
+        zone_b = {
+            "SEED": float(stats.get("SEED", 0.0) or 0.0),
+            "CONC": float(stats.get("CONC", 0.0) or 0.0),
+            "WIDE": float(stats.get("WIDE", 0.0) or 0.0),
+            "SEM": float(stats.get("SEM", 0.0) or 0.0),
+        }
+
+        # Prefer shortest folder name for same iso2 (typically the iso2 folder).
+        cur_len = len(p.name.strip())
+        prev_len = winner_len.get(iso2, 10**9)
+        if iso2 not in out or cur_len < prev_len:
+            out[iso2] = zone_b
+            winner_len[iso2] = cur_len
+
+    return out
+
+
+# -----------------------------------------------------------------------------
+# Debug CLI
+# -----------------------------------------------------------------------------
+def _main() -> None:
+    ap = argparse.ArgumentParser(description="Lexicon scanner (Zone B). Debug tool.")
+    ap.add_argument(
+        "--lex-root",
+        type=str,
+        default="data/lexicon",
+        help="Path to lexicon root (default: data/lexicon)",
+    )
+    ap.add_argument(
+        "--lang",
+        type=str,
+        default="",
+        help="If set, scan only this language code (iso2/iso3/wiki alias).",
+    )
+    args = ap.parse_args()
+
+    lex_root = Path(args.lex_root)
+    if args.lang.strip():
+        stats = scan_lexicon_health(args.lang.strip(), lex_root)
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
+        return
+
+    all_stats = scan_all_lexicons(lex_root)
+    print(json.dumps({"meta": {"scanner": LEXICON_SCANNER_VERSION}, "languages": all_stats}, indent=2, ensure_ascii=False))
+
 
 if __name__ == "__main__":
-    # Test Stub for CLI execution
-    import os
-    test_root = Path(__file__).parent.parent.parent / "data" / "lexicon"
-    print(f"Testing lexicon scan in: {test_root}")
-    
-    # Mock scan for 'eng' (should find 'en' folder)
-    result = scan_lexicon_health("eng", test_root)
-    print(json.dumps(result, indent=2))
+    _main()

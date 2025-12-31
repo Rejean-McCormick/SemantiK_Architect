@@ -1,32 +1,37 @@
 {
-  "timestamp": 1767131043.991635,
+  "timestamp": 1767214166.1641607,
+  "timestamp_iso": "2025-12-31T20:49:26Z",
+  "scoring_version": "2.4",
   "stats": {
-    "total_languages": 88,
+    "total_languages": 102,
     "production_ready": 0,
-    "safe_mode": 34,
-    "skipped": 54
+    "high_road": 0,
+    "safe_mode": 96,
+    "skipped": 6,
+    "runnable": 38
   },
   "languages": {
     "af": {
       "meta": {
         "iso": "af",
+        "name": "Afrikaans",
         "tier": 1,
         "origin": "rgl",
         "folder": "afrikaans"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 5.4,
           "CONC": 0.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.9
         },
         "C_APP": {
           "PROF": 0.0,
@@ -39,25 +44,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.58,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "am": {
       "meta": {
         "iso": "am",
+        "name": "Amharic",
         "tier": 1,
         "origin": "rgl",
         "folder": "amharic"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -76,65 +95,93 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "api": {
-      "meta": {
-        "iso": "api",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 0.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "ar": {
       "meta": {
         "iso": "ar",
+        "name": "Arabic",
         "tier": 1,
         "origin": "rgl",
         "folder": "arabic"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 5.0,
+          "CONC": 0.9,
+          "WIDE": 0.0,
+          "SEM": 0.7
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.65,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.1,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
+      }
+    },
+    "aym": {
+      "meta": {
+        "iso": "aym",
+        "name": "AYM",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -150,43 +197,19 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "ay": {
-      "meta": {
-        "iso": "ay",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -195,17 +218,18 @@
     "be": {
       "meta": {
         "iso": "be",
+        "name": "Belarusian",
         "tier": 1,
         "origin": "rgl",
         "folder": "belarusian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -224,31 +248,96 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 9.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "ben": {
+      "meta": {
+        "iso": "ben",
+        "name": "Bengali",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "bg": {
       "meta": {
         "iso": "bg",
+        "name": "Bulgarian",
         "tier": 1,
         "origin": "rgl",
         "folder": "bulgarian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 5.2,
           "CONC": 0.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.0
         },
         "C_APP": {
           "PROF": 0.0,
@@ -261,36 +350,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.55,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.5,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "bn": {
       "meta": {
         "iso": "bn",
+        "name": "Bengali",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 4.9,
+          "CONC": 0.4,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.0
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -298,25 +401,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SAFE_MODE",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 1.58,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 1.1,
+        "build_strategy": "SKIP",
+        "runnable": true
       }
     },
-    "br": {
+    "bre": {
       "meta": {
-        "iso": "br",
+        "iso": "bre",
+        "name": "BRE",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -330,11 +447,24 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 0.0,
           "TEST": 0.0
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -343,23 +473,24 @@
     "ca": {
       "meta": {
         "iso": "ca",
+        "name": "Catalan",
         "tier": 1,
         "origin": "rgl",
         "folder": "catalan"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 5.5,
           "CONC": 0.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.1
         },
         "C_APP": {
           "PROF": 0.0,
@@ -372,36 +503,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.65,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "cs": {
       "meta": {
         "iso": "cs",
+        "name": "Czech",
         "tier": 1,
         "origin": "rgl",
         "folder": "czech"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 5.3,
+          "CONC": 1.1,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.1
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -409,36 +554,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.88,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.2,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "cy": {
       "meta": {
         "iso": "cy",
+        "name": "Welsh",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 5.2,
+          "CONC": 2.1,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 3.3
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -446,36 +605,101 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 2.65,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 1.7,
+        "build_strategy": "SKIP",
+        "runnable": true
+      }
+    },
+    "cym": {
+      "meta": {
+        "iso": "cym",
+        "name": "Welsh",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 5.2,
+          "CONC": 2.1,
+          "WIDE": 0.0,
+          "SEM": 3.3
+        },
+        "C_APP": {
+          "PROF": 5.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 2.65,
+          "C_APP": 5.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 2.2,
         "build_strategy": "SAFE_MODE",
-        "runnable": false
+        "runnable": true
       }
     },
     "da": {
       "meta": {
         "iso": "da",
+        "name": "Danish",
         "tier": 1,
         "origin": "rgl",
         "folder": "danish"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.1,
-          "CONC": 0.0,
+          "CONC": 2.1,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 8.1
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -483,36 +707,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.57,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.6,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "de": {
       "meta": {
         "iso": "de",
+        "name": "German",
         "tier": 1,
         "origin": "rgl",
         "folder": "german"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 5.5,
+          "CONC": 2.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 2.9
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -520,31 +758,45 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.6,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.7,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "el": {
       "meta": {
         "iso": "el",
+        "name": "Greek",
         "tier": 1,
         "origin": "rgl",
         "folder": "greek"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 5.4,
           "CONC": 0.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.1
         },
         "C_APP": {
           "PROF": 0.0,
@@ -557,36 +809,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.62,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "en": {
       "meta": {
         "iso": "en",
+        "name": "English",
         "tier": 1,
         "origin": "rgl",
         "folder": "english"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
-          "CONC": 0.1,
+          "CONC": 0.4,
           "WIDE": 10.0,
           "SEM": 5.0
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -594,36 +860,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.7,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 3.85,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 6.1,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "es": {
       "meta": {
         "iso": "es",
+        "name": "Spanish",
         "tier": 1,
         "origin": "rgl",
         "folder": "spanish"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 5.3,
+          "CONC": 3.8,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.5
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -631,31 +911,45 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.4,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "et": {
       "meta": {
         "iso": "et",
+        "name": "Estonian",
         "tier": 1,
         "origin": "rgl",
         "folder": "estonian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 2.6,
           "CONC": 0.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.1
         },
         "C_APP": {
           "PROF": 0.0,
@@ -668,25 +962,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.93,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.3,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "eu": {
       "meta": {
         "iso": "eu",
+        "name": "Basque",
         "tier": 1,
         "origin": "rgl",
         "folder": "basque"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -705,7 +1013,71 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "eus": {
+      "meta": {
+        "iso": "eus",
+        "name": "Basque",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -713,28 +1085,29 @@
     "fa": {
       "meta": {
         "iso": "fa",
+        "name": "Persian",
         "tier": 1,
         "origin": "rgl",
         "folder": "persian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 3.6,
+          "CONC": 0.5,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.0
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -742,34 +1115,48 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.27,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.9,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "fi": {
       "meta": {
         "iso": "fi",
+        "name": "Finnish",
         "tier": 1,
         "origin": "rgl",
         "folder": "finnish"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.1,
-          "CONC": 0.0,
+          "CONC": 2.1,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 8.1
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
           "ROUT": 0.0
         },
@@ -779,25 +1166,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.57,
+          "C_APP": 1.67,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.1,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "fo": {
       "meta": {
         "iso": "fo",
+        "name": "Faroese",
         "tier": 1,
         "origin": "rgl",
         "folder": "faroese"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -816,36 +1217,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 9.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.6,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "fr": {
       "meta": {
         "iso": "fr",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
+        "name": "French",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "french"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 5.2,
+          "CONC": 1.8,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.0
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -853,62 +1268,90 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.0,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.5,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
-    "fy": {
+    "fry": {
       "meta": {
-        "iso": "fy",
+        "iso": "fry",
+        "name": "FRY",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
+          "SEED": 5.2,
+          "CONC": 1.8,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.0
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 0.0,
           "TEST": 0.0
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 2.0,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 1.4,
         "build_strategy": "SAFE_MODE",
-        "runnable": false
+        "runnable": true
       }
     },
     "gd": {
       "meta": {
         "iso": "gd",
+        "name": "Scottish Gaelic",
         "tier": 1,
         "origin": "rgl",
         "folder": "gaelic"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -927,25 +1370,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 9.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.6,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
-    "gn": {
+    "gla": {
       "meta": {
-        "iso": "gn",
+        "iso": "gla",
+        "name": "Scottish Gaelic",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -959,30 +1416,44 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 10.0,
           "TEST": 0.0
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
-    "ha": {
+    "grn": {
       "meta": {
-        "iso": "ha",
+        "iso": "grn",
+        "name": "GRN",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -996,11 +1467,75 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 0.0,
           "TEST": 0.0
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 0.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "hau": {
+      "meta": {
+        "iso": "hau",
+        "name": "HAU",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -1009,28 +1544,29 @@
     "he": {
       "meta": {
         "iso": "he",
+        "name": "Hebrew",
         "tier": 1,
         "origin": "rgl",
         "folder": "hebrew"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 2.1,
+          "CONC": 1.0,
           "WIDE": 0.0,
           "SEM": 0.0
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -1038,36 +1574,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.78,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.8,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "hi": {
       "meta": {
         "iso": "hi",
+        "name": "Hindi",
         "tier": 1,
         "origin": "rgl",
         "folder": "hindi"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 3.6,
+          "CONC": 0.4,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.8
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -1075,25 +1625,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.2,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.9,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "hr": {
       "meta": {
         "iso": "hr",
+        "name": "Croatian",
         "tier": 1,
         "origin": "rgl",
         "folder": "croatian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1112,28 +1676,42 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "hu": {
       "meta": {
         "iso": "hu",
+        "name": "Hungarian",
         "tier": 1,
         "origin": "rgl",
         "folder": "hungarian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -1149,25 +1727,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "hy": {
       "meta": {
         "iso": "hy",
+        "name": "Armenian",
         "tier": 1,
         "origin": "rgl",
         "folder": "armenian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1186,25 +1778,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 9.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.6,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "ia": {
       "meta": {
         "iso": "ia",
+        "name": "Interlingua",
         "tier": 1,
         "origin": "rgl",
         "folder": "interlingua"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1223,36 +1829,101 @@
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "ibo": {
+      "meta": {
+        "iso": "ibo",
+        "name": "IBO",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "id": {
       "meta": {
         "iso": "id",
+        "name": "Indonesian",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 2.8,
+          "CONC": 0.7,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.7
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -1260,25 +1931,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SAFE_MODE",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 1.3,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 1.0,
+        "build_strategy": "SKIP",
+        "runnable": true
       }
     },
-    "ig": {
+    "ind": {
       "meta": {
-        "iso": "ig",
+        "iso": "ind",
+        "name": "Indonesian",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1292,12 +1977,25 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 10.0,
           "TEST": 0.0
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -1305,17 +2003,18 @@
     "is": {
       "meta": {
         "iso": "is",
+        "name": "Icelandic",
         "tier": 1,
         "origin": "rgl",
         "folder": "icelandic"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1334,36 +2033,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "it": {
       "meta": {
         "iso": "it",
+        "name": "Italian",
         "tier": 1,
         "origin": "rgl",
         "folder": "italian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 5.1,
+          "CONC": 1.8,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 3.0
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -1371,28 +2084,42 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.48,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "iu": {
       "meta": {
         "iso": "iu",
+        "name": "Inuktitut",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -1400,7 +2127,7 @@
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -1408,7 +2135,20 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 0.5,
         "build_strategy": "SKIP",
         "runnable": false
       }
@@ -1416,20 +2156,174 @@
     "ja": {
       "meta": {
         "iso": "ja",
+        "name": "Japanese",
         "tier": 1,
         "origin": "rgl",
         "folder": "japanese"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 5.3,
+          "CONC": 0.3,
+          "WIDE": 0.0,
+          "SEM": 0.2
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 5.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.45,
+          "C_APP": 1.67,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.8,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
+      }
+    },
+    "jav": {
+      "meta": {
+        "iso": "jav",
+        "name": "JAV",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 5.3,
+          "CONC": 0.3,
+          "WIDE": 0.0,
+          "SEM": 0.2
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 5.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 1.45,
+          "C_APP": 1.67,
+          "D_QA": 0.0
+        },
+        "maturity_score": 0.8,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
+      }
+    },
+    "kaz": {
+      "meta": {
+        "iso": "kaz",
+        "name": "Kazakh",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "kin": {
+      "meta": {
+        "iso": "kin",
+        "name": "KIN",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -1445,43 +2339,19 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "jv": {
-      "meta": {
-        "iso": "jv",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -1490,17 +2360,18 @@
     "kk": {
       "meta": {
         "iso": "kk",
+        "name": "Kazakh",
         "tier": 1,
         "origin": "rgl",
         "folder": "kazakh"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 5.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1519,7 +2390,20 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 8.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.2,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -1527,20 +2411,123 @@
     "ko": {
       "meta": {
         "iso": "ko",
+        "name": "Korean",
         "tier": 1,
         "origin": "rgl",
         "folder": "korean"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.1,
+          "CONC": 2.1,
+          "WIDE": 0.0,
+          "SEM": 8.1
+        },
+        "C_APP": {
+          "PROF": 5.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.57,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "kor": {
+      "meta": {
+        "iso": "kor",
+        "name": "Korean",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.1,
+          "CONC": 2.1,
+          "WIDE": 0.0,
+          "SEM": 8.1
+        },
+        "C_APP": {
+          "PROF": 5.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 2.57,
+          "C_APP": 5.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 2.1,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "kur": {
+      "meta": {
+        "iso": "kur",
+        "name": "KUR",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -1556,43 +2543,19 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SAFE_MODE",
-        "runnable": false
-      }
-    },
-    "ku": {
-      "meta": {
-        "iso": "ku",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -1601,20 +2564,72 @@
     "la": {
       "meta": {
         "iso": "la",
+        "name": "Latin",
         "tier": 1,
         "origin": "rgl",
         "folder": "latin"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 2.6,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.9
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.88,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.3,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
+      }
+    },
+    "lin": {
+      "meta": {
+        "iso": "lin",
+        "name": "LIN",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -1630,80 +2645,19 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "lg": {
-      "meta": {
-        "iso": "lg",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SAFE_MODE",
-        "runnable": false
-      }
-    },
-    "ln": {
-      "meta": {
-        "iso": "ln",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
-        },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
-        },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -1712,17 +2666,18 @@
     "lt": {
       "meta": {
         "iso": "lt",
+        "name": "Lithuanian",
         "tier": 1,
         "origin": "rgl",
         "folder": "lithuanian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1741,102 +2696,42 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
-    "lv": {
+    "lug": {
       "meta": {
-        "iso": "lv",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "latvian"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
-        },
-        "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
-        },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 0.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "mk": {
-      "meta": {
-        "iso": "mk",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "macedonian"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
-        },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
-        },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 0.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "ml": {
-      "meta": {
-        "iso": "ml",
+        "iso": "lug",
+        "name": "LUG",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -1852,7 +2747,173 @@
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "lv": {
+      "meta": {
+        "iso": "lv",
+        "name": "Latvian",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "latvian"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
+        },
+        "B_LEX": {
+          "SEED": 2.4,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.9
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.82,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.3,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
+      }
+    },
+    "mk": {
+      "meta": {
+        "iso": "mk",
+        "name": "Macedonian",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "macedonian"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 10.0,
+          "NOUN": 5.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 8.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.2,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "ml": {
+      "meta": {
+        "iso": "ml",
+        "name": "Malayalam",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 0.5,
         "build_strategy": "SKIP",
         "runnable": false
       }
@@ -1860,23 +2921,24 @@
     "mn": {
       "meta": {
         "iso": "mn",
+        "name": "Mongolian",
         "tier": 1,
         "origin": "rgl",
         "folder": "mongolian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 2.4,
           "CONC": 0.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.6
         },
         "C_APP": {
           "PROF": 0.0,
@@ -1889,25 +2951,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.75,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.3,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "ms": {
       "meta": {
         "iso": "ms",
+        "name": "Malay",
         "tier": 1,
         "origin": "rgl",
         "folder": "malay"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1926,6 +3002,70 @@
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "msa": {
+      "meta": {
+        "iso": "msa",
+        "name": "Malay",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -1934,23 +3074,24 @@
     "mt": {
       "meta": {
         "iso": "mt",
+        "name": "Maltese",
         "tier": 1,
         "origin": "rgl",
         "folder": "maltese"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 2.5,
           "CONC": 0.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.3
         },
         "C_APP": {
           "PROF": 0.0,
@@ -1963,25 +3104,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.7,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.2,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "nah": {
       "meta": {
         "iso": "nah",
+        "name": "NAH",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2000,25 +3155,141 @@
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "nav": {
+      "meta": {
+        "iso": "nav",
+        "name": "NAV",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 0.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "nb": {
+      "meta": {
+        "iso": "nb",
+        "name": "Norwegian (Bokmål)",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "norwegian"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "ne": {
       "meta": {
         "iso": "ne",
+        "name": "Nepali",
         "tier": 1,
         "origin": "rgl",
         "folder": "nepali"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2037,36 +3308,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "nl": {
       "meta": {
         "iso": "nl",
+        "name": "Dutch",
         "tier": 1,
         "origin": "rgl",
         "folder": "dutch"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 3.6,
+          "CONC": 2.1,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 3.9
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2074,25 +3359,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.4,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "nn": {
       "meta": {
         "iso": "nn",
+        "name": "Norwegian (Nynorsk)",
         "tier": 1,
         "origin": "rgl",
         "folder": "nynorsk"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2111,28 +3410,93 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "no": {
       "meta": {
         "iso": "no",
+        "name": "Norwegian",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 3.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.4
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.85,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 0.8,
+        "build_strategy": "SKIP",
+        "runnable": true
+      }
+    },
+    "oci": {
+      "meta": {
+        "iso": "oci",
+        "name": "OCI",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -2148,80 +3512,19 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "nv": {
-      "meta": {
-        "iso": "nv",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SAFE_MODE",
-        "runnable": false
-      }
-    },
-    "oc": {
-      "meta": {
-        "iso": "oc",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
-        },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
-        },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -2230,17 +3533,18 @@
     "pa": {
       "meta": {
         "iso": "pa",
+        "name": "Punjabi",
         "tier": 1,
         "origin": "rgl",
         "folder": "punjabi"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2259,36 +3563,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "pl": {
       "meta": {
         "iso": "pl",
+        "name": "Polish",
         "tier": 1,
         "origin": "rgl",
         "folder": "polish"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 2.8,
+          "CONC": 0.7,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.3
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2296,36 +3614,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.95,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.8,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "pt": {
       "meta": {
         "iso": "pt",
+        "name": "Portuguese",
         "tier": 1,
         "origin": "rgl",
         "folder": "portuguese"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 3.9,
+          "CONC": 0.6,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.2
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2333,25 +3665,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.18,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.9,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
-    "qu": {
+    "que": {
       "meta": {
-        "iso": "qu",
+        "iso": "que",
+        "name": "QUE",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2365,11 +3711,24 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 0.0,
           "TEST": 0.0
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -2378,28 +3737,29 @@
     "ro": {
       "meta": {
         "iso": "ro",
+        "name": "Romanian",
         "tier": 1,
         "origin": "rgl",
         "folder": "romanian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 3.0,
+          "CONC": 1.1,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.3
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2407,36 +3767,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.35,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.2,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "ru": {
       "meta": {
         "iso": "ru",
+        "name": "Russian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "v1"
+        "folder": "russian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 3.7,
+          "CONC": 0.8,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.3
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2444,62 +3818,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "rw": {
-      "meta": {
-        "iso": "rw",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.2,
+          "C_APP": 3.33,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
-        "maturity_score": 0.0,
+        "maturity_score": 4.9,
         "build_strategy": "SAFE_MODE",
-        "runnable": false
+        "runnable": true
       }
     },
     "sd": {
       "meta": {
         "iso": "sd",
+        "name": "Sindhi",
         "tier": 1,
         "origin": "rgl",
         "folder": "sindhi"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2518,25 +3869,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "sk": {
       "meta": {
         "iso": "sk",
+        "name": "Slovak",
         "tier": 1,
         "origin": "rgl",
         "folder": "slovak"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2555,25 +3920,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "sl": {
       "meta": {
         "iso": "sl",
+        "name": "Slovenian",
         "tier": 1,
         "origin": "rgl",
         "folder": "slovenian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2592,25 +3971,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "so": {
       "meta": {
         "iso": "so",
+        "name": "Somali",
         "tier": 1,
         "origin": "rgl",
         "folder": "somali"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2629,7 +4022,122 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.0,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "som": {
+      "meta": {
+        "iso": "som",
+        "name": "Somali",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "sq": {
+      "meta": {
+        "iso": "sq",
+        "name": "Albanian",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "albanian"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 9.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.6,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -2637,28 +4145,29 @@
     "sv": {
       "meta": {
         "iso": "sv",
+        "name": "Swedish",
         "tier": 1,
         "origin": "rgl",
         "folder": "swedish"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 3.0,
+          "CONC": 2.0,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 4.2
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2666,36 +4175,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.3,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "sw": {
       "meta": {
         "iso": "sw",
+        "name": "Swahili",
         "tier": 1,
         "origin": "rgl",
         "folder": "swahili"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.1,
+          "SEED": 2.6,
+          "CONC": 0.8,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 1.0
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2703,36 +4226,101 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.1,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.1,
         "build_strategy": "SAFE_MODE",
-        "runnable": false
+        "runnable": true
+      }
+    },
+    "swa": {
+      "meta": {
+        "iso": "swa",
+        "name": "Swahili",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 2.6,
+          "CONC": 0.8,
+          "WIDE": 0.0,
+          "SEM": 1.0
+        },
+        "C_APP": {
+          "PROF": 5.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 1.1,
+          "C_APP": 5.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 1.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "ta": {
       "meta": {
         "iso": "ta",
+        "name": "Tamil",
         "tier": 1,
         "origin": "rgl",
         "folder": "tamil"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 1.4,
+          "CONC": 0.3,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 0.5
         },
         "C_APP": {
           "PROF": 0.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2740,7 +4328,122 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.55,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.7,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "tam": {
+      "meta": {
+        "iso": "tam",
+        "name": "Tamil",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 1.4,
+          "CONC": 0.3,
+          "WIDE": 0.0,
+          "SEM": 0.5
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.55,
+          "C_APP": 3.33,
+          "D_QA": 5.0
+        },
+        "maturity_score": 1.2,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "tat": {
+      "meta": {
+        "iso": "tat",
+        "name": "TAT",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 1.4,
+          "CONC": 0.3,
+          "WIDE": 0.0,
+          "SEM": 0.5
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 10.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.55,
+          "C_APP": 3.33,
+          "D_QA": 0.0
+        },
+        "maturity_score": 0.7,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -2748,17 +4451,18 @@
     "te": {
       "meta": {
         "iso": "te",
+        "name": "Telugu",
         "tier": 1,
         "origin": "rgl",
         "folder": "telugu"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2777,7 +4481,122 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 9.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "tel": {
+      "meta": {
+        "iso": "tel",
+        "name": "Telugu",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "tgl": {
+      "meta": {
+        "iso": "tgl",
+        "name": "Tagalog",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -2785,20 +4604,21 @@
     "th": {
       "meta": {
         "iso": "th",
+        "name": "Thai",
         "tier": 1,
         "origin": "rgl",
         "folder": "thai"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 3.1,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -2814,73 +4634,50 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "tl": {
-      "meta": {
-        "iso": "tl",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.78,
+          "C_APP": 0.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 0.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
-        "maturity_score": 0.0,
+        "maturity_score": 4.3,
         "build_strategy": "SAFE_MODE",
-        "runnable": false
+        "runnable": true
       }
     },
     "tr": {
       "meta": {
         "iso": "tr",
+        "name": "Turkish",
         "tier": 1,
         "origin": "rgl",
         "folder": "turkish"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 2.7,
+          "CONC": 1.6,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 4.0
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -2888,62 +4685,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "tt": {
-      "meta": {
-        "iso": "tt",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 2.08,
+          "C_APP": 5.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
-        "maturity_score": 0.0,
+        "maturity_score": 5.5,
         "build_strategy": "SAFE_MODE",
-        "runnable": false
+        "runnable": true
       }
     },
     "uk": {
       "meta": {
         "iso": "uk",
+        "name": "Ukrainian",
         "tier": 1,
         "origin": "rgl",
         "folder": "ukrainian"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2962,28 +4736,93 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 9.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.6,
+        "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
     "ur": {
       "meta": {
         "iso": "ur",
+        "name": "Urdu",
         "tier": 1,
         "origin": "rgl",
         "folder": "urdu"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
+          "SEED": 2.7,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.3
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 0.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 0.75,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 4.3,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
+      }
+    },
+    "uzb": {
+      "meta": {
+        "iso": "uzb",
+        "name": "UZB",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
           "CONC": 0.0,
           "WIDE": 0.0,
           "SEM": 0.0
@@ -2999,62 +4838,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
-      }
-    },
-    "uz": {
-      "meta": {
-        "iso": "uz",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
-      },
-      "zones": {
-        "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
         },
-        "B_LEX": {
-          "SEED": 0.0,
-          "CONC": 0.0,
-          "WIDE": 0.0,
-          "SEM": 0.0
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
         },
-        "C_APP": {
-          "PROF": 0.0,
-          "ASST": 0.0,
-          "ROUT": 0.0
-        },
-        "D_QA": {
-          "BIN": 1.0,
-          "TEST": 0.0
-        }
-      },
-      "verdict": {
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
-    "vi": {
+    "vie": {
       "meta": {
-        "iso": "vi",
+        "iso": "vie",
+        "name": "Vietnamese",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -3068,30 +4884,44 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 0.0,
           "TEST": 0.0
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
-    "wo": {
+    "wol": {
       "meta": {
-        "iso": "wo",
+        "iso": "wol",
+        "name": "WOL",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -3105,30 +4935,44 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 0.0,
           "TEST": 0.0
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
-    "xh": {
+    "xho": {
       "meta": {
-        "iso": "xh",
+        "iso": "xho",
+        "name": "XHO",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -3142,30 +4986,44 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 0.0,
           "TEST": 0.0
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
     },
-    "yo": {
+    "yor": {
       "meta": {
-        "iso": "yo",
+        "iso": "yor",
+        "name": "YOR",
         "tier": 3,
         "origin": "factory",
         "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -3179,11 +5037,24 @@
           "ROUT": 0.0
         },
         "D_QA": {
-          "BIN": 1.0,
+          "BIN": 0.0,
           "TEST": 0.0
         }
       },
       "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
         "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
@@ -3192,28 +5063,29 @@
     "zh": {
       "meta": {
         "iso": "zh",
-        "tier": 3,
-        "origin": "factory",
-        "folder": "generated"
+        "name": "Chinese",
+        "tier": 1,
+        "origin": "rgl",
+        "folder": "chinese"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 10.0
         },
         "B_LEX": {
-          "SEED": 0.1,
-          "CONC": 0.0,
+          "SEED": 3.0,
+          "CONC": 1.3,
           "WIDE": 0.0,
-          "SEM": 0.0
+          "SEM": 3.0
         },
         "C_APP": {
-          "PROF": 0.0,
+          "PROF": 5.0,
           "ASST": 0.0,
-          "ROUT": 0.0
+          "ROUT": 10.0
         },
         "D_QA": {
           "BIN": 0.0,
@@ -3221,25 +5093,39 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
-        "build_strategy": "SKIP",
-        "runnable": false
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 10.0,
+          "B_LEX": 1.82,
+          "C_APP": 5.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 5.4,
+        "build_strategy": "SAFE_MODE",
+        "runnable": true
       }
     },
     "zu": {
       "meta": {
         "iso": "zu",
+        "name": "Zulu",
         "tier": 1,
         "origin": "rgl",
         "folder": "zulu"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 0,
-          "NOUN": 0,
-          "PARA": 0,
-          "GRAM": 0,
-          "SYN": 0
+          "CAT": 10.0,
+          "NOUN": 10.0,
+          "PARA": 10.0,
+          "GRAM": 10.0,
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -3258,7 +5144,71 @@
         }
       },
       "verdict": {
-        "maturity_score": 0.0,
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 9.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 0.0
+        },
+        "maturity_score": 3.6,
+        "build_strategy": "SAFE_MODE",
+        "runnable": false
+      }
+    },
+    "zul": {
+      "meta": {
+        "iso": "zul",
+        "name": "Zulu",
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
+      },
+      "zones": {
+        "A_RGL": {
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
+        },
+        "B_LEX": {
+          "SEED": 0.0,
+          "CONC": 0.0,
+          "WIDE": 0.0,
+          "SEM": 0.0
+        },
+        "C_APP": {
+          "PROF": 0.0,
+          "ASST": 0.0,
+          "ROUT": 0.0
+        },
+        "D_QA": {
+          "BIN": 10.0,
+          "TEST": 0.0
+        }
+      },
+      "verdict": {
+        "scoring_version": "2.4",
+        "zone_weights": {
+          "A_RGL": 0.4,
+          "B_LEX": 0.35,
+          "C_APP": 0.15,
+          "D_QA": 0.1
+        },
+        "zone_averages": {
+          "A_RGL": 0.0,
+          "B_LEX": 0.0,
+          "C_APP": 0.0,
+          "D_QA": 5.0
+        },
+        "maturity_score": 0.5,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }

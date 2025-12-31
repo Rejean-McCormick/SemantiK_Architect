@@ -17,7 +17,7 @@ Design goals
 - Enterprise-grade robustness: avoid import-time side effects, keep types stable,
   and provide backwards-compatible aliasing where practical.
 - Explicit separation of concerns:
-    - loader.py: filesystem + JSON merging + normalization into a flat mapping
+    - loader.py: filesystem + JSON merging + normalization
     - cache.py: in-memory caching of per-language indices
     - normalization.py: key normalization helpers
     - schema.py: validation helpers
@@ -46,6 +46,7 @@ from .schema import (
 )
 from .types import (
     BaseLexicalEntry,
+    HonourEntry,
     Lexeme,
     Lexicon,
     LexiconMeta,
@@ -53,9 +54,7 @@ from .types import (
     NationalityEntry,
     ProfessionEntry,
     TitleEntry,
-    HonourEntry,
 )
-
 
 # ---------------------------------------------------------------------------
 # Index access
@@ -82,12 +81,10 @@ def lookup_lemma(
     pos: Optional[str] = None,
 ) -> Optional[Any]:
     """
-    Look up an entry by lemma (and optionally POS).
+    Look up an entry by lemma (and optionally POS), best-effort.
 
     Notes:
     - The exact return type depends on the concrete LexiconIndex implementation.
-      In this codebase, LexiconIndex currently indexes ProfessionEntry /
-      NationalityEntry / BaseLexicalEntry.
     - If POS is not supported by the index implementation, it will be ignored.
     """
     idx = get_index(lang)
@@ -99,8 +96,7 @@ def lookup_lemma(
         except TypeError:
             return idx.lookup_by_lemma(lemma)  # type: ignore[attr-defined]
 
-    # Fallback to available lookups (current LexiconIndex API)
-    entry = None
+    # Fallback to current LexiconIndex API
     if hasattr(idx, "lookup_profession"):
         entry = idx.lookup_profession(lemma)  # type: ignore[attr-defined]
         if entry is not None:
@@ -117,23 +113,18 @@ def lookup_lemma(
     return None
 
 
-def lookup_qid(
-    lang: str,
-    qid: str,
-) -> Optional[Any]:
+def lookup_qid(lang: str, qid: str) -> Optional[Any]:
     """
     Look up an entry by a Wikidata QID (best-effort).
 
     Notes:
-    - The current LexiconIndex implementation in `index.py` does not implement
-      QID lookups. This wrapper returns None unless the index provides a
-      compatible lookup method.
+    - If the index doesn't support QID lookups, returns None.
     """
     idx = get_index(lang)
 
+    # Prefer explicit names if present
     if hasattr(idx, "lookup_by_qid"):
         return idx.lookup_by_qid(qid)  # type: ignore[attr-defined]
-
     if hasattr(idx, "lookup_qid"):
         return idx.lookup_qid(qid)  # type: ignore[attr-defined]
 
@@ -150,11 +141,11 @@ def lookup_form(
     Look up a surface form for a lemma given morphological features (best-effort).
 
     Notes:
-    - The current LexiconIndex in `index.py` does not expose a morphology API.
+    - The current LexiconIndex does not expose a morphology API.
       This wrapper supports future indices that implement `lookup_form(...)`.
     """
     idx = get_index(lang)
-    feats = features or {}
+    feats: dict[str, Any] = features or {}
 
     if hasattr(idx, "lookup_form"):
         try:
@@ -164,6 +155,16 @@ def lookup_form(
             return idx.lookup_form(lemma, feats)  # type: ignore[attr-defined]
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# Backwards-compatible aliases
+# ---------------------------------------------------------------------------
+
+# Some codebases use `get_or_build_index` but others use `get_index`.
+# Keep both in the public surface.
+get_or_build_index = get_or_build_index  # re-export (explicit name kept)
+warmup_languages = preload_languages  # match cache.py alias for convenience
 
 
 __all__ = [
@@ -179,6 +180,7 @@ __all__ = [
     # Cache controls
     "get_or_build_index",
     "preload_languages",
+    "warmup_languages",
     "clear_cache",
     "cached_languages",
     # Normalization

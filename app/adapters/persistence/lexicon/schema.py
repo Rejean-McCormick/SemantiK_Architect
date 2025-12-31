@@ -30,7 +30,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-
 SCHEMA_VERSION: int = 1
 
 
@@ -69,10 +68,6 @@ def _issue(path: str, message: str, *, level: str) -> SchemaIssue:
     if level not in {"error", "warning"}:
         level = "error"
     return SchemaIssue(path=path, message=message, level=level)
-
-
-def _is_mapping(x: Any) -> bool:
-    return isinstance(x, Mapping)
 
 
 def _ensure_top_level_dict(data: Any, *, strict: bool) -> List[SchemaIssue]:
@@ -205,6 +200,7 @@ def _validate_forms_map(
     Validate `forms` if present: must be a mapping of str -> str.
     """
     issues: List[SchemaIssue] = []
+
     if "forms" not in entry:
         return issues
 
@@ -212,7 +208,7 @@ def _validate_forms_map(
     if forms is None:
         return issues
 
-    if not _is_mapping(forms):
+    if not isinstance(forms, Mapping):
         issues.append(
             _issue(
                 path=f"{path_prefix}.forms",
@@ -222,7 +218,14 @@ def _validate_forms_map(
         )
         return issues
 
-    for k, v in forms.items():
+    # deterministic ordering
+    items: List[Tuple[Any, Any]] = list(forms.items())
+    try:
+        items.sort(key=lambda kv: str(kv[0]))
+    except Exception:
+        pass
+
+    for k, v in items:
         if not isinstance(k, str):
             issues.append(
                 _issue(
@@ -335,11 +338,12 @@ def _validate_lemma_section(
         if require_pos:
             pos = entry.get("pos")
             if pos is None:
+                # missing pos is a warning even in strict mode (schema is permissive)
                 issues.append(
                     _issue(
                         path=f"{path_prefix}.pos",
                         message="Missing 'pos' field on lexeme entry.",
-                        level="warning" if not strict else "warning",
+                        level="warning",
                     )
                 )
             elif not isinstance(pos, str):
@@ -436,7 +440,9 @@ def validate_lexicon_structure(
             )
         )
 
-    return issues
+    # Deterministic ordering for consumers/CI
+    issues_sorted = sorted(issues, key=lambda i: (i.level, i.path, i.message))
+    return issues_sorted
 
 
 def raise_if_invalid(
@@ -449,19 +455,13 @@ def raise_if_invalid(
     Validate a lexicon and raise ValueError if any *errors* are found.
 
     Warnings do not cause an exception.
-
-    Raises:
-        ValueError if at least one SchemaIssue with level == "error"
-        is produced by validate_lexicon_structure.
     """
     issues = validate_lexicon_structure(lang_code, data, strict=strict)
     errors = [i for i in issues if i.level == "error"]
     if not errors:
         return
 
-    # Deterministic message ordering for CI stability
-    errors_sorted = sorted(errors, key=lambda e: (e.path, e.message))
-    messages = "; ".join(f"{e.path}: {e.message}" for e in errors_sorted)
+    messages = "; ".join(f"{e.path}: {e.message}" for e in errors)
     raise ValueError(f"Lexicon for {lang_code!r} failed schema validation: {messages}")
 
 

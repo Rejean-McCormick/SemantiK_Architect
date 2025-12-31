@@ -1,0 +1,274 @@
+## Upgrade plan: Single Orchestrator for the Everything Matrix suite
+
+### Goal
+
+Make **`tools/everything_matrix/build_index.py`** the **only normal entrypoint** that refreshes:
+
+* Zone A: RGL inventory + grammar completion signals
+* Zone B: Lexicon health
+* Zone C: App readiness
+* Zone D: QA readiness
+
+All other scripts remain available as **debug tools** but must be **side-effect free by default** and must not duplicate work during a normal matrix refresh.
+
+---
+
+## Current problems (why this upgrade is needed)
+
+### 1) Duplicate scans + nondeterminism
+
+Today, a normal “refresh” often does:
+
+* `rgl_scanner` scan once (explicit tool run)
+* `build_index` re-runs the RGL scan again (inside Build Index)
+
+This causes:
+
+* wasted time
+* “moving target” inventory during indexing
+* confusing logs and inconsistent results run-to-run
+
+### 2) Key mismatch (Wiki vs ISO)
+
+Some scanners output keyed by **Wiki 3-letter codes** (Eng/Fre) while the matrix is keyed by **ISO canonical** (intended iso2 lowercase). This prevents Zone C (and sometimes B/C) from landing in the right row.
+
+### 3) Per-language rescans
+
+Some scanning functions are called per language; they should be called once per zone and cached.
+
+---
+
+## Target architecture (after upgrade)
+
+### A) One CLI orchestrator
+
+**`build_index.py`** does:
+
+1. fingerprint/cache check
+2. ensures prerequisite inventories exist (optionally regenerates)
+3. runs “one-shot” scans for each zone
+4. synthesizes verdict + maturity
+5. writes `data/indices/everything_matrix.json`
+
+### B) Scanners become libraries (plus optional debug CLIs)
+
+Each scanner exposes a stable API for Build Index:
+
+* `rgl_scanner.scan_rgl() -> inventory dict`
+  writes output **only if explicitly asked** or invoked as CLI
+
+* `lexicon_scanner.scan_all_lexicons(lex_root) -> {iso2: zone_b_stats}`
+  no printing by default; no global directory walk per language
+
+* `app_scanner.scan_all_apps(repo_root) -> {iso2: zone_c_stats}`
+  must be iso2-keyed
+
+* `qa_scanner.scan_all_artifacts(gf_root) -> {iso2: zone_d_stats}`
+  avoid per-iso repeated work (scan once)
+
+### C) Normalization utilities are shared
+
+A single “normalization” module is the source of truth for:
+
+* ISO alias -> canonical iso2
+* Wiki suffix -> iso2
+* language display names
+
+---
+
+## Files affected
+
+### Must update
+
+1. `tools/everything_matrix/build_index.py`
+2. `tools/everything_matrix/app_scanner.py` (already being updated toward iso2 output)
+3. `tools/everything_matrix/lexicon_scanner.py` (needs `scan_all_*` and no per-language directory walk)
+4. `tools/everything_matrix/qa_scanner.py` (needs `scan_all_*` and stable 0–10 output)
+5. `tools/everything_matrix/rgl_scanner.py` (make sure Build Index does not re-run it unless asked)
+
+### Strongly recommended new files
+
+6. `tools/everything_matrix/norm.py` (ISO/Wiki normalization + names)
+7. `tools/everything_matrix/io_utils.py` (read/write/fingerprint)
+8. `tools/everything_matrix/orchestrator.md` (this doc written into repo)
+
+---
+
+## Upgrade steps (do in this order)
+
+### Step 0 — Freeze baseline behavior
+
+Create a “before” snapshot:
+
+* Run `python tools/everything_matrix/build_index.py --force`
+* Save the produced `data/indices/everything_matrix.json` as:
+
+  * `data/indices/everything_matrix.before_upgrade.json`
+
+This lets you diff after each change.
+
+---
+
+### Step 1 — Define the canonical scanner APIs
+
+These become “contracts” Build Index relies on.
+
+#### Contract: app
+
+* `scan_all_apps(repo_root: Path) -> dict[iso2, {"PROF": float, "ASST": float, "ROUT": float, ...}]`
+
+#### Contract: lexicon
+
+* `scan_all_lexicons(lex_root: Path) -> dict[iso2, zone_b_stats]`
+* optional: `scan_lexicon_health(iso2, lex_root)` remains for debug
+
+#### Contract: qa
+
+* `scan_all_artifacts(gf_root: Path) -> dict[iso2, {"BIN": float, "TEST": float}]`
+
+#### Contract: rgl
+
+* `scan_rgl() -> inventory` used by CLI tool
+* Build Index reads `data/indices/rgl_inventory.json` by default
+
+---
+
+### Step 2 — Make Build Index pure orchestration
+
+In `build_index.py`:
+
+#### 2.1 Remove “runtime scan_rgl()” invocation
+
+Delete the block that calls `rgl_auditor.scan_rgl()` as a zero-arg function.
+Build Index should treat `rgl_inventory.json` as an input artifact.
+
+#### 2.2 Add explicit regen flags
+
+Add CLI flags:
+
+* `--regen-rgl` (rebuild `rgl_inventory.json`)
+* `--regen-lex` (optional, if you persist lex inventory later)
+* `--regen-app`
+* `--regen-qa`
+
+Default behavior: **no regen** unless missing.
+
+#### 2.3 Run each scanner once
+
+Inside `scan_system()`:
+
+* `app_inventory = app_scanner.scan_all_apps(BASE_DIR)` once
+* `lex_inventory = lexicon_scanner.scan_all_lexicons(LEXICON_DIR)` once
+* `qa_inventory = qa_scanner.scan_all_artifacts(GF_ARTIFACTS)` once
+
+Then inside the per-language loop:
+
+* just do dict lookups by iso2
+
+---
+
+### Step 3 — Normalize keys everywhere
+
+**Hard rule:** Build Index uses iso2 lowercase keys for `matrix["languages"]`.
+
+So scanners must return iso2 keys, and any legacy wiki keys must be normalized at scanner boundary.
+
+Where normalization occurs:
+
+* preferred: inside the scanner (app_scanner already updated)
+* fallback: in Build Index via `norm.py`
+
+---
+
+### Step 4 — Unify scoring scale (0–10)
+
+Hard rule: all zones emit 0..10 floats.
+
+Build Index should keep `_maybe_rescale_01_to_10` for backward compatibility, but scanners should be corrected to not output 0..1.
+
+---
+
+### Step 5 — Turn individual scanners into “debug tools”
+
+Their `__main__` should still print JSON and be runnable, but:
+
+* their library functions should not print
+* they should not rewrite shared registries unless explicitly asked
+
+Example: `rgl_scanner.py`:
+
+* CLI writes `rgl_inventory.json`
+* imported module used by Build Index should not rewrite anything
+
+---
+
+## What “done” looks like
+
+### Normal run
+
+Running:
+
+```bash
+python tools/everything_matrix/build_index.py
+```
+
+Should:
+
+* not rescan gf-rgl unless rgl_inventory missing or `--regen-rgl`
+* complete without the duplicated “Scanning gf-rgl/src…” lines
+* produce consistent matrix output
+* fill Zone C correctly for the same iso keys used in Zone B
+
+### Debug run
+
+Running:
+
+```bash
+python tools/everything_matrix/app_scanner.py
+```
+
+Still prints per-language app readiness JSON, but Build Index doesn’t need you to run it.
+
+---
+
+## Repo documentation to add (write this into a file)
+
+Create `docs/everything_matrix_orchestration.md`:
+
+Include:
+
+1. What Build Index does
+2. Scanner contracts
+3. Normalization rules
+4. Expected output schema
+5. Debug instructions
+6. Regeneration flags
+
+---
+
+## Testing checklist (run after each step)
+
+1. `python tools/everything_matrix/build_index.py --force`
+2. Confirm only one RGL scan occurs (or none, if inventory exists)
+3. Confirm Zone C appears and matches app_scanner outputs
+4. Confirm all zone values are within 0..10
+5. Diff:
+
+   * `everything_matrix.before_upgrade.json`
+   * `everything_matrix.json`
+     Expect: more Zone C entries and less “all zeros”, but same language set.
+
+---
+
+## Implementation order you should follow (so you don’t get lost)
+
+1. Update `app_scanner.py` (iso2 output + scan_all_apps)
+2. Update `build_index.py` to preload app inventory once and remove runtime scan_rgl
+3. Update `lexicon_scanner.py` to provide scan_all_lexicons
+4. Update `qa_scanner.py` to provide scan_all_artifacts
+5. Add `docs/everything_matrix_orchestration.md`
+6. Add regen flags + finalize
+
+---
+
+If you paste `lexicon_scanner.py` and `qa_scanner.py`, I will produce the full updated versions matching the contracts above, and then a final updated `build_index.py` that orchestrates all zones without duplication.

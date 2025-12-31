@@ -21,8 +21,10 @@ This module does not persist anything to disk.
 Implementation notes
 ====================
 - We cache by normalized language code (casefold + strip).
-- We use a lock to protect cache mutations.
+- We use a lock to protect cache mutations (double-checked build).
 - We provide a `warmup_languages` alias for clarity in app startup code.
+- Compatibility: current loader returns a lexeme mapping; we construct
+  the index via LexiconIndex.from_lexemes().
 """
 
 from __future__ import annotations
@@ -32,7 +34,6 @@ from typing import Dict, Iterable, List, Optional
 
 from .loader import load_lexicon  # type: ignore[import-not-found]
 from .index import LexiconIndex  # type: ignore[import-not-found]
-from .types import Lexicon  # type: ignore[import-not-found]
 
 # ---------------------------------------------------------------------------
 # Internal state
@@ -61,7 +62,7 @@ def get_or_build_index(lang: str) -> LexiconIndex:
     Get a LexiconIndex for the given language, building and caching it if needed.
 
     Args:
-        lang: Language code (e.g. "en", "fr", "sw").
+        lang: Language code (e.g. "en", "fr", "sw", "eng", "fra").
 
     Returns:
         LexiconIndex for that language.
@@ -69,7 +70,7 @@ def get_or_build_index(lang: str) -> LexiconIndex:
     Raises:
         ValueError: empty/invalid lang code.
         FileNotFoundError / JSON errors: bubbled from loader.
-        Any exceptions from LexiconIndex construction.
+        TypeError: if LexiconIndex does not support mapping-based construction.
     """
     nlang = _norm_lang(lang)
     if not nlang:
@@ -86,24 +87,16 @@ def get_or_build_index(lang: str) -> LexiconIndex:
         if existing is not None:
             return existing
 
-        lex = load_lexicon(nlang)
+        lexemes = load_lexicon(nlang)
 
-        # load_lexicon historically returned Dict[str, Dict[str, Any]] in this codebase,
-        # but the new enterprise-grade path expects Lexicon for LexiconIndex construction.
-        # Accept both for compatibility.
-        if isinstance(lex, Lexicon):
-            index = LexiconIndex(lex)
-        else:
-            # If a legacy index factory exists in older branches, keep it as fallback.
-            # Otherwise, require callers to migrate loader -> Lexicon.
-            if hasattr(LexiconIndex, "from_lexemes"):
-                index = LexiconIndex.from_lexemes(lex)  # type: ignore[attr-defined]
-            else:
-                raise TypeError(
-                    "load_lexicon() returned legacy mapping, but LexiconIndex requires "
-                    "a Lexicon. Migrate loader to return Lexicon or add LexiconIndex.from_lexemes()."
-                )
+        if not hasattr(LexiconIndex, "from_lexemes"):
+            raise TypeError(
+                "LexiconIndex does not expose from_lexemes(), but load_lexicon() "
+                "returns a lexeme mapping. Either add LexiconIndex.from_lexemes() "
+                "or migrate loader/index to a Lexicon-based construction path."
+            )
 
+        index = LexiconIndex.from_lexemes(lexemes)  # type: ignore[attr-defined]
         _INDEX_CACHE[nlang] = index
         return index
 
