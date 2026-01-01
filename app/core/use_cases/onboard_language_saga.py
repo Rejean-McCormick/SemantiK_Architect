@@ -66,10 +66,9 @@ class OnboardLanguageSaga:
             )
 
             # 3. Persist Metadata
-            # For the FileSystemRepo, this might mean updating the Everything Matrix
-            # or creating the directory structure. 
-            # Note: save_grammar is a placeholder for saving the definition.
-            # await self.repo.save_grammar(code, "...") 
+            # [FIX] We now explicitly save the language metadata to the Repo.
+            # For FileSystemRepo, this will eventually update the Everything Matrix or create the folder.
+            await self.repo.save_grammar(code, language.model_dump_json())
             logger.info("language_metadata_saved", code=code)
 
             # 4. Trigger the Build (The Side Effect)

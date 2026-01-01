@@ -1,17 +1,14 @@
-// architect_frontend\src\components\FrameForm.tsx
 // architect_frontend/src/components/FrameForm.tsx
+"use client";
 
-'use client';
+import React, { useCallback, useMemo, useState } from "react";
+// Import architectApi (generate) + types
+import { architectApi, type GenerationResult } from "../lib/api";
 
-import React, { useCallback, useMemo, useState } from 'react';
-// FIX: Import architectApi instead of missing generateFrame
-import { architectApi, type GenerationResult } from '../lib/api';
-
-// FIX: Define types locally since ../config/frameConfigs is deleted
 export interface FrameFieldConfig {
   name: string;
   label: string;
-  inputType: 'text' | 'textarea' | 'number' | 'checkbox' | 'select' | 'json';
+  inputType: "text" | "textarea" | "number" | "checkbox" | "select" | "json";
   required?: boolean;
   defaultValue?: unknown;
   placeholder?: string;
@@ -43,7 +40,7 @@ type FieldValue = string | number | boolean | null | undefined;
 
 function buildInitialValues(
   frameConfig: FrameContextConfig,
-  initialValues?: Record<string, unknown>,
+  initialValues?: Record<string, unknown>
 ): Record<string, FieldValue> {
   const values: Record<string, FieldValue> = {};
 
@@ -52,10 +49,10 @@ function buildInitialValues(
       values[field.name] = initialValues[field.name] as FieldValue;
     } else if (field.defaultValue !== undefined) {
       values[field.name] = field.defaultValue as FieldValue;
-    } else if (field.inputType === 'checkbox') {
+    } else if (field.inputType === "checkbox") {
       values[field.name] = false;
     } else {
-      values[field.name] = '';
+      values[field.name] = "";
     }
   }
 
@@ -64,7 +61,7 @@ function buildInitialValues(
 
 function isEmptyValue(v: unknown): boolean {
   if (v === null || v === undefined) return true;
-  if (typeof v === 'string' && v.trim() === '') return true;
+  if (typeof v === "string" && v.trim() === "") return true;
   if (Array.isArray(v) && v.length === 0) return true;
   return false;
 }
@@ -75,34 +72,29 @@ export const FrameForm: React.FC<FrameFormProps> = ({
   initialValues,
   onResult,
   onError,
-  submitLabel = 'Generate',
+  submitLabel = "Generate",
 }) => {
   const [lang, setLang] = useState<string>(initialLang ?? frameConfig.defaultLang);
   const [values, setValues] = useState<Record<string, FieldValue>>(() =>
-    buildInitialValues(frameConfig, initialValues),
+    buildInitialValues(frameConfig, initialValues)
   );
 
   // Generation options (shared across all frames)
-  const [register, setRegister] = useState<string>('');
-  const [maxSentences, setMaxSentences] = useState<string>('');
-  const [discourseMode, setDiscourseMode] = useState<string>('');
-  const [seed, setSeed] = useState<string>('');
+  const [register, setRegister] = useState<string>("");
+  const [maxSentences, setMaxSentences] = useState<string>("");
+  const [discourseMode, setDiscourseMode] = useState<string>("");
+  const [seed, setSeed] = useState<string>("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const hasAdvancedOptions = useMemo(
-    () => true, // we always show the block; it is small and generic
-    [],
-  );
+  const hasAdvancedOptions = useMemo(() => true, []);
 
   const handleFieldChange = useCallback(
-    (
-      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-    ) => {
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       const { name, type } = event.target;
       const value =
-        type === 'checkbox'
+        type === "checkbox"
           ? (event.target as HTMLInputElement).checked
           : event.target.value;
 
@@ -111,7 +103,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
         [name]: value,
       }));
     },
-    [],
+    []
   );
 
   const handleSubmit = useCallback(
@@ -127,14 +119,13 @@ export const FrameForm: React.FC<FrameFormProps> = ({
         for (const field of frameConfig.fields) {
           let raw: unknown = values[field.name];
 
-          // Basic required check
           if (field.required && isEmptyValue(raw)) {
             throw new Error(`Field "${field.label}" is required.`);
           }
 
-          // JSON fields are stored as strings in the form and parsed on submit
-          if (field.inputType === 'json') {
-            const text = typeof raw === 'string' ? raw.trim() : '';
+          // JSON fields: parse on submit
+          if (field.inputType === "json") {
+            const text = typeof raw === "string" ? raw.trim() : "";
             if (text) {
               try {
                 raw = JSON.parse(text);
@@ -147,7 +138,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
           }
 
           // Normalize numbers
-          if (field.inputType === 'number' && typeof raw === 'string' && raw.trim() !== '') {
+          if (field.inputType === "number" && typeof raw === "string" && raw.trim() !== "") {
             const n = Number(raw);
             if (!Number.isFinite(n)) {
               throw new Error(`Field "${field.label}" must be a valid number.`);
@@ -163,12 +154,24 @@ export const FrameForm: React.FC<FrameFormProps> = ({
         // Build GenerationOptions (all keys are optional)
         const options: Record<string, unknown> = {};
         if (register.trim()) options.register = register.trim();
-        if (maxSentences.trim()) options.max_sentences = Number(maxSentences.trim());
-        if (discourseMode.trim()) options.discourse_mode = discourseMode.trim();
-        if (seed.trim()) options.seed = Number(seed.trim());
 
-        // FIX: Use architectApi.generate and snake_case keys for the backend
-        // 
+        if (maxSentences.trim()) {
+          const n = Number(maxSentences.trim());
+          if (!Number.isFinite(n) || n <= 0) throw new Error(`Max sentences must be a positive number.`);
+          options.max_sentences = n;
+        }
+
+        if (discourseMode.trim()) options.discourse_mode = discourseMode.trim();
+
+        if (seed.trim()) {
+          const n = Number(seed.trim());
+          if (!Number.isFinite(n)) throw new Error(`Seed must be a valid number.`);
+          options.seed = n;
+        }
+
+        // Use architectApi.generate; payload structure matches the backend router that expects
+        // either a Frame JSON or Ninai JSON. If your backend expects the flat Frame directly,
+        // set payload accordingly (e.g., include frame_type + frame fields at top level).
         const result = await architectApi.generate({
           lang,
           frame_type: frameConfig.frameType,
@@ -179,11 +182,9 @@ export const FrameForm: React.FC<FrameFormProps> = ({
         onResult?.(result);
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : 'An unexpected error occurred while generating.';
+          err instanceof Error ? err.message : "An unexpected error occurred while generating.";
         setErrorMessage(message);
-        if (err instanceof Error) {
-          onError?.(err);
-        }
+        if (err instanceof Error) onError?.(err);
       } finally {
         setIsSubmitting(false);
       }
@@ -199,31 +200,34 @@ export const FrameForm: React.FC<FrameFormProps> = ({
       seed,
       onResult,
       onError,
-    ],
+    ]
   );
 
   const renderFieldControl = (field: FrameFieldConfig) => {
+    const baseClass =
+      "block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
+
     const commonProps = {
       id: field.name,
       name: field.name,
-      value: (values[field.name] ?? '') as string,
       onChange: handleFieldChange,
       placeholder: field.placeholder,
-      className:
-        'block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500',
+      className: baseClass,
     };
 
     switch (field.inputType) {
-      case 'textarea':
-        return <textarea {...commonProps} rows={field.rows ?? 4} />;
-
-      case 'select':
+      case "textarea":
         return (
-          <select
+          <textarea
             {...commonProps}
-            value={(values[field.name] ?? '') as string}
-            className={commonProps.className}
-          >
+            value={(values[field.name] ?? "") as string}
+            rows={field.rows ?? 4}
+          />
+        );
+
+      case "select":
+        return (
+          <select {...commonProps} value={(values[field.name] ?? "") as string}>
             <option value="">Select…</option>
             {field.options?.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -233,7 +237,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
           </select>
         );
 
-      case 'checkbox':
+      case "checkbox":
         return (
           <input
             id={field.name}
@@ -245,27 +249,34 @@ export const FrameForm: React.FC<FrameFormProps> = ({
           />
         );
 
-      case 'number':
+      case "number":
         return (
           <input
             {...commonProps}
             type="number"
-            value={values[field.name] === undefined ? '' : String(values[field.name])}
+            value={values[field.name] === undefined ? "" : String(values[field.name])}
           />
         );
 
-      case 'json':
+      case "json":
         return (
           <textarea
             {...commonProps}
+            value={(values[field.name] ?? "") as string}
             rows={field.rows ?? 6}
             spellCheck={false}
           />
         );
 
-      case 'text':
+      case "text":
       default:
-        return <input {...commonProps} type="text" />;
+        return (
+          <input
+            {...commonProps}
+            type="text"
+            value={(values[field.name] ?? "") as string}
+          />
+        );
     }
   };
 
@@ -282,10 +293,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
       {/* Language + basic options */}
       <div className="grid gap-4 md:grid-cols-3">
         <div>
-          <label
-            htmlFor="lang"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="lang" className="block text-sm font-medium text-gray-700">
             Language
           </label>
           <select
@@ -307,10 +315,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
         </div>
 
         <div>
-          <label
-            htmlFor="register"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="register" className="block text-sm font-medium text-gray-700">
             Register (style)
           </label>
           <select
@@ -331,10 +336,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
         </div>
 
         <div>
-          <label
-            htmlFor="maxSentences"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="maxSentences" className="block text-sm font-medium text-gray-700">
             Max sentences
           </label>
           <input
@@ -360,10 +362,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
           </summary>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div>
-              <label
-                htmlFor="discourseMode"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="discourseMode" className="block text-sm font-medium text-gray-700">
                 Discourse mode
               </label>
               <input
@@ -381,10 +380,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
             </div>
 
             <div>
-              <label
-                htmlFor="seed"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="seed" className="block text-sm font-medium text-gray-700">
                 Seed
               </label>
               <input
@@ -407,16 +403,11 @@ export const FrameForm: React.FC<FrameFormProps> = ({
       <div className="space-y-6">
         {frameConfig.fields.map((field) => (
           <div key={field.name} className="space-y-1">
-            <label
-              htmlFor={field.name}
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">
               {field.label}
               {field.required && <span className="text-red-500"> *</span>}
             </label>
-            {field.helpText && (
-              <p className="text-xs text-gray-500 mb-1">{field.helpText}</p>
-            )}
+            {field.helpText && <p className="mb-1 text-xs text-gray-500">{field.helpText}</p>}
             {renderFieldControl(field)}
           </div>
         ))}
@@ -438,7 +429,7 @@ export const FrameForm: React.FC<FrameFormProps> = ({
           disabled={isSubmitting}
           className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting ? 'Generating…' : submitLabel}
+          {isSubmitting ? "Generating…" : submitLabel}
         </button>
       </div>
     </form>

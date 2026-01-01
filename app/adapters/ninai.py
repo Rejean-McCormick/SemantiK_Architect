@@ -66,8 +66,19 @@ class NinaiAdapter:
             subj_entry = lexicon.get_entry(lang, subject_qid) if subject_qid else None
             
             subject_name = self._extract_label(subject_node)
-            if subject_name == "Unknown" and subj_entry:
-                subject_name = subj_entry.get("lemma", "Unknown") if isinstance(subj_entry, dict) else getattr(subj_entry, "lemma", "Unknown")
+            subject_gender = None # Default to None if not found
+
+            if subj_entry:
+                # 1. Extract Name (Lemma)
+                if subject_name == "Unknown":
+                    subject_name = subj_entry.get("lemma", "Unknown") if isinstance(subj_entry, dict) else getattr(subj_entry, "lemma", "Unknown")
+                
+                # 2. Extract Gender (Critical for Tier 1 Languages)
+                # Handle both Dict (JSON Shard) and Object (LexiconEntry) types
+                if isinstance(subj_entry, dict):
+                    subject_gender = subj_entry.get("features", {}).get("gender")
+                elif hasattr(subj_entry, "features"):
+                    subject_gender = subj_entry.features.get("gender")
 
             # --- Profession (Arg 2) ---
             # If the frame has a profession arg, use it. Otherwise try to auto-fill.
@@ -77,15 +88,17 @@ class NinaiAdapter:
                 prof_qid = self._extract_qid(prof_node)
                 prof_entry = lexicon.get_entry(lang, prof_qid) if prof_qid else None
                 
-                # Use GF Function if available (e.g. 'physicist_N'), else raw string
+                # [FIXED] Priority: GF Function -> Lemma -> Raw Value
+                # This prevents "Q123" appearing in text when a lemma like "Physicist" is available.
                 if prof_entry:
-                     # Handle both Dict and Object return types from get_entry
-                    if isinstance(prof_entry, dict) and prof_entry.get("gf_fun"):
-                         profession_key = prof_entry["gf_fun"]
-                    elif hasattr(prof_entry, "gf_fun") and prof_entry.gf_fun:
-                         profession_key = prof_entry.gf_fun
+                    if isinstance(prof_entry, dict):
+                         profession_key = prof_entry.get("gf_fun") or prof_entry.get("lemma")
                     else:
-                         profession_key = self._extract_value(prof_node)
+                         profession_key = getattr(prof_entry, "gf_fun", None) or getattr(prof_entry, "lemma", None)
+                    
+                    # If both are missing in the entry, fallback to extraction
+                    if not profession_key:
+                        profession_key = self._extract_value(prof_node)
                 else:
                     profession_key = self._extract_value(prof_node)
             else:
@@ -109,13 +122,15 @@ class NinaiAdapter:
                 nat_qid = self._extract_qid(nat_node)
                 nat_entry = lexicon.get_entry(lang, nat_qid) if nat_qid else None
                 
+                # [FIXED] Priority: GF Function -> Lemma -> Raw Value
                 if nat_entry:
-                    if isinstance(nat_entry, dict) and nat_entry.get("gf_fun"):
-                        nationality_key = nat_entry["gf_fun"]
-                    elif hasattr(nat_entry, "gf_fun") and nat_entry.gf_fun:
-                        nationality_key = nat_entry.gf_fun
+                    if isinstance(nat_entry, dict):
+                        nationality_key = nat_entry.get("gf_fun") or nat_entry.get("lemma")
                     else:
-                         nationality_key = self._extract_value(nat_node)
+                        nationality_key = getattr(nat_entry, "gf_fun", None) or getattr(nat_entry, "lemma", None)
+                    
+                    if not nationality_key:
+                        nationality_key = self._extract_value(nat_node)
                 else:
                     nationality_key = self._extract_value(nat_node)
             else:
@@ -147,7 +162,7 @@ class NinaiAdapter:
                     "qid": subject_qid,
                     "profession": profession_key,
                     "nationality": nationality_key,
-                    "gender": "n" 
+                    "gender": subject_gender  # [FIX] Use resolved gender (m/f/n), not hardcoded "n"
                 },
                 context_id=subject_qid,
                 meta=meta_data 
@@ -246,15 +261,18 @@ class NinaiAdapter:
                 
             # If entry is a dict (JSON shard)
             if isinstance(entry, dict):
-                return entry.get("facts", {}).get(prop, [])
+                # FIX: LexiconRuntime merges facts into root features, check there too
+                return entry.get("facts", {}).get(prop, []) or entry.get("features", {}).get(prop, [])
                 
             # If entry is an Object (LexiconEntry dataclass)
             # Note: The v2.1 LexiconEntry dataclass might NOT have a 'facts' field yet.
             # We check for it safely.
             if hasattr(entry, "facts") and isinstance(entry.facts, dict):
                 return entry.facts.get(prop, [])
+            
+            # FIX: In app.shared.lexicon, facts are merged into `features`.
             if hasattr(entry, "features") and isinstance(entry.features, dict):
-                 return entry.features.get("facts", {}).get(prop, [])
+                 return entry.features.get(prop, [])
                  
             return []
         except Exception as e:

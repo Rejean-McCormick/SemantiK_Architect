@@ -14,13 +14,19 @@ logger = structlog.get_logger()
 
 @dataclass
 class LexiconEntry:
+    """
+    Lightweight data container for a lexical entry.
+    Uses __slots__ to optimize memory usage for millions of instances.
+    """
+    __slots__ = ['lemma', 'pos', 'gf_fun', 'qid', 'source', 'features']
+    
     lemma: str
     pos: str
     gf_fun: str
-    qid: Optional[str] = None
-    source: str = "unknown"
+    qid: Optional[str]
+    source: str
     # Added to support semantic lookups (e.g. P106/Occupation)
-    features: Dict[str, Any] = field(default_factory=dict)
+    features: Dict[str, Any]
 
 class LexiconRuntime:
     """
@@ -28,7 +34,8 @@ class LexiconRuntime:
     
     Configuration:
     - Loads 'config/iso_to_wiki.json' to build the 3-letter -> 2-letter normalization map.
-    - Lazy loads language shards from 'data/lexicon/{iso2}/wide.json'.
+    - Lazy loads language shards from 'data/lexicon/{iso2}/'.
+    - Loads manual shards (core, people) *over* the bulk harvest (wide).
     """
     _instance = None
     _data: Dict[str, Dict[str, LexiconEntry]] = {} 
@@ -48,18 +55,37 @@ class LexiconRuntime:
         We reverse this to map everything to the 2-letter ISO code.
         """
         try:
-            # Path Resolution: ../../config/iso_to_wiki.json
-            root = Path(__file__).parent.parent.parent
-            config_path = root / "config" / "iso_to_wiki.json"
+            # Robust Path Resolution: Try multiple locations
+            # 1. Relative to this file (app/shared/lexicon.py -> root/config)
+            # 2. Configured FILESYSTEM_REPO_PATH
             
-            if config_path.exists():
+            candidates = [
+                Path(__file__).parent.parent.parent / "config" / "iso_to_wiki.json",
+                Path(__file__).parent.parent.parent / "data" / "config" / "iso_to_wiki.json"
+            ]
+            
+            if settings and hasattr(settings, 'FILESYSTEM_REPO_PATH'):
+                candidates.insert(0, Path(settings.FILESYSTEM_REPO_PATH) / "data" / "config" / "iso_to_wiki.json")
+
+            config_path = None
+            for p in candidates:
+                if p.exists():
+                    config_path = p
+                    break
+            
+            if config_path:
                 with open(config_path, 'r') as f:
                     raw_map = json.load(f)
                     
                 # Algorithm: Group keys by their RGL value to find the canonical 2-letter code
-                # rgl_groups = {'Eng': ['en', 'eng'], 'Afr': ['af', 'afr']}
                 rgl_groups = {}
                 for code, rgl_suffix in raw_map.items():
+                    if isinstance(rgl_suffix, dict):
+                         # v2 format support { "wiki": "Eng", "name": "English" }
+                         rgl_suffix = rgl_suffix.get("wiki")
+                    
+                    if not rgl_suffix: continue
+
                     if rgl_suffix not in rgl_groups:
                         rgl_groups[rgl_suffix] = []
                     rgl_groups[rgl_suffix].append(code)
@@ -78,7 +104,7 @@ class LexiconRuntime:
 
                 logger.info("lexicon_config_loaded", source=str(config_path), mappings=len(self._iso_map))
             else:
-                logger.warning("lexicon_config_missing", path=str(config_path))
+                logger.warning("lexicon_config_missing", searched_paths=[str(c) for c in candidates])
                 self._use_fallback_map()
 
         except Exception as e:
@@ -101,7 +127,7 @@ class LexiconRuntime:
         if code.startswith("wiki"):
             code = code[4:]
         
-        # 1. Fast Path: Already 2 letters (and assume it's valid if not in map, or check map)
+        # 1. Fast Path: Already 2 letters
         if len(code) == 2:
             return code
             
@@ -110,7 +136,8 @@ class LexiconRuntime:
 
     def load_language(self, lang_code: str):
         """
-        Lazy-loads the massive 'wide.json' shard for a specific language.
+        Lazy-loads the lexicon shards for a specific language.
+        [FIX] Loads 'wide.json' first, then overrides with 'core', 'people', etc.
         """
         iso2 = self._normalize_lang_code(lang_code)
 
@@ -126,60 +153,86 @@ class LexiconRuntime:
         except Exception:
             base_path = Path("data")
 
-        # STRICT STANDARD: data/lexicon/{iso2}/wide.json
-        shard_path = base_path / "data" / "lexicon" / iso2 / "wide.json"
+        # Define the load order: Wide (Base) -> Manual Shards (Overrides)
+        # This ensures manual fixes in 'people.json' take precedence over 'wide.json'.
+        shards_to_load = ["wide.json", "core.json", "people.json", "science.json", "geography.json"]
         
-        # Local dev fallback check
-        if not shard_path.exists():
-            local_root = Path(__file__).parent.parent.parent
-            local_path = local_root / "data" / "lexicon" / iso2 / "wide.json"
-            if local_path.exists():
-                shard_path = local_path
+        # Initialize dictionary for this language if not present
+        if iso2 not in self._data:
+            self._data[iso2] = {}
 
-        if not shard_path.exists():
-            # Log warning only once per language
-            logger.warning("lexicon_shard_missing", lang=iso2, path=str(shard_path))
-            self._loaded_langs.add(iso2) 
-            return
+        total_entries = 0
+        loaded_shards = []
 
-        try:
-            logger.info("lexicon_loading_shard", lang=iso2, path=str(shard_path))
-            with open(shard_path, 'r', encoding='utf-8') as f:
-                raw_data = json.load(f)
-
-            lang_index = {}
+        for shard_name in shards_to_load:
+            shard_path = base_path / "data" / "lexicon" / iso2 / shard_name
             
-            for key, val in raw_data.items():
-                # Handle v1 (list) or v2 (dict) format
-                entry_data = val[0] if isinstance(val, list) else val
+            # Local dev fallback check
+            if not shard_path.exists():
+                # Check relative to repo root if running locally
+                local_root = Path(__file__).parent.parent.parent
+                local_path = local_root / "data" / "lexicon" / iso2 / shard_name
+                if local_path.exists():
+                    shard_path = local_path
 
-                # Parse features/facts if present
-                features = entry_data.get('features', {})
-                if 'facts' in entry_data:
-                    features.update(entry_data['facts'])
+            if not shard_path.exists():
+                # It's normal for some shards to be missing
+                continue
 
-                entry_obj = LexiconEntry(
-                    lemma=entry_data.get('lemma', 'unknown'),
-                    pos=entry_data.get('pos', 'noun'),
-                    gf_fun=entry_data.get('gf_fun', ''),
-                    qid=entry_data.get('qid') or entry_data.get('wnid'),
-                    source=entry_data.get('source', 'gf-wordnet'),
-                    features=features
-                )
+            try:
+                with open(shard_path, 'r', encoding='utf-8') as f:
+                    raw_data = json.load(f)
 
-                if entry_obj.qid:
-                    lang_index[entry_obj.qid] = entry_obj
-                
-                lang_index[entry_obj.lemma.lower()] = entry_obj
+                shard_count = 0
+                for key, val in raw_data.items():
+                    # Handle v1 (list) or v2 (dict) format
+                    entry_data = val[0] if isinstance(val, list) else val
 
-            self._data[iso2] = lang_index
-            self._loaded_langs.add(iso2)
-            logger.info("lexicon_loaded_success", lang=iso2, count=len(lang_index))
+                    # Parse features/facts if present
+                    features = entry_data.get('features', {})
+                    if 'facts' in entry_data:
+                        features.update(entry_data['facts'])
 
-        except json.JSONDecodeError:
-            logger.error("lexicon_json_corrupt", lang=iso2, path=str(shard_path))
-        except Exception as e:
-            logger.error("lexicon_load_failed", lang=iso2, error=str(e))
+                    # Optimization: Create ONE object reference
+                    entry_obj = LexiconEntry(
+                        lemma=entry_data.get('lemma', 'unknown'),
+                        pos=entry_data.get('pos', 'noun'),
+                        gf_fun=entry_data.get('gf_fun', ''),
+                        qid=entry_data.get('qid') or entry_data.get('wnid'),
+                        source=entry_data.get('source', shard_name), # Track which shard it came from
+                        features=features
+                    )
+
+                    # Store by QID for Ninai lookup (primary index)
+                    if entry_obj.qid:
+                        self._data[iso2][entry_obj.qid] = entry_obj
+                    
+                    # Store by Lemma for String lookup (secondary index)
+                    # NOTE: Both keys point to the SAME object in memory.
+                    # This adds dict overhead but not object overhead.
+                    self._data[iso2][entry_obj.lemma.lower()] = entry_obj
+                    
+                    shard_count += 1
+
+                total_entries += shard_count
+                loaded_shards.append(shard_name)
+
+            except json.JSONDecodeError:
+                logger.error("lexicon_json_corrupt", lang=iso2, path=str(shard_path))
+            except Exception as e:
+                logger.error("lexicon_load_failed", lang=iso2, shard=shard_name, error=str(e))
+
+        self._loaded_langs.add(iso2)
+        
+        if loaded_shards:
+            logger.info(
+                "lexicon_loaded_success", 
+                lang=iso2, 
+                total_entries=len(self._data[iso2]),
+                shards=loaded_shards
+            )
+        else:
+            logger.warning("lexicon_no_shards_found", lang=iso2)
 
     def lookup(self, key: str, lang_code: str) -> Optional[LexiconEntry]:
         """

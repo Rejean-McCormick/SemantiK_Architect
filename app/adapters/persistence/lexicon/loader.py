@@ -1,5 +1,4 @@
-# app/adapters/persistence/lexicon/loader.py
-# lexicon/loader.py
+
 """
 lexicon/loader.py
 =================
@@ -64,6 +63,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
+from app.shared.config import settings  # [FIX] Use shared settings for robust path resolution
 from lexicon.config import get_config
 from lexicon.types import (
     BaseLexicalEntry,
@@ -111,10 +111,15 @@ _SCHEMA_STRICT: bool = _env_flag("AW_LEXICON_SCHEMA_STRICT")
 def _find_repo_root(start: Path) -> Path:
     """
     Best-effort repository root detection.
-
-    We walk upwards looking for typical repo markers. If none found,
-    fall back to a conservative parent depth.
+    [FIX] Now prioritizes settings.FILESYSTEM_REPO_PATH if available to avoid CWD dependency issues.
     """
+    # 1. Prefer explicit configuration via settings
+    if settings.FILESYSTEM_REPO_PATH:
+        configured_path = Path(settings.FILESYSTEM_REPO_PATH).resolve()
+        if configured_path.exists():
+            return configured_path
+
+    # 2. Fallback: heuristic walk
     markers = ("pyproject.toml", "setup.cfg", "setup.py", ".git")
     cur = start.resolve()
     for _ in range(10):

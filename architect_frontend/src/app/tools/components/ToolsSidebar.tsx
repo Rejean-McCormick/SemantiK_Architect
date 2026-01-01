@@ -24,15 +24,15 @@ export function ToolsSidebar(props: ToolsSidebarProps) {
   const { grouped, selectedKey, setSelectedKey, activeToolId, runTool, disabled } = props;
 
   const categoryEntries = useMemo(
-    () => [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+    () => Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0])),
     [grouped]
   );
 
   return (
     <div className="space-y-4 overflow-y-auto pr-2 pb-10 h-full">
       {categoryEntries.map(([cat, byGroup]) => {
-        const groupEntries = [...byGroup.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-        const catCount = [...byGroup.values()].reduce((n, arr) => n + arr.length, 0);
+        const groupEntries = Array.from(byGroup.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+        const catCount = Array.from(byGroup.values()).reduce((n, arr) => n + arr.length, 0);
 
         return (
           <div key={cat} className="space-y-2">
@@ -57,11 +57,12 @@ export function ToolsSidebar(props: ToolsSidebarProps) {
                       <div
                         key={it.key}
                         className={`group relative rounded-lg border bg-white transition-all ${
-                          isSelected ? "border-blue-400 shadow-md ring-1 ring-blue-100" : "border-slate-200 hover:border-slate-300"
+                          isSelected
+                            ? "border-blue-400 shadow-md ring-1 ring-blue-100"
+                            : "border-slate-200 hover:border-slate-300"
                         } ${isGlobalDisabled ? "opacity-60" : ""}`}
                       >
                         <div className="flex items-start justify-between gap-3 p-3">
-                          
                           {/* Selection Area: Title & Description */}
                           <div
                             role="button"
@@ -70,7 +71,7 @@ export function ToolsSidebar(props: ToolsSidebarProps) {
                               if (!isGlobalDisabled) setSelectedKey(it.key);
                             }}
                             onKeyDown={(e) => {
-                              if (!isGlobalDisabled && (e.key === 'Enter' || e.key === ' ')) {
+                              if (!isGlobalDisabled && (e.key === "Enter" || e.key === " ")) {
                                 e.preventDefault();
                                 setSelectedKey(it.key);
                               }
@@ -86,7 +87,10 @@ export function ToolsSidebar(props: ToolsSidebarProps) {
                               <StatusBadge status={it.status} />
                             </div>
 
-                            <div className="text-[11px] text-slate-400 font-mono mt-1 truncate max-w-[200px]" title={it.path}>
+                            <div
+                              className="text-[11px] text-slate-400 font-mono mt-1 truncate max-w-[200px]"
+                              title={it.path}
+                            >
                               {it.path}
                             </div>
 
@@ -98,15 +102,15 @@ export function ToolsSidebar(props: ToolsSidebarProps) {
                           </div>
 
                           {/* Actions Area: Docs & Run */}
-                          <div className="flex flex-col gap-2 shrink-0 z-10" onClick={(e) => e.stopPropagation()}>
+                          <div
+                            className="flex flex-col gap-2 shrink-0 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <Link
                               href={docsHref(it.key)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              onClick={(e) => {
-                                // Optional: Select on documentation click? Usually better to just open docs.
-                                e.stopPropagation(); 
-                              }}
+                              onClick={(e) => e.stopPropagation()}
                               className="inline-flex items-center justify-center gap-1 text-xs rounded-md border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors"
                             >
                               Docs <ExternalLink className="w-3 h-3" />
@@ -121,7 +125,11 @@ export function ToolsSidebar(props: ToolsSidebarProps) {
                               }}
                               disabled={activeToolId !== null || !it.wiredToolId}
                               variant={it.risk === "heavy" ? "destructive" : "default"}
-                              title={it.wiredToolId ? "Run (backend-wired)" : "Run disabled (not in backend allowlist)"}
+                              title={
+                                it.wiredToolId
+                                  ? "Run (backend-wired)"
+                                  : "Run disabled (not in backend allowlist)"
+                              }
                             >
                               {isRunning ? (
                                 <span className="inline-flex items-center gap-2">

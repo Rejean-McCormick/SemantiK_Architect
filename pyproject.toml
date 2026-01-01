@@ -13,13 +13,11 @@ authors = [
   { name = "Abstract Wiki Architect Contributors" }
 ]
 
-# Core Architecture Dependencies (Domain & Shared Utilities)
-# These are required for the Domain logic, Logging, and Resilience policies.
 dependencies = [
-  "pydantic>=2.6.0",       # Strict Domain Modeling
-  "pydantic-settings>=2.1.0", # Config Management
-  "structlog>=24.1.0",     # Structured JSON Logging
-  "tenacity>=8.2.3"        # Circuit Breakers & Retries
+  "pydantic>=2.6.0",
+  "pydantic-settings>=2.1.0",
+  "structlog>=24.1.0",
+  "tenacity>=8.2.3"
 ]
 
 classifiers = [
@@ -33,23 +31,20 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-# Infrastructure Layer (API, Worker, Messaging, Telemetry)
-# Install this group for running the Backend or Worker services.
 api = [
   "fastapi>=0.109.0",
   "uvicorn[standard]>=0.27.0",
-  "redis>=5.0.1",          # Async Messaging Broker
-  "arq>=0.25.0",           # Async Task Queue (Worker)
+  "redis>=5.0.1",
+  "arq>=0.25.0",
   "opentelemetry-api>=1.22.0",
   "opentelemetry-sdk>=1.22.0",
   "opentelemetry-instrumentation-fastapi>=0.43b0",
   "sqlalchemy>=2.0.0",
   "alembic>=1.12.0",
-  "httpx>=0.26.0",         # Resilience-ready HTTP Client
+  "httpx>=0.26.0",
   "jinja2>=3.1.3"
 ]
 
-# Development & QA tooling
 dev = [
   "pytest>=8.0.0",
   "pytest-asyncio>=0.23.0",
@@ -57,28 +52,25 @@ dev = [
   "black>=24.1.0",
   "flake8>=7.0.0",
   "mypy>=1.8.0",
-  "httpx>=0.26.0"          # Required for integration tests
+  "httpx>=0.26.0"
 ]
 
-# Optional LLM integration
 llm = [
   "openai>=1.0.0",
   "anthropic>=0.3.0"
 ]
 
-# Optional Wikidata / Lexicon tools
 wikidata = [
   "requests>=2.31.0"
 ]
 
 [project.scripts]
-# Primary Entry Points (Hexagonal Adapters)
-# Note: These point to the module execution to avoid needing a 'start()' function
-# Usage: architect-api (Runs uvicorn), architect-worker (Runs worker process)
-architect-api = "app.adapters.api.main:start"      
-architect-worker = "app.worker.main:start"         
+architect-api = "app.adapters.api.main:start"
 
-# Legacy/Utility CLIs
+# FIX: old path "app.worker.main:start" does not exist; real worker module is under app.workers.*
+# (requires app.workers.worker:start to exist as a callable)
+architect-worker = "app.workers.worker:start"
+
 nlg-cli = "nlg.cli_frontend:main"
 lexicon-cli = "lexicon.cli:main"
 
@@ -91,9 +83,10 @@ Issues = "https://github.com/Rejean-McCormick/abstract-wiki-architect/issues"
 include-package-data = true
 
 [tool.setuptools.packages.find]
+# keep root discovery, but prevent setuptools from walking huge/non-package trees (e.g., gf/, gf-grl/, etc.)
 where = ["."]
-# Scans for the new 'app' directory structure (Modular Monolith)
-# Includes: app.core, app.adapters, app.shared, app.worker
+include = ["app*","nlg*","utils*","builder*","ai_services*"]
+exclude = ["gf","gf-*","gf_grl*","gf-grl*","gf_rgl*","gf-rgl*","data*","schemas*","architect_frontend*","docs*","tests*","dist*","build*",".venv*","venv*"]
 
 # -------------------------
 # Tool configuration
@@ -114,8 +107,8 @@ exclude = '''
 [tool.flake8]
 max-line-length = 88
 extend-ignore = [
-  "E203",  # whitespace before ':', conflicts with black
-  "W503"   # line break before binary operator, conflicts with black
+  "E203",
+  "W503"
 ]
 exclude = [
   ".git",

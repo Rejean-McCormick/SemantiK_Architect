@@ -126,7 +126,28 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
             
             # 2. Define Paths
             base_dir = settings.FILESYSTEM_REPO_PATH
-            src_file = os.path.join(base_dir, "gf", f"Wiki{language_code.capitalize()}.gf")
+            
+            # [FIX] Resolve RGL suffix (e.g. 'de' -> 'Ger')
+            # Naive capitalization fails for standard languages (de != WikiDe).
+            # We must consult the iso_to_wiki map.
+            rgl_suffix = language_code.capitalize()
+            
+            mapping_path = Path(base_dir) / "data" / "config" / "iso_to_wiki.json"
+            if mapping_path.exists():
+                try:
+                    with open(mapping_path, "r") as f:
+                        iso_map = json.load(f)
+                    
+                    entry = iso_map.get(language_code.lower())
+                    if entry:
+                        if isinstance(entry, dict):
+                            rgl_suffix = entry.get("wiki", rgl_suffix)
+                        elif isinstance(entry, str):
+                            rgl_suffix = entry.replace("Wiki", "")
+                except Exception as e:
+                    logger.warning("worker_iso_map_error", error=str(e))
+
+            src_file = os.path.join(base_dir, "gf", f"Wiki{rgl_suffix}.gf")
             
             # 3. Execute GF Compiler
             cmd = [
@@ -156,7 +177,7 @@ async def compile_grammar(ctx: Dict[str, Any], language_code: str, trace_context
                 logger.info("subprocess_success", output=process.stdout[:100])
             else:
                 logger.warning("source_file_missing", path=src_file)
-                return "Source file missing"
+                return f"Source file missing: {src_file}"
 
             # 4. Persistence (S3)
             if settings.STORAGE_BACKEND == StorageBackend.S3 and S3LanguageRepo:

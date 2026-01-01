@@ -13,7 +13,8 @@ except ImportError:
     S3LanguageRepo = None
 
 from app.adapters.engines.gf_wrapper import GFGrammarEngine
-from app.adapters.engines.pidgin_runtime import PidginGrammarEngine
+# [FIX] Swapped out the legacy/empty 'Pidgin' engine for the robust Python Wrapper
+from app.adapters.engines.python_engine_wrapper import PythonGrammarEngine
 from app.adapters.llm_adapter import GeminiAdapter
 
 # --- Use Cases ---
@@ -58,8 +59,9 @@ class Container(containers.DeclarativeContainer):
     lexicon_repository = language_repo
 
     # Grammar Engine
+    # [FIX] Use the PythonEngineWrapper if Mock is enabled (Fast Strategy)
     if settings.USE_MOCK_GRAMMAR:
-        grammar_engine = providers.Singleton(PidginGrammarEngine)
+        grammar_engine = providers.Singleton(PythonGrammarEngine)
     else:
         grammar_engine = providers.Singleton(GFGrammarEngine, lib_path=settings.GF_LIB_PATH)
 

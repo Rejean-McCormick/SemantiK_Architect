@@ -1,4 +1,3 @@
-# utils\eval_bios_from_wikidata.py
 # utils/eval_bios_from_wikidata.py
 """
 Evaluate biography rendering on a sample of Wikidata humans.
@@ -93,11 +92,15 @@ import csv
 import json
 import random
 import sys
+import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-from router import render_bio
+# [FIX] Import v2.1 Engine instead of missing 'router'
+from app.adapters.engines.gf_wrapper import GFGrammarEngine
+from app.core.domain.frame import BioFrame
+
 from utils.logging_setup import get_logger
 
 logger = get_logger(__name__)
@@ -390,6 +393,55 @@ def fetch_wikidata_persons(limit: int) -> List[PersonRecord]:
 # Core evaluation
 # ---------------------------------------------------------------------------
 
+# [FIX] Helper: Internal render adapter that mimics the old 'render_bio' interface
+_engine = None
+
+def _render_bio_adapter(
+    name: str, 
+    gender: str, 
+    profession_lemma: str, 
+    nationality_lemma: str, 
+    lang_code: str
+) -> str:
+    """
+    Adapts the old functional interface (render_bio) to the new Object-Oriented Engine (v2.1).
+    """
+    global _engine
+    
+    # 1. Initialize Engine (Lazy Singleton)
+    if _engine is None:
+        try:
+            _engine = GFGrammarEngine()
+        except Exception as e:
+            logger.error("Failed to initialize GFGrammarEngine: %s", e)
+            return ""
+
+    if not _engine.grammar:
+        logger.warning("GFGrammarEngine loaded but no grammar found. Check Wiki.pgf.")
+        return ""
+
+    # 2. Construct v2.1 Frame
+    frame = BioFrame(
+        frame_type="bio",
+        subject={
+            "name": name,
+            "gender": gender,
+            "profession": profession_lemma,
+            "nationality": nationality_lemma
+        },
+        # Back-compat for Entity object
+        main_entity={"name": name, "gender": gender}
+    )
+    
+    # 3. Execute
+    try:
+        # We run the async method synchronously here because this is a CLI script
+        sentence = asyncio.run(_engine.generate(lang_code, frame))
+        return sentence.text
+    except Exception as e:
+        logger.warning("Rendering failed for %s (%s): %s", name, lang_code, e)
+        return ""
+
 
 def evaluate_persons(
     persons: Iterable[PersonRecord],
@@ -397,7 +449,7 @@ def evaluate_persons(
     max_items: Optional[int] = None,
 ) -> List[EvalResult]:
     """
-    For each person and language, call `render_bio` and collect results.
+    For each person and language, call `_render_bio_adapter` and collect results.
     """
     results: List[EvalResult] = []
 
@@ -417,7 +469,8 @@ def evaluate_persons(
             output = ""
             rendered = False
             try:
-                output = render_bio(
+                # [FIX] Call the adapter instead of missing router function
+                output = _render_bio_adapter(
                     name=person.label,
                     gender=person.gender,
                     profession_lemma=prof_lemma,

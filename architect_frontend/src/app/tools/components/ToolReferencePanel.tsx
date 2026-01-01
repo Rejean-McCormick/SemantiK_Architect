@@ -39,7 +39,7 @@ export function ToolReferencePanel(props: {
           Every item below is linkable via its anchor. Use the left menu “Docs” button.
         </p>
 
-        {[...grouped.entries()]
+        {Array.from(grouped.entries())
           .sort((a, b) => a[0].localeCompare(b[0]))
           .map(([cat, byGroup]) => (
             <div key={cat} className="space-y-2">
@@ -48,7 +48,7 @@ export function ToolReferencePanel(props: {
                 <h3 className="font-semibold text-slate-800">{cat}</h3>
               </div>
 
-              {[...byGroup.entries()]
+              {Array.from(byGroup.entries())
                 .sort((a, b) => a[0].localeCompare(b[0]))
                 .map(([groupName, groupItems]) => (
                   <div key={groupName} className="space-y-2 pl-2">
@@ -56,7 +56,11 @@ export function ToolReferencePanel(props: {
 
                     <div className="space-y-2">
                       {groupItems.map((it) => (
-                        <details key={it.key} id={it.key} className="rounded-lg border border-slate-200 bg-white">
+                        <details
+                          key={it.key}
+                          id={it.key}
+                          className="rounded-lg border border-slate-200 bg-white"
+                        >
                           <summary className="cursor-pointer select-none list-none px-4 py-3 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-sm text-slate-800">{it.title}</span>
@@ -79,6 +83,7 @@ export function ToolReferencePanel(props: {
                                 <div className="font-mono text-xs flex items-center justify-between gap-2">
                                   <span>{it.wiredToolId ?? "—"}</span>
                                   <button
+                                    type="button"
                                     className="text-slate-500 hover:text-slate-800 disabled:opacity-50"
                                     onClick={() => it.wiredToolId && copyToClipboard(it.wiredToolId)}
                                     disabled={!it.wiredToolId}
@@ -100,7 +105,12 @@ export function ToolReferencePanel(props: {
                                     <Play className="w-4 h-4 mr-1" /> Run
                                   </Button>
 
-                                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(it.path)}>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    type="button"
+                                    onClick={() => copyToClipboard(it.path)}
+                                  >
                                     <Copy className="w-4 h-4 mr-1" /> Copy path
                                   </Button>
 
@@ -149,9 +159,13 @@ export function ToolReferencePanel(props: {
                                 <div className="text-xs text-slate-500 mb-1">CLI</div>
                                 <div className="space-y-1">
                                   {it.cli.map((cmd) => (
-                                    <div key={cmd} className="font-mono text-xs flex items-center justify-between gap-2">
+                                    <div
+                                      key={cmd}
+                                      className="font-mono text-xs flex items-center justify-between gap-2"
+                                    >
                                       <span className="truncate">{cmd}</span>
                                       <button
+                                        type="button"
                                         className="text-slate-500 hover:text-slate-800"
                                         onClick={() => copyToClipboard(cmd)}
                                         title="Copy command"

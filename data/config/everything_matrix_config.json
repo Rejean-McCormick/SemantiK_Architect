@@ -1,9 +1,9 @@
 {
-  "config_version": "everything_matrix_config/3.0",
-  "notes": "Canonical config location: data/config/everything_matrix_config.json. All paths are repo-root relative.",
+  "config_version": "everything_matrix_config/3.1",
+  "notes": "Canonical config location: data/config/everything_matrix_config.json. All paths are repo-root relative. iso_to_wiki is stored under data/config in this repo dump.",
 
-  "iso_map_file": "config/iso_to_wiki.json",
-  "exceptions_file": "config/language_exceptions.json",
+  "iso_map_file": "data/config/iso_to_wiki.json",
+  "exceptions_file": "data/config/language_exceptions.json",
 
   "rgl": {
     "rgl_base_path": "gf-rgl/src",

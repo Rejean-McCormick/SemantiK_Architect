@@ -1,4 +1,3 @@
-// architect_frontend\src\components\GeneratorControls.tsx
 // architect_frontend/src/components/GeneratorControls.tsx
 "use client";
 
@@ -29,7 +28,10 @@ export default function GeneratorControls({
   disabled = false,
   className = "",
 }: GeneratorControlsProps) {
-  const handleChange = (field: keyof GenerationOptions, value: unknown) => {
+  const handleChange = <K extends keyof GenerationOptions>(
+    field: K,
+    value: GenerationOptions[K]
+  ) => {
     onChange({
       ...options,
       [field]: value,
@@ -37,9 +39,7 @@ export default function GeneratorControls({
   };
 
   return (
-    <div
-      className={`space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4 ${className}`}
-    >
+    <div className={`space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4 ${className}`}>
       <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Generation Settings
       </h3>
@@ -83,8 +83,13 @@ export default function GeneratorControls({
             disabled={disabled}
             value={options.max_sentences ?? ""}
             onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
-              handleChange("max_sentences", isNaN(val) ? null : val);
+              const raw = e.target.value;
+              if (raw === "") {
+                handleChange("max_sentences", null);
+                return;
+              }
+              const val = parseInt(raw, 10);
+              handleChange("max_sentences", Number.isFinite(val) ? val : null);
             }}
             placeholder="Auto"
             className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
@@ -103,9 +108,7 @@ export default function GeneratorControls({
             id="discourse_mode"
             value={options.discourse_mode ?? ""}
             disabled={disabled}
-            onChange={(e) =>
-              handleChange("discourse_mode", e.target.value || null)
-            }
+            onChange={(e) => handleChange("discourse_mode", e.target.value || null)}
             className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
           >
             <option value="">Standard</option>
@@ -129,8 +132,13 @@ export default function GeneratorControls({
             disabled={disabled}
             value={options.seed ?? ""}
             onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
-              handleChange("seed", isNaN(val) ? null : val);
+              const raw = e.target.value;
+              if (raw === "") {
+                handleChange("seed", null);
+                return;
+              }
+              const val = parseInt(raw, 10);
+              handleChange("seed", Number.isFinite(val) ? val : null);
             }}
             placeholder="Random"
             className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:opacity-60"

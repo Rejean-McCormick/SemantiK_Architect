@@ -24,10 +24,13 @@ services:
     container_name: aw_backend
     env_file: .env
     environment:
-      - REDIS_HOST=redis
-      # CRITICAL: Force the container path to match the volume mount
-      # This overrides any Windows paths in your local .env
+      # [FIX] v2.0 Standard: Use full DSN, not just Host
+      - REDIS_URL=redis://redis:6379/0
+      
+      # [FIX] Container Absolute Paths (Overrides Windows/Local .env)
       - FILESYSTEM_REPO_PATH=/app
+      - GF_LIB_PATH=/app/gf-rgl
+      - PGF_PATH=/app/gf/AbstractWiki.pgf
     ports:
       - "8000:8000"
     volumes:
@@ -49,9 +52,13 @@ services:
     container_name: aw_worker
     env_file: .env
     environment:
-      - REDIS_HOST=redis
-      # CRITICAL: Must match Backend's path so they see the same PGF file
+      # [FIX] v2.0 Standard
+      - REDIS_URL=redis://redis:6379/0
+      
+      # [FIX] Match Backend paths exactly
       - FILESYSTEM_REPO_PATH=/app
+      - GF_LIB_PATH=/app/gf-rgl
+      - PGF_PATH=/app/gf/AbstractWiki.pgf
     volumes:
       - .:/app
     depends_on:

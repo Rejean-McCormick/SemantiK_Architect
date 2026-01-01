@@ -1,4 +1,3 @@
-// architect_frontend\src\__tests__\entities.test.tsx
 // architect_frontend/src/__tests__/entities.test.tsx
 
 import React from "react";
@@ -11,7 +10,6 @@ import EntityDetail from "../components/EntityDetail";
 import { architectApi, type Entity } from "../lib/api";
 
 // --- Setup Mocks for Next.js and API ---
-// Note: You must ensure 'user-event' is installed: npm install @testing-library/user-event
 
 // 1. Mock Next.js Router for navigation/redirection logic
 const mockPush = jest.fn();
@@ -19,7 +17,6 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
   }),
-  // Required to mock 'next/navigation' methods used in Server Components
   useSearchParams: () => ({
     get: jest.fn(),
   }),
@@ -29,16 +26,16 @@ jest.mock("next/navigation", () => ({
 // 2. Mock the central API calls
 jest.mock("../lib/api", () => {
   const actual = jest.requireActual("../lib/api");
-
   return {
     __esModule: true,
     ...actual,
     architectApi: {
+      ...(actual as any).architectApi,
       listEntities: jest.fn(),
       getEntity: jest.fn(),
       updateEntity: jest.fn(),
       deleteEntity: jest.fn(),
-      // Include all other methods required by EntityDetail, e.g.,
+      // include anything EntityDetail might touch
       generate: jest.fn(),
       processIntent: jest.fn(),
     },
@@ -58,7 +55,6 @@ const MOCK_ENTITIES: Entity[] = [
     lang: "en",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    // Mapped from TestEntity props
     short_description: "English writer and humorist.",
   } as Entity,
   {
@@ -72,7 +68,7 @@ const MOCK_ENTITIES: Entity[] = [
   } as Entity,
 ];
 
-// --- EntityList Tests (Tests the actual data fetching component) ---
+// --- EntityList Tests ---
 
 describe("EntityList (Smart Component)", () => {
   afterEach(() => {
@@ -84,10 +80,8 @@ describe("EntityList (Smart Component)", () => {
 
     render(<EntityList />);
 
-    // Renders loading state initially
     expect(screen.getByText(/Loading library/i)).toBeInTheDocument();
 
-    // Wait for the API call to resolve and check the data
     await waitFor(() => expect(mockListEntities).toHaveBeenCalledTimes(1));
 
     expect(await screen.findByText("Douglas Adams")).toBeInTheDocument();
@@ -106,14 +100,11 @@ describe("EntityList (Smart Component)", () => {
     const targetRow = screen.getByRole("row", { name: /Douglas Adams/i });
     await user.click(targetRow);
 
-    // Should push to the detail page (as implemented in EntityList.tsx)
-    expect(mockPush).toHaveBeenCalledWith(
-      "/abstract_wiki_architect/entities/42",
-    );
+    expect(mockPush).toHaveBeenCalledWith("/abstract_wiki_architect/entities/42");
   });
 });
 
-// --- EntityDetail Tests (Tests the actual data fetching component) ---
+// --- EntityDetail Tests ---
 
 describe("EntityDetail (Smart Component)", () => {
   afterEach(() => {
@@ -123,60 +114,42 @@ describe("EntityDetail (Smart Component)", () => {
   test("fetches and renders details for the given ID", async () => {
     mockGetEntity.mockResolvedValueOnce(MOCK_ENTITIES[0]);
 
-    // Passes only the required 'id' prop
     render(<EntityDetail id="42" />);
 
-    // Renders loading state
-    expect(
-      screen.getByText(/Loading entity editor/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Loading entity editor/i)).toBeInTheDocument();
 
-    // Wait for the API call to resolve
     await waitFor(() => expect(mockGetEntity).toHaveBeenCalledWith("42"));
 
-    // Check if the key details from the fetched entity are rendered
     expect(
-      await screen.findByRole("heading", { name: MOCK_ENTITIES[0].name }),
+      await screen.findByRole("heading", { name: MOCK_ENTITIES[0].name })
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/English writer and humorist/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/English writer and humorist/i)).toBeInTheDocument();
   });
 
   test("allows saving and mocks the API update", async () => {
     const user = userEvent.setup();
     const updatedEntity = { ...MOCK_ENTITIES[0], name: "Douglas Adams II" };
 
-    // Setup initial fetch and update mock
     mockGetEntity.mockResolvedValueOnce(MOCK_ENTITIES[0]);
     mockUpdateEntity.mockResolvedValueOnce(updatedEntity);
 
     render(<EntityDetail id="42" />);
     await waitFor(() => expect(mockGetEntity).toHaveBeenCalled());
 
-    // Locate the JSON editor (mock user typing a change)
     const jsonEditor = screen.getByRole("textbox", { name: /Frame Payload/i });
-    fireEvent.change(jsonEditor, {
-      target: { value: '{"name": "Douglas Adams II"}' },
-    });
+    fireEvent.change(jsonEditor, { target: { value: '{"name": "Douglas Adams II"}' } });
 
-    // Click save
-    const saveButton = screen.getByRole("button", {
-      name: /Save Changes/i,
-    });
+    const saveButton = screen.getByRole("button", { name: /Save Changes/i });
     await user.click(saveButton);
 
-    // Wait for the update call
     await waitFor(() => expect(mockUpdateEntity).toHaveBeenCalledTimes(1));
 
-    // Verify the update payload
     expect(mockUpdateEntity).toHaveBeenCalledWith("42", {
       frame_payload: { name: "Douglas Adams II" },
     });
 
-    // Verify the UI updates with the new entity data after the save resolves
     expect(
-      await screen.findByRole("heading", { name: /Douglas Adams II/i }),
+      await screen.findByRole("heading", { name: /Douglas Adams II/i })
     ).toBeInTheDocument();
   });
 
@@ -188,9 +161,7 @@ describe("EntityDetail (Smart Component)", () => {
     await waitFor(() => expect(mockGetEntity).toHaveBeenCalled());
 
     expect(
-      screen.getByText(
-        /Could not load entity\. It may not exist or the backend is down\./i,
-      ),
+      screen.getByText(/Could not load entity\. It may not exist or the backend is down\./i)
     ).toBeInTheDocument();
   });
 });

@@ -45,7 +45,9 @@ class GFGrammarEngine(IGrammarEngine):
     def _load_inventory(self):
         """Loads the dynamic registry of available languages from the indexer."""
         try:
-            repo_root = Path(os.getcwd())
+            # [FIX] Use configured repo path instead of fragile CWD
+            repo_root = Path(settings.FILESYSTEM_REPO_PATH)
+            # CORRECT PATH: data/indices/ (v2.1 Standard)
             inventory_path = repo_root / "data" / "indices" / "rgl_inventory.json"
             
             if inventory_path.exists():
@@ -58,13 +60,13 @@ class GFGrammarEngine(IGrammarEngine):
 
     def _load_iso_config(self):
         """
-        Loads 'config/iso_to_wiki.json' to map ISO codes (en) to RGL suffixes (Eng).
-        Handles both simple mappings {"en": "Eng"} and rich objects {"en": {"wiki": "Eng", ...}}.
-        This replaces the hardcoded dictionary.
+        Loads the 'Rosetta Stone' map to bridge ISO codes (en) to RGL suffixes (Eng).
         """
         try:
-            repo_root = Path(os.getcwd())
-            config_path = repo_root / "config" / "iso_to_wiki.json"
+            # [FIX] Use configured repo path instead of fragile CWD
+            repo_root = Path(settings.FILESYSTEM_REPO_PATH)
+            # CORRECT PATH: data/config/ (v2.1 Standard)
+            config_path = repo_root / "data" / "config" / "iso_to_wiki.json"
             
             if config_path.exists():
                 with open(config_path, "r") as f:
@@ -74,13 +76,15 @@ class GFGrammarEngine(IGrammarEngine):
                 self.iso_map = {}
                 for code, value in raw_data.items():
                     if isinstance(value, dict):
-                        # Extract 'wiki' suffix from rich object (v2.0 format)
+                        # v2.0 Rich Object: {"wiki": "Eng", "tier": 1}
                         suffix = value.get("wiki")
                         if suffix:
                             self.iso_map[code] = suffix
                     elif isinstance(value, str):
-                        # Handle legacy string mapping (v1.0 format)
-                        self.iso_map[code] = value
+                        # v1.0 Legacy: "WikiEng" or "Eng"
+                        # Strip "Wiki" if present to normalize to Suffix only
+                        clean_val = value.replace("Wiki", "")
+                        self.iso_map[code] = clean_val
                         
                 logger.info("gf_config_loaded", mappings=len(self.iso_map))
             else:
@@ -107,10 +111,13 @@ class GFGrammarEngine(IGrammarEngine):
         if not self.grammar:
             raise DomainError("GF Runtime is not loaded.")
 
+        # --- THE BRIDGE ---
+        # Converts 'en' -> 'WikiEng' just in time.
         conc_name = self._resolve_concrete_name(lang_code)
+        
         if not conc_name:
             avail = list(self.grammar.languages.keys())
-            raise LanguageNotFoundError(f"Language {lang_code} not found in PGF. Available: {len(avail)}")
+            raise LanguageNotFoundError(f"Language '{lang_code}' not found in PGF. Available: {len(avail)}")
         
         concrete = self.grammar.languages[conc_name]
 
@@ -139,24 +146,22 @@ class GFGrammarEngine(IGrammarEngine):
 
     def _resolve_concrete_name(self, lang_code: str) -> Optional[str]:
         """
-        Resolves the concrete grammar name (e.g., WikiEng) from the ISO code (e.g., en).
-        Strategy: Config Map -> PGF Check -> Fallback
+        The Bridge Function.
+        Resolves 'en' -> 'WikiEng' using the loaded map or heuristics.
         """
         iso_clean = lang_code.lower().strip()
         
-        # 1. Lookup RGL Suffix from Config (sw -> Swa)
+        # 1. Lookup RGL Suffix from Config (The Correct Way)
         rgl_suffix = self.iso_map.get(iso_clean)
-        
         if rgl_suffix:
-            # Try strict RGL name (WikiSwa)
             candidate = f"Wiki{rgl_suffix}"
             if candidate in self.grammar.languages:
                 return candidate
             
-        # 2. Fallback: Direct Capitalization (Legacy/Safe Mode Support)
-        # Your Safe Mode factory generates 'WikiSw' (not WikiSwa), so this catches that.
-        if len(iso_clean) >= 2:
-            candidate = f"Wiki{iso_clean.title()}"
+        # 2. Legacy Support (The "Safety Net" for 'eng')
+        # If the user passed 3 letters, assume they might mean the suffix directly
+        if len(iso_clean) == 3:
+            candidate = f"Wiki{iso_clean.capitalize()}"
             if candidate in self.grammar.languages:
                 return candidate
                 
@@ -166,28 +171,51 @@ class GFGrammarEngine(IGrammarEngine):
         # --- PATH 1: Handle Strict BioFrame (FLAT STRUCTURE) ---
         if isinstance(node, BioFrame):
             name = node.name
-            prof = node.profession
-            nat = node.nationality
+            
+            # [FIX] Extraction Strategy for Pydantic v2
+            # Pydantic may convert 'subject' to an Entity object OR a Dict depending on input.
+            # We must handle both cases safely.
+            def get_attr(obj, key):
+                if isinstance(obj, dict):
+                    return obj.get(key)
+                return getattr(obj, key, None)
+
+            # Resolve Profession
+            prof = getattr(node, "profession", None)
+            if not prof:
+                prof = get_attr(node.subject, "profession")
+            
+            # Resolve Nationality
+            nat = getattr(node, "nationality", None)
+            if not nat:
+                nat = get_attr(node.subject, "nationality")
 
             # Construct Entity (Subject)
-            s_expr = f'(mkEntityStr "{name}")'
+            # Ensure safe string escaping
+            safe_name = name.replace('"', '\\"')
+            s_expr = f'(mkEntity (mkPN "{safe_name}"))'
             
             # Construct Profession
-            # FIX: Distinguish between GF Identifiers (from Lexicon) and Raw Strings
-            # If 'prof' is a single word (like 'physicist_N'), we assume it's a function.
-            # If it has spaces (like 'computer scientist'), we force String coercion.
+            # Heuristic: No spaces = likely a GF ID (physicist_N). Spaces = Raw String.
             if prof and " " not in prof:
+                # Use Type Coercion: N -> Profession
                 p_expr = f'(lexProf {prof})' 
             else:
-                p_expr = f'(strProf "{prof}")'
+                # Fallback: String -> Profession (Requires mkCN (mkN ...))
+                # Assuming lexProf can handle a CN if defined loosely, or we use a constructor
+                safe_prof = (prof or "").replace('"', '\\"')
+                p_expr = f'(lexProf (mkN "{safe_prof}"))'
 
             # Construct Nationality & Dispatch Overload
             if nat:
-                # Apply same logic to Nationality: 'lexNat' for identifiers, 'strNat' for strings
                 if " " not in nat:
                     n_expr = f'(lexNat {nat})'
                 else:
-                    n_expr = f'(strNat "{nat}")'
+                    safe_nat = nat.replace('"', '\\"')
+                    # [FIX] Use mkA (Make Adjective) for nationalities, not mkN (Make Noun)
+                    # The function lexNat : A -> Nationality expects an Adjective.
+                    # Passing mkN (Noun) causes a "found CN, expected A" type error.
+                    n_expr = f'(lexNat (mkA "{safe_nat}"))' 
                 
                 return f"mkBioFull {s_expr} {p_expr} {n_expr}"
             else:

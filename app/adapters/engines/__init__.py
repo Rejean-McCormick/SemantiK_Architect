@@ -1,4 +1,4 @@
-# app\adapters\engines\__init__.py
+# app/adapters/engines/__init__.py
 """
 Grammar Engine Adapters.
 
@@ -7,14 +7,13 @@ It provides the mechanisms to transform abstract Semantic Frames into text using
 different strategies:
 
 1. GFGrammarEngine: The production-grade engine using the compiled PGF binary (High Fidelity).
-2. PidginGrammarEngine: The fallback/prototyping engine using pure Python string manipulation (Low Fidelity).
+2. PythonGrammarEngine: The fallback/prototyping engine using pure Python string manipulation (Low Fidelity).
 """
 
-# FIX: Import from 'gf_wrapper', not 'gf_runtime'
 from .gf_wrapper import GFGrammarEngine
-from .pidgin_runtime import PidginGrammarEngine
+from .python_engine_wrapper import PythonGrammarEngine
 
 __all__ = [
     "GFGrammarEngine",
-    "PidginGrammarEngine",
+    "PythonGrammarEngine",
 ]

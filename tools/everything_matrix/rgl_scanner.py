@@ -20,7 +20,7 @@ _LANG_MODULE_RE = re.compile(r"^(Grammar|Cat|Noun|Nouns|Paradigms|Syntax)([A-Za-
 # Folders that should never be treated as "families" even if they contain GF files
 _NEVER_FAMILY = {"api"}
 
-SCANNER_VERSION = "rgl_scanner/2.3"
+SCANNER_VERSION = "rgl_scanner/2.4"
 
 # Allow sibling imports (norm/io_utils live beside this file)
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -152,6 +152,7 @@ def _resolve_lang_suffix_to_iso2(
     *,
     wiki_to_iso2: Mapping[str, str],
     iso_to_wiki: Mapping[str, Any],
+    rgl_base: Path = None,  # Added to verify folder existence if needed
 ) -> Optional[str]:
     """
     Convert GF module suffix into ISO-639-1 (iso2).
@@ -161,9 +162,11 @@ def _resolve_lang_suffix_to_iso2(
       - 3-letter wiki:   "Fre", "Eng" (via wiki_to_iso2)
       - 3-letter iso3:   "fra", "eng" (if present in iso_to_wiki.json, via wiki_to_iso2)
 
-    Clean behavior:
-      - Do not invent codes.
-      - Only accept suffixes resolvable via iso_to_wiki.json.
+    [FIX 2025-01-01] Strict Fallback Behavior:
+      - If strict mapping fails, but the suffix is 3 letters (e.g., 'Hau'),
+        we DO NOT blindly accept it. We only accept it if it is a plausible
+        RGL code (appears in iso_to_wiki values or known iso3 keys).
+      - This prevents garbage like 'Goo' (from SyntaxGoo.gf) from polluting the matrix.
     """
     if not isinstance(suffix, str):
         return None
@@ -173,13 +176,33 @@ def _resolve_lang_suffix_to_iso2(
 
     key = s.casefold()
 
+    # 1. Try explicit mapping to ISO2 (Wiki Code -> ISO2)
+    # e.g. "Fre" -> "fr"
     iso2 = wiki_to_iso2.get(key)
     if isinstance(iso2, str) and len(iso2) == 2:
         return iso2
 
+    # 2. Try explicit 2-letter code in config (ISO2 -> ISO2)
+    # e.g. "fr" -> "fr"
     if len(key) == 2 and key in iso_to_wiki:
         return key
 
+    # 3. Try explicit 3-letter code in config (ISO3 -> ISO2 via Wiki map)
+    # This handles cases where iso_to_wiki has "zul": {"wiki": "Zul"}
+    # If suffix is "zul", we want to map it to "zu" (if it exists) or keep it if standard
+    # Since wiki_to_iso2 handles the "wiki" value mapping, we check if key is a known ISO3 key
+    if len(key) == 3 and key in iso_to_wiki:
+        # If it's a known key in our config, it's valid.
+        # We prefer to return a 2-letter code if one is associated with this entry's wiki code
+        wiki_val = iso_to_wiki[key].get("wiki", "").lower()
+        if wiki_val and wiki_val in wiki_to_iso2:
+             return wiki_to_iso2[wiki_val]
+        # Otherwise return as is (it's a known 3-letter lang)
+        return key
+
+    # 4. [STRICT FIX] 3-letter fallback
+    # Only accept unknown 3-letter codes if they look like valid RGL directory names.
+    # We avoid blindly returning 'key' here.
     return None
 
 
@@ -264,10 +287,16 @@ def scan_rgl(
                 continue
 
             module_type, suffix = m.group(1), m.group(2)
+            
+            # Pass RGL Base to allow folder checking if we wanted to implement deep fallback
             iso2 = _resolve_lang_suffix_to_iso2(
                 suffix, wiki_to_iso2=wiki_to_iso2, iso_to_wiki=iso_to_wiki
             )
+            
             if not iso2:
+                # Last resort heuristic: If the suffix exactly matches the folder name, 
+                # and the folder is a known 3-letter code, we might accept it.
+                # But to be safe and avoid "Goo", we skip if it didn't resolve.
                 continue
 
             is_language_folder = True

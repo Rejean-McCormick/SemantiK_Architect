@@ -32,7 +32,7 @@ CSV Schemas
 
 Notes
 - For QID resolution, this script uses app.shared.lexicon.LexiconRuntime if available.
-- For rendering, it prefers router.render_bio (fallback: router.render_biography).
+- For rendering, it directly instantiates the GFGrammarEngine (v2.1 Adapter).
 """
 
 from __future__ import annotations
@@ -44,9 +44,10 @@ import os
 import re
 import sys
 import time
+import asyncio
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 # -----------------------------------------------------------------------------
@@ -166,42 +167,49 @@ class _LexiconResolver:
 
 
 # -----------------------------------------------------------------------------
-# Renderer (router preferred; optional API mode could be added later)
+# Renderer (GF Engine Adapter)
 # -----------------------------------------------------------------------------
 class _Renderer:
+    """
+    Wraps the v2.1 Grammar Engine for the test runner.
+    Resolves the 'Missing Router' issue by using the Adapter directly.
+    """
     def __init__(self) -> None:
-        self._render_fn = None
-        self._router_module = None
+        self._engine = None
         try:
-            import router  # type: ignore
-
-            self._router_module = router
-            self._render_fn = getattr(router, "render_bio", None) or getattr(router, "render_biography", None)
-        except Exception:
-            self._router_module = None
-            self._render_fn = None
+            from app.adapters.engines.gf_wrapper import GFGrammarEngine
+            self._engine = GFGrammarEngine()
+        except Exception as e:
+            print(f"Warning: Failed to initialize GFGrammarEngine: {e}")
+            self._engine = None
 
     def available(self) -> bool:
-        return callable(self._render_fn)
+        return self._engine is not None and self._engine.grammar is not None
 
     def render_bio(self, *, name: str, gender: str, profession: str, nationality: str, lang_code: str) -> str:
-        if not callable(self._render_fn):
-            raise RuntimeError(
-                "Router renderer not available. Ensure router.py exists and exposes render_bio() (or render_biography())."
-            )
-        # Support both positional and keyword implementations.
+        if not self.available():
+            raise RuntimeError("Grammar Engine not available. Check PGF file and gf-rgl installation.")
+
+        from app.core.domain.frame import BioFrame
+        
+        # Construct v2.1 BioFrame
+        # Note: We manually construct the frame here to mock the API ingress
+        frame = BioFrame(
+            frame_type="bio",
+            subject={
+                "name": name,
+                "gender": gender,
+                "profession": profession,
+                "nationality": nationality
+            }
+        )
+
         try:
-            return str(self._render_fn(name, gender, profession, nationality, lang_code))
-        except TypeError:
-            return str(
-                self._render_fn(
-                    name=name,
-                    gender=gender,
-                    profession=profession,
-                    nationality=nationality,
-                    lang_code=lang_code,
-                )
-            )
+            # Run async engine method synchronously
+            sentence = asyncio.run(self._engine.generate(lang_code, frame))
+            return sentence.text
+        except Exception as e:
+            raise RuntimeError(f"Generation failed: {e}")
 
 
 # -----------------------------------------------------------------------------
@@ -353,8 +361,8 @@ def run_universal_tests(
 
     renderer = _Renderer()
     if not renderer.available():
-        print("\nERROR: Could not import router renderer.")
-        print("Hint: Ensure router.py exists at repo root and exposes render_bio() (or render_biography()).")
+        print("\nERROR: Grammar Engine not available.")
+        print("Hint: Check if AbstractWiki.pgf exists in 'gf/' and 'pgf' library is installed.")
         return 2
 
     lexicon = _LexiconResolver()

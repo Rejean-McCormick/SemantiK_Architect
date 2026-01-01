@@ -5,73 +5,115 @@ import requests
 import sys
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Tuple
 
 # Setup Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # --- CONFIGURATION: SINGLE SOURCE OF TRUTH ---
-BASE_DIR = Path(__file__).parent.parent
-sys.path.append(str(BASE_DIR))  # Allow importing from app.shared
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-try:
-    # Import the centralized language definition map
-    # This prevents duplication of the ISO-3 <-> ISO-2 mapping logic
-    from app.shared.languages import ISO_3_TO_2, ISO_2_TO_3
-except ImportError:
-    # Fallback if shared module is missing (e.g. during standalone testing)
-    logger.warning("⚠️  Shared language map not found. Using local fallback.")
-    # Basic fallback map
-    ISO_3_TO_2 = {
-        "eng": "en", "fra": "fr", "deu": "de", "spa": "es", "ita": "it",
-        "nld": "nl", "swe": "sv", "rus": "ru", "zho": "zh", "jpn": "ja",
-        "ara": "ar", "hin": "hi", "bul": "bg", "ell": "el", "tur": "tr",
-        "por": "pt", "fin": "fi", "est": "et", "dan": "da", "nob": "no",
-        "pol": "pl", "ron": "ro", "hun": "hu", "slv": "sl", "ukr": "uk"
-    }
-    ISO_2_TO_3 = {v: k for k, v in ISO_3_TO_2.items()}
+# Prefer repo-root config if present, otherwise data/config (matches codedump reality)
+ISO_MAP_CANDIDATES = [
+    BASE_DIR / "config" / "iso_to_wiki.json",
+    BASE_DIR / "data" / "config" / "iso_to_wiki.json",
+]
+MATRIX_PATH = BASE_DIR / "data" / "indices" / "everything_matrix.json"
 
-# We use the Everything Matrix to validate if a language is registered in the system.
-MATRIX_PATH = Path("data/indices/everything_matrix.json")
+# Global Maps (Populated on Startup)
+ISO2_TO_RGL: Dict[str, str] = {}  # 'en' -> 'Eng'
+RGL_TO_ISO2: Dict[str, str] = {}  # 'Eng' -> 'en'
 
-def resolve_and_validate_language(input_code: str) -> Optional[str]:
+
+def _find_iso_map_path() -> Path:
+    for p in ISO_MAP_CANDIDATES:
+        if p.exists():
+            return p
+    # fall back to the canonical (data/config) for error message clarity
+    return ISO_MAP_CANDIDATES[-1]
+
+
+def load_iso_map() -> None:
     """
-    1. Normalizes input (en -> eng).
-    2. Checks if the language is valid via Matrix or Fallback.
-    3. Returns the valid ISO 639-3 code (Logic ID) or None.
+    Loads the Central Chart (iso_to_wiki.json) to build language mappings.
+    This replaces hardcoded dictionaries and ensures sync with the Engine.
     """
-    clean_code = input_code.lower().strip()
-    
-    # 1. Normalize Input to ISO-3 (RGL Code)
-    # If 2 chars ('en'), map to 'eng'. If 3 chars ('eng'), keep it.
-    target_iso_3 = ISO_2_TO_3.get(clean_code, clean_code)
+    config_path = _find_iso_map_path()
+    if not config_path.exists():
+        logger.error(f"❌ Critical: Config file missing (tried: {', '.join(map(str, ISO_MAP_CANDIDATES))})")
+        sys.exit(1)
 
-    # 2. Load Matrix for strict validation
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        for iso_code, value in data.items():
+            # Only ISO-2 keys should populate ISO2_TO_RGL
+            if len(iso_code) != 2:
+                continue
+
+            # Handle v1 (string) and v2 (object) formats
+            rgl_full = value.get("wiki") if isinstance(value, dict) else value
+            if not isinstance(rgl_full, str) or not rgl_full:
+                continue
+
+            # Normalize 'WikiEng' -> 'Eng' for internal consistency
+            rgl_suffix = rgl_full.replace("Wiki", "")
+
+            ISO2_TO_RGL[iso_code] = rgl_suffix
+            RGL_TO_ISO2[rgl_suffix] = iso_code
+            # Also map the full name just in case 'WikiEng' is passed
+            RGL_TO_ISO2[rgl_full] = iso_code
+
+        logger.info(f"✅ Loaded language config from {config_path} ({len(ISO2_TO_RGL)} ISO-2 entries)")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to parse language config: {e}")
+        sys.exit(1)
+
+
+def resolve_and_validate_language(input_code: str) -> Optional[Tuple[str, str]]:
+    """
+    Resolves any input (en, eng, WikiEng) to the canonical pair (RGL_Suffix, ISO2).
+    Returns: (rgl_code, iso2_code) e.g., ('Eng', 'en')
+    """
+    clean = (input_code or "").strip()
+    if not clean:
+        logger.error("❌ Empty language code.")
+        return None
+
+    # Normalize common shapes
+    clean_norm = clean.lower()
+    clean_suffix = clean.replace("Wiki", "").replace("wiki", "")
+    clean_suffix_cap = clean_suffix[:1].upper() + clean_suffix[1:] if clean_suffix else clean_suffix
+
+    # 1) ISO-2 code? (e.g., 'en')
+    if clean_norm in ISO2_TO_RGL:
+        return ISO2_TO_RGL[clean_norm], clean_norm
+
+    # 2) RGL suffix? (e.g., 'Eng') ...
+    if clean_suffix in RGL_TO_ISO2:
+        return clean_suffix, RGL_TO_ISO2[clean_suffix]
+    if clean_suffix_cap in RGL_TO_ISO2:
+        return clean_suffix_cap, RGL_TO_ISO2[clean_suffix_cap]
+
+    # 3) Fallback: Matrix Validation (matrix keys are ISO-2)
     if MATRIX_PATH.exists():
         try:
             with open(MATRIX_PATH, "r", encoding="utf-8") as f:
                 matrix = json.load(f)
-                registered_langs = matrix.get("languages", {})
-                
-            # Matrix keys are now ISO-2 (en, fr).
-            # We must check if our converted ISO-3 maps to a valid Matrix key.
-            # Convert target back to ISO-2 for lookup
-            matrix_key = ISO_3_TO_2.get(target_iso_3, target_iso_3)
-            
-            if matrix_key in registered_langs:
-                return target_iso_3
-                
-        except Exception as e:
-            logger.error(f"❌ Failed to read Everything Matrix: {e}")
+            langs = matrix.get("languages", {})
 
-    # Fallback: If matrix logic failed or matrix missing, rely on the map
-    # We trust the map if we found a valid conversion
-    if len(target_iso_3) == 3:
-        return target_iso_3
+            if clean_norm in langs:
+                # Valid ISO-2 but missing in iso_to_wiki.json
+                return clean_norm.capitalize(), clean_norm
+        except Exception:
+            pass
 
-    logger.error(f"❌ Language '{input_code}' could not be resolved to a valid RGL code.")
+    logger.error(f"❌ Language '{input_code}' is not recognized in system configuration.")
     return None
+
 
 # --- HARVESTER LOGIC ---
 
@@ -79,7 +121,6 @@ RE_ABSTRACT = re.compile(r"fun\s+([^\s:]+).*?--\s*([Q\d]+-?[a-z0-9]*)")
 RE_CONCRETE = re.compile(r"lin\s+(\w+)\s*=\s*(.*?)\s*;")
 RE_STRING = re.compile(r'"([^"]+)"')
 
-# v2.1 Upgrade: Now fetches Claims (P106/P27) for Semantic Framing
 SPARQL_TEMPLATE = """
 SELECT ?item ?itemLabel ?itemDescription ?job ?nat WHERE {
   VALUES ?item { %s }
@@ -89,10 +130,11 @@ SELECT ?item ?itemLabel ?itemDescription ?job ?nat WHERE {
 }
 """
 
+
 class GFWordNetHarvester:
     def __init__(self, root_path):
         self.root = Path(root_path)
-        self.semantic_map = {} 
+        self.semantic_map = {}
 
     def load_semantics(self):
         path = self.root / "WordNet.gf"
@@ -102,7 +144,7 @@ class GFWordNetHarvester:
 
         logger.info(f"📖 Indexing semantics from {path}...")
         count = 0
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             for line in f:
                 match = RE_ABSTRACT.search(line)
                 if match:
@@ -113,21 +155,21 @@ class GFWordNetHarvester:
 
     def harvest_lang(self, rgl_code, iso2_code, out_dir):
         """
-        Harvests from the RGL file (using rgl_code e.g. 'Eng') 
+        Harvests from the RGL file (using rgl_code e.g. 'Eng')
         but saves to the storage folder (using iso2_code e.g. 'en').
         """
-        # File finding heuristic: WordNetEng.gf
-        # Try exact code first, then verify via map just in case
         candidates = [
+            f"WordNet{rgl_code}.gf",
             f"WordNet{rgl_code.capitalize()}.gf",
         ]
-        
+
         src_file = None
         for c in candidates:
-            if (self.root / c).exists():
-                src_file = self.root / c
+            found = list(self.root.rglob(c))
+            if found:
+                src_file = found[0]
                 break
-        
+
         if not src_file:
             logger.warning(f"⚠️  Skipping {rgl_code}: Could not find WordNet file in {self.root}")
             return
@@ -136,18 +178,19 @@ class GFWordNetHarvester:
         lexicon = {}
         count = 0
 
-        with open(src_file, 'r', encoding='utf-8') as f:
+        with open(src_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         for match in RE_CONCRETE.finditer(content):
             func, rhs = match.groups()
-            if "variants {}" in rhs: continue
+            if "variants {}" in rhs:
+                continue
 
             strings = RE_STRING.findall(rhs)
             if strings:
                 lemma = strings[0]
                 sem_id = self.semantic_map.get(func, "")
-                
+
                 entry = {"lemma": lemma, "gf_fun": func, "source": "gf-wordnet"}
                 if sem_id.startswith("Q"):
                     entry["qid"] = sem_id
@@ -157,126 +200,115 @@ class GFWordNetHarvester:
                 lexicon[lemma.lower()] = entry
                 count += 1
 
-        # SAVE TO ISO-2 FOLDER (Enterprise Standard)
         out_path = Path(out_dir) / iso2_code / "wide.json"
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, 'w', encoding='utf-8') as f:
+        with open(out_path, "w", encoding="utf-8") as f:
             json.dump(lexicon, f, indent=2, ensure_ascii=False)
-        
+
         logger.info(f"✅ Saved {count} words to {out_path}")
 
+
 class WikidataHarvester:
-    def fetch(self, qids, lang_code, domain="people"):
-        # Determine Wikidata Language Code (prefer 2-letter if available)
-        # lang_code passed here is expected to be ISO-3 (RGL code)
-        wd_lang = ISO_3_TO_2.get(lang_code, lang_code)
-        
-        logger.info(f"☁️  Fetching {len(qids)} items from Wikidata for '{lang_code}' (WD Lang: {wd_lang})...")
-        
-        # Batch requests if necessary (simple implementation assumes small batch for now)
-        values = " ".join([f"wd:{qid}" for qid in qids])
-        
-        # Construct query with fallback languages
-        lang_string = f"{wd_lang},en"
-        
-        query = SPARQL_TEMPLATE % (values, lang_string)
-        
-        try:
-            r = requests.get(
-                "https://query.wikidata.org/sparql", 
-                params={'format': 'json', 'query': query}, 
-                timeout=30
-            )
-            r.raise_for_status()
-            data = r.json()
-            
-            results = {}
-            for row in data['results']['bindings']:
-                qid = row['item']['value'].split('/')[-1]
-                if qid not in results:
-                    results[qid] = {
-                        "lemma": row.get('itemLabel', {}).get('value'),
-                        "desc": row.get('itemDescription', {}).get('value', ""),
-                        "source": "wikidata-harvester",
-                        "domain": domain,
-                        "facts": {"P106": [], "P27": []}
-                    }
-                
-                # Aggregate facts
-                if 'job' in row:
-                    job_qid = row['job']['value'].split('/')[-1]
-                    if job_qid not in results[qid]['facts']['P106']:
-                        results[qid]['facts']['P106'].append(job_qid)
-                        
-                if 'nat' in row:
-                    nat_qid = row['nat']['value'].split('/')[-1]
-                    if nat_qid not in results[qid]['facts']['P27']:
-                        results[qid]['facts']['P27'].append(nat_qid)
+    def fetch(self, qids, iso2_code, domain="people"):
+        logger.info(f"☁️  Fetching {len(qids)} items from Wikidata for '{iso2_code}'...")
 
-            return results
+        chunk_size = 50
+        all_results = {}
 
-        except Exception as e:
-            logger.error(f"❌ Wikidata Error: {e}")
-            return {}
+        for i in range(0, len(qids), chunk_size):
+            chunk = qids[i : i + chunk_size]
+            values = " ".join([f"wd:{qid}" for qid in chunk])
+
+            lang_string = f"{iso2_code},en"
+            query = SPARQL_TEMPLATE % (values, lang_string)
+
+            try:
+                r = requests.get(
+                    "https://query.wikidata.org/sparql",
+                    params={"format": "json", "query": query},
+                    headers={"User-Agent": "AbstractWikiArchitect/2.0"},
+                    timeout=30,
+                )
+                r.raise_for_status()
+                data = r.json()
+
+                for row in data["results"]["bindings"]:
+                    qid = row["item"]["value"].split("/")[-1]
+                    if qid not in all_results:
+                        all_results[qid] = {
+                            "lemma": row.get("itemLabel", {}).get("value"),
+                            "desc": row.get("itemDescription", {}).get("value", ""),
+                            "source": "wikidata-harvester",
+                            "domain": domain,
+                            "facts": {"P106": [], "P27": []},
+                        }
+
+                    if "job" in row:
+                        job_qid = row["job"]["value"].split("/")[-1]
+                        if job_qid not in all_results[qid]["facts"]["P106"]:
+                            all_results[qid]["facts"]["P106"].append(job_qid)
+
+                    if "nat" in row:
+                        nat_qid = row["nat"]["value"].split("/")[-1]
+                        if nat_qid not in all_results[qid]["facts"]["P27"]:
+                            all_results[qid]["facts"]["P27"].append(nat_qid)
+
+            except Exception as e:
+                logger.error(f"❌ Wikidata Chunk Error: {e}")
+
+        return all_results
+
 
 def main():
+    load_iso_map()
+
     parser = argparse.ArgumentParser(description="Universal Lexicon Harvester (Free/Offline)")
     subparsers = parser.add_subparsers(dest="source", required=True)
 
-    # 1. WordNet (Offline - Uses GF RGL files)
     wn_parser = subparsers.add_parser("wordnet", help="Mine local GF WordNet files")
     wn_parser.add_argument("--root", required=True, help="Path to gf-wordnet folder")
     wn_parser.add_argument("--lang", required=True, help="Target Language (e.g. en, fr)")
     wn_parser.add_argument("--out", default="data/lexicon")
 
-    # 2. Wikidata (Online - Free)
     wd_parser = subparsers.add_parser("wikidata", help="Fetch from Wikidata (Free)")
-    wd_parser.add_argument("--lang", required=True, help="Target Language")
+    wd_parser.add_argument("--lang", required=True, help="Target Language (e.g. en, fr)")
     wd_parser.add_argument("--input", required=True, help="JSON file with target QIDs")
     wd_parser.add_argument("--domain", default="people")
 
     args = parser.parse_args()
 
-    # --- 1. RESOLVE LANGUAGE (RGL Code - 3 Letter) ---
-    rgl_code = resolve_and_validate_language(args.lang)
-    if not rgl_code:
-        print(f"❌ Error: Language '{args.lang}' is not valid or not in the Matrix.")
+    resolved = resolve_and_validate_language(args.lang)
+    if not resolved:
         sys.exit(1)
-        
-    # --- 2. DETERMINE STORAGE CODE (ISO Code - 2 Letter) ---
-    # We use this for the output directory to ensure persistence matches API standards
-    iso2_code = ISO_3_TO_2.get(rgl_code, rgl_code)
 
-    if args.lang != rgl_code:
-        print(f"🔧 Resolved Logic:   '{args.lang}' -> '{rgl_code}' (Matrix ID)")
-    if rgl_code != iso2_code:
-        print(f"📂 Resolved Storage: '{rgl_code}' -> '{iso2_code}' (Data Folder)")
+    rgl_code, iso2_code = resolved
+    print(f"🔧 Configuration: RGL='{rgl_code}' | ISO='{iso2_code}'")
 
-    # --- 3. EXECUTE ---
     if args.source == "wordnet":
         harvester = GFWordNetHarvester(args.root)
         harvester.load_semantics()
         harvester.harvest_lang(rgl_code, iso2_code, args.out)
 
     elif args.source == "wikidata":
-        if not Path(args.input).exists():
-             print(f"❌ Input file not found: {args.input}")
-             sys.exit(1)
-        
-        with open(args.input, 'r') as f:
-            target_qids = list(json.load(f).keys()) # Assuming input is { "QID": ... }
-        
+        input_path = Path(args.input)
+        if not input_path.exists():
+            print(f"❌ Input file not found: {args.input}")
+            sys.exit(1)
+
+        with open(input_path, "r", encoding="utf-8") as f:
+            raw_input = json.load(f)
+            target_qids = raw_input if isinstance(raw_input, list) else list(raw_input.keys())
+
         harvester = WikidataHarvester()
-        # Fetch using RGL/Matrix code (internal method handles WD mapping)
-        data = harvester.fetch(target_qids, rgl_code, args.domain)
-        
-        # Save to ISO-2 storage folder
+        data = harvester.fetch(target_qids, iso2_code, args.domain)
+
         out_path = Path(f"data/lexicon/{iso2_code}/{args.domain}.json")
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, 'w', encoding='utf-8') as f:
+        with open(out_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-        
+
         print(f"✅ Saved {len(data)} entries to {out_path}")
+
 
 if __name__ == "__main__":
     main()

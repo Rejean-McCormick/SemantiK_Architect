@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 import structlog
 
-# [FIX] Import from the centralized ports package (NO MORE 'lexicon_port.py')
+# [FIX] Import from the centralized ports package
 from app.core.ports import LanguageRepo, LexiconRepo
 
 from app.core.domain.models import LexiconEntry
@@ -69,6 +69,9 @@ class FileSystemLexiconRepository(LanguageRepo, LexiconRepo):
     # =========================================================
     
     def _get_file_path(self, lang_code: str) -> Path:
+        # v2.1 Standard: Look for 'wide.json' which is the compiled shard,
+        # but also allow falling back or writing to specific domain files.
+        # For simplicity in this Repo implementation, we default to a primary shard.
         return self.lexicon_base / lang_code / "lexicon.json"
 
     async def _load_file(self, lang_code: str) -> Dict[str, Any]:
@@ -115,17 +118,65 @@ class FileSystemLexiconRepository(LanguageRepo, LexiconRepo):
         logger.info("lexicon_entry_saved", lang=iso_code, lemma=key)
 
     async def get_entries_by_concept(self, lang_code: str, qid: str) -> List[LexiconEntry]:
+        """
+        [FIXED] Now correctly checks 'qid' fields instead of the non-existent 'concepts' list.
+        """
         data = await self._load_file(lang_code)
         results = []
         for key, raw_entry in data.items():
-            concepts = raw_entry.get("concepts", [])
-            if qid in concepts:
+            # Check 1: Root level QID (standard v2)
+            entry_qid = raw_entry.get("qid") or raw_entry.get("wikidata_qid")
+            
+            # Check 2: Features QID (v2.1 semantic enrichment)
+            if not entry_qid:
+                features = raw_entry.get("features", {})
+                entry_qid = features.get("qid")
+
+            if entry_qid == qid:
                 results.append(LexiconEntry(**raw_entry))
+                
         return results
 
     # --- Compliance Stubs (Required by LanguageRepo ABC) ---
+    
     async def save_grammar(self, language_code: str, content: str) -> None:
-        pass
+        """
+        [FIXED] Persistence for Language Onboarding.
+        Writes the Language Metadata (JSON) to the file system to prevent 'Zombie' languages.
+        """
+        target_dir = self.lexicon_base / language_code
+        target_dir.mkdir(parents=True, exist_ok=True)
+        
+        target_file = target_dir / "language.json"
+        
+        try:
+            async with aiofiles.open(target_file, mode='w', encoding='utf-8') as f:
+                # 'content' here is the JSON string from Language.model_dump_json()
+                await f.write(content)
+            
+            logger.info("grammar_meta_persisted", lang=language_code, path=str(target_file))
+            
+            # Optional: Create a skeleton core.json if it doesn't exist, 
+            # so the scanner picks it up immediately as a 'SEED' > 0.
+            core_file = target_dir / "core.json"
+            if not core_file.exists():
+                async with aiofiles.open(core_file, mode='w', encoding='utf-8') as f:
+                    await f.write("{}")
+
+        except Exception as e:
+            logger.error("save_grammar_failed", lang=language_code, error=str(e))
+            raise IOError(f"Failed to persist grammar metadata for {language_code}")
 
     async def get_grammar(self, language_code: str) -> Optional[str]:
-        return None
+        """
+        Retrieves the persisted language metadata.
+        """
+        target_file = self.lexicon_base / language_code / "language.json"
+        if not target_file.exists():
+            return None
+            
+        try:
+            async with aiofiles.open(target_file, mode='r', encoding='utf-8') as f:
+                return await f.read()
+        except Exception:
+            return None

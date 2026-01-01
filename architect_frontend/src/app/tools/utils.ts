@@ -44,6 +44,7 @@ export function parseCliArgs(input: string): string[] {
 
     cur += ch;
   }
+
   push();
   return out;
 }
@@ -103,6 +104,6 @@ export const repoFileUrl = (repoUrl: string, path: string) => {
 /**
  * Utility: small, safe classnames combiner (no dependency).
  */
-export function cx(...parts: Array<string | false | null | undefined>) {
+export function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }

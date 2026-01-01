@@ -1,18 +1,20 @@
 # app/adapters/api/routers/generation.py
-from typing import Any, Dict, Union, Optional
+from typing import Any, Dict, Optional, Union
+
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status, Body, Request, Header
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request, status
 
 # Core Domain Imports
 from app.core.domain.models import Frame, Sentence
 from app.core.domain.frame import BioFrame
 from app.core.domain.context import DiscourseEntity
 from app.core.domain.exceptions import (
-    LanguageNotFoundError,
+    DomainError,
     InvalidFrameError,
+    LanguageNotFoundError,
     UnsupportedFrameTypeError,
-    DomainError
 )
+
 from app.core.use_cases.generate_text import GenerateText
 
 # Adapters & Infrastructure
@@ -22,151 +24,198 @@ from app.adapters.redis_bus import redis_bus
 
 logger = structlog.get_logger()
 
-# -----------------------------------------------------------------------------
-# Router Definition
-# Resource: /generate
-# Mounted at: /api/v1 (in main.py) -> URL: /api/v1/generate
-# -----------------------------------------------------------------------------
 router = APIRouter(
     prefix="/generate",
     tags=["Generation"],
-    dependencies=[Depends(verify_api_key)]
+    dependencies=[Depends(verify_api_key)],
 )
+
 
 @router.post(
     "/{lang_code}",
     response_model=Sentence,
     status_code=status.HTTP_200_OK,
-    summary="Generate Text from Abstract Frame"
+    summary="Generate Text from Abstract Frame",
 )
 async def generate_text(
     request: Request,
     lang_code: str,
-    payload: Dict[str, Any] = Body(..., description="Abstract Semantic Frame or Ninai Protocol payload"),
+    payload: Dict[str, Any] = Body(
+        ...,
+        description="Abstract Semantic Frame or Ninai Protocol payload",
+    ),
     x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
-    use_case: GenerateText = Depends(get_generate_text_use_case)
+    use_case: GenerateText = Depends(get_generate_text_use_case),
 ):
     """
     Converts a Semantic Frame (abstract intent) into a concrete Sentence in the target language.
-    
-    Features:
-    - **Ninai Protocol Support**: Auto-detects and parses recursive Ninai object trees.
-    - **Discourse Planning**: Handles pronominalization context via X-Session-ID.
-    - **Validation**: Enforces domain constraints via the Use Case.
-    """
-    try:
-        # ---------------------------------------------------------------------
-        # 1. ADAPTER LAYER: Input Normalization (JSON -> Domain Entity)
-        # ---------------------------------------------------------------------
-        frame = _parse_payload(payload, lang_code)
 
-        # ---------------------------------------------------------------------
-        # 2. CONTEXT LAYER: Discourse Planning (Stateful Logic)
-        # ---------------------------------------------------------------------
-        # TODO v2.2: Move this logic into a specialized 'DiscourseService' 
-        # to keep the Router clean and stateless.
+    Features:
+    - Ninai Protocol Support: Auto-detects and parses recursive Ninai object trees.
+    - Discourse Planning: Handles pronominalization context via X-Session-ID.
+    - Validation: Enforces domain constraints via the Use Case.
+    """
+    lang = _normalize_lang_code(lang_code)
+
+    try:
+        # 1) ADAPTER LAYER: Input Normalization (JSON -> Domain Entity)
+        frame = _parse_payload(payload, lang)
+
+        # 2) CONTEXT LAYER: Discourse Planning (Stateful Logic)
         if x_session_id and isinstance(frame, BioFrame):
             await _apply_discourse_context(x_session_id, frame)
 
-        # ---------------------------------------------------------------------
-        # 3. USE CASE LAYER: Execution
-        # ---------------------------------------------------------------------
-        sentence = await use_case.execute(lang_code, frame)
+        # 3) USE CASE LAYER: Execution
+        sentence = await use_case.execute(lang, frame)
         return sentence
 
-    except (InvalidFrameError, ValueError) as e:
-        logger.warning("generation_bad_request", lang=lang_code, error=str(e))
+    except (InvalidFrameError, UnsupportedFrameTypeError, ValueError) as e:
+        logger.warning("generation_bad_request", lang=lang, error=str(e))
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e)
+            detail=str(e),
         )
     except LanguageNotFoundError as e:
-        logger.warning("generation_language_not_found", lang=lang_code, error=str(e))
+        logger.warning("generation_language_not_found", lang=lang, error=str(e))
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
+            detail=str(e),
         )
     except DomainError as e:
-        logger.error("generation_domain_error", lang=lang_code, error=str(e))
+        logger.error("generation_domain_error", lang=lang, error=str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Generation failed: {str(e)}"
+            detail=f"Generation failed: {str(e)}",
         )
     except Exception as e:
         logger.critical("unexpected_generation_crash", error=str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred during text generation."
+            detail="An unexpected error occurred during text generation.",
         )
 
-# -----------------------------------------------------------------------------
-# Helper Functions (Private)
-# -----------------------------------------------------------------------------
+
+def _normalize_lang_code(lang_code: str) -> str:
+    """
+    Normalizes common lang-code variants without assuming ISO2 vs ISO3.
+
+    - trims/lowers
+    - strips a leading 'wiki' prefix if present (e.g., 'wikieng' -> 'eng')
+    """
+    code = (lang_code or "").strip().lower()
+    if code.startswith("wiki") and len(code) > 4:
+        code = code[4:]
+    return code
+
 
 def _parse_payload(payload: Dict[str, Any], lang_code: str) -> Union[BioFrame, Frame]:
     """
     Determines if the payload is Ninai Protocol or a standard Frame
     and converts it to the appropriate Domain Entity.
     """
-    # A. Ninai Protocol (Recursive Object Tree)
+    if not isinstance(payload, dict):
+        raise InvalidFrameError("Payload must be a JSON object.")
+
+    # A) Ninai Protocol (Recursive Object Tree)
     if "function" in payload:
         logger.info("ninai_protocol_detected", lang=lang_code)
         try:
             return ninai_adapter.parse(payload)
         except ValueError as e:
-            raise InvalidFrameError(f"Ninai Parsing Error: {str(e)}")
+            raise InvalidFrameError(f"Ninai Parsing Error: {str(e)}") from e
 
-    # B. Standard Flat Frame
+    # B) Standard Flat Frame
+    frame_type = payload.get("frame_type")
+    if not frame_type:
+        raise InvalidFrameError("Missing required field: frame_type")
+
     try:
-        frame_type = payload.get("frame_type")
         if frame_type == "bio":
             return BioFrame(**payload)
-        return Frame(**payload)
-    except Exception as e:
-        raise InvalidFrameError(f"Invalid Frame format: {str(e)}")
 
-async def _apply_discourse_context(session_id: str, frame: BioFrame):
+        # If Frame is a discriminated union on frame_type, it will validate.
+        # Otherwise, this may raise and be wrapped below.
+        return Frame(**payload)
+
+    except Exception as e:
+        raise InvalidFrameError(f"Invalid Frame format: {str(e)}") from e
+
+
+def _extract_subject_qid(frame: BioFrame) -> Optional[str]:
+    """
+    Best-effort extraction of the entity identifier used for discourse focus.
+
+    Preference order:
+      1) frame.context_id (if your schema stores subject QID there)
+      2) frame.subject.qid (if subject is an object/dict with qid)
+      3) frame.qid (if model exposes it)
+    """
+    qid = getattr(frame, "context_id", None)
+    if qid:
+        return qid
+
+    subj = getattr(frame, "subject", None)
+    if isinstance(subj, dict):
+        return subj.get("qid")
+    if subj is not None:
+        return getattr(subj, "qid", None)
+
+    return getattr(frame, "qid", None)
+
+
+async def _apply_discourse_context(session_id: str, frame: BioFrame) -> None:
     """
     Applies pronominalization logic based on the session history.
     Mutates the frame in-place if the subject matches the current focus.
     """
-    # 1. Fetch Context
     context = await redis_bus.get_session(session_id)
+    if context is None:
+        return
+
+    subject_qid = _extract_subject_qid(frame)
     
-    # 2. Check Focus (Centering Theory)
+    # [FIX] If we don't have a stable identifier (QID), we cannot reliably track 
+    # this entity or use it for future coreference resolution. We skip context 
+    # updates to prevent polluting the session with "Q0" or None.
+    if not subject_qid:
+        return
+
+    original_label = getattr(frame, "name", None)
+
     # If the new subject QID matches the previous focus QID, we pronominalize.
-    if (context.current_focus and 
-        frame.context_id and 
-        context.current_focus.qid == frame.context_id):
-        
+    if context.current_focus and context.current_focus.qid == subject_qid:
         logger.info("pronominalization_triggered", session=session_id)
-        
-        # Inject GF Pronominalization Strategy
+
         if frame.meta is None:
             frame.meta = {}
 
         gender_map = {
             "f": ("She", "she_Pron"),
             "m": ("He", "he_Pron"),
-            "n": ("It", "it_Pron")
+            "n": ("It", "it_Pron"),
         }
-        
-        # Default to 'It' if gender is unknown or 'c' (common)
-        pronoun_label, gf_arg = gender_map.get(context.current_focus.gender, ("It", "it_Pron"))
+
+        focus_gender = getattr(context.current_focus, "gender", None)
+        pronoun_label, gf_arg = gender_map.get(focus_gender, ("It", "it_Pron"))
 
         frame.name = pronoun_label
-        frame.meta['gf_function'] = "UsePron"
-        frame.meta['gf_arg'] = gf_arg
+        frame.meta["gf_function"] = "UsePron"
+        frame.meta["gf_arg"] = gf_arg
 
-    # 3. Update Focus for Next Turn
-    # The subject of this sentence becomes the Backward-Looking Center (Cb) for the next.
+        # Keep focus label stable (entity label, not the pronoun)
+        focus_label = getattr(context.current_focus, "label", None) or original_label or pronoun_label
+        focus_qid = getattr(context.current_focus, "qid", None) or subject_qid
+        focus_gender_out = focus_gender or (getattr(frame, "gender", None) or "n")
+    else:
+        focus_label = original_label or getattr(frame, "name", None) or "It"
+        focus_qid = subject_qid
+        focus_gender_out = getattr(frame, "gender", None) or "n"
+
     new_entity = DiscourseEntity(
-        label=frame.name,
-        gender=frame.gender or "n", 
-        qid=frame.context_id or "Q0",
-        recency=0
+        label=focus_label,
+        gender=focus_gender_out,
+        qid=focus_qid,
+        recency=0,
     )
     context.update_focus(new_entity)
-    
-    # 4. Persist
     await redis_bus.save_session(context)

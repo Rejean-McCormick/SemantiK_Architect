@@ -1,4 +1,3 @@
-// architect_frontend\src\__tests__\api.test.ts
 // architect_frontend/src/__tests__/api.test.ts
 
 /**
@@ -27,19 +26,13 @@ const apiAny = architectApi as any;
 
 const fetchFramesMetadata = () => apiAny.fetchFramesMetadata();
 
-const generateFrame = (
-  slug: string,
-  payload: Record<string, unknown>,
-) => apiAny.generateFrame(slug, payload);
+const generateFrame = (slug: string, payload: Record<string, unknown>) =>
+  apiAny.generateFrame(slug, payload);
 
-const getSuggestions = (
-  payload: { query: string; [key: string]: unknown },
-) => apiAny.getSuggestions(payload);
+const getSuggestions = (payload: { query: string; [key: string]: unknown }) =>
+  apiAny.getSuggestions(payload);
 
-const makeOkResponse = <T>(
-  data: T,
-  extra: Partial<Response> = {},
-): Response =>
+const makeOkResponse = <T>(data: T, extra: Partial<Response> = {}): Response =>
   ({
     ok: true,
     status: 200,
@@ -51,7 +44,7 @@ const makeOkResponse = <T>(
 const makeErrorResponse = (
   status: number,
   body: unknown = { detail: "error" },
-  extra: Partial<Response> = {},
+  extra: Partial<Response> = {}
 ): Response =>
   ({
     ok: false,
@@ -99,17 +92,13 @@ describe("frontend API helpers", () => {
 
       // We don’t assume exact base URL, only that it targets /frames
       expect(url.toString()).toContain("/frames");
-      expect(((options as RequestInit | undefined)?.method) ?? "GET").toBe(
-        "GET",
-      );
+      expect(((options as RequestInit | undefined)?.method) ?? "GET").toBe("GET");
 
       expect(result).toEqual(payload);
     });
 
     it("throws a helpful error when the request fails", async () => {
-      fetchMock.mockResolvedValueOnce(
-        makeErrorResponse(500, { detail: "Internal error" }),
-      );
+      fetchMock.mockResolvedValueOnce(makeErrorResponse(500, { detail: "Internal error" }));
 
       await expect(fetchFramesMetadata()).rejects.toThrow(/frames/i);
       await expect(fetchFramesMetadata()).rejects.toBeInstanceOf(Error);
@@ -158,13 +147,9 @@ describe("frontend API helpers", () => {
     });
 
     it("throws an error with status info when the backend returns !ok", async () => {
-      fetchMock.mockResolvedValueOnce(
-        makeErrorResponse(422, { detail: "Validation error" }),
-      );
+      fetchMock.mockResolvedValueOnce(makeErrorResponse(422, { detail: "Validation error" }));
 
-      await expect(generateFrame(slug, requestBody)).rejects.toThrow(
-        /generate/i,
-      );
+      await expect(generateFrame(slug, requestBody)).rejects.toThrow(/generate/i);
       await expect(generateFrame(slug, requestBody)).rejects.toThrow(/422/);
     });
   });
@@ -206,13 +191,9 @@ describe("frontend API helpers", () => {
     });
 
     it("throws an error when suggestions endpoint fails", async () => {
-      fetchMock.mockResolvedValueOnce(
-        makeErrorResponse(400, { detail: "Bad request" }),
-      );
+      fetchMock.mockResolvedValueOnce(makeErrorResponse(400, { detail: "Bad request" }));
 
-      await expect(getSuggestions(suggestionRequest)).rejects.toThrow(
-        /suggest/i,
-      );
+      await expect(getSuggestions(suggestionRequest)).rejects.toThrow(/suggest/i);
       await expect(getSuggestions(suggestionRequest)).rejects.toThrow(/400/);
     });
   });
