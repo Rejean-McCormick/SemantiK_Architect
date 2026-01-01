@@ -1,12 +1,11 @@
-# tests\test_multilingual_generation.py
 # tests/test_multilingual_generation.py
 # =========================================================================
-# INTEGRATION TEST: Multilingual Z-Object Generation
+# INTEGRATION TEST: Multilingual Ninai Generation
 #
 # This test suite verifies the end-to-end pipeline:
-# 1. Takes a raw Z-Object (representing logic/meaning).
-# 2. Converts it to a GF Abstract Syntax Tree (AST).
-# 3. Linearizes it into multiple languages (English, French, etc.)
+# 1. Takes a Ninai Protocol Object (Recursive JSON).
+# 2. Converts it to a GF Abstract Syntax Tree (AST) via NinaiToGFConverter.
+# 3. Linearizes it into multiple languages using the GFGrammarEngine.
 #
 # It serves as the proof of concept for the "300 Languages" architecture.
 # =========================================================================
@@ -18,8 +17,9 @@ import sys
 # Add project root to path to ensure imports work during testing
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from architect_http_api.gf.engine import GFEngine, GFEngineError
-from architect_http_api.logic.bridge.converter_main import convert_z_object
+from app.adapters.engines.gf_wrapper import GFGrammarEngine
+from app.adapters.converters.ninai_to_gf import NinaiToGFConverter
+from app.core.domain.exceptions import DomainError
 
 # --- FIXTURES ---
 
@@ -29,124 +29,132 @@ def gf_engine():
     Initializes the GF Engine once for the test module.
     Skips tests if the PGF file is not found (haven't run build script yet).
     """
-    try:
-        # We allow the engine to auto-locate the PGF
-        engine = GFEngine.get_instance()
-        return engine
-    except GFEngineError:
-        pytest.skip("Wiki.pgf not found. Run 'python gf/build_300.py' first.")
+    engine = GFGrammarEngine()
+    if not engine.grammar:
+        pytest.skip("Wiki.pgf not found or failed to load. Run build pipeline first.")
+    return engine
 
+@pytest.fixture(scope="module")
+def converter():
+    """
+    Initializes the Ninai -> GF Converter.
+    """
+    return NinaiToGFConverter()
+
+# --- HELPER ---
+def linearize(engine, ast_expr, lang_code):
+    """Helper to linearize a PGF Expression using the engine's loaded grammar."""
+    # Resolve the concrete grammar name (e.g. 'eng' -> 'WikiEng')
+    conc_name = engine._resolve_concrete_name(lang_code)
+    if not conc_name:
+        return f"[{lang_code} NOT FOUND]"
+    
+    concrete = engine.grammar.languages[conc_name]
+    return concrete.linearize(ast_expr)
 
 # --- TEST CASES ---
 
 def test_engine_languages(gf_engine):
     """Verify that the engine loaded the expected languages."""
-    langs = gf_engine.get_all_languages()
-    assert "WikiEng" in langs, "English concrete syntax missing."
-    # If you built the French grammar, check for it too
-    if "WikiFra" in langs:
-        assert True
-
-
-def test_literal_generation(gf_engine):
-    """Test converting simple string literals."""
-    z_string = {"Z1K1": "Z6", "Z6K1": "Hello World"}
+    # Use the async method or check internal property if available for testing
+    langs = list(gf_engine.grammar.languages.keys())
+    assert "WikiEng" in langs, "English concrete syntax (WikiEng) missing."
     
-    # 1. Convert to AST
-    ast = convert_z_object(z_string)
-    assert ast == 'mkLiteral "Hello World"'
+    print(f"\nLoaded Languages: {langs}")
+
+def test_literal_generation(gf_engine, converter):
+    """Test converting simple string literals."""
+    # Ninai Protocol: Raw strings are literals
+    ninai_input = "Hello World"
+    
+    # 1. Convert to AST (pgf.Expr)
+    ast = converter.convert(ninai_input)
+    # The string representation of the GF Expr for a literal is just the string in quotes
+    assert str(ast) == '"Hello World"'
     
     # 2. Linearize (English)
-    text = gf_engine.linearize(ast, "eng")
-    # mkLiteral usually just outputs the string in the entity position
+    text = linearize(gf_engine, ast, "eng")
     assert "Hello World" in text
 
-
-def test_copula_construction(gf_engine):
+def test_copula_construction(gf_engine, converter):
     """
-    Test: 'The apple is red' (Z_CopulaAttributiveAdj)
+    Test: 'The apple is red'
+    Uses Generic GF Constructors (RGL style) via Ninai Protocol.
     """
-    # Construct a mock Z-Object for "Apple is Red"
-    z_obj = {
-        "Z1K1": "Z7",
-        "Z7K1": "Z_IsA", # Mapped to _map_copula_attributive
-        "Z7K2": {"Z1K1": "Z9", "Z9K1": "apple_Entity"}, # Subject
-        "Z7K3": {"Z1K1": "Z9", "Z9K1": "red_Property"}  # Attribute
+    # Ninai Protocol (Tree Structure)
+    # Equivalent to: mkCl (mkNP (mkN "apple")) (mkAP (mkA "red"))
+    ninai_obj = {
+        "function": "mkCl",
+        "args": [
+            {
+                "function": "mkNP",
+                "args": [
+                    {"function": "mkN", "args": ["apple"]}
+                ]
+            },
+            {
+                "function": "mkAP",
+                "args": [
+                    {"function": "mkA", "args": ["red"]}
+                ]
+            }
+        ]
     }
 
     # 1. Convert to AST
-    # Expected: mkIsAProperty (Entity2NP apple_Entity) (Property2AP red_Property)
-    ast = convert_z_object(z_obj)
+    ast = converter.convert(ninai_obj)
     print(f"Generated AST: {ast}")
     
-    assert "mkIsAProperty" in ast
-    assert "apple_Entity" in ast
-    assert "red_Property" in ast
+    # Check if AST structure contains key functions
+    ast_str = str(ast)
+    assert "mkCl" in ast_str
+    assert "mkNP" in ast_str
+    assert "apple" in ast_str
 
     # 2. Linearize - English
-    # Expect: "apple is red" (MassNP default) or "the apple is red"
-    text_en = gf_engine.linearize(ast, "eng")
+    text_en = linearize(gf_engine, ast, "eng")
     print(f"English: {text_en}")
     
-    # Robust assertion: check for key words
+    # RGL Linearization check (approximate, as determiners may vary)
     assert "apple" in text_en.lower()
     assert "red" in text_en.lower()
-    # "is" might be contracted or different, but usually present
-    
+
     # 3. Linearize - French (if available)
-    if gf_engine.has_language("fra"):
-        text_fr = gf_engine.linearize(ast, "fra")
+    if "WikiFra" in gf_engine.grammar.languages:
+        text_fr = linearize(gf_engine, ast, "fra")
         print(f"French: {text_fr}")
-        # Expect: "pomme" (apple), "rouge" (red), "est" (is)
-        # Note: Vocabulary must be synced for this to work perfectly.
-        # If words are missing, GF often outputs the abstract name or Empty.
+        # Expect: "pomme" (apple), "rouge" (red)
+        # Note: Requires lexicon alignment in PGF
         pass
 
-
-def test_intransitive_event(gf_engine):
+def test_transitive_event(gf_engine, converter):
     """
-    Test: 'The dog runs' (Z_IntransitiveEvent)
+    Test: 'The cat eats the fish'
     """
-    z_obj = {
-        "Z1K1": "Z7",
-        "Z7K1": "Z_Runs", # Mapped to _map_intransitive
-        "Z7K2": {"Z1K1": "Z9", "Z9K1": "dog_Entity"}, # Agent
-        "Z7K3": {"Z1K1": "Z9", "Z9K1": "run_VP"}      # Predicate
+    ninai_obj = {
+        "function": "mkCl",
+        "args": [
+            {
+                "function": "mkNP",
+                "args": [{"function": "mkN", "args": ["cat"]}]
+            },
+            {
+                "function": "mkV2",
+                "args": ["eat"]
+            },
+            {
+                "function": "mkNP",
+                "args": [{"function": "mkN", "args": ["fish"]}]
+            }
+        ]
     }
 
-    ast = convert_z_object(z_obj)
-    # Expected: mkFact (Entity2NP dog_Entity) run_VP
-    assert "mkFact" in ast
-    assert "dog_Entity" in ast
-    
-    text_en = gf_engine.linearize(ast, "eng")
-    print(f"English: {text_en}")
-    
-    # RGL 'run_V' usually linearizes to 'runs' or 'run'
-    assert "dog" in text_en.lower()
-    assert "run" in text_en.lower()
-
-
-def test_transitive_event(gf_engine):
-    """
-    Test: 'The cat eats the fish' (Z_TransitiveEvent)
-    """
-    z_obj = {
-        "Z1K1": "Z7",
-        "Z7K1": "Z_Eats", # Mapped to _map_transitive
-        "Z7K2": {"Z1K1": "Z9", "Z9K1": "cat_Entity"},  # Subject
-        "Z7K3": {"Z1K1": "Z9", "Z9K1": "eat_VP"},      # Verb
-        "Z7K4": {"Z1K1": "Z9", "Z9K1": "fish_Entity"}  # Object
-    }
-
-    ast = convert_z_object(z_obj)
+    ast = converter.convert(ninai_obj)
     print(f"Generated AST: {ast}")
     
-    # Ensure our complex nesting (VP2Predicate (ComplV ...)) is happening
-    assert "VP2Predicate" in ast
-    assert "ComplV" in ast or "eat_VP" in ast 
+    assert "mkV2" in str(ast)
     
-    text_en = gf_engine.linearize(ast, "eng")
+    text_en = linearize(gf_engine, ast, "eng")
     print(f"English: {text_en}")
     
     assert "cat" in text_en.lower()
@@ -154,16 +162,14 @@ def test_transitive_event(gf_engine):
     # "eats" or "eat"
     assert "eat" in text_en.lower()
 
-
-def test_error_handling(gf_engine):
-    """Test that invalid Z-Objects don't crash the converter."""
+def test_error_handling(converter):
+    """Test that invalid Ninai Objects raise strict errors."""
     invalid_obj = {
-        "Z1K1": "Z7",
-        "Z7K1": "Z_NonExistentFunction", # No mapper exists
-        "Z7K2": "something"
+        "missing_function_key": "true",
+        "args": []
     }
     
-    # Should return a safe fallback string like "meta_UnsupportedConstruction"
-    # defined in converter_main.py
-    ast = convert_z_object(invalid_obj)
-    assert "meta_UnsupportedConstruction" in ast
+    with pytest.raises(ValueError) as excinfo:
+        converter.convert(invalid_obj)
+    
+    assert "missing 'function' key" in str(excinfo.value)

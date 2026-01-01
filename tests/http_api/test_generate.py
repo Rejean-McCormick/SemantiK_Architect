@@ -1,119 +1,105 @@
-# tests\http_api\test_generate.py
 # tests/http_api/test_generate.py
-
-from dataclasses import dataclass
-
+from typing import Any
+import pytest
 from fastapi.testclient import TestClient
 
-from architect_http_api import main as app_module
-from nlg.api import GenerationResult as CoreGenerationResult
-from architect_http_api.services import nlg_client as nlg_client_module
+# FIX: Import from correct v2.1 locations
+from app.adapters.api.main import create_app
+from app.adapters.api.dependencies import get_generate_text_use_case
+from app.core.domain.models import Sentence
 
+# FIX: V2.1 API Prefix Standard
+API_PREFIX = "/api/v1"
 
-# ---------------------------------------------------------------------------
-# App + dependency wiring
-# ---------------------------------------------------------------------------
-
-# Support both patterns:
-# - main.app
-# - main.create_app()
-if hasattr(app_module, "create_app"):
-    app = app_module.create_app()
-else:
-    app = app_module.app
-
-client = TestClient(app)
-
-
-@dataclass
-class DummyFrame:
-    frame_type: str
-    payload: dict
-
-
-class DummyNLGClient:
-    def generate(self, req):
-        # Generic dummy implementation that does not depend on real frames
-        frame = DummyFrame(frame_type=req.frame_type, payload=req.frame)
-
-        return CoreGenerationResult(
+class FakeGenerateTextUseCase:
+    """
+    Mock implementation of the GenerateText Use Case.
+    Used to bypass the complex logic of the real Engine/LLM integration.
+    """
+    async def execute(self, lang_code: str, frame: Any) -> Sentence:
+        # Return a fixed Sentence object matching the test expectation
+        return Sentence(
             text="Marie Curie was a Polish-French physicist.",
-            sentences=["Marie Curie was a Polish-French physicist."],
-            lang=req.lang,
-            frame=frame,
-            debug_info={"source": "dummy-test"},
+            lang_code=lang_code,
+            debug_info={"source": "dummy-test"}
         )
 
+@pytest.fixture
+def fake_use_case():
+    return FakeGenerateTextUseCase()
 
-def override_nlg_client():
-    return DummyNLGClient()
+@pytest.fixture
+def client(fake_use_case):
+    """
+    Returns a FastAPI TestClient with the Use Case mocked.
+    """
+    app = create_app()
+    
+    # Override the dependency used in the router
+    app.dependency_overrides[get_generate_text_use_case] = lambda: fake_use_case
+    
+    with TestClient(app) as c:
+        yield c
+        
+    # Clean up overrides
+    app.dependency_overrides.clear()
 
 
-# Override the real NLG client with our dummy for all tests in this module
-app.dependency_overrides[nlg_client_module.get_nlg_client] = override_nlg_client
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
-
-def test_generate_success_minimal_payload():
+def test_generate_success_minimal_payload(client: TestClient):
     """
     Happy-path test: minimal valid payload returns a 200 with expected shape.
     """
+    # Updated payload structure to match v2.1 BioFrame requirements
     payload = {
-        "lang": "en",
-        "frame_type": "entity.person",
-        "frame": {
-            "person": {"qid": "Q7186", "label": "Marie Curie"},
+        "frame_type": "bio",
+        "subject": {
+            "name": "Marie Curie", 
+            "qid": "Q7186"
         },
-        # options/debug are optional and omitted here
+        "properties": {
+            "label": "Marie Curie"
+        }
     }
+    lang = "en"
 
-    response = client.post("/api/generate", json=payload)
+    # Updated URL pattern: /api/v1/generate/{lang_code}
+    response = client.post(f"{API_PREFIX}/generate/{lang}", json=payload)
+    
     assert response.status_code == 200
 
     data = response.json()
     assert data["text"] == "Marie Curie was a Polish-French physicist."
-    assert data["lang"] == "en"
-    assert data["frame_type"] == "entity.person"
-
-    # Basic structure checks
-    assert isinstance(data.get("sentences"), list)
-    assert data["sentences"] == ["Marie Curie was a Polish-French physicist."]
-
-    # Frame echo / debug structure is implementation-dependent but should exist
-    assert "frame" in data
+    assert data["lang_code"] == "en"
+    
+    # Check debug info
     assert "debug_info" in data
     assert data["debug_info"].get("source") == "dummy-test"
 
 
-def test_generate_validation_error_missing_lang():
+def test_generate_validation_error_missing_frame_type(client: TestClient):
     """
-    If required fields are missing, FastAPI/Pydantic should return 422.
+    Missing frame_type should yield 422 (Validation Error).
     """
     payload = {
-        # "lang" is intentionally omitted
-        "frame_type": "entity.person",
-        "frame": {"person": {"qid": "Q42"}},
+        "subject": {"name": "Marie Curie", "qid": "Q7186"}
+        # Missing frame_type
     }
+    lang = "en"
 
-    response = client.post("/api/generate", json=payload)
+    response = client.post(f"{API_PREFIX}/generate/{lang}", json=payload)
     assert response.status_code == 422
-    body = response.json()
-    assert body["detail"]  # FastAPI validation error details are present
 
 
-def test_generate_validation_error_missing_frame_type():
+def test_generate_validation_error_invalid_structure(client: TestClient):
     """
-    Missing frame_type should also yield 422.
+    Invalid structure (e.g., missing subject for bio frame) should yield 422.
     """
     payload = {
-        "lang": "en",
-        # "frame_type" omitted
-        "frame": {"person": {"qid": "Q42"}},
+        "frame_type": "bio",
+        "properties": {}
+        # Missing 'subject' field required by BioFrame
     }
+    lang = "en"
 
-    response = client.post("/api/generate", json=payload)
+    response = client.post(f"{API_PREFIX}/generate/{lang}", json=payload)
     assert response.status_code == 422

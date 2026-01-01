@@ -173,14 +173,22 @@ class GFGrammarEngine(IGrammarEngine):
             s_expr = f'(mkEntityStr "{name}")'
             
             # Construct Profession
+            # FIX: Distinguish between GF Identifiers (from Lexicon) and Raw Strings
+            # If 'prof' is a single word (like 'physicist_N'), we assume it's a function.
+            # If it has spaces (like 'computer scientist'), we force String coercion.
             if prof and " " not in prof:
-                p_expr = f'(strProf "{prof}")' 
+                p_expr = f'(lexProf {prof})' 
             else:
                 p_expr = f'(strProf "{prof}")'
 
             # Construct Nationality & Dispatch Overload
             if nat:
-                n_expr = f'(strNat "{nat}")'
+                # Apply same logic to Nationality: 'lexNat' for identifiers, 'strNat' for strings
+                if " " not in nat:
+                    n_expr = f'(lexNat {nat})'
+                else:
+                    n_expr = f'(strNat "{nat}")'
+                
                 return f"mkBioFull {s_expr} {p_expr} {n_expr}"
             else:
                 return f"mkBioProf {s_expr} {p_expr}"

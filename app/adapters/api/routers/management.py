@@ -1,14 +1,15 @@
 # app/adapters/api/routers/management.py
-from typing import Optional
+from typing import Optional, Dict, Any
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from pydantic import BaseModel, Field
-import structlog
 
+# Core Domain & Use Cases
 from app.core.use_cases.onboard_language_saga import OnboardLanguageSaga, LanguageAlreadyExistsError
 from app.core.use_cases.build_language import BuildLanguage
 from app.core.domain.exceptions import DomainError
 
-# Import dependencies (ensure these are defined in app/adapters/api/dependencies.py)
+# Adapters & Infrastructure
 from app.adapters.api.dependencies import (
     get_onboard_saga, 
     get_build_language_use_case, 
@@ -17,14 +18,20 @@ from app.adapters.api.dependencies import (
 
 logger = structlog.get_logger()
 
-# NOTE: This router is mounted at /api/v1, so prefix="/languages" results in /api/v1/languages
+# -----------------------------------------------------------------------------
+# Router Definition
+# Resource: /languages
+# Mounted at: /api/v1 (in main.py) -> URL: /api/v1/languages
+# -----------------------------------------------------------------------------
 router = APIRouter(
     prefix="/languages",
     tags=["Management"],
     dependencies=[Depends(verify_api_key)]  # <--- CRITICAL: Enforce Admin Auth
 )
 
-# --- Request Models ---
+# -----------------------------------------------------------------------------
+# Request Models
+# -----------------------------------------------------------------------------
 
 class LanguageOnboardRequest(BaseModel):
     code: str = Field(..., min_length=3, max_length=3, pattern="^[a-z]{3}$", description="ISO 639-3 code (e.g., 'deu')")
@@ -34,7 +41,9 @@ class LanguageOnboardRequest(BaseModel):
 class BuildRequest(BaseModel):
     strategy: str = Field("fast", pattern="^(fast|full)$", description="Build strategy: 'fast' (Pidgin) or 'full' (GF)")
 
-# --- Endpoints ---
+# -----------------------------------------------------------------------------
+# Endpoints
+# -----------------------------------------------------------------------------
 
 @router.post(
     "/",
@@ -45,7 +54,7 @@ class BuildRequest(BaseModel):
 async def onboard_language(
     request: LanguageOnboardRequest,
     saga: OnboardLanguageSaga = Depends(get_onboard_saga)
-):
+) -> Dict[str, Any]:
     """
     **[ADMIN ONLY]** Starts the onboarding process for a new language.
     
@@ -93,7 +102,7 @@ async def trigger_build(
     lang_code: str,
     request: BuildRequest = Body(...),
     use_case: BuildLanguage = Depends(get_build_language_use_case)
-):
+) -> Dict[str, Any]:
     """
     **[ADMIN ONLY]** Manually triggers a build/compilation for an existing language.
     

@@ -1,8 +1,8 @@
 import json
 import structlog
 from pathlib import Path
-from typing import Dict, Optional, Any
-from dataclasses import dataclass
+from typing import Dict, Optional, Any, List
+from dataclasses import dataclass, field
 
 # Attempt to load settings
 try:
@@ -19,6 +19,8 @@ class LexiconEntry:
     gf_fun: str
     qid: Optional[str] = None
     source: str = "unknown"
+    # Added to support semantic lookups (e.g. P106/Occupation)
+    features: Dict[str, Any] = field(default_factory=dict)
 
 class LexiconRuntime:
     """
@@ -151,12 +153,18 @@ class LexiconRuntime:
                 # Handle v1 (list) or v2 (dict) format
                 entry_data = val[0] if isinstance(val, list) else val
 
+                # Parse features/facts if present
+                features = entry_data.get('features', {})
+                if 'facts' in entry_data:
+                    features.update(entry_data['facts'])
+
                 entry_obj = LexiconEntry(
                     lemma=entry_data.get('lemma', 'unknown'),
                     pos=entry_data.get('pos', 'noun'),
                     gf_fun=entry_data.get('gf_fun', ''),
                     qid=entry_data.get('qid') or entry_data.get('wnid'),
-                    source=entry_data.get('source', 'gf-wordnet')
+                    source=entry_data.get('source', 'gf-wordnet'),
+                    features=features
                 )
 
                 if entry_obj.qid:
@@ -186,6 +194,24 @@ class LexiconRuntime:
         if not lang_db: return None
 
         return lang_db.get(key) or lang_db.get(key.lower())
+
+    def get_entry(self, lang_code: str, qid: str) -> Optional[LexiconEntry]:
+        """
+        Alias for lookup, specific for retrieving by QID.
+        Called by NinaiAdapter to resolve entities.
+        """
+        return self.lookup(qid, lang_code)
+
+    def get_facts(self, lang_code: str, qid: str, property_id: str) -> List[str]:
+        """
+        Retrieves semantic facts (e.g. P106/occupation) for a given entity QID.
+        Used by NinaiAdapter to auto-fill frames when data is missing.
+        """
+        entry = self.get_entry(lang_code, qid)
+        if entry and entry.features:
+            # Return list of QIDs for the property (e.g. ['Q123', 'Q456'])
+            return entry.features.get(property_id, [])
+        return []
 
 # --- EXPORT THE SINGLETON ---
 lexicon = LexiconRuntime()

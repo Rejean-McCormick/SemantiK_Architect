@@ -1,8 +1,17 @@
 # app/core/domain/models.py
 from enum import Enum
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
+
+# [FIX] Unify Frame Definition by importing from the authoritative source
+# This resolves the conflict between 'SemanticFrame' and 'BioFrame'
+from app.core.domain.frame import BaseFrame, BioFrame, EventFrame
+
+# Alias for backward compatibility with code expecting 'Frame' or 'SemanticFrame'
+# This Union ensures that Pydantic will try to match the specific types first
+Frame = Union[BioFrame, EventFrame, BaseFrame]
+SemanticFrame = Frame 
 
 # --- Enums ---
 
@@ -38,33 +47,6 @@ class Language(BaseModel):
     last_build_time: Optional[datetime] = None
     error_log: Optional[str] = None
 
-class SemanticFrame(BaseModel):
-    """
-    The input semantic frame representing the abstract intent.
-    Supports both 'Bio' (Structured) and 'Generic' (Safe Mode) payloads.
-    """
-    model_config = ConfigDict(populate_by_name=True)
-
-    frame_type: str = Field(..., description="The schema type (e.g., 'bio', 'event', 'generic')")
-    
-    # --- SAFE MODE FIELDS (Generic GF Function Calls) ---
-    # We use 'alias="frame"' so the API accepts {"frame": "mkBio"} but code sees .function
-    function: Optional[str] = Field(None, alias="frame", description="Abstract function name (e.g., 'mkBioProf')")
-    args: List[Any] = Field(default_factory=list, description="Positional arguments for the function")
-
-    # --- STRUCTURED FIELDS (Bio/Event Schemas) ---
-    # The primary subject of the frame (e.g., the person in a bio)
-    subject: Dict[str, Any] = Field(default_factory=dict)
-    
-    # Additional properties (e.g., profession, nationality, date)
-    properties: Dict[str, Any] = Field(default_factory=dict)
-    
-    # Contextual hints for the renderer (e.g., tense, formality)
-    meta: Dict[str, Any] = Field(default_factory=dict)
-
-# Alias for backward compatibility if needed
-Frame = SemanticFrame
-
 class Sentence(BaseModel):
     """
     The output generated text.
@@ -94,5 +76,5 @@ class GenerationRequest(BaseModel):
     """
     Input payload for the text generation endpoint.
     """
-    semantic_frame: SemanticFrame
+    semantic_frame: Frame
     target_language: str

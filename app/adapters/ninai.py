@@ -67,31 +67,40 @@ class NinaiAdapter:
             
             subject_name = self._extract_label(subject_node)
             if subject_name == "Unknown" and subj_entry:
-                subject_name = subj_entry.get("lemma", "Unknown")
+                subject_name = subj_entry.get("lemma", "Unknown") if isinstance(subj_entry, dict) else getattr(subj_entry, "lemma", "Unknown")
 
             # --- Profession (Arg 2) ---
             # If the frame has a profession arg, use it. Otherwise try to auto-fill.
+            profession_key = "person" # Default
             if len(args) > 2:
                 prof_node = args[2]
                 prof_qid = self._extract_qid(prof_node)
                 prof_entry = lexicon.get_entry(lang, prof_qid) if prof_qid else None
                 
                 # Use GF Function if available (e.g. 'physicist_N'), else raw string
-                if prof_entry and prof_entry.get("gf_fun"):
-                    profession_key = prof_entry["gf_fun"]
+                if prof_entry:
+                     # Handle both Dict and Object return types from get_entry
+                    if isinstance(prof_entry, dict) and prof_entry.get("gf_fun"):
+                         profession_key = prof_entry["gf_fun"]
+                    elif hasattr(prof_entry, "gf_fun") and prof_entry.gf_fun:
+                         profession_key = prof_entry.gf_fun
+                    else:
+                         profession_key = self._extract_value(prof_node)
                 else:
                     profession_key = self._extract_value(prof_node)
             else:
                 # Auto-fill from Subject P106
-                job_qids = lexicon.get_facts(lang, subject_qid, "P106")
-                profession_key = "person"
+                # FIXED: Use local helper instead of assuming method exists on lexicon
+                job_qids = self._get_lexicon_facts(lang, subject_qid, "P106")
+                
                 if job_qids:
                     # Try to resolve the first job QID to a GF function
                     job_entry = lexicon.get_entry(lang, job_qids[0])
-                    if job_entry and job_entry.get("gf_fun"):
-                        profession_key = job_entry["gf_fun"]
-                    elif job_entry:
-                        profession_key = job_entry.get("lemma", "person")
+                    if job_entry:
+                         if isinstance(job_entry, dict):
+                            profession_key = job_entry.get("gf_fun") or job_entry.get("lemma", "person")
+                         else:
+                            profession_key = getattr(job_entry, "gf_fun", None) or getattr(job_entry, "lemma", "person")
 
             # --- Nationality (Arg 3) ---
             nationality_key = None
@@ -100,24 +109,36 @@ class NinaiAdapter:
                 nat_qid = self._extract_qid(nat_node)
                 nat_entry = lexicon.get_entry(lang, nat_qid) if nat_qid else None
                 
-                if nat_entry and nat_entry.get("gf_fun"):
-                    nationality_key = nat_entry["gf_fun"]
+                if nat_entry:
+                    if isinstance(nat_entry, dict) and nat_entry.get("gf_fun"):
+                        nationality_key = nat_entry["gf_fun"]
+                    elif hasattr(nat_entry, "gf_fun") and nat_entry.gf_fun:
+                        nationality_key = nat_entry.gf_fun
+                    else:
+                         nationality_key = self._extract_value(nat_node)
                 else:
                     nationality_key = self._extract_value(nat_node)
             else:
                  # Auto-fill from Subject P27
-                nat_qids = lexicon.get_facts(lang, subject_qid, "P27")
+                 # FIXED: Use local helper instead of assuming method exists on lexicon
+                nat_qids = self._get_lexicon_facts(lang, subject_qid, "P27")
+                
                 if nat_qids:
                      # Try to resolve first nationality
                     nat_entry = lexicon.get_entry(lang, nat_qids[0])
-                    if nat_entry and nat_entry.get("gf_fun"):
-                        nationality_key = nat_entry["gf_fun"]
+                    if nat_entry:
+                        if isinstance(nat_entry, dict):
+                            nationality_key = nat_entry.get("gf_fun")
+                        else:
+                            nationality_key = getattr(nat_entry, "gf_fun", None)
 
             # --- Construct Frame ---
             # We inject the concrete GF function into 'meta' for the Engine to use
             meta_data = {}
-            if subj_entry and subj_entry.get("gf_fun"):
-                meta_data["subject_gf"] = subj_entry["gf_fun"]
+            if subj_entry:
+                gf_fun = subj_entry.get("gf_fun") if isinstance(subj_entry, dict) else getattr(subj_entry, "gf_fun", None)
+                if gf_fun:
+                    meta_data["subject_gf"] = gf_fun
 
             return BioFrame(
                 frame_type="bio",
@@ -148,16 +169,19 @@ class NinaiAdapter:
             
             # Lexicon Lookup
             subj_entry = lexicon.get_entry(lang, subject_qid) if subject_qid else None
+            
             if subject_name == "Unknown" and subj_entry:
-                subject_name = subj_entry.get("lemma", "Unknown")
+                subject_name = subj_entry.get("lemma", "Unknown") if isinstance(subj_entry, dict) else getattr(subj_entry, "lemma", "Unknown")
 
             # Event Object
             event_node = args[2]
             event_name = self._extract_label(event_node)
 
             meta_data = {}
-            if subj_entry and subj_entry.get("gf_fun"):
-                meta_data["subject_gf"] = subj_entry["gf_fun"]
+            if subj_entry:
+                 gf_fun = subj_entry.get("gf_fun") if isinstance(subj_entry, dict) else getattr(subj_entry, "gf_fun", None)
+                 if gf_fun:
+                    meta_data["subject_gf"] = gf_fun
 
             return EventFrame(
                 frame_type="event",
@@ -204,6 +228,38 @@ class NinaiAdapter:
                  return node["args"][1].lower()
              
         return str(node)
+
+    # --- Helper: Safe Fact Retrieval (Fix for Missing Method) ---
+    def _get_lexicon_facts(self, lang: str, qid: Optional[str], prop: str) -> List[str]:
+        """
+        Safely retrieves facts/claims from a lexicon entry.
+        Handles the case where lexicon.get_facts() doesn't exist yet.
+        """
+        if not qid: 
+            return []
+        
+        # Try finding the entry first
+        try:
+            entry = lexicon.get_entry(lang, qid)
+            if not entry:
+                return []
+                
+            # If entry is a dict (JSON shard)
+            if isinstance(entry, dict):
+                return entry.get("facts", {}).get(prop, [])
+                
+            # If entry is an Object (LexiconEntry dataclass)
+            # Note: The v2.1 LexiconEntry dataclass might NOT have a 'facts' field yet.
+            # We check for it safely.
+            if hasattr(entry, "facts") and isinstance(entry.facts, dict):
+                return entry.facts.get(prop, [])
+            if hasattr(entry, "features") and isinstance(entry.features, dict):
+                 return entry.features.get("facts", {}).get(prop, [])
+                 
+            return []
+        except Exception as e:
+            logger.warning(f"Failed to retrieve facts for {qid}: {e}")
+            return []
 
 # Global Singleton
 ninai_adapter = NinaiAdapter()

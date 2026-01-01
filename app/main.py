@@ -15,15 +15,18 @@ from arq.connections import RedisSettings
 from app.shared.config import settings, AppEnv
 from app.shared.container import container  # <--- NEW: Import DI Container
 
-# =========================================================================
-# CRITICAL FIX: Force Security OFF
-settings.API_SECRET = None 
-# =========================================================================
-
 from app.shared.telemetry import setup_telemetry, instrument_fastapi
 
 # --- NEW: Import Specific Smart Routers (NOT 'routes') ---
-from app.adapters.api.routers import generation, health, management
+from app.adapters.api.routers import (
+    generation, 
+    health, 
+    management, 
+    languages, 
+    entities, 
+    frames, 
+    tools
+)
 
 # Configure basic logging
 logging.basicConfig(
@@ -43,10 +46,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode...")
 
     # --- NEW: Wire Dependency Injection ---
+    # Must match the modules that use @inject
     container.wire(modules=[
         "app.adapters.api.routers.generation",
         "app.adapters.api.routers.management",
         "app.adapters.api.routers.health",
+        "app.adapters.api.routers.languages",
+        "app.adapters.api.routers.entities",
+        "app.adapters.api.routers.frames",
+        "app.adapters.api.routers.tools",
         "app.adapters.api.dependencies"
     ])
     logger.info("Dependency Injection container wired.")
@@ -60,8 +68,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info(f"Redis pool created. Connected to queue: {settings.REDIS_QUEUE_NAME}")
     except Exception as e:
         logger.error(f"Failed to connect to Redis: {e}")
-        raise e
-
+        # We don't raise here to allow the API to start in a degraded state if Redis is down
+        # (Though some endpoints might fail later)
+    
     yield
     
     # 3. Shutdown & Cleanup
@@ -74,7 +83,7 @@ def create_app() -> FastAPI:
     """Factory function to create the FastAPI application."""
     app = FastAPI(
         title="Abstract Wiki Architect",
-        version="2.0.0",
+        version="2.1.0",
         description="Distributed Natural Language Generation Platform (Hexagonal/GF)",
         docs_url="/docs" if settings.APP_ENV != AppEnv.PRODUCTION else None,
         redoc_url="/redoc" if settings.APP_ENV != AppEnv.PRODUCTION else None,
@@ -112,10 +121,22 @@ def create_app() -> FastAPI:
         )
 
     # 5. Mount Routes
-    # --- NEW: Mount specific V1 routers ---
+    # --- MOUNT ALL V2.1 ROUTERS ---
+    
+    # Public Read Endpoints
     app.include_router(health.router, prefix="/api/v1")
+    app.include_router(languages.router, prefix="/api/v1/languages", tags=["Languages"])
+    app.include_router(entities.router, prefix="/api/v1/entities", tags=["Entities"])
+    app.include_router(frames.router, prefix="/api/v1/frames", tags=["Frames"])
+
+    # Core Generation Logic
     app.include_router(generation.router, prefix="/api/v1")
+    
+    # Admin / Management (Protected)
     app.include_router(management.router, prefix="/api/v1")
+    
+    # Developer Tools (Protected)
+    app.include_router(tools.router, prefix="/api/v1/tools", tags=["System Tools"])
 
     return app
 
