@@ -1,5 +1,5 @@
-# app\core\domain\semantics\normalization.py
-# semantics\normalization.py
+# app/core/domain/semantics/normalization.py
+# semantics/normalization.py
 """
 semantics/normalization.py
 ==========================
@@ -18,8 +18,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
-# Import Core Types for Frame construction
-from semantics.types import (
+# [FIX] Use relative imports for sibling modules to resolve ModuleNotFoundError
+from .types import (
     Entity,
     Location,
     TimeSpan,

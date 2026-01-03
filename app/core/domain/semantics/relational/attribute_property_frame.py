@@ -1,7 +1,6 @@
-# app\core\domain\semantics\relational\attribute_property_frame.py
-# semantics\relational\attribute_property_frame.py
+# app/core/domain/semantics/relational/attribute_property_frame.py
 """
-semantics/relational/attribute_property_frame.py
+app/core/domain/semantics/relational/attribute_property_frame.py
 ------------------------------------------------
 
 Relational / statement-level frame for simple attributes and properties.
@@ -32,7 +31,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from semantics.types import Entity, TimeSpan
+# [FIX] Use full application path
+from app.core.domain.semantics.types import Entity, TimeSpan
 
 
 @dataclass
@@ -87,9 +87,9 @@ class AttributeFrame:
         Optional hint for the construction layer about how to realize the
         value, e.g.:
 
-            - "adjective"  → "X is democratic."
-            - "np"         → "X is a democracy."
-            - "pp"         → "X is in good condition."
+            - "adjective"   → "X is democratic."
+            - "np"          → "X is a democracy."
+            - "pp"          → "X is in good condition."
 
         Engines are free to ignore this; it is advisory only.
 

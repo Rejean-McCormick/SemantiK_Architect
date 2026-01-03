@@ -27,7 +27,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any, Mapping, Optional
 
-from semantics.types import Entity, Location
+from app.core.domain.semantics.types import Entity, Location
 
 
 # ---------------------------------------------------------------------------

@@ -1,11 +1,11 @@
-# app\core\domain\semantics\event\conflict_war_event_frame.py
-# semantics\event\conflict_war_event_frame.py
+# app/core/domain/semantics/event/conflict_war_event_frame.py
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import ClassVar
 
-from semantics.types import Event
+# [FIX] Use full absolute path instead of 'semantics.types'
+from app.core.domain.semantics.types import Event
 
 
 @dataclass

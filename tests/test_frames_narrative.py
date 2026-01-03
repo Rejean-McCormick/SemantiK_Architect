@@ -1,6 +1,6 @@
-# qa\test_frames_narrative.py
+
 """
-qa/test_frames_narrative.py
+tests/test_frames_narrative.py
 
 Smoke tests for the narrative / aggregate frame dataclasses.
 
@@ -28,33 +28,34 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
-from semantics.types import Entity, Event, TimeSpan, Location
-from semantics.narrative.timeline_chronology_frame import (
+# [FIX] Use full application paths for imports
+from app.core.domain.semantics.types import Entity, Event, TimeSpan, Location
+from app.core.domain.semantics.narrative.timeline_chronology_frame import (
     TimelineChronologyFrame,
     TimelineEntry,
 )
-from semantics.narrative.career_season_campaign_summary_frame import (
+from app.core.domain.semantics.narrative.career_season_campaign_summary_frame import (
     CareerSeasonCampaignSummaryFrame,
     CareerPhase,
 )
-from semantics.narrative.development_evolution_frame import (
+from app.core.domain.semantics.narrative.development_evolution_frame import (
     DevelopmentEvolutionFrame,
     DevelopmentStage,
 )
-from semantics.narrative.reception_impact_frame import (
+from app.core.domain.semantics.narrative.reception_impact_frame import (
     ReceptionImpactFrame,
     ReceptionItem,
     ImpactDomain,
 )
-from semantics.narrative.structure_organization_frame import (
+from app.core.domain.semantics.narrative.structure_organization_frame import (
     StructureOrganizationFrame,
     OrganizationalUnitNode,
 )
-from semantics.narrative.comparison_set_contrast_frame import (
+from app.core.domain.semantics.narrative.comparison_set_contrast_frame import (
     ComparisonSetContrastFrame,
     ComparisonItem,
 )
-from semantics.narrative.list_enumeration_frame import (
+from app.core.domain.semantics.narrative.list_enumeration_frame import (
     ListEnumerationFrame,
     ListItem,
 )

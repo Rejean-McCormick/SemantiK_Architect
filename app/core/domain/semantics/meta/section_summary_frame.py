@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import TimeSpan, SemanticFrame
+from app.core.domain.semantics.types import TimeSpan, SemanticFrame
 
 
 @dataclass

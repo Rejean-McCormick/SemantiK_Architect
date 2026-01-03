@@ -29,8 +29,8 @@ Design principles
 Example usage
 =============
 
-    from semantics.types import Entity, Location, Event
-    from semantics.entity.religion_ideology_frame import ReligionIdeologyFrame
+    from app.core.domain.semantics.types import Entity, Location, Event
+    from app.core.domain.semantics.entity.religion_ideology_frame import ReligionIdeologyFrame
 
     christianity = Entity(id="Q5043", name="Christianity", entity_type="religion")
 
@@ -69,7 +69,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Entity, Event, Location
+from app.core.domain.semantics.types import Entity, Event, Location
 
 
 @dataclass

@@ -1,11 +1,12 @@
-# app\core\domain\semantics\event\cultural_event_frame.py
-# semantics\event\cultural_event_frame.py
+# app/core/domain/semantics/event/cultural_event_frame.py
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Entity, Event, Location, TimeSpan
+# [FIX] Use full application path
+from app.core.domain.semantics.types import Entity, Event, Location, TimeSpan
 
 
 @dataclass

@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence
 
-from semantics.types import Entity, Event
+from app.core.domain.semantics.types import Entity, Event
 
 
 # ---------------------------------------------------------------------------

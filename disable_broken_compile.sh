@@ -41,7 +41,7 @@ echo 'Disabling WikiFas.gf (File WikiI.gf does not exist.)'
 mv gf/WikiFas.gf gf/WikiFas.gf.SKIP
 echo 'Disabling WikiFin.gf (File WikiI.gf does not exist.)'
 mv gf/WikiFin.gf gf/WikiFin.gf.SKIP
-echo 'Disabling WikiFra.gf ([34m)'
+echo 'Disabling WikiFra.gf (WikiFra.gf:)'
 mv gf/WikiFra.gf gf/WikiFra.gf.SKIP
 echo 'Disabling WikiGer.gf (File WikiI.gf does not exist.)'
 mv gf/WikiGer.gf gf/WikiGer.gf.SKIP

@@ -1,14 +1,13 @@
-# app\core\domain\semantics\narrative\career_season_campaign_summary_frame.py
-# semantics\narrative\career_season_campaign_summary_frame.py
-# semantics/narrative/career_season_campaign_summary_frame.py
+# app/core/domain/semantics/narrative/career_season_campaign_summary_frame.py
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Event, TimeSpan
-from semantics.all_frames import register_frame_type
+# [FIX] Use full application path
+from app.core.domain.semantics.types import Event, TimeSpan
+from app.core.domain.semantics.all_frames import register_frame_type
 
 
 @dataclass

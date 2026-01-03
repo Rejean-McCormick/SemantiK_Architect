@@ -1,5 +1,4 @@
-# app\core\domain\semantics\narrative\timeline_chronology_frame.py
-# semantics\narrative\timeline_chronology_frame.py
+# app/core/domain/semantics/narrative/timeline_chronology_frame.py
 """
 semantics/narrative/timeline_chronology_frame.py
 ------------------------------------------------
@@ -24,8 +23,8 @@ The frame is deliberately neutral:
 Typical usage
 =============
 
-    from semantics.types import Entity, Event, TimeSpan
-    from semantics.narrative.timeline_chronology_frame import (
+    from app.core.domain.semantics.types import Entity, Event, TimeSpan
+    from app.core.domain.semantics.narrative.timeline_chronology_frame import (
         TimelineChronologyFrame,
         TimelineEntry,
     )
@@ -64,7 +63,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Entity, Event, TimeSpan
+# [FIX] Use full application path
+from app.core.domain.semantics.types import Entity, Event, TimeSpan
 
 
 @dataclass

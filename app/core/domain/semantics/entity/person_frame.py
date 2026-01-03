@@ -21,8 +21,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
-from semantics.types import BioFrame
-from semantics.all_frames import register_frame_type
+from app.core.domain.semantics.types import BioFrame
+from app.core.domain.semantics.all_frames import register_frame_type
 
 
 @register_frame_type("bio", override=True)

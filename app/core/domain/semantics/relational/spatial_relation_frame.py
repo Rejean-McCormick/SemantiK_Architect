@@ -7,8 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from semantics.types import Entity, TimeSpan
-from semantics.common.quantity import Quantity
+from app.core.domain.semantics.types import Entity, TimeSpan
+from app.core.domain.semantics.common.quantity import Quantity
 
 
 @dataclass

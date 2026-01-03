@@ -22,8 +22,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List, Optional
 
-from semantics.types import Entity
-from semantics.all_frames import register_frame_type
+from app.core.domain.semantics.types import Entity
+from app.core.domain.semantics.all_frames import register_frame_type
 
 
 @dataclass

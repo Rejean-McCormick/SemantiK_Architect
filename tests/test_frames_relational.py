@@ -1,6 +1,6 @@
-# qa\test_frames_relational.py
+
 """
-qa/test_frames_relational.py
+tests/test_frames_relational.py
 ----------------------------
 
 Smoke tests for the relational / statement-level frame dataclasses.
@@ -24,19 +24,20 @@ from dataclasses import asdict
 
 import pytest
 
-from semantics.types import Entity, Event, TimeSpan
-from semantics.relational.attribute_property_frame import AttributeFrame
-from semantics.relational.definition_classification_frame import (
+# [FIX] Use full application paths for imports
+from app.core.domain.semantics.types import Entity, Event, TimeSpan
+from app.core.domain.semantics.relational.attribute_property_frame import AttributeFrame
+from app.core.domain.semantics.relational.definition_classification_frame import (
     DefinitionClassificationFrame,
 )
-from semantics.relational.membership_affiliation_frame import MembershipFrame
-from semantics.relational.ownership_control_frame import OwnershipControlFrame
-from semantics.relational.part_whole_composition_frame import (
+from app.core.domain.semantics.relational.membership_affiliation_frame import MembershipFrame
+from app.core.domain.semantics.relational.ownership_control_frame import OwnershipControlFrame
+from app.core.domain.semantics.relational.part_whole_composition_frame import (
     PartWholeCompositionFrame,
 )
-from semantics.relational.role_position_office_frame import RolePositionOfficeFrame
-from semantics.relational.spatial_relation_frame import SpatialRelationFrame
-from semantics.relational.temporal_relation_frame import TemporalRelationFrame
+from app.core.domain.semantics.relational.role_position_office_frame import RolePositionOfficeFrame
+from app.core.domain.semantics.relational.spatial_relation_frame import SpatialRelationFrame
+from app.core.domain.semantics.relational.temporal_relation_frame import TemporalRelationFrame
 
 
 # ---------------------------------------------------------------------------

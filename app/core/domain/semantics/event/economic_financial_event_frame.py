@@ -62,8 +62,8 @@ other features.
 Example usage
 =============
 
-    from semantics.types import Entity, Event, TimeSpan, Location
-    from semantics.event.economic_financial_event_frame import (
+    from app.core.domain.semantics.types import Entity, Event, TimeSpan, Location
+    from app.core.domain.semantics.event.economic_financial_event_frame import (
         EconomicFinancialEventFrame,
     )
 
@@ -120,7 +120,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List, Optional
 
-from semantics.types import Entity, Event
+from app.core.domain.semantics.types import Entity, Event
 
 
 @dataclass

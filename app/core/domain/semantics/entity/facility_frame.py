@@ -7,8 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.common.entity_base import EntityFrameBase
-from semantics.types import Entity, Event, Location, TimeSpan
+from app.core.domain.semantics.common.entity_base import EntityFrameBase
+from app.core.domain.semantics.types import Entity, Event, Location, TimeSpan
 
 
 @dataclass

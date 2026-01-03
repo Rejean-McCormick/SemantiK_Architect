@@ -1,4 +1,4 @@
-# qa\test_frames_meta.py
+# tests/test_frames_meta.py
 """
 qa/test_frames_meta.py
 ----------------------
@@ -16,7 +16,8 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from semantics.all_frames import (
+# [FIX] Use full application path for imports
+from app.core.domain.semantics.all_frames import (
     FRAME_FAMILIES,
     FRAME_FAMILY_MAP,
     FrameFamily,

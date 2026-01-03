@@ -29,7 +29,7 @@ Design goals
 Typical usage
 -------------
 
-    from semantics.common.reference import (
+    from app.core.domain.semantics.common.reference import (
         Reference,
         normalize_reference,
         entity_ref,

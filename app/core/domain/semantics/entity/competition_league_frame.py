@@ -24,8 +24,8 @@ encode any surface realization details. Those are delegated to:
 Example usage
 =============
 
-    from semantics.types import Entity, Location, TimeSpan
-    from semantics.entity.competition_league_frame import CompetitionLeagueFrame
+    from app.core.domain.semantics.types import Entity, Location, TimeSpan
+    from app.core.domain.semantics.entity.competition_league_frame import CompetitionLeagueFrame
 
     premier_league = Entity(
         id="Q9448",
@@ -70,7 +70,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Entity, Location, TimeSpan
+from app.core.domain.semantics.types import Entity, Location, TimeSpan
 
 
 # ---------------------------------------------------------------------------

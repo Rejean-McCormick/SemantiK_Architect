@@ -32,7 +32,7 @@ from dataclasses import asdict
 import re
 from typing import Any, Dict, Optional, Tuple
 
-from semantics.types import TimeSpan
+from app.core.domain.semantics.types import TimeSpan
 
 # ---------------------------------------------------------------------------
 # Internal constants

@@ -1,7 +1,9 @@
-# tests\core\test_use_cases.py
+# tests/core/test_use_cases.py
 import pytest
-from unittest.mock import AsyncMock, any_call
-from app.core.domain.models import Sentence, Frame, EventType
+from unittest.mock import AsyncMock
+from app.core.domain.models import Sentence, Frame
+# [FIX] Import EventType from the correct module (events.py)
+from app.core.domain.events import EventType
 from app.core.domain.exceptions import InvalidFrameError, DomainError
 
 @pytest.mark.asyncio

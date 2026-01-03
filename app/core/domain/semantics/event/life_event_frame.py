@@ -54,8 +54,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar, Optional
 
-from semantics.types import Entity, Event, Location, TimeSpan
-from semantics.all_frames import register_frame_type
+from app.core.domain.semantics.types import Entity, Event, Location, TimeSpan
+from app.core.domain.semantics.all_frames import register_frame_type
 
 
 @register_frame_type("event.life")

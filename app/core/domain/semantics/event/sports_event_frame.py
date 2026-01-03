@@ -93,8 +93,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
-from semantics.types import Event
-from semantics.all_frames import register_frame_type
+from app.core.domain.semantics.types import Event
+from app.core.domain.semantics.all_frames import register_frame_type
 
 
 @register_frame_type("event.sports")

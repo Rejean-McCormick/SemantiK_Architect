@@ -23,7 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List, Optional
 
-from semantics.types import Entity, Event
+from app.core.domain.semantics.types import Entity, Event
 
 
 @dataclass

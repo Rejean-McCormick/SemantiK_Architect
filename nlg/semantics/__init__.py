@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from semantics.types import BioFrame, Event
+from app.core.domain.semantics.types import BioFrame, Event
 
 # Alias Event to EventFrame to match the public API expectations
 EventFrame = Event

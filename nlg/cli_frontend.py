@@ -23,8 +23,8 @@ if _project_root not in sys.path:
 
 # Local imports must come after sys.path setup
 from nlg.api import generate, GenerationOptions  # noqa: E402
-from semantics.normalization import normalize_bio_semantics  # noqa: E402
-from semantics.types import BioFrame, Entity  # noqa: E402
+from app.core.domain.semantics.normalization import normalize_bio_semantics  # noqa: E402
+from app.core.domain.semantics.types import BioFrame, Entity  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

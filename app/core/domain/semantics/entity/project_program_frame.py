@@ -28,8 +28,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Entity, Event, Location, TimeSpan
-from semantics.common.entity_base import BaseEntityFrame
+from app.core.domain.semantics.types import Entity, Event, Location, TimeSpan
+from app.core.domain.semantics.common.entity_base import BaseEntityFrame
 
 
 @dataclass

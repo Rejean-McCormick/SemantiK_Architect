@@ -32,8 +32,8 @@ for templated rendering.
 Typical usage
 =============
 
-    from semantics.types import Entity
-    from semantics.entity.astronomical_object_frame import AstronomicalObjectFrame
+    from app.core.domain.semantics.types import Entity
+    from app.core.domain.semantics.entity.astronomical_object_frame import AstronomicalObjectFrame
 
     andromeda = Entity(
         id="Q2469",
@@ -81,7 +81,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Entity, Event, TimeSpan
+from app.core.domain.semantics.types import Entity, Event, TimeSpan
 
 
 @dataclass

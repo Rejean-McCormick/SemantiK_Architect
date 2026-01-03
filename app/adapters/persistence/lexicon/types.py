@@ -1,7 +1,7 @@
 # app/adapters/persistence/lexicon/types.py
-# lexicon/types.py
+
 """
-lexicon/types.py
+app/adapters/persistence/lexicon/types.py
 
 Core type definitions for the lexicon layer.
 
@@ -32,7 +32,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from string import Formatter
-from typing import Any, Dict, Iterable, Mapping, Optional
+from typing import Any, Dict, Iterable, Mapping, Optional, List
 
 
 # ---------------------------------------------------------------------------
@@ -45,6 +45,29 @@ NumberTag = str
 FormKey = str
 LanguageCode = str
 WikidataId = str
+
+
+# ---------------------------------------------------------------------------
+# [ADDED] Missing Dataclasses (Form, Sense)
+# ---------------------------------------------------------------------------
+
+@dataclass(slots=True)
+class Form:
+    """
+    Represents a specific surface form of a lexical entry.
+    """
+    surface: str
+    features: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class Sense:
+    """
+    Represents a semantic sense of a lexical entry.
+    """
+    id: Optional[str] = None
+    glosses: Dict[str, str] = field(default_factory=dict)
+    domains: List[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -491,4 +514,6 @@ __all__ = [
     "HonourEntry",
     "NameTemplate",
     "Lexicon",
+    "Form",    # Added
+    "Sense",   # Added
 ]

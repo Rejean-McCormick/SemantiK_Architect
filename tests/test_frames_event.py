@@ -1,4 +1,4 @@
-# qa\test_frames_event.py
+# tests/test_frames_event.py
 """
 qa/test_frames_event.py
 
@@ -19,26 +19,27 @@ from dataclasses import is_dataclass
 
 import pytest
 
-from semantics.types import Event
+# [FIX] Use full application path for imports
+from app.core.domain.semantics.types import Event
 
-from semantics.event.conflict_war_event_frame import ConflictWarEventFrame
-from semantics.event.cultural_event_frame import CulturalEventFrame
-from semantics.event.economic_financial_event_frame import (
+from app.core.domain.semantics.event.conflict_war_event_frame import ConflictWarEventFrame
+from app.core.domain.semantics.event.cultural_event_frame import CulturalEventFrame
+from app.core.domain.semantics.event.economic_financial_event_frame import (
     EconomicFinancialEventFrame,
 )
-from semantics.event.election_referendum_event_frame import (
+from app.core.domain.semantics.event.election_referendum_event_frame import (
     ElectionReferendumEventFrame,
 )
-from semantics.event.exploration_expedition_mission_event_frame import (
+from app.core.domain.semantics.event.exploration_expedition_mission_event_frame import (
     ExplorationExpeditionMissionEventFrame,
 )
-from semantics.event.historical_event_frame import HistoricalEventFrame
-from semantics.event.legal_case_event_frame import LegalCaseEventFrame
-from semantics.event.life_event_frame import LifeEventFrame
-from semantics.event.scientific_technical_milestone_event_frame import (
+from app.core.domain.semantics.event.historical_event_frame import HistoricalEventFrame
+from app.core.domain.semantics.event.legal_case_event_frame import LegalCaseEventFrame
+from app.core.domain.semantics.event.life_event_frame import LifeEventFrame
+from app.core.domain.semantics.event.scientific_technical_milestone_event_frame import (
     ScientificTechnicalMilestoneEventFrame,
 )
-from semantics.event.sports_event_frame import SportsEventFrame
+from app.core.domain.semantics.event.sports_event_frame import SportsEventFrame
 
 
 # ---------------------------------------------------------------------------

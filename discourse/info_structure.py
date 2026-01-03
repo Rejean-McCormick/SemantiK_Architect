@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional
 
-from semantics.normalization import (
+from app.core.domain.semantics.normalization import (
     BioSemantics,
     InfoStructure,
     normalize_info_structure,

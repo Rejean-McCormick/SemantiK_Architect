@@ -1,5 +1,4 @@
-# app\core\domain\semantics\relational\definition_classification_frame.py
-# semantics\relational\definition_classification_frame.py
+# app/core/domain/semantics/relational/definition_classification_frame.py
 """
 semantics/relational/definition_classification_frame.py
 -------------------------------------------------------
@@ -54,7 +53,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List, Optional
 
-from semantics.types import Entity
+# [FIX] Use full application path
+from app.core.domain.semantics.types import Entity
 
 
 @dataclass

@@ -53,7 +53,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
-from semantics.types import Entity, Event, TimeSpan
+from app.core.domain.semantics.types import Entity, Event, TimeSpan
 
 
 #: Type alias for convenience: things that can serve as "cause" or "effect".

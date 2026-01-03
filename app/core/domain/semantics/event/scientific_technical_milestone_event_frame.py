@@ -40,8 +40,8 @@ Design principles
 Example usage
 =============
 
-    from semantics.types import Entity, Event, Location, TimeSpan
-    from semantics.event.scientific_technical_milestone_event_frame import (
+    from app.core.domain.semantics.types import Entity, Event, Location, TimeSpan
+    from app.core.domain.semantics.event.scientific_technical_milestone_event_frame import (
         ScientificTechnicalMilestoneEventFrame,
     )
 
@@ -73,7 +73,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Entity, Event, Location, TimeSpan
+from app.core.domain.semantics.types import Entity, Event, Location, TimeSpan
 
 
 @dataclass

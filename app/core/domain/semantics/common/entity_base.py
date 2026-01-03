@@ -13,7 +13,7 @@ can share without pulling in any higher-level frame logic.
 Typical usage
 =============
 
-    from semantics.common.entity_base import Entity, Location, TimeSpan
+    from app.core.domain.semantics.common.entity_base import Entity, Location, TimeSpan
 
     marie = Entity(
         id="Q7186",

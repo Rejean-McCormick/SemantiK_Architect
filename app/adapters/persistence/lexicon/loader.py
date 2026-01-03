@@ -1,4 +1,4 @@
-
+# app/adapters/persistence/lexicon/loader.py
 """
 lexicon/loader.py
 =================
@@ -64,8 +64,10 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from app.shared.config import settings  # [FIX] Use shared settings for robust path resolution
-from lexicon.config import get_config
-from lexicon.types import (
+
+# [FIX] Use relative imports so this module works within app/adapters/persistence/lexicon/
+from .config import get_config
+from .types import (
     BaseLexicalEntry,
     HonourEntry,
     Lexicon,
@@ -79,14 +81,14 @@ logger = logging.getLogger(__name__)
 
 # Optional imports: keep loader usable in constrained environments.
 try:
-    from lexicon.schema import validate_lexicon_structure  # type: ignore
+    from .schema import validate_lexicon_structure  # [FIX] Relative import
 except Exception:  # pragma: no cover
-    validate_lexicon_structure = None  # type: ignore[assignment]
+    validate_lexicon_structure = None
 
 try:
-    from lexicon.normalization import normalize_for_lookup  # type: ignore
+    from .normalization import normalize_for_lookup  # [FIX] Relative import
 except Exception:  # pragma: no cover
-    normalize_for_lookup = None  # type: ignore[assignment]
+    normalize_for_lookup = None
 
 
 # ---------------------------------------------------------------------------

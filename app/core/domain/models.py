@@ -10,9 +10,32 @@ from pydantic import BaseModel, Field
 # Unify Frame definition by importing from the authoritative source
 from app.core.domain.frame import BaseFrame, BioFrame, EventFrame
 
-# Backward-compatible aliases
-Frame = Union[BioFrame, EventFrame, BaseFrame]
-SemanticFrame = Frame
+# -----------------------------
+# Frames (compat + canonical)
+# -----------------------------
+
+# Canonical semantic frames from the domain package
+SemanticFrame = Union[BioFrame, EventFrame, BaseFrame]
+
+# Backward-compat: older tests/imports expect FrameType + a Pydantic Frame model.
+# Keep it permissive (string) to avoid tight coupling to frame registries.
+FrameType = str
+
+
+class Frame(BaseModel):
+    """
+    Backward-compatible Frame model used in tests and older API payloads.
+
+    NOTE:
+    - This is intentionally a lightweight container that matches tests expecting:
+      Frame(frame_type="bio", subject={...}, properties={...}, meta={...})
+    - The canonical frame types used by the generator are in app.core.domain.frame
+      (BioFrame/EventFrame/BaseFrame) and are represented by SemanticFrame above.
+    """
+    frame_type: FrameType
+    subject: Dict[str, Any]
+    properties: Dict[str, Any] = Field(default_factory=dict)
+    meta: Dict[str, Any] = Field(default_factory=dict)
 
 
 # --- Enums ---

@@ -1,4 +1,4 @@
-# qa\test_frames_entity.py
+# tests/test_frames_entity.py
 """
 qa/test_frames_entity.py
 ------------------------
@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from typing import List
 
-from semantics.all_frames import (
+# [FIX] Use the full application path
+from app.core.domain.semantics.all_frames import (
     FRAME_FAMILIES,
     FRAME_FAMILY_MAP,
     FrameFamily,

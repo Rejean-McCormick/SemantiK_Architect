@@ -34,8 +34,8 @@ Design goals
 Typical usage
 =============
 
-    from semantics.types import Entity
-    from semantics.relational.part_whole_composition_frame import (
+    from app.core.domain.semantics.types import Entity
+    from app.core.domain.semantics.relational.part_whole_composition_frame import (
         PartWholeCompositionFrame,
     )
 
@@ -62,7 +62,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
-from semantics.types import Entity
+from app.core.domain.semantics.types import Entity
 
 
 __all__ = ["PartWholeCompositionFrame"]

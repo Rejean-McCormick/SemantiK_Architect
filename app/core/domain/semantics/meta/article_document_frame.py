@@ -26,9 +26,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from semantics.types import Entity  # core semantic unit
-from semantics.meta.section_summary_frame import SectionSummaryFrame
-from semantics.meta.source_citation_frame import SourceCitationFrame
+from app.core.domain.semantics.types import Entity  # core semantic unit
+from app.core.domain.semantics.meta.section_summary_frame import SectionSummaryFrame
+from app.core.domain.semantics.meta.source_citation_frame import SourceCitationFrame
 
 
 @dataclass

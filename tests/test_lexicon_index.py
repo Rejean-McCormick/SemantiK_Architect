@@ -1,4 +1,4 @@
-# qa\test_lexicon_index.py
+# tests/test_lexicon_index.py
 """
 qa/test_lexicon_index.py
 
@@ -15,14 +15,15 @@ layer:
 
 from __future__ import annotations
 
-from lexicon.types import (
+# [FIX] Use full application paths for imports
+from app.adapters.persistence.lexicon.types import (
     Lexicon,
     LexiconMeta,
     ProfessionEntry,
     NationalityEntry,
     BaseLexicalEntry,
 )
-from lexicon.index import LexiconIndex
+from app.adapters.persistence.lexicon.index import LexiconIndex
 
 
 def make_minimal_lexicon_it() -> Lexicon:

@@ -17,7 +17,7 @@ The idea is that higher-level code (CSV readers, AW/Z-bridges, etc.)
 will normalize loose dictionaries into these types and then pass them
 to the router / construction layer:
 
-    from semantics.types import Entity, BioFrame, Event, TimeSpan
+    from app.core.domain.semantics.types import Entity, BioFrame, Event, TimeSpan
 
     marie = Entity(
         id="Q7186",
