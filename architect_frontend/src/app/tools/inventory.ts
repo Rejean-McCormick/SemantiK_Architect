@@ -1,3 +1,5 @@
+import { Tool } from "./types";
+
 // Tools Command Center
 // Inventory v2.5 (generated 2026-01-02)
 // API: http://localhost:8000/api/v1
@@ -48,15 +50,9 @@ export const INVENTORY = {
       "tools/qa/test_suite_generator.py",
       "tools/qa/universal_test_runner.py",
     ],
-    debug: [
-      "tools/debug/visualize_ast.py",
-    ],
-    health: [
-      "tools/health/profiler.py",
-    ],
-    lexicon: [
-      "tools/lexicon/gap_filler.py",
-    ],
+    debug: ["tools/debug/visualize_ast.py"],
+    health: ["tools/health/profiler.py"],
+    lexicon: ["tools/lexicon/gap_filler.py"],
   },
   scripts: {
     root: [
@@ -65,7 +61,10 @@ export const INVENTORY = {
       "scripts/test_api_generation.py",
       "scripts/test_tier1_load.py",
     ],
-    lexicon: ["scripts/lexicon/sync_rgl.py", "scripts/lexicon/wikidata_importer.py"],
+    lexicon: [
+      "scripts/lexicon/sync_rgl.py",
+      "scripts/lexicon/wikidata_importer.py",
+    ],
   },
   utils: [
     "utils/__init__.py",
@@ -126,3 +125,70 @@ export const INVENTORY = {
 } as const;
 
 export type Inventory = typeof INVENTORY;
+
+// --- ACTIVE TOOL REGISTRY (GUI) ---
+export const TOOLS: Tool[] = [
+  {
+    id: "language_health",
+    name: "Language Health",
+    description: "Deep scan of compilation status and API runtime health.",
+    category: "maintenance",
+    defaultArgs: "--verbose"
+  },
+  {
+    id: "diagnostic_audit",
+    name: "Diagnostic Audit",
+    description: "Identify zombie files and broken grammar links.",
+    category: "maintenance",
+    defaultArgs: "--verbose"
+  },
+  {
+    id: "lexicon_coverage",
+    name: "Lexicon Coverage",
+    description: "Report on vocabulary size and semantic gaps per language.",
+    category: "data",
+    defaultArgs: "--include-files" // Equivalent to verbose for this tool
+  },
+  {
+    id: "compile_pgf",
+    name: "Compile Grammar",
+    description: "Trigger a full PGF compilation sequence.",
+    category: "build",
+    defaultArgs: "" // Does not support verbose
+  },
+  {
+    id: "harvest_lexicon",
+    name: "Harvest Lexicon",
+    description: "Import words from Wikidata or WordNet.",
+    category: "data",
+    defaultArgs: "" // Does not support verbose
+  },
+  {
+    id: "run_judge",
+    name: "Run Judge",
+    description: "Execute Gold Standard regression tests via AI Judge.",
+    category: "qa",
+    defaultArgs: "--verbose" // Maps to Universal Test Runner which supports verbose
+  },
+  {
+    id: "ai_refiner",
+    name: "AI Refiner",
+    description: "Refine grammar rules using AI.",
+    category: "ai",
+    defaultArgs: "--verbose"
+  },
+  {
+    id: "profiler",
+    name: "Performance Profiler",
+    description: "Measure latency and memory usage.",
+    category: "health",
+    defaultArgs: "--verbose"
+  },
+  {
+    id: "gap_filler",
+    name: "Lexicon Gap Filler",
+    description: "Find missing words compared to a pivot language.",
+    category: "data",
+    defaultArgs: "--verbose"
+  }
+];

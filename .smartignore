@@ -1,0 +1,64 @@
+# =======================================================
+# SMART IGNORE - AI Debugging Context Optimization
+# =======================================================
+
+# --- 1. Grammar Framework (External Libraries) ---
+# Massive external dependencies that confuse AI context
+gf/
+gf-rgl/
+
+# --- 2. Build Artifacts & Dependencies ---
+# Standard build outputs and library folders
+node_modules/
+.next/
+build/
+dist/
+coverage/
+__pycache__/
+.git/
+.venv/
+venv/
+env/
+
+# --- 3. Large Data & Assets ---
+# Runtime data, logs, and static binary assets
+# (Exclude these to prevent dumping gigabytes of test data)
+data/
+public/
+assets/
+images/
+logs/
+
+# --- 4. Lock Files (Noise) ---
+# AI only needs package.json/pyproject.toml, not the lock traces
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+poetry.lock
+Pipfile.lock
+*.lock
+
+# --- 5. Noisy Extensions & Binary Files ---
+# Source maps
+*.map
+
+# Large datasets
+*.csv
+*.jsonl
+*.db
+*.sqlite
+*.parquet
+
+# Binary Images/Media
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.mp4
+*.mp3
+*.pdf
+*.zip
+*.gz
+*.tar

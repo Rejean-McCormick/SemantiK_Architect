@@ -7,7 +7,8 @@ import re
 import secrets
 from typing import Annotated, Optional
 
-from dependency_injector.wiring import Provide
+# [FIX] Added 'inject' to imports
+from dependency_injector.wiring import Provide, inject
 from fastapi import Depends, Header, HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 
@@ -27,9 +28,10 @@ logger = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 # Grammar Engine Dependency
 # -----------------------------------------------------------------------------
+@inject  # [FIX] Added decorator to enable DI wiring
 def get_grammar_engine(
-    # Use Container-managed Singleton: one PGF load per worker.
-    engine: IGrammarEngine = Depends(Provide[Container.grammar_engine]),
+    # [FIX] Removed Depends(), use Provide[...] directly as default value
+    engine: IGrammarEngine = Provide[Container.grammar_engine],
 ) -> IGrammarEngine:
     """Returns the process-wide singleton IGrammarEngine from the DI Container."""
     return engine
@@ -153,19 +155,21 @@ def get_generate_text_use_case(
     return GenerateText(engine=engine, llm=llm_adapter)
 
 
+@inject  # [FIX] Added decorator
 def get_build_language_use_case(
-    # Explicitly wire the broker into BuildLanguage so broker.publish() is called
-    # (and so container wiring bugs don’t silently disable event publishing).
-    task_queue: ITaskQueue = Depends(Provide[Container.task_queue]),
-    broker: Optional[IMessageBroker] = Depends(Provide[Container.message_broker]),
+    # [FIX] Removed Depends(), just use Provide[...]
+    task_queue: ITaskQueue = Provide[Container.task_queue],
+    broker: Optional[IMessageBroker] = Provide[Container.message_broker],
 ) -> BuildLanguage:
     """Dependency to construct the BuildLanguage interactor with broker wired."""
     return BuildLanguage(task_queue=task_queue, broker=broker)
 
 
+@inject  # [FIX] Added decorator
 def get_onboard_saga(
     llm_adapter: GeminiAdapter = Depends(get_llm_adapter),
-    saga: OnboardLanguageSaga = Depends(Provide[Container.onboard_language_saga]),
+    # [FIX] Removed Depends(), just use Provide[...]
+    saga: OnboardLanguageSaga = Provide[Container.onboard_language_saga],
 ) -> OnboardLanguageSaga:
     """Dependency to inject the OnboardLanguageSaga (container-managed)."""
     if hasattr(saga, "llm"):

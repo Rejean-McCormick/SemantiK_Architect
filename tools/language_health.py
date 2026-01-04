@@ -28,6 +28,8 @@ import subprocess
 import sys
 import time
 import uuid
+from dotenv import load_dotenv
+load_dotenv()  # This loads your .env file into os.environ
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
