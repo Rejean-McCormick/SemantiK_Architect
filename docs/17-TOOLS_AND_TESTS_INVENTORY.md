@@ -17,198 +17,139 @@ This document serves as the **Single Source of Truth** for:
 
 ---
 
-## 1. 🕹️ Core Orchestration (The "God Mode")
+## 1. 🕹️ Core Orchestration
 
-These are your primary entry points for managing the entire system lifecycle.
+Primary entry points for managing the overall system lifecycle.
 
-| Command / Script | Location | Purpose | Key Arguments |
-| --- | --- | --- | --- |
-| **`manage.py`** | `Root` | **The Commander.** Unified CLI for starting, building, and cleaning the system. | `start`: Check env & launch API/Worker.<br>
-
-<br>`build`: Compile grammar (`--clean`, `--parallel`).<br>
-
-<br>`doctor`: Run diagnostics.<br>
-
-<br>`clean`: Remove artifacts. |
-| **`Run-Architect.ps1`** | `Root` | **Windows Launcher.** PowerShell wrapper that handles zombie process cleanup (Node/Python) and spawns the 3-window hybrid setup (API/Worker/Frontend). | *None (Run directly)* |
-| **`Makefile`** | `Root` | **Legacy Build.** Make commands for compiling Tier 1 languages directly via `gf`. | `all`: Compiles 4 Tier-1 languages.<br>
-
-<br>`clean`: Removes `.gfo` and `.pgf`. |
-| **`StartWSL.bat`** | `Root` | **Quick Shell.** Launches a new PowerShell window pre-connected to WSL with the virtual environment activated. | *None* |
+| Command / Script        | Location | Purpose                                                                                          | Key Arguments                                                                                                                                                           |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`manage.py`**         | `Root`   | Unified CLI for starting, building, and cleaning the system.                                     | `start`: Launch API/Worker (checks env).<br><br>`build`: Compile grammar (`--clean`, `--parallel`).<br><br>`doctor`: Run diagnostics.<br><br>`clean`: Remove artifacts. |
+| **`Run-Architect.ps1`** | `Root`   | Windows launcher that handles process cleanup and spawns the hybrid setup (API/Worker/Frontend). | *(None; run directly)*                                                                                                                                                  |
+| **`Makefile`**          | `Root`   | Legacy build shortcuts for compiling Tier 1 languages directly via `gf`.                         | `all`, `clean`                                                                                                                                                          |
+| **`StartWSL.bat`**      | `Root`   | Quick shell launcher into WSL with venv activated.                                               | *(None)*                                                                                                                                                                |
 
 ---
 
-## 2. 🏭 The Build System (The Factory)
+## 2. 🏭 The Build System
 
-These scripts handle the complex logic of turning source code into the binary runtime.
+Scripts that turn source grammars into the runtime PGF.
 
-| Tool | Location | Purpose | Key Arguments |
-| --- | --- | --- | --- |
-| **Orchestrator** | `builder/orchestrator.py` | **The Compiler.** Runs the **Two-Phase Build** (Verify → Link). It compiles individual languages to `.gfo` and links them into `AbstractWiki.pgf`. Triggers the **Factory** for missing Tier 3 languages. | *(None, config driven by `everything_matrix.json`)* |
-| **Compiler** | `builder/compiler.py` | **Sandboxed Builder.** Low-level wrapper around the `gf` binary. Manages include paths and environment isolation. | *(Internal module)* |
-| **Strategist** | `builder/strategist.py` | **The Planner.** Analyzes available RGL modules and decides which build strategy to use (GOLD, SILVER, BRONZE, IRON). Generates `build_plan.json`. | *(Internal module)* |
-| **Forge** | `builder/forge.py` | **The Executor.** Reads the `build_plan.json` and physically writes the `Wiki*.gf` concrete files based on the chosen strategy. | *(Internal module)* |
-| **Healer** | `builder/healer.py` | **The Medic.** Reads `build_failures.json` and dispatches the **AI Surgeon** to repair broken grammar files. | *(Internal module)* |
-
----
-
-## 3. 🧠 The "Everything Matrix" (System Intelligence)
-
-The central nervous system that scans your codebase to determine language health.
-
-| Tool | Location | Purpose | Key Arguments |
-| --- | --- | --- | --- |
-| **Matrix Builder** | `tools/everything_matrix/build_index.py` | **The Census Taker.** Scans RGL, Lexicon, App, and QA layers to build `everything_matrix.json`. Calculates Maturity Scores (0-10) and Build Strategies. | `--force`: Ignore cache.<br>
-
-<br>`--regen-[rgl/lex/app/qa]`: Force rescan of specific zones.<br>
-
-<br>`--verbose`: Debug logs. |
-| **RGL Scanner** | `tools/everything_matrix/rgl_scanner.py` | **Zone A Audit.** Scans `gf-rgl/src` to find which modules (Cat, Noun, Syntax) exist for each language. | `--write`: Save to disk.<br>
-
-<br>`--output`: Custom path. |
-| **Lexicon Scanner** | `tools/everything_matrix/lexicon_scanner.py` | **Zone B Audit.** Scans `data/lexicon/` to count Core/Domain words and calculate semantic coverage. | `--lex-root`: Custom path.<br>
-
-<br>`--lang`: Scan single language. |
-| **App Scanner** | `tools/everything_matrix/app_scanner.py` | **Zone C Audit.** Scans frontend profiles and assets to determine application readiness. | *(Internal/Library)* |
-| **QA Scanner** | `tools/everything_matrix/qa_scanner.py` | **Zone D Audit.** Scans JUnit reports and PGF binaries to calculate pass rates and binary presence. | `--gf-root`: Custom path.<br>
-
-<br>`--junit`: Custom XML path. |
+| Tool             | Location                  | Purpose                                                                                                                                    | Key Arguments                                                                                                             |
+| ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **Orchestrator** | `builder/orchestrator.py` | Runs the two-phase build (Verify → Link). Compiles `.gfo` and links into `AbstractWiki.pgf`. Triggers factory paths for missing languages. | Config-driven (matrix/index); CLI supports `--strategy`, `--langs`, `--clean`, `--verbose` when invoked via tools runner. |
+| **Compiler**     | `builder/compiler.py`     | Low-level wrapper around `gf`. Manages include paths and environment isolation.                                                            | *(Internal module)*                                                                                                       |
+| **Strategist**   | `builder/strategist.py`   | Chooses build strategy (GOLD/SILVER/BRONZE/IRON) and writes build plan.                                                                    | *(Internal module)*                                                                                                       |
+| **Forge**        | `builder/forge.py`        | Writes `Wiki*.gf` concrete files according to build plan.                                                                                  | *(Internal module)*                                                                                                       |
+| **Healer**       | `builder/healer.py`       | Reads build failures and dispatches AI repair for broken grammars.                                                                         | *(Internal module)*                                                                                                       |
 
 ---
 
-## 4. 🚑 Maintenance & Diagnostics (Health)
+## 3. 🧠 The Everything Matrix
 
-Tools to keep the system clean and running smoothly.
+System intelligence layer that scans repo state and language readiness.
 
-| Tool | Location | Purpose | Key Arguments |
-| --- | --- | --- | --- |
-| **Language Health** | `tools/language_health.py` | **Deep Scan.** Replaces `audit_languages`. Compiles a specific language and runs a runtime API test against it. Generates `audit_report.json`. | `--mode [compile/api/both]`<br>
-
-<br>`--langs [en fr]`<br>
-
-<br>`--verbose`<br>
-
-<br>`--fast`: Use cache. |
-| **Diagnostic Audit** | `tools/diagnostic_audit.py` | **Forensics.** Detects "Zombie" files (leftover `.gf` files from failed builds) and suspicious content that might break compilation. | `--verbose`<br>
-
-<br>`--json`: Machine readable output. |
-| **Root Cleanup** | `tools/cleanup_root.py` | **Garbage Collector.** Moves stray `.gf/.pgf` files to the `gf/` folder and deletes temp files (`.tmp`, `.log`, `junit.xml`). | `--dry-run`: Preview only.<br>
-
-<br>`--verbose`<br>
-
-<br>`--json` |
-| **Bootstrap Tier 1** | `tools/bootstrap_tier1.py` | **Initializer.** Creates the `Wiki*.gf` bridge files for Tier 1 languages, linking them to the RGL. | `--force`: Overwrite.<br>
-
-<br>`--dry-run`<br>
-
-<br>`--langs`: Filter list. |
-| **Config Syncer** | `sync_config_from_gf.py` | **Data Sync.** Reads the compiled PGF and updates `language_profiles.json` with available languages. | *(None)* |
+| Tool                | Location                                     | Purpose                                                                                                                  | Key Arguments                                                                                                  |
+| ------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| **Matrix Builder**  | `tools/everything_matrix/build_index.py`     | Scans RGL, Lexicon, App, and QA layers to build `everything_matrix.json`. Computes maturity scores and build strategies. | `--out` (path), `--langs …`, `--force`, `--regen-rgl`, `--regen-lex`, `--regen-app`, `--regen-qa`, `--verbose` |
+| **RGL Scanner**     | `tools/everything_matrix/rgl_scanner.py`     | Audits `gf-rgl/src` module presence/consistency (outputs JSON).                                                          | *(scanner-specific; used by build_index)*                                                                      |
+| **Lexicon Scanner** | `tools/everything_matrix/lexicon_scanner.py` | Scores lexicon maturity by scanning shard coverage (outputs JSON).                                                       | *(scanner-specific; used by build_index)*                                                                      |
+| **App Scanner**     | `tools/everything_matrix/app_scanner.py`     | Scans frontend/backend surfaces for language support signals (outputs JSON).                                             | *(scanner-specific; used by build_index)*                                                                      |
+| **QA Scanner**      | `tools/everything_matrix/qa_scanner.py`      | Parses QA artifacts/logs to update quality scoring (outputs JSON).                                                       | *(scanner-specific; used by build_index)*                                                                      |
 
 ---
 
-## 5. ⛏️ Data Operations (Lexicon & Mining)
+## 4. 🚑 Maintenance & Diagnostics
 
-Tools for ingesting, managing, and fixing vocabulary data.
+Tools used to keep the repo sane and the system healthy.
 
-| Tool | Location | Purpose | Key Arguments |
-| --- | --- | --- | --- |
-| **Universal Harvester** | `tools/harvest_lexicon.py` | **The Miner.** Fetches words from local **GF WordNet** files (`--source wordnet`) or **Wikidata** (`--source wikidata`) to populate `wide.json`. | `wordnet --root <path>`<br>
-
-<br>`wikidata --input <qids.json>`<br>
-
-<br>`--lang`: Target ISO code. |
-| **Wikidata Importer** | `scripts/lexicon/wikidata_importer.py` | **The Linker.** Enriches existing lexicon files by looking up their lemmas on Wikidata and adding QIDs. | `--lang`: Target language.<br>
-
-<br>`--domain`: Target shard.<br>
-
-<br>`--apply`: Write changes. |
-| **RGL Syncer** | `scripts/lexicon/sync_rgl.py` | **The Big Pull.** Extracts ALL lexical functions from the compiled PGF and dumps them into `data/lexicon/{lang}/rgl_sync.json`. | `--pgf`: Custom PGF path.<br>
-
-<br>`--max-funs`: Limit count.<br>
-
-<br>`--dry-run` |
-| **Gap Filler** | `tools/lexicon/gap_filler.py` | **The Analyst.** Compares a target language (e.g., French) against a pivot language (English) to find missing vocabulary entries. | `--target`: Language code.<br>
-
-<br>`--pivot`: Reference code (default: eng).<br>
-
-<br>`--json-out`: Save report. |
-| **Link Libraries** | `link_libraries.py` | **The Patcher.** Modifies `Wiki*.gf` files to ensure they `open` the `Dict` and `Symbolic` modules required for runtime lexicon injection. | *(None)* |
+| Tool                 | Location                    | Purpose                                                                        | Key Arguments                                                                                                                      |
+| -------------------- | --------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Language Health**  | `tools/language_health.py`  | Deep scan utility (replaces legacy `audit_languages` / `check_all_languages`). | `--mode`, `--fast`, `--parallel`, `--api-url`, `--api-key`, `--timeout`, `--langs …`, `--no-disable-script`, `--verbose`, `--json` |
+| **Diagnostic Audit** | `tools/diagnostic_audit.py` | Forensics audit for stale artifacts and inconsistent outputs.                  | `--verbose`, `--json`                                                                                                              |
+| **Root Cleanup**     | `tools/cleanup_root.py`     | Moves loose artifacts into expected folders and cleans known junk outputs.     | `--dry-run`, `--verbose`, `--json`                                                                                                 |
+| **Bootstrap Tier 1** | `tools/bootstrap_tier1.py`  | Scaffolds Tier 1 wrappers / bridge files for selected languages.               | `--langs …`, `--force`, `--dry-run`, `--verbose`                                                                                   |
 
 ---
 
-## 6. 🧪 Quality Assurance (Testing & Evaluation)
+## 5. ⛏️ Data Operations
 
-Tools to verify the linguistic output and system stability.
+Lexicon mining/harvesting and related vocabulary maintenance.
 
-| Tool | Location | Purpose | Key Arguments |
-| --- | --- | --- | --- |
-| **Universal Test Runner** | `tools/qa/universal_test_runner.py` | **The Executor.** Runs CSV-based test suites (v2 & Legacy) against the engine using the **GF Grammar Engine Adapter**. | `--dataset-dir`: Folder with CSVs.<br>
-
-<br>`--langs`: Filter.<br>
-
-<br>`--fail-fast`<br>
-
-<br>`--strict`: Fail on missing expected text. |
-| **Bio Evaluator** | `tools/qa/eval_bios.py` | **Real-World QA.** Renders biographies for a sample of real humans (from local file or Wikidata) and checks coverage/quality. | `--source [local/wikidata]`<br>
-
-<br>`--input`: JSON/CSV file.<br>
-
-<br>`--langs`: Target languages. |
-| **Lexicon Coverage** | `tools/qa/lexicon_coverage_report.py` | **Data Stats.** Generates detailed reports on lexicon size, collisions, and missing shards. | `--out`: Output JSON.<br>
-
-<br>`--include-files`: Detailed breakdown.<br>
-
-<br>`--fail-on-errors` |
-| **Ambiguity Detector** | `tools/qa/ambiguity_detector.py` | **Linguistics QA.** Checks for "Ambiguity Traps" (sentences with >1 parse tree). Can generate candidates via AI or check specific sentences. | `--lang`: Target code.<br>
-
-<br>`--sentence`: Custom input.<br>
-
-<br>`--topic`: AI generation topic. |
-| **Test Suite Gen** | `tools/qa/test_suite_generator.py` | **Template Maker.** Creates empty `test_suite_{lang}.csv` files for human linguists to fill with expected translations. | `--langs`: Target languages.<br>
-
-<br>`--matrix`: Path to matrix config. |
-| **Batch Generator** | `tools/qa/batch_test_generator.py` | **Bulk QA.** Programmatically generates large regression datasets for stress testing. | *(None)* |
-| **Regression Gen** | `tools/qa/generate_lexicon_regression_tests.py` | **Snapshotter.** Generates a pytest module (`test_lexicon_regression.py`) that snapshots the current lexicon inventory to detect changes. | `--out`: Output file path.<br>
-
-<br>`--langs`: Filter. |
-| **Profiler** | `tools/health/profiler.py` | **Benchmarker.** Measures API latency (ms), throughput (TPS), and memory usage under load. | `--lang`: Target code.<br>
-
-<br>`--iterations`: Request count.<br>
-
-<br>`--update-baseline` |
+| Tool                                     | Location                               | Purpose                                                                                                                                                                               | Key Arguments                                                                                                                                                                                  |
+| ---------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Universal Lexicon Harvester**          | `tools/harvest_lexicon.py`             | **Two-mode harvester (subcommands)** for lexicon data. WordNet mode builds `wide.json`. Wikidata mode fetches labels + limited facts for provided QIDs and saves a domain shard JSON. | **`wordnet`**: `wordnet --root <gf-wordnet> --lang <iso2> [--out <data/lexicon>]`<br><br>**`wikidata`**: `wikidata --lang <iso2> --input <qids.json> [--domain people] [--out <data/lexicon>]` |
+| **Wikidata Importer (Legacy/Reference)** | `scripts/lexicon/wikidata_importer.py` | Legacy/reference importer logic; not wired into v2.5 tools runner allowlist.                                                                                                          | *(varies; not authoritative in v2.5 runtime)*                                                                                                                                                  |
+| **RGL Syncer**                           | `scripts/lexicon/sync_rgl.py`          | Extracts lexical functions from compiled PGF into `data/lexicon/{lang}/rgl_sync.json`.                                                                                                | `--pgf`, `--max-funs`, `--dry-run`                                                                                                                                                             |
+| **Gap Filler**                           | `tools/lexicon/gap_filler.py`          | Compares target language lexicon vs pivot language to find missing concepts.                                                                                                          | `--target`, `--pivot`, `--data-dir`, `--json-out`, `--verbose`                                                                                                                                 |
+| **Link Libraries**                       | `link_libraries.py`                    | Ensures `Wiki*.gf` opens required modules for runtime lexicon injection.                                                                                                              | *(None)*                                                                                                                                                                                       |
+| **Schema/Index Utilities**               | `utils/…`                              | Maintenance utilities for lexicon index/schema and stats.                                                                                                                             | `utils/refresh_lexicon_index.py`, `utils/migrate_lexicon_schema.py`, `utils/dump_lexicon_stats.py`                                                                                             |
 
 ---
 
-## 7. 🤖 AI Services (The Staff)
+## 6. 🧪 Quality Assurance
 
-Autonomous agents that perform complex tasks.
+QA tools that validate runtime output, lexicon integrity, and regression coverage.
 
-| Agent | File | Role | Triggered By |
-| --- | --- | --- | --- |
-| **The Architect** | `ai_services/architect.py` | **Grammar Generator.** Writes raw GF code for missing languages (Tier 3) based on topology constraints. | `manage.py generate` |
-| **The Surgeon** | `ai_services/surgeon.py` | **Code Repair.** Analyzes compiler error logs and patches broken `.gf` files automatically. | `builder/healer.py` (Build failure) |
-| **The Lexicographer** | `ai_services/lexicographer.py` | **Data Bootstrapper.** Generates `core.json` files for empty languages by translating basic concepts. | CLI or Missing Data Event |
-| **The Judge** | `ai_services/judge.py` | **QA Evaluator.** Grades generated text against Gold Standards. Auto-files GitHub issues for regressions. | `tests/integration/test_quality.py` |
-| **AI Refiner** | `tools/ai_refiner.py` | **Upgrader.** Takes a "Pidgin" grammar and upgrades it to a proper RGL implementation using LLM reasoning. | CLI Tool |
+| Tool                                  | Location                                        | Purpose                                                                                                            | Key Arguments                                                                              |
+| ------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| **Universal Test Runner**             | `tools/qa/universal_test_runner.py`             | Runs CSV-based suites and emits a report. (Also exposed via legacy UI ID `test_runner` → `universal_test_runner`.) | `--suite`, `--in`, `--out`, `--langs …`, `--limit`, `--verbose`, `--fail-fast`, `--strict` |
+| **Bio Evaluator**                     | `tools/qa/eval_bios.py`                         | Compares generated biographies against Wikidata facts (QA harness).                                                | `--langs …`, `--limit`, `--out`, `--verbose`                                               |
+| **Lexicon Coverage Report**           | `tools/qa/lexicon_coverage_report.py`           | Coverage report for intended vs implemented lexicon and errors.                                                    | `--langs …`, `--out`, `--format`, `--verbose`, `--fail-on-errors`                          |
+| **Ambiguity Detector (AI)**           | `tools/qa/ambiguity_detector.py`                | Uses AI to generate ambiguous sentences and checks for multiple parse trees.                                       | `--lang`, `--sentence`, `--topic`, `--json-out`, `--verbose` *(requires AI enabled)*       |
+| **Batch Test Generator**              | `tools/qa/batch_test_generator.py`              | Generates large regression datasets (CSV) for QA.                                                                  | `--langs …`, `--out`, `--limit`, `--seed`, `--verbose`                                     |
+| **Test Suite Generator**              | `tools/qa/test_suite_generator.py`              | Generates empty CSV templates for manual fill-in.                                                                  | `--langs …`, `--out`, `--verbose`                                                          |
+| **Lexicon Regression Test Generator** | `tools/qa/generate_lexicon_regression_tests.py` | Builds regression tests from lexicon inventory for CI.                                                             | `--langs …`, `--out`, `--limit`, `--verbose`, `--lexicon-dir`                              |
+| **Profiler**                          | `tools/health/profiler.py`                      | Benchmarks Grammar Engine performance.                                                                             | `--lang`, `--iterations`, `--update-baseline`, `--threshold`, `--verbose`                  |
+| **AST Visualizer**                    | `tools/debug/visualize_ast.py`                  | Generates JSON AST from sentence/intent or explicit AST.                                                           | `--lang`, `--sentence`, `--ast`, `--pgf`                                                   |
+
+---
+
+## 7. 🤖 AI Services
+
+Autonomous agents and AI-gated tools.
+
+| Agent / Tool          | File                           | Role                                                                 | Triggered By                        |
+| --------------------- | ------------------------------ | -------------------------------------------------------------------- | ----------------------------------- |
+| **The Architect**     | `ai_services/architect.py`     | Generates missing grammars (Tier 3) based on topology constraints.   | Build/CLI workflow                  |
+| **The Surgeon**       | `ai_services/surgeon.py`       | Repairs broken `.gf` files using compiler logs.                      | `builder/healer.py`                 |
+| **The Lexicographer** | `ai_services/lexicographer.py` | Bootstraps core vocabulary for empty languages.                      | CLI / missing-data workflows        |
+| **The Judge**         | `ai_services/judge.py`         | Grades generated text against gold standards; regression evaluation. | `tests/integration/test_quality.py` |
+| **AI Refiner**        | `tools/ai_refiner.py`          | Upgrades “Pidgin” grammars toward RGL compliance.                    | Tools runner (AI-gated)             |
+| **Seed Lexicon (AI)** | `utils/seed_lexicon_ai.py`     | Generates seed lexicon for selected languages.                       | Tools runner (AI-gated)             |
+
+**AI gating:** backend enforces `ARCHITECT_ENABLE_AI_TOOLS=1` for AI-gated tool IDs.
 
 ---
 
 ## 8. 🧪 Test Suites (Pytest)
 
-The automated regression harness. Run with `pytest <path>`.
+Automated regression harness. Run with `pytest <path>`.
 
-| Category | File | Description |
-| --- | --- | --- |
-| **Integration** | `tests/integration/test_quality.py` | **The Judge.** Runs Gold Standard regression tests using the AI Judge. |
-| **Integration** | `tests/integration/test_worker_flow.py` | **Async.** Verifies the Redis job queue and worker compilation logic. |
-| **Integration** | `tests/integration/test_ninai.py` | **Protocol.** Tests the Ninai JSON Adapter parsing logic. |
-| **Smoke** | `tests/test_api_smoke.py` | **HTTP.** Checks `/health` and `/generate` endpoints. |
-| **Smoke** | `tests/test_gf_dynamic.py` | **Engine.** Verifies binary loading and linearization. |
-| **Smoke** | `tests/test_lexicon_smoke.py` | **Data.** Validates JSON schema of all lexicon files. |
-| **Lexicon** | `tests/test_lexicon_loader.py` | **IO.** Tests lazy-loading of lexicon shards. |
-| **Lexicon** | `tests/test_lexicon_index.py` | **Search.** Tests in-memory indexing and lookups. |
-| **Lexicon** | `tests/test_lexicon_wikidata_bridge.py` | **ETL.** Tests Wikidata QID extraction logic. |
-| **Frames** | `tests/test_frames_*.py` | **Semantics.** Unit tests for all Semantic Frame dataclasses (Entity, Event, Narrative, Relational, Meta). |
-| **API** | `tests/http_api/test_generate.py` | **Endpoints.** Tests `POST /generate` with various payloads. |
-| **API** | `tests/http_api/test_ai.py` | **Endpoints.** Tests AI suggestion endpoints. |
-| **Core** | `tests/core/test_use_cases.py` | **Logic.** Tests domain use cases (GenerateText, BuildLanguage). |
+| Category        | File                                    | Description                                             |
+| --------------- | --------------------------------------- | ------------------------------------------------------- |
+| **Integration** | `tests/integration/test_quality.py`     | Judge-based regression checks (AI Judge integration).   |
+| **Integration** | `tests/integration/test_worker_flow.py` | Verifies worker compilation/job flow.                   |
+| **Integration** | `tests/integration/test_ninai.py`       | Tests Ninai adapter parsing logic.                      |
+| **Smoke**       | `tests/test_api_smoke.py`               | Checks `/health` and `/generate` endpoints.             |
+| **Smoke**       | `tests/test_gf_dynamic.py`              | Validates dynamic loading/linearization of GF grammars. |
+| **Smoke**       | `tests/test_lexicon_smoke.py`           | Validates lexicon JSON schema/syntax.                   |
+| **Lexicon**     | `tests/test_lexicon_loader.py`          | Tests lazy-loading of lexicon shards.                   |
+| **Lexicon**     | `tests/test_lexicon_index.py`           | Tests in-memory indexing and lookups.                   |
+| **Lexicon**     | `tests/test_lexicon_wikidata_bridge.py` | Tests Wikidata QID extraction/bridge logic.             |
+| **Frames**      | `tests/test_frames_*.py`                | Unit tests for semantic frame dataclasses.              |
+| **API**         | `tests/http_api/test_generate.py`       | Tests `POST /generate` with various payloads.           |
+| **API**         | `tests/http_api/test_ai.py`             | Tests AI suggestion endpoints.                          |
+| **Core**        | `tests/core/test_use_cases.py`          | Tests domain use cases (GenerateText, BuildLanguage).   |
+
+---
+
+## 9. 🧩 Tools Runner (Backend API)
+
+The GUI runs tools through a strict **backend allowlist registry** (no arbitrary execution).
+
+| Endpoint              | Purpose                                                                                                                                                                                                     |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /tools/registry` | Returns tool metadata (`tool_id`, description, timeout, availability, AI gating).                                                                                                                           |
+| `POST /tools/run`     | Runs a tool by `tool_id` + argv-style args. Returns a **stable response envelope** containing `trace_id`, command, stdout/stderr, truncation info, accepted/rejected args, lifecycle events, and exit code. |
+
+**Execution constraints:** repo-root fixed by `FILESYSTEM_REPO_PATH`; output truncation by `ARCHITECT_TOOLS_MAX_OUTPUT_CHARS`; default timeout by `ARCHITECT_TOOLS_DEFAULT_TIMEOUT_SEC`; AI gating by `ARCHITECT_ENABLE_AI_TOOLS`.

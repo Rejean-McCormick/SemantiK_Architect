@@ -10,6 +10,7 @@ This update removes contract drift between the frontend and backend by enforcing
 * A consistent reverse-proxy topology for `/abstract_wiki_architect`
 * A stable, versioned language + entity API contract
 * Clear separation of public vs admin endpoints and authentication
+* A secure, allowlisted **Tools API** for the `/tools` dashboard (no arbitrary execution)
 
 This documentation describes the final target state, the exact files to change, the new API contract, deployment wiring (Docker + Nginx), testing, and rollback.
 
@@ -49,6 +50,26 @@ Result: language selector fails (404/401) and contract mismatch even if mounted.
 
 Result: unstable/infinite loops/connection failures in containerized deployments.
 
+### 1.5 Tools execution drift + security risk
+
+Historically, “tools” execution tends to drift into:
+
+* multiple ad-hoc endpoints
+* arbitrary command execution
+* inconsistent output formats
+* no argument policy enforcement
+
+Result: a tools dashboard cannot be safely productionized.
+
+This update standardizes tools execution behind:
+
+* strict allowlist registry (tool IDs only)
+* repo-root confinement
+* flag allowlisting (prevents injection)
+* output truncation + timeouts
+* consistent response envelope with lifecycle events
+* API-key protection
+
 ---
 
 ## 2) Target architecture (final state)
@@ -67,9 +88,15 @@ Result: unstable/infinite loops/connection failures in containerized deployments
 
 ### 2.3 Deployment paths
 
-* UI base path: `/abstract_wiki_architect` (already configured via `next.config.mjs basePath`)
+* UI base path: `/abstract_wiki_architect` (configured via `next.config.mjs basePath`)
 * API path for same-origin calls: `/abstract_wiki_architect/api/v1`
 * Nginx routes `/abstract_wiki_architect/api/*` to backend and `/abstract_wiki_architect/*` to frontend
+
+### 2.4 Tools API (GUI-driven operations)
+
+* Tools endpoints live under `/api/v1/tools/*`
+* Tools are executed only by allowlisted `tool_id`
+* Tools endpoints are **admin-only** (API key required)
 
 ---
 
@@ -77,13 +104,19 @@ Result: unstable/infinite loops/connection failures in containerized deployments
 
 ### 3.1 Language code standard (required decision)
 
-Your current frontend types and code use ISO-639-3 (`eng`, `zul`). Keep this standard end-to-end unless you explicitly migrate to ISO-639-1. This update assumes **ISO-639-3 is canonical** because:
+There are two distinct “language code” surfaces in the system:
 
-* `Language` type docs mention ISO-639-3
-* UI defaults to `eng`
-* Backend onboarding schema already enforces 3-letter codes in `management.py`
+1. **Public API/UI language identity** (what a user selects in the UI; what `/api/v1/languages` returns).
+2. **Internal data/layout + tool arguments** (how lexicon directories are named; how harvesters and build tools target language resources).
 
-If you later choose ISO-639-1, treat it as a separate migration with dual identifiers and a clear canonical field.
+**This update standardizes tool-facing language arguments to ISO-639-1 (ISO-2) codes** (e.g., `en`, `fr`) because:
+
+* the harvester pipeline and language mapping are driven by `iso_to_wiki.json` (ISO-2 keys)
+* lexicon output paths are organized under `data/lexicon/{iso2}/…`
+* tools must accept a compact, stable, filesystem-friendly code
+
+**Public API/UI language standard remains unchanged by this update.**
+If the UI remains ISO-639-3 (`eng`, `zul`), treat mapping between ISO-639-3 and ISO-639-1 as an explicit translation layer (not implicit drift). If you later choose to unify them, do it as a separate migration with dual identifiers and a clear canonical field.
 
 ---
 
@@ -98,6 +131,25 @@ If you later choose ISO-639-1, treat it as a separate migration with dual identi
   * Remains canonical app used by Docker and production
   * Must mount public languages router under `/api/v1/languages` (GET list)
   * Keeps admin “management” endpoints under `/api/v1/languages/*` but protected
+  * Must mount tools router under `/api/v1/tools/*` (admin-only)
+
+**Tools router (enterprise-grade)**
+
+* `app/adapters/api/routers/tools.py`
+
+  * Implements the allowlist registry (`TOOL_REGISTRY`)
+  * Provides:
+
+    * `GET /api/v1/tools/registry`
+    * `POST /api/v1/tools/run`
+  * Enforces:
+
+    * repo-root confinement via `FILESYSTEM_REPO_PATH`
+    * argument allowlisting per tool
+    * output truncation (`ARCHITECT_TOOLS_MAX_OUTPUT_CHARS`)
+    * timeouts (`ARCHITECT_TOOLS_DEFAULT_TIMEOUT_SEC`)
+    * AI gating (`ARCHITECT_ENABLE_AI_TOOLS`)
+  * Returns a stable response envelope (no raw `{detail: ...}`)
 
 **Public languages router contract**
 
@@ -110,25 +162,15 @@ If you later choose ISO-639-1, treat it as a separate migration with dual identi
 
 * `app/adapters/api/routers/management.py`
 
-  * Either:
-
-    * Keep as admin-only (onboard/build) endpoints (recommended)
-    * Or split into `languages_admin.py` to avoid confusion
+  * Keep as admin-only (onboard/build) endpoints
   * Ensure auth is applied only to admin endpoints
-
-**Router exports cleanup**
-
-* `app/adapters/api/routers/__init__.py`
-
-  * Make exports consistent with how routers are imported
-  * Recommended: export router modules, not “*_router” names, or remove misleading exports entirely.
 
 **Deprecate duplicate apps (do not run in production)**
 
 * `app/main.py`
 
   * Remove “force security off”
-  * Optionally: make it import and expose the canonical `app` from `app/adapters/api/main.py` for local convenience
+  * Optionally: import/expose canonical `app` from `app/adapters/api/main.py`
 * `app/adapters/api.py` and `app/adapters/api/routes.py`
 
   * Mark deprecated / remove from runtime paths to prevent accidental execution
@@ -142,21 +184,25 @@ If you later choose ISO-639-1, treat it as a separate migration with dual identi
   * Switch to `architectApi.listLanguages()` from `src/lib/api.ts`
   * Remove import of `getLanguages()` from `src/services/api.ts`
 
+**Tools dashboard registry source**
+
+* `architect_frontend/src/app/tools/backendRegistry.ts`
+
+  * Tool IDs must match backend `TOOL_REGISTRY` keys
+  * Keep metadata in sync (risk, params docs, AI gating flags)
+
 **Remove split-brain client**
 
 * `architect_frontend/src/services/api.ts`
 
-  * Recommended: delete or convert to a re-export of `architectApi`
-  * If kept, it must not define its own base URL or endpoints
+  * Delete or convert to re-export of `architectApi`
+  * Must not define its own base URL or endpoints
 
 **Normalize base URL**
 
 * `architect_frontend/src/lib/api.ts`
 
-  * Must target `/api/v1` consistently:
-
-    * If `NEXT_PUBLIC_ARCHITECT_API_BASE_URL=/abstract_wiki_architect/api/v1`, then it should call `request("/languages")`, etc.
-  * Document the required env var in `.env.local` and docker-compose.
+  * Must target `/api/v1` consistently (same-origin preferred in docker)
 
 **Env + build-time configuration**
 
@@ -212,7 +258,8 @@ If you later choose ISO-639-1, treat it as a separate migration with dual identi
 Notes:
 
 * `z_id` may be nullable if not available.
-* `code` is ISO-639-3 (3 letters) in this version.
+* The public language `code` standard is an explicit product decision (ISO-639-3 if the UI depends on it). This update does not force a migration.
+* Tool-facing language arguments (harvest/build scripts) use ISO-639-1 (ISO-2) codes (e.g., `en`, `fr`) and map via `iso_to_wiki.json`.
 
 ### 5.3 Languages (Admin)
 
@@ -233,13 +280,51 @@ Auth:
 
 Auth policy:
 
-* Decide based on enterprise requirements:
-
-  * Option A: public reads, protected writes
-  * Option B: all endpoints protected
-  * Option C: role-based
+* Option A: public reads, protected writes
+* Option B: all endpoints protected
+* Option C: role-based
 
 This update does not change entity schemas beyond wiring.
+
+### 5.5 Tools (Admin)
+
+#### 5.5.1 Registry
+
+* `GET /api/v1/tools/registry`
+
+Returns a list of tools with:
+
+* `tool_id`, `description`
+* `timeout_sec`
+* `allow_args`
+* `requires_ai_enabled`
+* `available` (file exists on disk)
+
+#### 5.5.2 Run tool
+
+* `POST /api/v1/tools/run`
+  Request:
+
+  ```json
+  {
+    "tool_id": "language_health",
+    "args": ["--mode", "compile", "--langs", "en", "fr"],
+    "dry_run": false
+  }
+  ```
+
+Response (stable envelope):
+
+* `trace_id`, `success`, `command`
+* `stdout`, `stderr` (+ back-compat `output`, `error`)
+* `exit_code`, `duration_ms`
+* `args_received`, `args_accepted`, `args_rejected`
+* `truncation` info
+* `events` (lifecycle telemetry)
+
+Auth:
+
+* Requires API key (router-level protection).
 
 ---
 
@@ -254,7 +339,15 @@ Use two routers for languages:
 
 Avoid router-level `dependencies=[verify_api_key]` on mixed routers if any endpoints should be public.
 
-### 6.2 Uniform error envelope (recommended)
+### 6.2 Tools execution policy (required)
+
+* Only run tools by allowlisted `tool_id` (no arbitrary paths).
+* Validate args against per-tool allowed flags and value-shapes.
+* Confine execution to `FILESYSTEM_REPO_PATH` repo root.
+* Enforce output truncation and timeouts.
+* Gate AI tools behind `ARCHITECT_ENABLE_AI_TOOLS`.
+
+### 6.3 Uniform error envelope (recommended)
 
 Standardize errors across backend:
 
@@ -263,11 +356,9 @@ Standardize errors across backend:
   "code": "AUTH_REQUIRED",
   "message": "API key required",
   "detail": { "reason": "missing_header" },
-  "trace_id": "..." 
+  "trace_id": "..."
 }
 ```
-
-This prevents frontend clients from handling multiple error formats.
 
 ---
 
@@ -283,10 +374,16 @@ Backend:
 
 * runs on `http://localhost:8000`
 
-### 7.2 Docker compose (containers)
+Tools router:
 
-Frontend container must not call `localhost:8000` (that’s inside the frontend container).
-Use same-origin via nginx, or service name.
+* `FILESYSTEM_REPO_PATH=/path/to/repo`
+* optional:
+
+  * `ARCHITECT_TOOLS_MAX_OUTPUT_CHARS=200000`
+  * `ARCHITECT_TOOLS_DEFAULT_TIMEOUT_SEC=600`
+  * `ARCHITECT_ENABLE_AI_TOOLS=0|1`
+
+### 7.2 Docker compose (containers)
 
 Recommended enterprise configuration:
 
@@ -296,6 +393,10 @@ Then route via nginx:
 
 * `/abstract_wiki_architect/api/` → backend
 * `/abstract_wiki_architect/` → frontend
+
+Tools router must still have:
+
+* `FILESYSTEM_REPO_PATH` set correctly in the backend container.
 
 ### 7.3 Nginx routing (container-safe)
 
@@ -316,22 +417,28 @@ Add automated tests that:
 
 * assert `GET /api/v1/languages` returns objects with required fields
 * assert `/api/v1/entities/` returns expected schema
-* assert admin endpoints reject unauthenticated requests
+* assert tools endpoints reject unauthenticated requests
+* assert tools response envelope shape is stable (`trace_id`, `stdout`, `stderr`, `events`, `args_*`, `exit_code`)
 
 ### 8.2 CI checks (recommended)
 
-* OpenAPI snapshot test: compare generated schema between commits
-* Frontend build test: ensures no imports from deprecated client remain
+* OpenAPI snapshot test
+* Frontend build test: ensure no imports from deprecated client remain
 * Lint rule: forbid `NEXT_PUBLIC_API_URL`
+* Tool registry smoke: `GET /api/v1/tools/registry` returns at least the known IDs
 
 ### 8.3 Manual validation checklist
 
 1. Load UI at `/abstract_wiki_architect`
 2. Verify language dropdown loads and shows names/codes
 3. Verify entities table loads
-4. Verify “Create Entity” works (if permitted by auth policy)
-5. Verify dev console health calls succeed
-6. Verify tools endpoints are accessible only with credentials (if enabled)
+4. Verify tools page loads and lists registry tools (admin auth required)
+5. Run a safe tool (e.g., `language_health --mode compile --langs en`) and confirm:
+
+   * command shown
+   * stdout/stderr captured
+   * rejected args displayed if any
+6. Verify AI-gated tools return 403 unless enabled
 
 ---
 
@@ -348,12 +455,14 @@ Rollback is safe if you keep endpoints backward compatible temporarily.
 
   * `PUBLIC_LANGUAGES_ENABLED=true/false`
   * `ENTITY_WRITE_AUTH_REQUIRED=true/false`
+  * `TOOLS_ENABLED=true/false` (or simply unmount tools router)
 
 Rollback steps:
 
 1. revert nginx routing to previous known-good config
 2. revert frontend to last version that matched old API base
 3. keep backend router alias for `/languages` if needed
+4. unmount tools router or disable it via config if required
 
 ---
 
@@ -365,5 +474,5 @@ Rollback steps:
 * Nginx routes work in docker-compose using service names
 * Env vars are unified on `NEXT_PUBLIC_ARCHITECT_API_BASE_URL`
 * Security is explicit and not disabled in code paths
+* Tools execution is allowlisted and admin-only (`/api/v1/tools/*`)
 * Contract tests prevent regression
-

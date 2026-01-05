@@ -149,15 +149,21 @@ class LexiconRuntime:
             "hin": "hi",
         }
 
-    def _normalize_lang_code(self, code: str) -> str:
-        """Normalizes ISO-2 / ISO-3 / RGL suffix / 'wiki' prefix to ISO-2."""
-        code = (code or "").lower()
+    def normalize_code(self, code: str) -> str:
+        """
+        Public API: Normalizes any input (ISO-2, ISO-3, RGL Suffix) to the 
+        canonical ISO 639-1 (2-letter) code used for storage.
+        """
+        code = (code or "").lower().strip()
         if code.startswith("wiki"):
             code = code[4:]
 
+        # If it's already 2 chars, assume it's valid
         if len(code) == 2:
             return code
 
+        # Lookup in the loaded ISO map (e.g. 'eng' -> 'en')
+        # If not found, fall back to first 2 chars as a safe guess
         return self._iso_map.get(code, code[:2])
 
     def load_language(self, lang_code: str) -> None:
@@ -165,7 +171,8 @@ class LexiconRuntime:
         Lazy-loads the lexicon shards for a specific language.
         Loads 'wide.json' first, then overrides with 'core', 'people', etc.
         """
-        iso2 = self._normalize_lang_code(lang_code)
+        # USE PUBLIC METHOD
+        iso2 = self.normalize_code(lang_code)
         if not iso2 or iso2 in self._loaded_langs:
             return
 
@@ -241,7 +248,8 @@ class LexiconRuntime:
         if not key:
             return None
 
-        iso2 = self._normalize_lang_code(lang_code)
+        # USE PUBLIC METHOD
+        iso2 = self.normalize_code(lang_code)
         self.load_language(iso2)
 
         lang_db = self._data.get(iso2)

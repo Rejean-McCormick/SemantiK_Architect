@@ -31,11 +31,11 @@ from norm import (  # noqa: E402
 from zones import (  # noqa: E402
     apply_zone_a_strategy_map,
     clamp10,
+    choose_build_strategy,
     compute_maturity,
     compute_zone_a_from_modules,
     compute_zone_averages,
     normalize_weights,
-    choose_build_strategy,
 )
 
 # --- Import scanners (libraries; build_index is the orchestrator) ---
@@ -75,8 +75,6 @@ def _load_config() -> Dict[str, Any]:
         return cfg
 
     # v1 flat shape (in canonical location) -> adapt into v2 in-memory
-    # NOTE: This is NOT “legacy config file” support; it’s in-file shape migration.
-    # logger.warning("Config at %s uses v1 flat shape; adapting to v2 shape in-memory.", CONFIG_FILE)
     out: Dict[str, Any] = dict(cfg)
 
     out.setdefault("rgl", {})
@@ -163,7 +161,7 @@ def _ensure_rgl_inventory(*, inventory_file: Path, regen: bool) -> Optional[Dict
             return None
         logger.info("Regenerating RGL inventory via rgl_scanner.scan_rgl()")
         try:
-            # [FIX] Force write to disk so subsequent reads find the new data
+            # Force write to disk so subsequent reads find the new data
             rgl_scanner.scan_rgl(write_output=True, output_file=inventory_file)  # type: ignore[attr-defined]
         except Exception as e:
             logger.warning("rgl_scanner.scan_rgl() failed: %s", e)
@@ -208,9 +206,10 @@ def _load_factory_targets(path: Path, *, wiki_to_iso2: Mapping[str, str]) -> Dic
 
 # ---------------------------
 # One-shot scanners (contracts only; no per-iso rescans here)
+# Updated to accept wiki_to_iso2 mapping for strict normalization
 # ---------------------------
 
-def _scan_all_lexicons(lex_root: Path) -> Dict[str, Dict[str, float]]:
+def _scan_all_lexicons(lex_root: Path, *, wiki_to_iso2: Mapping[str, str]) -> Dict[str, Dict[str, float]]:
     zeros = {"SEED": 0.0, "CONC": 0.0, "WIDE": 0.0, "SEM": 0.0}
     if not lexicon_scanner or not hasattr(lexicon_scanner, "scan_all_lexicons"):
         logger.warning("lexicon_scanner.scan_all_lexicons missing; Zone B will be zeros.")
@@ -222,15 +221,18 @@ def _scan_all_lexicons(lex_root: Path) -> Dict[str, Dict[str, float]]:
         return {}
     if not isinstance(out, dict):
         return {}
+    
     normed: Dict[str, Dict[str, float]] = {}
-    for iso2, blk in out.items():
-        if isinstance(iso2, str) and isinstance(blk, Mapping):
-            k = iso2.strip().casefold()
-            normed[k] = {kk: float(clamp10(blk.get(kk, 0.0))) for kk in zeros}
+    for raw_key, blk in out.items():
+        if isinstance(raw_key, str) and isinstance(blk, Mapping):
+            # Enforce 2-letter ISO normalization (e.g. "eng" -> "en")
+            k = norm_to_iso2(raw_key, wiki_to_iso2=wiki_to_iso2)
+            if k:
+                normed[k] = {kk: float(clamp10(blk.get(kk, 0.0))) for kk in zeros}
     return normed
 
 
-def _scan_all_apps(repo_root: Path) -> Dict[str, Dict[str, float]]:
+def _scan_all_apps(repo_root: Path, *, wiki_to_iso2: Mapping[str, str]) -> Dict[str, Dict[str, float]]:
     zeros = {"PROF": 0.0, "ASST": 0.0, "ROUT": 0.0}
     if not app_scanner or not hasattr(app_scanner, "scan_all_apps"):
         logger.warning("app_scanner.scan_all_apps missing; Zone C will be zeros.")
@@ -242,15 +244,18 @@ def _scan_all_apps(repo_root: Path) -> Dict[str, Dict[str, float]]:
         return {}
     if not isinstance(out, dict):
         return {}
+    
     normed: Dict[str, Dict[str, float]] = {}
-    for iso2, blk in out.items():
-        if isinstance(iso2, str) and isinstance(blk, Mapping):
-            k = iso2.strip().casefold()
-            normed[k] = {kk: float(clamp10(blk.get(kk, 0.0))) for kk in zeros}
+    for raw_key, blk in out.items():
+        if isinstance(raw_key, str) and isinstance(blk, Mapping):
+            # Enforce 2-letter ISO normalization
+            k = norm_to_iso2(raw_key, wiki_to_iso2=wiki_to_iso2)
+            if k:
+                normed[k] = {kk: float(clamp10(blk.get(kk, 0.0))) for kk in zeros}
     return normed
 
 
-def _scan_all_artifacts(gf_root: Path) -> Dict[str, Dict[str, float]]:
+def _scan_all_artifacts(gf_root: Path, *, wiki_to_iso2: Mapping[str, str]) -> Dict[str, Dict[str, float]]:
     zeros = {"BIN": 0.0, "TEST": 0.0}
     if not qa_scanner or not hasattr(qa_scanner, "scan_all_artifacts"):
         logger.warning("qa_scanner.scan_all_artifacts missing; Zone D will be zeros.")
@@ -262,14 +267,17 @@ def _scan_all_artifacts(gf_root: Path) -> Dict[str, Dict[str, float]]:
         return {}
     if not isinstance(out, dict):
         return {}
+    
     normed: Dict[str, Dict[str, float]] = {}
-    for iso2, blk in out.items():
-        if isinstance(iso2, str) and isinstance(blk, Mapping):
-            k = iso2.strip().casefold()
-            normed[k] = {
-                "BIN": float(clamp10(blk.get("BIN", 0.0))),
-                "TEST": float(clamp10(blk.get("TEST", 0.0))),
-            }
+    for raw_key, blk in out.items():
+        if isinstance(raw_key, str) and isinstance(blk, Mapping):
+            # Enforce 2-letter ISO normalization
+            k = norm_to_iso2(raw_key, wiki_to_iso2=wiki_to_iso2)
+            if k:
+                normed[k] = {
+                    "BIN": float(clamp10(blk.get("BIN", 0.0))),
+                    "TEST": float(clamp10(blk.get("TEST", 0.0))),
+                }
     return normed
 
 
@@ -373,15 +381,15 @@ def scan_system() -> None:
     logger.info("--- Phase 1: One-Shot Scans ---")
     
     logger.info("Calling lexicon_scanner...")
-    lex_inv = _scan_all_lexicons(p["lex_root"])
+    lex_inv = _scan_all_lexicons(p["lex_root"], wiki_to_iso2=wiki_to_iso2)
     logger.info(f"  -> Lexicon inventory: {len(lex_inv)} languages.")
 
     logger.info("Calling app_scanner...")
-    app_inv = _scan_all_apps(BASE_DIR)
+    app_inv = _scan_all_apps(BASE_DIR, wiki_to_iso2=wiki_to_iso2)
     logger.info(f"  -> App inventory: {len(app_inv)} languages.")
     
     logger.info("Calling qa_scanner...")
-    qa_inv = _scan_all_artifacts(p["gf_root"])
+    qa_inv = _scan_all_artifacts(p["gf_root"], wiki_to_iso2=wiki_to_iso2)
     logger.info(f"  -> QA inventory: {len(qa_inv)} languages.")
 
     # 4) Build universe (iso2)

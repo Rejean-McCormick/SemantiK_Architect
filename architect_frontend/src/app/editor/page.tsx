@@ -1,21 +1,18 @@
-// architect_frontend\src\app\editor\page.tsx
+// architect_frontend/src/app/editor/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-
-interface Language {
-  code: string;
-  name: string;
-}
+// [FIX] Use the central API client instead of raw axios to ensure v2.1 compatibility
+import { architectApi, type Language } from '@/lib/api';
 
 export default function EditorPage() {
   const [languages, setLanguages] = useState<Language[]>([]);
-  const [lang, setLang] = useState('zul');
-  const [frameType, setFrameType] = useState('entity.person');
-  const [name, setName] = useState('Shaka');
-  const [profession, setProfession] = useState('Warrior');
-  const [nationality, setNationality] = useState('Zulu');
+  // [FIX] Default to 'en' (ISO-1) instead of 'zul' (ISO-3) to match backend filter
+  const [lang, setLang] = useState('en'); 
+  const [frameType, setFrameType] = useState('bio'); 
+  const [name, setName] = useState('Marie Curie');
+  const [profession, setProfession] = useState('Physicist');
+  const [nationality, setNationality] = useState('Polish');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,10 +20,19 @@ export default function EditorPage() {
   useEffect(() => {
     const fetchLangs = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL || 'http://localhost:8000/api/v1';
-        const res = await axios.get(`${apiUrl}/languages`);
-        setLanguages(res.data);
-      } catch (e) { console.error("Failed to load languages"); }
+        // [FIX] Use architectApi to get the normalized list (filters out legacy codes)
+        const data = await architectApi.listLanguages();
+        setLanguages(data);
+        
+        // Smart default: Select English if available, otherwise the first option
+        if (data.some(l => l.code === 'en')) {
+            setLang('en');
+        } else if (data.length > 0) {
+            setLang(data[0].code);
+        }
+      } catch (e) { 
+        console.error("Failed to load languages", e); 
+      }
     };
     fetchLangs();
   }, []);
@@ -35,20 +41,24 @@ export default function EditorPage() {
     setLoading(true);
     setResult('');
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL || 'http://localhost:8000/api/v1';
-      const payload = {
+      // [FIX] Use architectApi.generate() 
+      // It handles the URL (/generate/en), headers, and payload flattening automatically
+      const res = await architectApi.generate({
         lang: lang,
-        frame: {
-          frame_type: frameType,
+        frame_type: frameType,
+        frame_payload: {
           name: name,
           profession: profession,
-          nationality: nationality
+          nationality: nationality,
+          gender: "f" // Added gender hint as it helps specific languages (Romance/Slavic)
         }
-      };
-      const res = await axios.post(`${apiUrl}/generate`, payload);
-      setResult(res.data.text);
+      });
+      
+      // Handle the standardized response
+      setResult(res.surface_text || res.text || "No text returned");
     } catch (err: any) {
-      setResult('Error: ' + (err.response?.data?.detail || err.message));
+      console.error(err);
+      setResult('Error: ' + (err.message || "Generation failed"));
     } finally {
       setLoading(false);
     }
@@ -63,8 +73,16 @@ export default function EditorPage() {
         <div className="space-y-4">
           <div>
             <label className="text-xs uppercase font-bold text-slate-500">Language</label>
-            <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full mt-1 bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
-              {languages.map(l => <option key={l.code} value={l.code}>{l.name} ({l.code})</option>)}
+            <select 
+                value={lang} 
+                onChange={(e) => setLang(e.target.value)} 
+                className="w-full mt-1 bg-slate-950 border border-slate-700 rounded p-2 text-slate-200"
+            >
+              {languages.map(l => (
+                <option key={l.code} value={l.code}>
+                    {l.name} ({l.code})
+                </option>
+              ))}
             </select>
           </div>
 

@@ -1,21 +1,21 @@
-// architect_frontend\src\types\language.ts
 // architect_frontend/src/types/language.ts
 
 export interface Language {
   /**
-   * The ISO 639-3 code (e.g., "eng", "zul", "kor").
-   * This is the primary identifier used by the GF backend.
+   * The ISO 639-1 code (e.g., "en", "fr", "zu").
+   * This is the strictly enforced public identifier for the API.
+   * Legacy ISO-3 codes (e.g. "eng") are no longer supported here.
    */
   code: string;
 
   /**
-   * The display name of the language (e.g., "English", "Zulu", "Korean").
+   * The display name of the language (e.g., "English", "Zulu").
    */
   name: string;
 
   /**
    * The Abstract Wikipedia Z-ID (e.g., "Z1002").
-   * Useful for linking back to Wikifunctions or Wikidata.
+   * Optional linkage to the Wikifunctions ecosystem.
    */
-  z_id: string;
+  z_id?: string;
 }

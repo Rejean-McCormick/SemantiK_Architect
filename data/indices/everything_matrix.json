@@ -1,6 +1,6 @@
 {
-  "timestamp": 1767564067.3269866,
-  "timestamp_iso": "2026-01-04T22:01:07Z",
+  "timestamp": 1767624760.3821185,
+  "timestamp_iso": "2026-01-05T14:52:40Z",
   "scoring_version": "2.4",
   "stats": {
     "total_languages": 156,
@@ -7921,8 +7921,8 @@
         "iso": "zul",
         "name": "ZUL",
         "tier": 3,
-        "origin": "lexicon",
-        "folder": ""
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {

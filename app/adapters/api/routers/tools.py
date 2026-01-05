@@ -334,23 +334,22 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
     "harvest_lexicon": _py_script(
         "harvest_lexicon",
         "tools/harvest_lexicon.py",
-        "Bulk lexicon mining/harvesting into shard JSON files.",
+        "Universal Lexicon Harvester. Subcommands: `wordnet` and `wikidata` (positional).",
         timeout_sec=1800,
         allow_args=True,
+        # NOTE: tools/harvest_lexicon.py uses positional subcommands:
+        #   wordnet --root <path> --lang <iso2> [--out <dir>]
+        #   wikidata --lang <iso2> --input <qids.json> [--domain <shard>]
         allowed_flags=(
-            "--lang",
-            "--langs",
-            "--out",
             "--root",
-            "--limit",
-            "--max",
-            "--source",
-            "--dry-run",
-            "--verbose",
+            "--lang",
+            "--out",
+            "--input",
+            "--domain",
         ),
-        allow_positionals=True,
-        flags_with_value=("--lang", "--out", "--root", "--limit", "--max", "--source"),
-        flags_with_multi_value=("--langs",),
+        allow_positionals=True,  # expects "wordnet" or "wikidata"
+        flags_with_value=("--root", "--lang", "--out", "--input", "--domain"),
+        flags_with_multi_value=(),
     ),
     "build_lexicon_wikidata": _py_script(
         "build_lexicon_wikidata",

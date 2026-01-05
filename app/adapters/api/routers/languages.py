@@ -28,34 +28,45 @@ async def list_languages(
 ) -> List[LanguageOut]:
     """
     List all languages available in the system.
-    Returns rich objects (Code, Name, ZID) for the UI dropdowns.
+    CRITICAL: Filters out legacy ISO-3 codes (e.g. 'eng') and RGL suffixes (e.g. 'Fre').
+    Only returns valid ISO-639-1 (2-letter) codes from the Matrix/Repo.
     """
     try:
         # Fetch data from the domain repository
         items = await repo.list_languages()
         
-        # Map domain entities (or legacy strings) to the DTO
         results = []
         for item in items:
-            # Case A: Legacy Repo returns strings (e.g., 'eng') -> Polyfill name
+            # 1. Normalize Extraction (Handle Dict/Obj/Str polymorphism)
+            code: str = ""
+            name: str = ""
+            z_id: Optional[str] = None
+
             if isinstance(item, str):
-                results.append(LanguageOut(code=item, name=item, z_id=None))
-            
-            # Case B: Repo returns Dictionaries
+                # Legacy path: just a string code
+                code = item
+                name = item
             elif isinstance(item, dict):
-                results.append(LanguageOut(
-                    code=item.get("code"), 
-                    name=item.get("name", item.get("code")), # Fallback to code if name missing
-                    z_id=item.get("z_id")
-                ))
-            
-            # Case C: Repo returns Domain Entities (Classes)
+                code = item.get("code", "")
+                name = item.get("name", code)
+                z_id = item.get("z_id")
             else:
-                results.append(LanguageOut(
-                    code=getattr(item, "code"),
-                    name=getattr(item, "name", getattr(item, "code")),
-                    z_id=getattr(item, "z_id", None)
-                ))
+                # Domain Entity path
+                code = getattr(item, "code", "")
+                name = getattr(item, "name", code)
+                z_id = getattr(item, "z_id", None)
+
+            # [cite_start]2. THE FILTER (Phase 3 Normalization) [cite: 32, 34]
+            # We strictly enforce ISO 639-1 (2-letter) codes for the public API.
+            # This drops 'eng' (legacy), 'WikiFre' (internal), and 'French' (folder names).
+            if not code or len(code) != 2 or not code.isalpha():
+                continue
+
+            results.append(LanguageOut(
+                code=code.lower(), # Enforce lowercase standard (fr, en)
+                name=name,
+                z_id=z_id
+            ))
 
         return results
 

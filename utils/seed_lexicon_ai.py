@@ -31,6 +31,14 @@ import google.generativeai as genai
 # --- Configuration ---
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent
+
+# [FIX] Add Project Root to Path to import app modules
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+# [FIX] Import the Authority
+from app.shared.lexicon import lexicon
+
 DATA_DIR = PROJECT_ROOT / "data"
 LEXICON_DIR = DATA_DIR / "lexicon"
 
@@ -74,7 +82,7 @@ Ensure the 'lemma' keys are in the Target Language (not English).
 
 def print_header(langs: List[str], limit: int, dry_run: bool):
     print("========================================")
-    print("   AI LEXICON SEEDER")
+    print("    AI LEXICON SEEDER")
     print("========================================")
     print(f"Time:      {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Model:     {MODEL_NAME}")
@@ -236,7 +244,16 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    targets = [l.strip() for l in args.langs.split(",") if l.strip()]
+    # [FIX] Normalize all input codes using the shared logic
+    # This prevents CLI users from creating 'eng' folders by mistake
+    raw_targets = [l.strip() for l in args.langs.split(",") if l.strip()]
+    targets = []
+    
+    for raw in raw_targets:
+        canonical = lexicon.normalize_code(raw)
+        if canonical != raw:
+            print(f"🔧 Normalizing: {raw} -> {canonical}")
+        targets.append(canonical)
     
     # 2. Print Header
     print_header(targets, args.limit, args.dry_run)

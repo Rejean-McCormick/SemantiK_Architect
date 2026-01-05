@@ -8,6 +8,8 @@ from app.core.domain.exceptions import DomainError
 # [FIX] Import interfaces from the unified ports package
 from app.core.ports import IMessageBroker, LanguageRepo
 from app.shared.observability import get_tracer
+# [NEW] Import the Authority for language code normalization
+from app.shared.lexicon import lexicon
 
 logger = structlog.get_logger()
 tracer = get_tracer(__name__)
@@ -21,10 +23,11 @@ class OnboardLanguageSaga:
     Use Case (Saga): Orchestrates the onboarding of a new language.
     
     Steps:
-    1. Validates uniqueness (ISO 639-3).
-    2. Creates the Language Entity (Status: PLANNED).
-    3. Persists the metadata (Updating the 'Everything Matrix').
-    4. Triggers the initial scaffolding/build via the Event Bus.
+    1. Normalizes the language code (ISO-3 -> ISO-2 where applicable).
+    2. Validates uniqueness.
+    3. Creates the Language Entity (Status: PLANNED).
+    4. Persists the metadata (Updating the 'Everything Matrix').
+    5. Triggers the initial scaffolding/build via the Event Bus.
     """
 
     # [FIX] Updated type hint to LanguageRepo (metadata) instead of LexiconRepo (words)
@@ -37,14 +40,24 @@ class OnboardLanguageSaga:
         Executes the onboarding saga.
 
         Args:
-            code: ISO 639-3 code (e.g., 'deu').
+            code: ISO 639-1 or 639-3 code (e.g., 'en' or 'eng').
             name: English name (e.g., 'German').
             family: Language family.
 
         Returns:
-            str: The ID of the Language entity created.
+            str: The ID of the Language entity created (canonical code).
         """
         with tracer.start_as_current_span("use_case.onboard_language") as span:
+            
+            # [FIX] CRITICAL: Normalize BEFORE Persistence
+            # This converts 'eng' -> 'en', 'fra' -> 'fr' based on the shared config.
+            # It prevents "Split Brain" folders.
+            canonical_code = lexicon.normalize_code(code)
+            
+            if canonical_code != code:
+                logger.info("onboarding_code_normalized", original=code, normalized=canonical_code)
+                code = canonical_code
+
             span.set_attribute("app.lang_code", code)
             
             logger.info("onboarding_started", code=code, name=name)
@@ -66,8 +79,8 @@ class OnboardLanguageSaga:
             )
 
             # 3. Persist Metadata
-            # [FIX] We now explicitly save the language metadata to the Repo.
-            # For FileSystemRepo, this will eventually update the Everything Matrix or create the folder.
+            # [FIX] We now explicitly save the language metadata to the Repo using the canonical code.
+            # For FileSystemRepo, this will create the folder using the correct code (e.g., 'en').
             await self.repo.save_grammar(code, language.model_dump_json())
             logger.info("language_metadata_saved", code=code)
 

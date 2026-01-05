@@ -1,11 +1,10 @@
-
 # 🛠️ Setup & Deployment Guide
 
-**Abstract Wiki Architect v2.1**
+**Abstract Wiki Architect v2.5**
 
-This guide covers the installation, configuration, and deployment of the Abstract Wiki Architect. Because the core engine depends on the **Grammatical Framework (GF)** C-libraries (`libpgf`), the backend **must run in a Linux environment**.
+This guide covers installation, configuration, and deployment of the Abstract Wiki Architect. Because the core engine depends on **Grammatical Framework (GF)** C-libraries (`libpgf`), the backend **must run in a Linux environment**.
 
-For developers on Windows, we utilize a **Hybrid Architecture**:
+For developers on Windows, the recommended setup is a **Hybrid Architecture**:
 
 1. **Windows 11:** Source code editing (VS Code), Git operations, Frontend execution.
 2. **WSL 2 (Ubuntu):** Backend execution, Python environment, Redis, and GF compilation.
@@ -14,19 +13,19 @@ For developers on Windows, we utilize a **Hybrid Architecture**:
 
 ## 1. Prerequisites
 
-Before starting, ensure you have the following installed:
+Ensure you have:
 
 * **Windows 10/11** with **WSL 2** enabled.
 * **Ubuntu 22.04 LTS** (or newer) installed from the Microsoft Store.
 * **Docker Desktop** (configured to use the WSL 2 backend).
 * **VS Code** with the **"WSL"** extension installed.
-* **Node.js 18+** (Installed on Windows for the Frontend).
+* **Node.js 18+** installed on Windows (Frontend).
 
 ---
 
 ## 2. Directory Structure & Pathing
 
-To prevent "Path not found" errors, you must understand the mapping between Windows and Linux.
+To avoid path issues, keep the repo on your Windows drive so both Windows and WSL can access it.
 
 * **Windows Path:** `C:\MyCode\AbstractWiki\`
 * **WSL Path:** `/mnt/c/MyCode/AbstractWiki/`
@@ -35,120 +34,81 @@ To prevent "Path not found" errors, you must understand the mapping between Wind
 
 ```text
 /mnt/c/MyCode/AbstractWiki/
-├── abstract-wiki-architect/      <-- [REPO ROOT] This repository
-│   ├── .env                      <-- Env variables (Shared)
-│   ├── data/                     <-- [NEW] v2.1 Data Assets
-│   │   └── lexicon/              <-- Lexicon Store
-│   │       ├── en/               <-- ISO 639-1 (2-letter) standard
+├── abstract-wiki-architect/      <-- [REPO ROOT]
+│   ├── .env                      <-- Env variables (WSL-side)
+│   ├── config/                   <-- Preferred config location (if present)
+│   ├── data/
+│   │   ├── config/               <-- Fallback config location (if used)
+│   │   ├── indices/              <-- Everything Matrix outputs
+│   │   │   └── everything_matrix.json
+│   │   └── lexicon/              <-- Lexicon store (by ISO-2)
+│   │       ├── en/
 │   │       ├── fr/
 │   │       └── ...
-│   ├── gf/                       <-- Compilation Artifacts
-│   │   └── AbstractWiki.pgf      <-- The Binary (Generated)
+│   ├── gf/
+│   │   └── AbstractWiki.pgf      <-- Generated binary
 │   └── ...
 └── gf-rgl/                       <-- [EXTERNAL] GF Resource Grammar Library
-    └── src/                      <-- RGL Source files
-
-
+    └── src/
 ```
 
-> **⚠️ CRITICAL:** Do not clone the repo into the Linux native filesystem (`~/home/user/`) if you plan to edit files in Windows. Clone it to your `C:` drive so both OSs can access it.
+> **⚠️ CRITICAL:** If you plan to edit files in Windows, do not clone the repo into the Linux-native filesystem (`~/...`). Clone it on `C:` so both OSs share the same working tree.
 
 ---
 
-## 3. System Initialization (WSL Side)
+## 3. System Initialization (WSL)
 
-Open your **Ubuntu/WSL Terminal** (NOT PowerShell) and navigate to the project root:
+Open **Ubuntu/WSL Terminal** (not PowerShell) and go to the repo root:
 
 ```bash
 cd /mnt/c/MyCode/AbstractWiki/abstract-wiki-architect
-
-
 ```
 
 ### Step A: Install C-Library Dependencies
 
-The GF runtime requires specific C libraries to compile bindings.
-
 ```bash
-# 1. Update package lists
 sudo apt update
-
-# 2. Install Python dev tools, C compilers, and GMP (Math library for PGF)
 sudo apt install -y python3-venv python3-dev build-essential libgmp-dev
-
-# 3. Install dos2unix (Critical for fixing Windows line-ending corruptions)
 sudo apt install -y dos2unix
-
-
 ```
 
 ### Step B: Install the GF Compiler
 
-You need the `gf` binary to compile grammar files.
-
 ```bash
-# Download the Debian package (Check GF website for latest version)
 wget https://www.grammaticalframework.org/download/gf-3.12-ubuntu-22.04.deb
-
-# Install
 sudo apt install ./gf-3.12-ubuntu-22.04.deb
-
-# Verify
 gf --version
-# Output should be: Grammatical Framework (GF) version 3.12
-
-
 ```
 
 ### Step C: Setup the Resource Grammar Library (RGL)
 
-The system needs the RGL source code to build Tier 1 languages.
-
 ```bash
-# 1. Go to the parent directory
-cd .. 
-
-# 2. Clone the RGL
+cd ..
 git clone https://github.com/GrammaticalFramework/gf-rgl.git
 
-# 3. Fix Line Endings (CRLF -> LF)
-# Windows git often corrupts shell scripts. We must fix them.
 cd gf-rgl
 dos2unix Setup.sh
 chmod +x Setup.sh
-
-# 4. Build and Install the RGL (Takes ~5 minutes)
 sudo ./Setup.sh
-
-
 ```
 
 ---
 
-## 4. Python Environment (WSL Side)
+## 4. Python Environment (WSL)
 
-Perform these steps inside `abstract-wiki-architect`.
+Run inside `abstract-wiki-architect`:
 
 ```bash
-# 1. Create Virtual Environment
 python3 -m venv venv
-
-# 2. Activate (Do this every time you open a terminal)
 source venv/bin/activate
-
-# 3. Install Dependencies
-# This compiles the 'pgf' C-extension locally. If this fails, check Step A.
 pip install -r requirements.txt
-
-
 ```
 
 ---
 
 ## 5. Configuration (`.env`)
 
-Create a `.env` file in the project root. This configures the paths and services.
-**Note:** v2.1 uses `REDIS_URL` and strict ISO-2 paths.
+Create a `.env` file in the repo root.
 
 **File:** `.env`
 
@@ -160,130 +120,118 @@ DEBUG=true
 LOG_LEVEL=INFO
 LOG_FORMAT=console
 
-# --- Persistence (Hexagonal Ports) ---
-# In Hybrid Mode, this points to your mapped C: drive location
+# --- Persistence ---
+# Repo root used by the Tools Router to confine execution to this directory
 FILESYSTEM_REPO_PATH=/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect
 
 # --- Grammar Engine ---
-# Points to the sibling directory we cloned in Step 3
 GF_LIB_PATH=/mnt/c/MyCode/AbstractWiki/gf-rgl
 PGF_PATH=/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/AbstractWiki.pgf
 
 # --- Messaging & State (Redis) ---
-# When running locally with Docker Redis, use localhost.
-# In Docker Compose, this will be overridden to 'redis://redis:6379/0'
 REDIS_URL=redis://localhost:6379/0
 SESSION_TTL_SEC=600
 
 # --- Worker ---
 WORKER_CONCURRENCY=2
 
-# --- v2.1 AI & DevOps Services ---
+# --- Tools Router (Admin-only execution) ---
+# Output + timeout controls for tool subprocess runs
+ARCHITECT_TOOLS_MAX_OUTPUT_CHARS=200000
+ARCHITECT_TOOLS_DEFAULT_TIMEOUT_SEC=600
+
+# AI-gated tools (e.g., ambiguity_detector, seed_lexicon, ai_refiner)
+ARCHITECT_ENABLE_AI_TOOLS=0
+
+# --- DevOps / AI (only if you use these features) ---
 GITHUB_TOKEN=your_github_pat_token
 REPO_URL=https://github.com/your-org/abstract-wiki-architect
 GOOGLE_API_KEY=your_gemini_api_key
 AI_MODEL_NAME=gemini-1.5-pro
-
-
 ```
+
+Notes:
+
+* Lexicon directories are stored under `data/lexicon/{iso2}/…` (ISO-639-1 / ISO-2).
+* Some tools load language mappings from `config/iso_to_wiki.json` if present; otherwise they fall back to `data/config/iso_to_wiki.json`.
 
 ---
 
 ## 6. Running Locally (Hybrid Mode)
 
-You will need **4 Terminal Tabs**. The following diagram illustrates how these components interact in a local development environment:
+You can run the stack manually, or use the launcher.
 
-### Terminal 1: Message Broker (Powershell or WSL)
+### Option A: Unified launcher (recommended)
 
-We use Docker just for Redis, as installing Redis on Windows is messy.
+Run:
+
+```powershell
+.\Run-Architect.ps1
+```
+
+This handles process cleanup and spawns API, Worker, and Frontend in separate windows.
+
+### Option B: Manual (4 terminals)
+
+#### Terminal 1: Redis (PowerShell or WSL)
 
 ```powershell
 docker run -p 6379:6379 --name aw_redis -d redis:alpine
-
-
 ```
 
-### Terminal 2: API Backend (WSL)
-
-Hosts the FastAPI server.
+#### Terminal 2: API Backend (WSL)
 
 ```bash
-# Activate Env
 source venv/bin/activate
-
-# Run Server (Hot Reload Enabled)
-# Note: Factory pattern is required
 uvicorn app.adapters.api.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
-
-
 ```
 
-*Wait for log: `Application startup complete.*`
-
-### Terminal 3: Async Worker (WSL)
-
-Processes background compilations.
+#### Terminal 3: Async Worker (WSL)
 
 ```bash
-# Activate Env
 source venv/bin/activate
-
-# Run Arq Worker (Watch Mode Enabled for Hot Reload)
 arq app.workers.worker.WorkerSettings --watch app
-
-
 ```
 
-*Wait for log: `worker_startup*`
-
-### Terminal 4: Frontend (Windows PowerShell)
-
-The UI doesn't need Linux, so run it natively for better browser performance.
+#### Terminal 4: Frontend (Windows PowerShell)
 
 ```powershell
 cd architect_frontend
 npm install
 npm run dev
-
-
 ```
 
-*Access UI at: `http://localhost:3000*`
+UI:
+
+* `http://localhost:3000/abstract_wiki_architect`
+  Developer Console:
+* `http://localhost:3000/abstract_wiki_architect/dev`
+  Tools Dashboard:
+* `http://localhost:3000/abstract_wiki_architect/tools`
 
 ---
 
 ## 7. Production Deployment (Docker)
 
-For production or full-stack testing, use `docker-compose`. This runs everything (Backend, Worker, Redis, Frontend) in isolated containers.
+Use `docker-compose` for production or full-stack container testing.
 
-### Key differences in Docker
+Key differences:
 
-* **Pathing:** The `docker-compose.yml` mounts the root directory to `/app`.
-* **Networking:** Services talk via hostname (`redis`, `backend`), not `localhost`.
+* **Pathing:** compose mounts the repo into the backend container.
+* **Networking:** services use hostnames (`redis`, `backend`, `frontend`), not `localhost`.
+* **Base path:** UI served under `/abstract_wiki_architect`; API under `/abstract_wiki_architect/api/v1`.
 
-### 1. Build and Run
+### Build and run
 
 ```bash
-# Build images and start services
 docker-compose up --build -d
-
-
 ```
 
-### 2. Verify Services
+### Verify
 
 ```bash
 docker-compose ps
-
-
 ```
-
-You should see:
-
-* `aw_backend`: Port 8000
-* `aw_worker`: Up
-* `aw_redis`: Port 6379
-* `aw_frontend`: Port 3000
 
 ---
 
@@ -291,33 +239,40 @@ You should see:
 
 ### "pgf module not found"
 
-* **Cause:** You tried to run python from Windows PowerShell, or `pip install` failed to compile the C extension.
-* **Fix:** Ensure you are in **WSL**. Run `sudo apt install libgmp-dev` and try `pip install --force-reinstall pgf`.
+* Cause: running Python on Windows or failing to compile the C-extension.
+* Fix: run inside WSL; ensure `libgmp-dev` is installed; reinstall `pgf` if needed.
 
 ### "Line endings / Syntax error near unexpected token"
 
-* **Cause:** A script (`Setup.sh` or `builder/orchestrator.py`) was saved with Windows `CRLF` line endings.
-* **Fix:** Run `dos2unix <filename>` on the offending script.
+* Cause: file saved with Windows CRLF.
+* Fix:
+
+  ```bash
+  dos2unix <filename>
+  ```
 
 ### "404 Not Found" on /generate
 
-* **Cause:** You are hitting the old root endpoint.
-* **Fix:** Ensure you prefix your requests with `/api/v1` (e.g., `POST /api/v1/generate/en`).
+* Cause: hitting a non-versioned endpoint.
+* Fix: use the `/api/v1` prefix (example below).
 
-### "Last Man Standing" / PGF only has one language
+### "Tools run fails with invalid path / missing repo root"
 
-* **Cause:** You are using the old build loop.
-* **Fix:** Ensure you are using the updated `builder/orchestrator.py` which implements the **Two-Phase Build (Verify -> Link)**.
+* Cause: `FILESYSTEM_REPO_PATH` missing/incorrect or tool path resolves outside repo root.
+* Fix: set `FILESYSTEM_REPO_PATH` to the repo root inside the backend runtime environment.
+
+### "AI tool returns 403"
+
+* Cause: AI tools are gated.
+* Fix: set `ARCHITECT_ENABLE_AI_TOOLS=1` in the backend environment and restart.
 
 ---
 
 ## 9. Verification (Smoke Test)
 
-Run these commands (in WSL) to verify the engine is functioning.
+Run in WSL to verify end-to-end generation.
 
-### Test A: Standard BioFrame (Code-First Compliant)
-
-**Updates applied:** Uses `/api/v1` prefix, ISO-2 code `en`, and Flat JSON structure.
+### Test A: Standard BioFrame
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/generate/en" \
@@ -329,13 +284,9 @@ curl -X POST "http://localhost:8000/api/v1/generate/en" \
            "nationality": "british",
            "gender": "m"
          }'
-
-
 ```
 
-### Test B: Ninai Protocol (v2.1 Feature)
-
-Verify the new **Ninai Adapter** using the UniversalNode structure:
+### Test B: Ninai Protocol
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/generate/en" \
@@ -347,21 +298,17 @@ curl -X POST "http://localhost:8000/api/v1/generate/en" \
              { "function": "ninai.constructors.List", "args": ["physicist", "chemist"] }
            ]
          }'
-
-
 ```
 
-**Expected Response:**
+Expected response shape (example):
 
 ```json
 {
   "surface_text": "Alan Turing is a physicist and chemist.",
-  "meta": { 
-      "engine": "WikiEng", 
-      "adapter": "NinaiAdapter",
-      "strategy": "SimpNP"
+  "meta": {
+    "engine": "WikiEng",
+    "adapter": "NinaiAdapter",
+    "strategy": "SimpNP"
   }
 }
-
-
 ```
