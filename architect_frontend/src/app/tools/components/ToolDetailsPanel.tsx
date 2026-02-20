@@ -1,9 +1,9 @@
 // architect_frontend/src/app/tools/components/ToolDetailsPanel.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import Link from "next/link";
-import { ExternalLink, Copy, Loader2, Play, Info } from "lucide-react";
+import { ExternalLink, Copy, Loader2, Play, Info, X } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -33,7 +33,55 @@ export function ToolDetailsPanel(props: ToolDetailsPanelProps) {
     );
   }
 
-  const isRunning = selected.wiredToolId && activeToolId === selected.wiredToolId;
+  const wiredToolId = selected.wiredToolId || null;
+  const isWired = Boolean(wiredToolId);
+  const isRunning = Boolean(wiredToolId && activeToolId === wiredToolId);
+  const isBusy = activeToolId !== null;
+
+  const extraArgs = useMemo(() => {
+    if (!wiredToolId) return "";
+    return argsByToolId[wiredToolId] || "";
+  }, [argsByToolId, wiredToolId]);
+
+  const parsedArgs = useMemo(() => parseCliArgs(extraArgs), [extraArgs]);
+
+  const repoHref = useMemo(() => repoFileUrl(repoUrl, selected.path), [repoUrl, selected.path]);
+
+  const fullPreview = useMemo(() => {
+    const base = (selected.commandPreview || selected.cli?.[0] || "").trim();
+    const suffix = (extraArgs || "").trim();
+
+    if (!base) return "...";
+    if (!suffix) return base;
+
+    // Avoid duplicating if preview already includes the args.
+    return base.includes(suffix) ? base : `${base} ${suffix}`.trim();
+  }, [selected.commandPreview, selected.cli, extraArgs]);
+
+  const onChangeArgs = useCallback(
+    (val: string) => {
+      if (!wiredToolId) return;
+      setArgsByToolId((prev) => ({ ...prev, [wiredToolId]: val }));
+    },
+    [setArgsByToolId, wiredToolId]
+  );
+
+  const clearArgs = useCallback(() => {
+    if (!wiredToolId) return;
+    setArgsByToolId((prev) => ({ ...prev, [wiredToolId]: "" }));
+  }, [setArgsByToolId, wiredToolId]);
+
+  const handleRun = useCallback(() => {
+    if (!isWired) return;
+
+    // Lightweight safety rail for heavy tools.
+    if (selected.risk === "heavy") {
+      const ok = window.confirm("This tool is marked HEAVY and may take a while or use significant resources. Run it?");
+      if (!ok) return;
+    }
+
+    runTool(selected);
+  }, [isWired, runTool, selected]);
 
   return (
     <Card className="border-slate-200 shadow-sm h-full overflow-hidden flex flex-col">
@@ -84,20 +132,22 @@ export function ToolDetailsPanel(props: ToolDetailsPanelProps) {
             {/* Execution Panel */}
             <div
               className={`rounded-lg border p-4 ${
-                selected.wiredToolId ? "bg-blue-50/30 border-blue-100" : "bg-slate-50 border-slate-200"
+                isWired ? "bg-blue-50/30 border-blue-100" : "bg-slate-50 border-slate-200"
               }`}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {selected.wiredToolId ? "Execution Control" : "Configuration"}
+                  {isWired ? "Execution Control" : "Configuration"}
                 </div>
-                {selected.wiredToolId && (
+
+                {isWired && wiredToolId && (
                   <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono">
-                    ID: {selected.wiredToolId}
+                    ID: {wiredToolId}
                     <button
-                      onClick={() => copyToClipboard(selected.wiredToolId!)}
+                      onClick={() => copyToClipboard(wiredToolId)}
                       className="hover:text-slate-700 p-0.5"
                       title="Copy Tool ID"
+                      aria-label="Copy Tool ID"
                     >
                       <Copy className="w-3 h-3" />
                     </button>
@@ -105,7 +155,7 @@ export function ToolDetailsPanel(props: ToolDetailsPanelProps) {
                 )}
               </div>
 
-              {!selected.wiredToolId ? (
+              {!isWired ? (
                 <div className="text-sm text-slate-500 italic">
                   This tool is not wired to the backend (not in allowlist).
                   <div className="mt-1 text-xs">
@@ -118,32 +168,69 @@ export function ToolDetailsPanel(props: ToolDetailsPanelProps) {
                   <div className="space-y-1">
                     <label className="text-[10px] uppercase font-bold text-slate-400">Preview</label>
                     <div className="font-mono text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-600 break-all">
-                      {selected.commandPreview || "..."}
+                      {fullPreview}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2 text-slate-500 hover:text-slate-900"
+                        onClick={() => copyToClipboard(fullPreview)}
+                        disabled={!fullPreview || fullPreview === "..."}
+                      >
+                        <Copy className="w-3 h-3 mr-1.5" /> Copy Preview
+                      </Button>
                     </div>
                   </div>
 
                   {/* Arguments Input */}
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-slate-400">Extra Arguments</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] uppercase font-bold text-slate-400">Extra Arguments</label>
+                      <button
+                        onClick={clearArgs}
+                        className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-700"
+                        title="Clear arguments"
+                        aria-label="Clear arguments"
+                        disabled={isBusy}
+                      >
+                        <X className="w-3 h-3" />
+                        Clear
+                      </button>
+                    </div>
+
                     <input
-                      value={argsByToolId[selected.wiredToolId] || ""}
-                      onChange={(e) =>
-                        setArgsByToolId((prev) => ({
-                          ...prev,
-                          [selected.wiredToolId as string]: e.target.value,
-                        }))
-                      }
+                      value={extraArgs}
+                      onChange={(e) => onChangeArgs(e.target.value)}
                       placeholder="e.g. --verbose --dry-run"
                       className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-mono outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 placeholder:text-slate-400"
-                      disabled={activeToolId !== null}
+                      disabled={isBusy}
                     />
+
+                    {/* Parsed args chips */}
+                    {Array.isArray(parsedArgs) && parsedArgs.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {parsedArgs.slice(0, 12).map((a: any, i: number) => (
+                          <span
+                            key={`${String(a)}-${i}`}
+                            className="text-[10px] font-mono bg-white border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded"
+                          >
+                            {String(a)}
+                          </span>
+                        ))}
+                        {parsedArgs.length > 12 && (
+                          <span className="text-[10px] text-slate-400">+{parsedArgs.length - 12} more</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
                   <div className="pt-1 flex flex-wrap gap-2">
                     <Button
-                      onClick={() => runTool(selected)}
-                      disabled={activeToolId !== null}
+                      onClick={handleRun}
+                      disabled={isBusy}
                       variant={selected.risk === "heavy" ? "destructive" : "default"}
                       className="flex-1 min-w-[120px]"
                     >
@@ -161,12 +248,13 @@ export function ToolDetailsPanel(props: ToolDetailsPanelProps) {
                     <Button
                       variant="outline"
                       className="bg-white"
+                      disabled={!wiredToolId}
                       onClick={() =>
                         copyToClipboard(
                           JSON.stringify(
                             {
-                              tool_id: selected.wiredToolId,
-                              args: parseCliArgs(argsByToolId[selected.wiredToolId!] || ""),
+                              tool_id: wiredToolId,
+                              args: parsedArgs,
                             },
                             null,
                             2
@@ -197,9 +285,9 @@ export function ToolDetailsPanel(props: ToolDetailsPanelProps) {
                   <Copy className="w-3 h-3 mr-1.5" /> Copy Path
                 </Button>
 
-                {repoFileUrl(repoUrl, selected.path) && (
+                {repoHref && (
                   <a
-                    href={repoFileUrl(repoUrl, selected.path)!}
+                    href={repoHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center h-7 px-2 text-xs font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
@@ -224,6 +312,7 @@ export function ToolDetailsPanel(props: ToolDetailsPanelProps) {
                         onClick={() => copyToClipboard(cmd)}
                         className="text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
                         title="Copy command"
+                        aria-label="Copy command"
                       >
                         <Copy className="w-3 h-3" />
                       </button>

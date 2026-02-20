@@ -1,0 +1,70 @@
+diff --git a/tools/language_health.py b/tools/language_health.py
+--- a/tools/language_health.py
++++ b/tools/language_health.py
+@@
+ class ArchitectApiRuntimeChecker:
+@@
+     def _headers(self) -> Dict[str, str]:
+-        headers = {"Content-Type": "application/json"}
++        # Default output mode is "text/plain" (still returned as JSON with surface_text + meta).
++        headers = {"Content-Type": "application/json", "Accept": "text/plain"}
+         if self.api_key:
+             headers["X-API-Key"] = self.api_key
+         if self.trace_id:
+             headers["x-trace-id"] = self.trace_id
+         return headers
+@@
+     def check_language(self, lang_code: str, payload: Dict[str, Any]) -> RuntimeResult:
+@@
+-        if status == 200 and isinstance(data, dict):
+-            txt = data.get("text")
+-            sample = str(txt)[:200] if txt else None
+-            return RuntimeResult(
+-                api_lang=lang_code,
+-                status="PASS",
+-                http_status=status,
+-                duration_ms=dur_ms,
+-                sample_text=sample,
+-            )
++        if status == 200:
++            if isinstance(data, dict):
++                txt = data.get("surface_text") or data.get("text")
++                sample = str(txt)[:200] if txt else (raw[:200] if isinstance(raw, str) else None)
++                return RuntimeResult(
++                    api_lang=lang_code,
++                    status="PASS",
++                    http_status=status,
++                    duration_ms=dur_ms,
++                    sample_text=sample,
++                )
++            # If JSON parsing failed but request succeeded, accept raw text.
++            if isinstance(raw, str) and raw.strip():
++                return RuntimeResult(
++                    api_lang=lang_code,
++                    status="PASS",
++                    http_status=status,
++                    duration_ms=dur_ms,
++                    sample_text=raw.strip()[:200],
++                )
+ 
+         err = raw[:500] if isinstance(raw, str) else str(raw)
+         return RuntimeResult(
+             api_lang=lang_code,
+             status="FAIL",
+             http_status=status if status != 0 else None,
+             duration_ms=dur_ms,
+             error=err,
+         )
+@@
+ def _default_test_payload() -> Dict[str, Any]:
+-    # v2.5 compliance: subject is an object (name + qid). Keep payload shape minimal/safe.
++    # Strict Path BioFrame expects a flat JSON object (no nested subject/properties).
+     return {
+         "frame_type": "bio",
+-        "subject": {"name": "Alan Turing", "qid": "Q7251"},
+-        "properties": {"occupation": "Mathematician"},
++        "name": "Shaka",
++        "profession": "warrior",
++        "nationality": "zulu",
++        "gender": "m",
+     }

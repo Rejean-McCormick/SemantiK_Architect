@@ -20,7 +20,7 @@ Right-click the file and select **"Run with PowerShell"**, or run from the termi
 
 ```powershell
 .\Run-Architect.ps1
-```
+````
 
 ### Process Flow
 
@@ -35,7 +35,7 @@ Right-click the file and select **"Run with PowerShell"**, or run from the termi
 
 A dedicated dashboard for immediate system health verification and smoke testing.
 
-**URL:** `http://localhost:3000/dev`
+**URL:** `http://localhost:3000/abstract_wiki_architect/dev`
 
 ### Features
 
@@ -53,7 +53,7 @@ A dedicated dashboard for immediate system health verification and smoke testing
 
 A GUI wrapper for backend maintenance scripts, allowing operational tasks to be performed without a WSL terminal.
 
-**URL:** `http://localhost:3000/tools`
+**URL:** `http://localhost:3000/abstract_wiki_architect/tools`
 
 ### How it works (authoritative)
 
@@ -76,6 +76,7 @@ A GUI wrapper for backend maintenance scripts, allowing operational tasks to be 
 ### Security & operational guarantees
 
 * **No arbitrary execution:** only allowlisted tool IDs can run.
+* **No aliases / no remaps:** tool IDs are canonical; legacy IDs are rejected (404 from the registry lookup).
 * **Repo confinement:** tool targets must resolve under `FILESYSTEM_REPO_PATH`.
 * **Timeouts:** per-tool timeout enforced; default via `ARCHITECT_TOOLS_DEFAULT_TIMEOUT_SEC`.
 * **Output truncation:** enforced via `ARCHITECT_TOOLS_MAX_OUTPUT_CHARS`.
@@ -84,12 +85,12 @@ A GUI wrapper for backend maintenance scripts, allowing operational tasks to be 
 
 ### Available Dashboard Tool Mappings (examples)
 
-| Tool ID           | Action Taken                                                                                                      |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `language_health` | Language health/diagnostics utility (compile/API checks). *(Legacy UI IDs like `audit_languages` remap to this.)* |
-| `compile_pgf`     | Triggers the build orchestrator to compile/link `AbstractWiki.pgf`.                                               |
-| `harvest_lexicon` | Runs the lexicon harvester (subcommands: `wordnet` or `wikidata`).                                                |
-| `run_judge`       | Executes golden-standard regression checks (AI Judge integration).                                                |
+| Tool ID           | Action Taken                                                        |
+| ----------------- | ------------------------------------------------------------------- |
+| `language_health` | Language health/diagnostics utility (compile/API checks).           |
+| `compile_pgf`     | Triggers the build orchestrator to compile/link `AbstractWiki.pgf`. |
+| `harvest_lexicon` | Runs the lexicon harvester (subcommands: `wordnet` or `wikidata`).  |
+| `run_judge`       | Executes golden-standard regression checks (AI Judge integration).  |
 
 Note: the UI registry of tools (labels/categories/parameter docs) must stay in sync with backend `TOOL_REGISTRY` tool IDs and their allowed flags.
 
@@ -112,4 +113,4 @@ The developer interfaces above rely on the following infrastructure:
 * **Repo Root Standardization:** tools always execute with `cwd = FILESYSTEM_REPO_PATH` and `PYTHONPATH` injected accordingly.
 * **Unified Commander:** `manage.py` remains the canonical orchestrator for lifecycle operations; external launchers should delegate to it rather than re-implement environment logic.
 
----
+

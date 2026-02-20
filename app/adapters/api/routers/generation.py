@@ -14,13 +14,15 @@ from app.core.domain.exceptions import (
     LanguageNotFoundError,
     UnsupportedFrameTypeError,
 )
-
 from app.core.use_cases.generate_text import GenerateText
 
 # Adapters & Infrastructure
 from app.adapters.api.dependencies import get_generate_text_use_case, verify_api_key
 from app.adapters.ninai import ninai_adapter
 from app.adapters.redis_bus import redis_bus
+
+# Shared
+from app.shared.lexicon import lexicon
 
 logger = structlog.get_logger()
 
@@ -29,6 +31,75 @@ router = APIRouter(
     tags=["Generation"],
     dependencies=[Depends(verify_api_key)],
 )
+
+
+@router.post(
+    "",  # <-- NEW: allows POST /api/v1/generate (lang in payload)
+    response_model=Sentence,
+    status_code=status.HTTP_200_OK,
+    summary="Generate Text (language in payload)",
+)
+async def generate_text_from_payload(
+    request: Request,
+    payload: Dict[str, Any] = Body(
+        ...,
+        description="Abstract Semantic Frame or Ninai Protocol payload (must include lang or inputs.language)",
+    ),
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
+    use_case: GenerateText = Depends(get_generate_text_use_case),
+):
+    """
+    Same generator, but language is provided inside the payload:
+      - top-level: lang | language | lang_code
+      - or inside inputs: language | lang | lang_code
+
+    This matches the GUI Dynamic Test Bench request shape.
+    """
+    try:
+        lang_raw = _extract_lang_from_payload(payload)
+        if not lang_raw:
+            raise InvalidFrameError(
+                "Missing language. Provide `lang` (top-level) or `inputs.language`."
+            )
+
+        lang = _normalize_lang_code(lang_raw)
+        cleaned_payload = _strip_lang_fields(payload)
+
+        # 1) ADAPTER LAYER: Input Normalization (JSON -> Domain Entity)
+        frame = _parse_payload(cleaned_payload, lang)
+
+        # 2) CONTEXT LAYER: Discourse Planning (Stateful Logic)
+        if x_session_id and isinstance(frame, BioFrame):
+            await _apply_discourse_context(x_session_id, frame)
+
+        # 3) USE CASE LAYER: Execution
+        sentence = await use_case.execute(lang, frame)
+        return sentence
+
+    except (InvalidFrameError, UnsupportedFrameTypeError, ValueError) as e:
+        logger.warning("generation_bad_request", lang=lang_raw, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        )
+    except LanguageNotFoundError as e:
+        logger.warning("generation_language_not_found", lang=lang_raw, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except DomainError as e:
+        logger.error("generation_domain_error", lang=lang_raw, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Generation failed: {str(e)}",
+        )
+    except Exception as e:
+        logger.critical("unexpected_generation_crash", error=str(e), exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during text generation.",
+        )
 
 
 @router.post(
@@ -58,8 +129,20 @@ async def generate_text(
     lang = _normalize_lang_code(lang_code)
 
     try:
+        # If the payload also provides lang, enforce consistency to avoid silent mismatch.
+        payload_lang_raw = _extract_lang_from_payload(payload)
+        if payload_lang_raw:
+            payload_lang = _normalize_lang_code(payload_lang_raw)
+            if payload_lang != lang:
+                raise InvalidFrameError(
+                    f"Language mismatch: URL has '{lang_code}' -> '{lang}', "
+                    f"payload has '{payload_lang_raw}' -> '{payload_lang}'."
+                )
+
+        cleaned_payload = _strip_lang_fields(payload)
+
         # 1) ADAPTER LAYER: Input Normalization (JSON -> Domain Entity)
-        frame = _parse_payload(payload, lang)
+        frame = _parse_payload(cleaned_payload, lang)
 
         # 2) CONTEXT LAYER: Discourse Planning (Stateful Logic)
         if x_session_id and isinstance(frame, BioFrame):
@@ -101,11 +184,58 @@ def _normalize_lang_code(lang_code: str) -> str:
 
     - trims/lowers
     - strips a leading 'wiki' prefix if present (e.g., 'wikieng' -> 'eng')
+    - maps ISO3/odd codes to ISO2 via lexicon.normalize_code (e.g., 'zul' -> 'zu')
     """
     code = (lang_code or "").strip().lower()
     if code.startswith("wiki") and len(code) > 4:
         code = code[4:]
-    return code
+    return lexicon.normalize_code(code)
+
+
+def _extract_lang_from_payload(payload: Dict[str, Any]) -> Optional[str]:
+    if not isinstance(payload, dict):
+        return None
+
+    # 1) top-level
+    for k in ("lang", "language", "lang_code"):
+        v = payload.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+
+    # 2) inside inputs
+    inputs = payload.get("inputs")
+    if isinstance(inputs, dict):
+        for k in ("language", "lang", "lang_code"):
+            v = inputs.get(k)
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+
+    return None
+
+
+def _strip_lang_fields(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Remove language fields from the payload so they don't pollute Frame inputs
+    (e.g., GF argument mismatch from an extra 'language' key).
+    """
+    if not isinstance(payload, dict):
+        return payload
+
+    cleaned = dict(payload)
+
+    # remove top-level language helpers
+    for k in ("lang", "language", "lang_code", "lang_name"):
+        cleaned.pop(k, None)
+
+    # remove language helpers from inputs too
+    inputs = cleaned.get("inputs")
+    if isinstance(inputs, dict):
+        new_inputs = dict(inputs)
+        for k in ("lang", "language", "lang_code"):
+            new_inputs.pop(k, None)
+        cleaned["inputs"] = new_inputs
+
+    return cleaned
 
 
 def _parse_payload(payload: Dict[str, Any], lang_code: str) -> Union[BioFrame, Frame]:
@@ -133,8 +263,6 @@ def _parse_payload(payload: Dict[str, Any], lang_code: str) -> Union[BioFrame, F
         if frame_type == "bio":
             return BioFrame(**payload)
 
-        # If Frame is a discriminated union on frame_type, it will validate.
-        # Otherwise, this may raise and be wrapped below.
         return Frame(**payload)
 
     except Exception as e:
@@ -144,11 +272,6 @@ def _parse_payload(payload: Dict[str, Any], lang_code: str) -> Union[BioFrame, F
 def _extract_subject_qid(frame: BioFrame) -> Optional[str]:
     """
     Best-effort extraction of the entity identifier used for discourse focus.
-
-    Preference order:
-      1) frame.context_id (if your schema stores subject QID there)
-      2) frame.subject.qid (if subject is an object/dict with qid)
-      3) frame.qid (if model exposes it)
     """
     qid = getattr(frame, "context_id", None)
     if qid:
@@ -173,16 +296,13 @@ async def _apply_discourse_context(session_id: str, frame: BioFrame) -> None:
         return
 
     subject_qid = _extract_subject_qid(frame)
-    
-    # [FIX] If we don't have a stable identifier (QID), we cannot reliably track 
-    # this entity or use it for future coreference resolution. We skip context 
-    # updates to prevent polluting the session with "Q0" or None.
+
+    # If we don't have a stable identifier (QID), skip context updates.
     if not subject_qid:
         return
 
     original_label = getattr(frame, "name", None)
 
-    # If the new subject QID matches the previous focus QID, we pronominalize.
     if context.current_focus and context.current_focus.qid == subject_qid:
         logger.info("pronominalization_triggered", session=session_id)
 
@@ -202,8 +322,11 @@ async def _apply_discourse_context(session_id: str, frame: BioFrame) -> None:
         frame.meta["gf_function"] = "UsePron"
         frame.meta["gf_arg"] = gf_arg
 
-        # Keep focus label stable (entity label, not the pronoun)
-        focus_label = getattr(context.current_focus, "label", None) or original_label or pronoun_label
+        focus_label = (
+            getattr(context.current_focus, "label", None)
+            or original_label
+            or pronoun_label
+        )
         focus_qid = getattr(context.current_focus, "qid", None) or subject_qid
         focus_gender_out = focus_gender or (getattr(frame, "gender", None) or "n")
     else:

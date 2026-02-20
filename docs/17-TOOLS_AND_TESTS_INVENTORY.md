@@ -1,8 +1,4 @@
-This exhaustive inventory documents every executable script, tool, and test suite found in your codebase (v2.5).
-
----
-
-# 📚 The Complete Tools & Tests Inventory (v2.5)
+# 📚 The Complete Tools & Tests Inventory (v2.5.1)
 
 **Abstract Wiki Architect**
 
@@ -62,12 +58,15 @@ System intelligence layer that scans repo state and language readiness.
 
 Tools used to keep the repo sane and the system healthy.
 
-| Tool                 | Location                    | Purpose                                                                        | Key Arguments                                                                                                                      |
-| -------------------- | --------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Language Health**  | `tools/language_health.py`  | Deep scan utility (replaces legacy `audit_languages` / `check_all_languages`). | `--mode`, `--fast`, `--parallel`, `--api-url`, `--api-key`, `--timeout`, `--langs …`, `--no-disable-script`, `--verbose`, `--json` |
-| **Diagnostic Audit** | `tools/diagnostic_audit.py` | Forensics audit for stale artifacts and inconsistent outputs.                  | `--verbose`, `--json`                                                                                                              |
-| **Root Cleanup**     | `tools/cleanup_root.py`     | Moves loose artifacts into expected folders and cleans known junk outputs.     | `--dry-run`, `--verbose`, `--json`                                                                                                 |
-| **Bootstrap Tier 1** | `tools/bootstrap_tier1.py`  | Scaffolds Tier 1 wrappers / bridge files for selected languages.               | `--langs …`, `--force`, `--dry-run`, `--verbose`                                                                                   |
+> **Note (GUI Tools):** The Tools Dashboard runs via a strict backend allowlist. The “Key Arguments” below reflect the allowlisted argv flags for GUI execution.  
+> **Security:** Do **not** pass secrets via argv. Tool args can be echoed into logs/telemetry/UI/debug bundles. For API-mode checks, provide the API key via environment/secret injection (recommended: `ARCHITECT_API_KEY`; fallbacks: `AWA_API_KEY`, `API_SECRET`, `API_KEY`).
+
+| Tool                 | Location                    | Purpose                                                                    | Key Arguments                                                                                                                             |
+| -------------------- | --------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Language Health**  | `tools/language_health.py`  | Deep scan utility for the language pipeline.                               | `--mode`, `--fast`, `--parallel`, `--api-url`, `--timeout`, `--limit`, `--langs …`, `--no-disable-script`, `--verbose`, `--json`         |
+| **Diagnostic Audit** | `tools/diagnostic_audit.py` | Forensics audit for stale artifacts and inconsistent outputs.              | `--verbose`, `--json`                                                                                                                     |
+| **Root Cleanup**     | `tools/cleanup_root.py`     | Moves loose artifacts into expected folders and cleans known junk outputs. | `--dry-run`, `--verbose`, `--json`                                                                                                        |
+| **Bootstrap Tier 1** | `tools/bootstrap_tier1.py`  | Scaffolds Tier 1 wrappers / bridge files for selected languages.           | `--langs …`, `--force`, `--dry-run`, `--verbose`                                                                                          |
 
 ---
 
@@ -79,7 +78,7 @@ Lexicon mining/harvesting and related vocabulary maintenance.
 | ---------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Universal Lexicon Harvester**          | `tools/harvest_lexicon.py`             | **Two-mode harvester (subcommands)** for lexicon data. WordNet mode builds `wide.json`. Wikidata mode fetches labels + limited facts for provided QIDs and saves a domain shard JSON. | **`wordnet`**: `wordnet --root <gf-wordnet> --lang <iso2> [--out <data/lexicon>]`<br><br>**`wikidata`**: `wikidata --lang <iso2> --input <qids.json> [--domain people] [--out <data/lexicon>]` |
 | **Wikidata Importer (Legacy/Reference)** | `scripts/lexicon/wikidata_importer.py` | Legacy/reference importer logic; not wired into v2.5 tools runner allowlist.                                                                                                          | *(varies; not authoritative in v2.5 runtime)*                                                                                                                                                  |
-| **RGL Syncer**                           | `scripts/lexicon/sync_rgl.py`          | Extracts lexical functions from compiled PGF into `data/lexicon/{lang}/rgl_sync.json`.                                                                                                | `--pgf`, `--max-funs`, `--dry-run`                                                                                                                                                             |
+| **RGL Syncer**                           | `scripts/lexicon/sync_rgl.py`          | Extracts lexical functions from compiled PGF into `data/lexicon/{lang}/rgl_sync.json`.                                                                                                | `--pgf`, `--out-dir`, `--langs`, `--max-funs`, `--dry-run`, `--validate`                                                                                                                       |
 | **Gap Filler**                           | `tools/lexicon/gap_filler.py`          | Compares target language lexicon vs pivot language to find missing concepts.                                                                                                          | `--target`, `--pivot`, `--data-dir`, `--json-out`, `--verbose`                                                                                                                                 |
 | **Link Libraries**                       | `link_libraries.py`                    | Ensures `Wiki*.gf` opens required modules for runtime lexicon injection.                                                                                                              | *(None)*                                                                                                                                                                                       |
 | **Schema/Index Utilities**               | `utils/…`                              | Maintenance utilities for lexicon index/schema and stats.                                                                                                                             | `utils/refresh_lexicon_index.py`, `utils/migrate_lexicon_schema.py`, `utils/dump_lexicon_stats.py`                                                                                             |
@@ -90,17 +89,17 @@ Lexicon mining/harvesting and related vocabulary maintenance.
 
 QA tools that validate runtime output, lexicon integrity, and regression coverage.
 
-| Tool                                  | Location                                        | Purpose                                                                                                            | Key Arguments                                                                              |
-| ------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| **Universal Test Runner**             | `tools/qa/universal_test_runner.py`             | Runs CSV-based suites and emits a report. (Also exposed via legacy UI ID `test_runner` → `universal_test_runner`.) | `--suite`, `--in`, `--out`, `--langs …`, `--limit`, `--verbose`, `--fail-fast`, `--strict` |
-| **Bio Evaluator**                     | `tools/qa/eval_bios.py`                         | Compares generated biographies against Wikidata facts (QA harness).                                                | `--langs …`, `--limit`, `--out`, `--verbose`                                               |
-| **Lexicon Coverage Report**           | `tools/qa/lexicon_coverage_report.py`           | Coverage report for intended vs implemented lexicon and errors.                                                    | `--langs …`, `--out`, `--format`, `--verbose`, `--fail-on-errors`                          |
-| **Ambiguity Detector (AI)**           | `tools/qa/ambiguity_detector.py`                | Uses AI to generate ambiguous sentences and checks for multiple parse trees.                                       | `--lang`, `--sentence`, `--topic`, `--json-out`, `--verbose` *(requires AI enabled)*       |
-| **Batch Test Generator**              | `tools/qa/batch_test_generator.py`              | Generates large regression datasets (CSV) for QA.                                                                  | `--langs …`, `--out`, `--limit`, `--seed`, `--verbose`                                     |
-| **Test Suite Generator**              | `tools/qa/test_suite_generator.py`              | Generates empty CSV templates for manual fill-in.                                                                  | `--langs …`, `--out`, `--verbose`                                                          |
-| **Lexicon Regression Test Generator** | `tools/qa/generate_lexicon_regression_tests.py` | Builds regression tests from lexicon inventory for CI.                                                             | `--langs …`, `--out`, `--limit`, `--verbose`, `--lexicon-dir`                              |
-| **Profiler**                          | `tools/health/profiler.py`                      | Benchmarks Grammar Engine performance.                                                                             | `--lang`, `--iterations`, `--update-baseline`, `--threshold`, `--verbose`                  |
-| **AST Visualizer**                    | `tools/debug/visualize_ast.py`                  | Generates JSON AST from sentence/intent or explicit AST.                                                           | `--lang`, `--sentence`, `--ast`, `--pgf`                                                   |
+| Tool                                  | Location                                        | Purpose                                                                      | Key Arguments                                                                              |
+| ------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Universal Test Runner**             | `tools/qa/universal_test_runner.py`             | Runs CSV-based suites and emits a report.                                    | `--suite`, `--in`, `--out`, `--langs …`, `--limit`, `--verbose`, `--fail-fast`, `--strict` |
+| **Bio Evaluator**                     | `tools/qa/eval_bios.py`                         | Compares generated biographies against Wikidata facts (QA harness).          | `--langs …`, `--limit`, `--out`, `--verbose`                                               |
+| **Lexicon Coverage Report**           | `tools/qa/lexicon_coverage_report.py`           | Coverage report for intended vs implemented lexicon and errors.              | `--langs …`, `--out`, `--format`, `--verbose`, `--fail-on-errors`                          |
+| **Ambiguity Detector (AI)**           | `tools/qa/ambiguity_detector.py`                | Uses AI to generate ambiguous sentences and checks for multiple parse trees. | `--lang`, `--sentence`, `--topic`, `--json-out`, `--verbose` *(requires AI enabled)*       |
+| **Batch Test Generator**              | `tools/qa/batch_test_generator.py`              | Generates large regression datasets (CSV) for QA.                            | `--langs …`, `--out`, `--limit`, `--seed`, `--verbose`                                     |
+| **Test Suite Generator**              | `tools/qa/test_suite_generator.py`              | Generates empty CSV templates for manual fill-in.                            | `--langs …`, `--out`, `--verbose`                                                          |
+| **Lexicon Regression Test Generator** | `tools/qa/generate_lexicon_regression_tests.py` | Builds regression tests from lexicon inventory for CI.                       | `--langs …`, `--out`, `--limit`, `--verbose`, `--lexicon-dir`                              |
+| **Profiler**                          | `tools/health/profiler.py`                      | Benchmarks Grammar Engine performance.                                       | `--lang`, `--iterations`, `--update-baseline`, `--threshold`, `--verbose`                  |
+| **AST Visualizer**                    | `tools/debug/visualize_ast.py`                  | Generates JSON AST from sentence/intent or explicit AST.                     | `--lang`, `--sentence`, `--ast`, `--pgf`                                                   |
 
 ---
 
@@ -147,9 +146,18 @@ Automated regression harness. Run with `pytest <path>`.
 
 The GUI runs tools through a strict **backend allowlist registry** (no arbitrary execution).
 
-| Endpoint              | Purpose                                                                                                                                                                                                     |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /tools/registry` | Returns tool metadata (`tool_id`, description, timeout, availability, AI gating).                                                                                                                           |
-| `POST /tools/run`     | Runs a tool by `tool_id` + argv-style args. Returns a **stable response envelope** containing `trace_id`, command, stdout/stderr, truncation info, accepted/rejected args, lifecycle events, and exit code. |
+| Endpoint                    | Purpose                                                                                                                                                                                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/tools/registry` | Returns tool metadata (`tool_id`, description, timeout, availability, AI gating).                                                                                                                                                        |
+| `POST /api/v1/tools/run`     | Runs a tool by `tool_id` plus argv-style args and optional dry-run mode. Returns a **stable response envelope** containing `trace_id`, command, stdout/stderr, truncation info, accepted/rejected args, lifecycle events, and exit code. |
+
+**Request shape (high-level):**
+* `tool_id`: string
+* `args`: string[] *(argv-style)*
+* `dry_run`: boolean *(optional; preferred for GUI-level dry-run switching)*
+
+**Dry-run note:** Prefer using `dry_run=true` at the API layer. Avoid relying on per-tool argv conventions for “dry run” flags.
+
+**Secret handling:** Do **not** pass API keys/tokens/passwords in `args`. Args may be echoed into response envelopes and UI debug bundles. Provide secrets via environment variables / secret injection (recommended: `ARCHITECT_API_KEY`; fallbacks: `AWA_API_KEY`, `API_SECRET`, `API_KEY`).
 
 **Execution constraints:** repo-root fixed by `FILESYSTEM_REPO_PATH`; output truncation by `ARCHITECT_TOOLS_MAX_OUTPUT_CHARS`; default timeout by `ARCHITECT_TOOLS_DEFAULT_TIMEOUT_SEC`; AI gating by `ARCHITECT_ENABLE_AI_TOOLS`.

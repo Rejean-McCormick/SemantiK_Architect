@@ -16,9 +16,6 @@ body {
   height: 100%;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  /* Removed hardcoded colors so Tailwind classes in layout.tsx take precedence */
-  /* background-color: #f5f5f5; */
-  /* color: #111111; */
 }
 
 body {
@@ -35,244 +32,376 @@ a:hover {
 }
 
 /* --- FIX: Global Visibility --- */
-/* Ensure all native inputs/buttons have dark text on white bg by default */
-button {
-  font-family: inherit;
-  color: #111111; 
-}
+/* We use @layer base to set defaults that can be overridden by Tailwind utilities.
+   This removes the !important flags that were breaking dark mode.
+*/
+@layer base {
+  button {
+    font-family: inherit;
+    color: inherit;
+  }
 
-input,
-textarea,
-select {
-  color: #111111 !important;
-  background-color: #ffffff !important;
-  border: 1px solid #cccccc; 
-}
-
-/* Simple layout helpers */
-
-.aw-shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.aw-main {
-  flex: 1;
-  display: flex;
-}
-
-/* Sidebar / content layout used by Architect */
-
-.aw-sidebar {
-  width: 260px;
-  padding: 1.5rem;
-  border-right: 1px solid #dddddd;
-  background-color: #fafafa;
-  color: #111111; /* Fix: Enforce dark text */
-}
-
-.aw-sidebar h2, 
-.aw-sidebar h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-  color: #111111; /* Fix: Enforce dark headers */
-}
-
-.aw-sidebar ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.aw-sidebar li + li {
-  margin-top: 0.35rem;
-}
-
-.aw-content {
-  flex: 1;
-  padding: 2rem;
-}
-
-/* Generic card */
-
-.aw-card {
-  background-color: #ffffff;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
-  padding: 1.25rem;
-  color: #111111; /* Fix: Enforce dark text on white card */
-}
-
-/* Fix: Ensure Headings inside cards are always Dark */
-.aw-card h1, 
-.aw-card h2, 
-.aw-card h3, 
-.aw-card h4 {
-  color: #111111;
-  margin-top: 0;
-}
-
-/* Form elements */
-
-.aw-form {
-  display: grid;
-  gap: 0.75rem;
-  max-width: 520px;
-}
-
-.aw-form label {
-  display: block;
-  font-size: 0.9rem;
-  margin-bottom: 0.15rem;
-  color: #111111;
-}
-
-.aw-form input[type="text"],
-.aw-form input[type="number"],
-.aw-form input[type="date"],
-.aw-form select,
-.aw-form textarea {
-  width: 100%;
-  padding: 0.4rem 0.5rem;
-  border-radius: 3px;
-  border: 1px solid #cccccc;
-  font-size: 0.95rem;
-  color: #111111;      /* Explicitly set color */
-  background-color: #ffffff; /* Explicitly set bg */
-}
-
-.aw-form textarea {
-  min-height: 5rem;
-  resize: vertical;
-}
-
-.aw-form-help {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.8rem;
-  color: #555555;
-}
-
-/* Buttons */
-
-.aw-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.45rem 1rem;
-  font-size: 0.95rem;
-  border-radius: 3px;
-  border: 1px solid #1f6feb;
-  background-color: #1f6feb;
-  color: #ffffff; /* Override global button color to White for primary actions */
-  cursor: pointer;
-}
-
-.aw-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-/* Error banner */
-
-.aw-error-banner {
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  border: 1px solid #f0b0b0;
-  background-color: #ffe0e0;
-  color: #660000;
-  font-size: 0.9rem;
+  input,
+  textarea,
+  select {
+    @apply border border-slate-300 bg-white text-slate-900
+           dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100;
+  }
 }
 
 /* ------------------------------------------------------------------ */
-/* Everything Matrix UI helpers (completion coloring + tables)         */
+/* COMPOSANTS PERSONNALISÉS (Supportent maintenant le mode sombre)    */
 /* ------------------------------------------------------------------ */
+@layer components {
 
-/* A simple table baseline (works with Tailwind too) */
-.aw-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+  /* ----------------------------- */
+  /* Navbar (clean CSS approach)   */
+  /* ----------------------------- */
+  .aw-navbar {
+    @apply border-b border-slate-200 bg-white/90 p-4 sticky top-0 z-50 backdrop-blur
+           text-slate-900 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-100;
+  }
 
-.aw-table th,
-.aw-table td {
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #e5e5e5;
-  vertical-align: middle;
-  color: #111111; /* Fix: Enforce dark text in tables */
-}
+  .aw-navbar-title {
+    @apply font-bold hidden sm:inline text-slate-900 dark:text-slate-100;
+  }
 
-.aw-table th {
-  font-weight: 600;
-  background: #f7f7f7;
-}
+  .aw-nav-link {
+    @apply px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap
+           text-slate-700 hover:text-slate-900 hover:bg-slate-100
+           dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800;
+  }
 
-/* Compact numeric cells */
-.aw-cell-num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
+  .aw-nav-link-active {
+    @apply bg-blue-600 text-white shadow-lg shadow-blue-900/20 hover:bg-blue-700;
+  }
 
-/* Completion color tokens (use on cells or rows)
-   Map to your CompletionLevel buckets: none/low/medium/high/complete */
-.aw-level-none {
-  background-color: #f3f4f6; /* gray-100 */
-  color: #111111;
-}
+  /* ----------------------------- */
+  /* ConsoleCard (clean CSS)       */
+  /* ----------------------------- */
+  .aw-console-card {
+    @apply flex-1 flex flex-col overflow-hidden min-h-[400px]
+           bg-white border border-slate-200 shadow-2xl
+           dark:bg-slate-950 dark:border-slate-800;
+  }
 
-.aw-level-low {
-  background-color: #fee2e2; /* red-100 */
-  color: #7f1d1d; /* red-900-ish */
-}
+  .aw-console-header {
+    @apply py-3 px-4 border-b border-slate-200 bg-slate-50
+           flex flex-row items-center justify-between shrink-0
+           dark:border-slate-800 dark:bg-slate-900/50;
+  }
 
-.aw-level-medium {
-  background-color: #fef3c7; /* amber-100 */
-  color: #78350f; /* amber-900-ish */
-}
+  .aw-console-titlewrap {
+    @apply flex items-center gap-2;
+  }
 
-.aw-level-high {
-  background-color: #dbeafe; /* blue-100 */
-  color: #1e3a8a; /* blue-900-ish */
-}
+  .aw-console-icon {
+    @apply w-4 h-4 text-slate-600 dark:text-slate-400;
+  }
 
-.aw-level-complete {
-  background-color: #dcfce7; /* green-100 */
-  color: #14532d; /* green-900-ish */
-}
+  .aw-console-title {
+    @apply text-xs font-mono uppercase tracking-widest
+           text-slate-700 dark:text-slate-300;
+  }
 
-/* Slight emphasis for heatmap-like cells */
-.aw-heat-cell {
-  border-radius: 4px;
-  padding: 0.25rem 0.4rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.25rem;
-}
+  .aw-console-actions {
+    @apply flex items-center gap-3;
+  }
 
-/* Optional: legend pills */
-.aw-legend {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
+  .aw-console-meta {
+    @apply text-[10px] font-mono text-slate-700 dark:text-slate-300;
+  }
 
-.aw-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-  color: #333333;
-}
+  .aw-console-autoscroll {
+    @apply flex items-center gap-2 text-[10px] font-mono
+           text-slate-700 dark:text-slate-300;
+  }
 
-.aw-legend-swatch {
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  .aw-console-btn {
+    @apply h-6 text-[10px]
+           text-slate-700 hover:text-slate-900
+           dark:text-slate-300 dark:hover:text-slate-50;
+  }
+
+  .aw-console-btn-sky {
+    @apply h-6 text-[10px]
+           text-sky-700 hover:text-sky-900
+           dark:text-sky-400 dark:hover:text-sky-200;
+  }
+
+  .aw-console-btn-amber {
+    @apply h-6 text-[10px]
+           text-amber-700 hover:text-amber-900
+           dark:text-amber-400 dark:hover:text-amber-200;
+  }
+
+  .aw-console-status-success {
+    @apply flex items-center gap-1 text-xs
+           text-green-700 dark:text-green-400;
+  }
+
+  .aw-console-status-error {
+    @apply flex items-center gap-1 text-xs
+           text-red-700 dark:text-red-400;
+  }
+
+  .aw-console-content {
+    @apply flex-1 p-0 relative flex flex-col min-h-0;
+  }
+
+  .aw-console-visualizer {
+    @apply border-b border-slate-200 bg-white relative shrink-0 overflow-hidden
+           dark:border-slate-800 dark:bg-slate-950;
+  }
+
+  .aw-console-visualizer-badge {
+    @apply text-[10px] px-2 py-1 rounded opacity-80 pointer-events-none
+           bg-slate-800 text-white
+           dark:bg-slate-200 dark:text-slate-900;
+  }
+
+  .aw-console-visualizer-close {
+    @apply h-7 text-xs border
+           bg-white text-slate-800 border-slate-300 hover:bg-slate-100
+           dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-900;
+  }
+
+  /* NOTE: no tailwind scrollbar-* utilities here (you don't have the plugin) */
+  .aw-console-textarea {
+    @apply w-full flex-1 border-0
+           bg-slate-50 text-slate-900 font-mono text-xs p-4
+           resize-none focus:outline-none min-h-[100px]
+           dark:bg-slate-950 dark:text-slate-300;
+
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent; /* slate-300 */
+  }
+
+  /* Firefox (dark) */
+  .dark .aw-console-textarea {
+    scrollbar-color: #334155 transparent; /* slate-700 */
+  }
+
+  /* WebKit (Chrome/Edge/Safari) */
+  .aw-console-textarea::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .aw-console-textarea::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  .aw-console-textarea::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* WebKit (dark) */
+  .dark .aw-console-textarea::-webkit-scrollbar-thumb {
+    background: #334155; /* slate-700 */
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  /* Simple layout helpers */
+  .aw-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .aw-main {
+    flex: 1;
+    display: flex;
+  }
+
+  /* Sidebar / content layout used by Architect */
+  .aw-sidebar {
+    width: 260px;
+    padding: 1.5rem;
+    @apply bg-gray-50 border-r border-gray-200 text-gray-900 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100;
+  }
+
+  .aw-sidebar h2,
+  .aw-sidebar h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    @apply text-gray-900 dark:text-slate-100;
+  }
+
+  .aw-sidebar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .aw-sidebar li + li {
+    margin-top: 0.35rem;
+  }
+
+  .aw-content {
+    flex: 1;
+    padding: 2rem;
+  }
+
+  /* Generic card */
+  .aw-card {
+    border-radius: 4px;
+    padding: 1.25rem;
+    @apply bg-white border border-gray-200 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100;
+  }
+
+  .aw-card h1,
+  .aw-card h2,
+  .aw-card h3,
+  .aw-card h4 {
+    margin-top: 0;
+    @apply text-gray-900 dark:text-white;
+  }
+
+  /* Form elements (Legacy classes) */
+  .aw-form {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 520px;
+  }
+
+  .aw-form label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.15rem;
+    @apply text-gray-900 dark:text-slate-200;
+  }
+
+  .aw-form input[type="text"],
+  .aw-form input[type="number"],
+  .aw-form input[type="date"],
+  .aw-form select,
+  .aw-form textarea {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.95rem;
+    @apply border border-gray-300 bg-white text-gray-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100;
+  }
+
+  .aw-form textarea {
+    min-height: 5rem;
+    resize: vertical;
+  }
+
+  .aw-form-help {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    @apply text-gray-500 dark:text-slate-400;
+  }
+
+  /* Buttons */
+  .aw-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 1rem;
+    font-size: 0.95rem;
+    border-radius: 3px;
+    cursor: pointer;
+    @apply bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:border-blue-600 dark:hover:bg-blue-500;
+  }
+
+  .aw-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  /* Error banner */
+  .aw-error-banner {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    @apply bg-red-100 border border-red-200 text-red-900 dark:bg-red-950/40 dark:border-red-900/50 dark:text-red-300;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Everything Matrix UI helpers (completion coloring + tables)        */
+  /* ------------------------------------------------------------------ */
+
+  .aw-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .aw-table th,
+  .aw-table td {
+    padding: 0.5rem 0.6rem;
+    vertical-align: middle;
+    @apply border border-gray-200 text-gray-900 dark:border-slate-700 dark:text-slate-200;
+  }
+
+  .aw-table th {
+    font-weight: 600;
+    @apply bg-gray-50 dark:bg-slate-800/50;
+  }
+
+  .aw-cell-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Completion color tokens (Adaptés pour le mode clair et sombre) */
+  .aw-level-none {
+    @apply bg-gray-100 text-gray-900 dark:bg-slate-800 dark:text-slate-300;
+  }
+
+  .aw-level-low {
+    @apply bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-300;
+  }
+
+  .aw-level-medium {
+    @apply bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-300;
+  }
+
+  .aw-level-high {
+    @apply bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-300;
+  }
+
+  .aw-level-complete {
+    @apply bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-300;
+  }
+
+  .aw-heat-cell {
+    border-radius: 4px;
+    padding: 0.25rem 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+  }
+
+  .aw-legend {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .aw-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    @apply text-gray-800 dark:text-slate-300;
+  }
+
+  .aw-legend-swatch {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 3px;
+    @apply border border-black/10 dark:border-white/20;
+  }
 }

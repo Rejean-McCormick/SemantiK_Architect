@@ -1,12 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Database, Server, RefreshCw, CheckCircle2, XCircle } from "lucide-react"; 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Activity,
+  Database,
+  Server,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import type { TestDefinition } from "@/types/test-runner";
 
 // Interface matching your API response from docs/04-API_REFERENCE.md
@@ -16,45 +35,75 @@ interface SystemHealth {
   engine: "up" | "down";
 }
 
-// Props accepted from the Server Component
+// Some deployments return { components: { broker, storage, engine } }
+type SystemHealthResponse = SystemHealth | { components: SystemHealth };
+
 interface DevDashboardProps {
   availableTests: TestDefinition[];
 }
 
 export default function DevDashboard({ availableTests }: DevDashboardProps) {
-  const [status, setStatus] = useState<"CONNECTING" | "ONLINE" | "OFFLINE">("CONNECTING");
+  const [status, setStatus] = useState<"CONNECTING" | "ONLINE" | "OFFLINE">(
+    "CONNECTING"
+  );
   const [healthDetails, setHealthDetails] = useState<SystemHealth | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
 
-  // Test Runner State
   // Default to the first loaded test if available, or empty string
   const [selectedTestId, setSelectedTestId] = useState<string>(
     availableTests.length > 0 ? availableTests[0].id : ""
   );
-  
+
   const [testResult, setTestResult] = useState<string | null>(null);
   const [isRunningTest, setIsRunningTest] = useState(false);
 
-  // Find the full test object based on selected ID
-  const activeTest = availableTests.find(t => t.id === selectedTestId);
+  const activeTest = availableTests.find((t) => t.id === selectedTestId);
 
-  const API_BASE = process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL || "http://localhost:8000/api/v1";
+  const API_BASE =
+    process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL ||
+    "http://localhost:8000/api/v1";
+
+  /**
+   * Build a request URL that works even if the test definition accidentally includes
+   * "/api/v1" already (or uses absolute "/api/..." paths).
+   */
+  const buildUrl = (endpoint: string) => {
+    const raw = (endpoint || "").trim();
+
+    // Full URL in the test definition (rare, but allow it)
+    if (/^https?:\/\//i.test(raw)) return raw;
+
+    const base = new URL(API_BASE);
+    const origin = base.origin; // http://localhost:8000
+    const basePath = base.pathname.replace(/\/$/, ""); // /api/v1 (no trailing slash)
+
+    // If the endpoint already includes /api..., treat it as absolute-from-origin
+    if (raw.startsWith("/api/") || raw.startsWith("/api")) {
+      return `${origin}${raw}`;
+    }
+
+    // Otherwise, treat as relative-to-basePath (even if it starts with "/")
+    const rel = raw.replace(/^\//, ""); // "health/ready" or "lexicon/..."
+    return `${origin}${basePath}/${rel}`;
+  };
 
   // --- 1. DIAGNOSIS SYSTEM ---
   const runDiagnosis = async () => {
     setIsDiagnosing(true);
     try {
-      const res = await fetch(`${API_BASE}/health/ready`);
+      const res = await fetch(buildUrl("health/ready"));
       if (res.ok) {
-        const data: SystemHealth = await res.json();
-        setHealthDetails(data);
+        const data: SystemHealthResponse = await res.json();
+        // Handle both flat and nested 'components' structures
+        const details = "components" in data ? data.components : data;
+        setHealthDetails(details);
         setStatus("ONLINE");
       } else {
         setStatus("OFFLINE");
         setHealthDetails(null);
       }
-    } catch (e) {
+    } catch {
       setStatus("OFFLINE");
       setHealthDetails(null);
     } finally {
@@ -63,38 +112,49 @@ export default function DevDashboard({ availableTests }: DevDashboardProps) {
     }
   };
 
-  // Auto-run once on mount
   useEffect(() => {
     runDiagnosis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- 2. TEST RUNNER ---
   const runTest = async () => {
-    if (!activeTest) return; // Guard clause if no test selected
+    if (!activeTest) return;
 
     setIsRunningTest(true);
     setTestResult(null);
+
     try {
-      // Construct endpoint URL, handling leading slash if needed
-      const endpointPath = activeTest.endpoint.startsWith('/') ? activeTest.endpoint : `/${activeTest.endpoint}`;
-      const url = `${API_BASE}${endpointPath}`;
+      const url = buildUrl(activeTest.endpoint);
 
       const res = await fetch(url, {
         method: activeTest.method,
         headers: {
           "Content-Type": "application/json",
-          ...activeTest.headers // Merge custom headers
+          ...(activeTest.headers || {}),
         },
-        // Only include body if not a GET request
-        body: activeTest.method !== "GET" && activeTest.payload 
-          ? JSON.stringify(activeTest.payload) 
-          : undefined
+        body:
+          activeTest.method !== "GET" && activeTest.payload
+            ? JSON.stringify(activeTest.payload)
+            : undefined,
       });
-      
-      const data = await res.json();
-      setTestResult(JSON.stringify(data, null, 2));
+
+      const text = await res.text();
+      let prettyBody = text;
+
+      // Pretty-print JSON if possible
+      try {
+        prettyBody = JSON.stringify(JSON.parse(text), null, 2);
+      } catch {
+        // leave as text
+      }
+
+      // Include status line so 404s are obvious
+      setTestResult(
+        `HTTP ${res.status} ${res.statusText}\n\n${prettyBody || "// empty"}`
+      );
     } catch (e: any) {
-      setTestResult("Error: " + e.message);
+      setTestResult("Error: " + (e?.message || String(e)));
     } finally {
       setIsRunningTest(false);
     }
@@ -102,29 +162,39 @@ export default function DevDashboard({ availableTests }: DevDashboardProps) {
 
   return (
     <div className="container mx-auto p-8 space-y-8 max-w-5xl text-slate-900 dark:text-slate-50">
-      
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">🎛️ Architect Control Panel</h1>
-          <p className="text-slate-500 dark:text-slate-400">System Diagnostics & Test Bench</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            🎛️ Architect Control Panel
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400">
+            System Diagnostics & Test Bench
+          </p>
         </div>
-        
+
         <div className="flex items-center gap-4 bg-slate-100 dark:bg-slate-900 p-2 rounded-lg border">
           <div className="flex flex-col items-end mr-2">
-            <span className="text-[10px] uppercase font-bold text-slate-400">System Status</span>
-            <Badge variant={status === "ONLINE" ? "default" : "destructive"} className="px-3">
+            <span className="text-[10px] uppercase font-bold text-slate-400">
+              System Status
+            </span>
+            <Badge
+              variant={status === "ONLINE" ? "default" : "destructive"}
+              className="px-3"
+            >
               {status}
             </Badge>
           </div>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={runDiagnosis} 
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={runDiagnosis}
             disabled={isDiagnosing}
             className="gap-2"
           >
-            <RefreshCw className={`w-4 h-4 ${isDiagnosing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${isDiagnosing ? "animate-spin" : ""}`}
+            />
             {isDiagnosing ? "Checking..." : "Refresh Diagnosis"}
           </Button>
         </div>
@@ -139,22 +209,22 @@ export default function DevDashboard({ availableTests }: DevDashboardProps) {
 
       {/* --- SECTION 1: DETAILED HEALTH --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <HealthCard 
-          title="Broker (Redis)" 
-          status={healthDetails?.broker} 
-          icon={<Activity className="w-5 h-5" />} 
+        <HealthCard
+          title="Broker (Redis)"
+          status={healthDetails?.broker}
+          icon={<Activity className="w-5 h-5" />}
           desc="Async Job Queue"
         />
-        <HealthCard 
-          title="Storage (Lexicon)" 
-          status={healthDetails?.storage} 
-          icon={<Database className="w-5 h-5" />} 
+        <HealthCard
+          title="Storage (Lexicon)"
+          status={healthDetails?.storage}
+          icon={<Database className="w-5 h-5" />}
           desc="JSON Data Shards"
         />
-        <HealthCard 
-          title="Engine (GF)" 
-          status={healthDetails?.engine} 
-          icon={<Server className="w-5 h-5" />} 
+        <HealthCard
+          title="Engine (GF)"
+          status={healthDetails?.engine}
+          icon={<Server className="w-5 h-5" />}
           desc="PGF Runtime & C-Bindings"
         />
       </div>
@@ -163,22 +233,23 @@ export default function DevDashboard({ availableTests }: DevDashboardProps) {
         <Alert variant="destructive">
           <AlertTitle>System Unreachable</AlertTitle>
           <AlertDescription>
-            The API is not responding. Ensure <b>Terminal 3 (Uvicorn)</b> is running.
+            The API is not responding. Ensure <b>Terminal 3 (Uvicorn)</b> is
+            running.
           </AlertDescription>
         </Alert>
       )}
 
       {/* --- SECTION 2: COMMANDS --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CommandCard 
-            title="Terminal 3: API Server"
-            desc="Restarts the HTTP interface. Required after Python changes."
-            cmd="uvicorn app.main:app --reload" 
+        <CommandCard
+          title="Terminal 3: API Server"
+          desc="Restarts the HTTP interface. Required after Python changes."
+          cmd="uvicorn app.main:app --reload"
         />
-        <CommandCard 
-            title="Terminal 2: Worker"
-            desc="Restarts the Job Queue. Required after PGF compilation."
-            cmd="source venv/bin/activate && arq app.workers.worker.WorkerSettings --watch app" 
+        <CommandCard
+          title="Terminal 2: Worker"
+          desc="Restarts the Job Queue. Required after PGF compilation."
+          cmd="source venv/bin/activate && arq app.workers.worker.WorkerSettings --watch app"
         />
       </div>
 
@@ -189,56 +260,81 @@ export default function DevDashboard({ availableTests }: DevDashboardProps) {
             🧪 Dynamic Test Bench
           </CardTitle>
           <CardDescription>
-            Select a scenario to verify system behavior. Loaded {availableTests.length} definitions from <code>src/data/requests</code>.
+            Select a scenario to verify system behavior. Loaded{" "}
+            {availableTests.length} definitions from{" "}
+            <code>src/data/requests</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          
           {availableTests.length === 0 ? (
-             <Alert variant="destructive">
-               <AlertTitle>No Tests Found</AlertTitle>
-               <AlertDescription>Add .json files to the data/requests folder to enable testing scenarios.</AlertDescription>
-             </Alert>
+            <Alert variant="destructive">
+              <AlertTitle>No Tests Found</AlertTitle>
+              <AlertDescription>
+                Add .json files to the data/requests folder to enable testing
+                scenarios.
+              </AlertDescription>
+            </Alert>
           ) : (
             <>
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="w-full md:w-1/2 space-y-2">
-                    <label className="text-xs font-semibold uppercase text-slate-500">Select Scenario</label>
-                    <Select value={selectedTestId} onValueChange={setSelectedTestId}>
-                      <SelectTrigger>
-                          <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {availableTests.map((test) => (
-                          <SelectItem key={test.id} value={test.id}>
-                              {test.label}
-                          </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-slate-500 italic mt-1 pl-1">
-                      {activeTest?.description}
-                    </p>
+                  <label className="text-xs font-semibold uppercase text-slate-500">
+                    Select Scenario
+                  </label>
+                  <Select
+                    value={selectedTestId}
+                    onValueChange={setSelectedTestId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTests.map((test) => (
+                        <SelectItem key={test.id} value={test.id}>
+                          {test.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500 italic mt-1 pl-1">
+                    {activeTest?.description}
+                  </p>
                 </div>
-                
+
                 <div className="w-full md:w-1/2 space-y-2">
-                   <label className="text-xs font-semibold uppercase text-slate-500">Target Endpoint</label>
-                   <div className="p-2 bg-slate-100 dark:bg-slate-900 rounded border text-xs font-mono break-all text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                     <Badge variant="outline" className="border-blue-500 text-blue-500 shrink-0">{activeTest?.method}</Badge>
-                     <span>{activeTest?.endpoint}</span>
-                   </div>
+                  <label className="text-xs font-semibold uppercase text-slate-500">
+                    Target Endpoint
+                  </label>
+                  <div className="p-2 bg-slate-100 dark:bg-slate-900 rounded border text-xs font-mono break-all text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className="border-blue-500 text-blue-500 shrink-0"
+                    >
+                      {activeTest?.method}
+                    </Badge>
+                    <span>{activeTest?.endpoint}</span>
+                  </div>
+                  {/* Optional: show what we'll actually call */}
+                  <div className="text-[10px] text-slate-400 font-mono break-all">
+                    Resolved URL:{" "}
+                    {activeTest?.endpoint ? buildUrl(activeTest.endpoint) : ""}
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase text-slate-500">Payload Preview</h3>
+                <h3 className="text-xs font-semibold uppercase text-slate-500">
+                  Payload Preview
+                </h3>
                 <pre className="bg-slate-50 dark:bg-slate-950 p-3 rounded text-xs font-mono text-slate-700 dark:text-slate-300 overflow-auto max-h-40 border">
-                    {activeTest?.payload ? JSON.stringify(activeTest.payload, null, 2) : "// No Payload"}
+                  {activeTest?.payload
+                    ? JSON.stringify(activeTest.payload, null, 2)
+                    : "// No Payload"}
                 </pre>
               </div>
 
-              <Button 
-                onClick={runTest} 
+              <Button
+                onClick={runTest}
                 disabled={status !== "ONLINE" || isRunningTest}
                 className="w-full md:w-auto min-w-[150px]"
               >
@@ -247,7 +343,9 @@ export default function DevDashboard({ availableTests }: DevDashboardProps) {
 
               {testResult && (
                 <div className="mt-4 p-4 bg-slate-950 rounded-lg overflow-x-auto border border-slate-800 shadow-inner">
-                  <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">API Response</h3>
+                  <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">
+                    API Response
+                  </h3>
                   <pre className="text-xs font-mono text-green-400">
                     {testResult}
                   </pre>
@@ -263,30 +361,58 @@ export default function DevDashboard({ availableTests }: DevDashboardProps) {
 
 // --- HELPER COMPONENTS ---
 
-function HealthCard({ title, status, icon, desc }: { title: string, status?: "up" | "down", icon: any, desc: string }) {
+function HealthCard({
+  title,
+  status,
+  icon,
+  desc,
+}: {
+  title: string;
+  status?: "up" | "down";
+  icon: React.ReactNode;
+  desc: string;
+}) {
   const isUp = status === "up";
   return (
     <Card className={`border-l-4 ${isUp ? "border-l-green-500" : "border-l-gray-300"}`}>
       <div className="p-4 flex items-start justify-between">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">{title}</p>
+          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">
+            {title}
+          </p>
           <div className="flex items-center gap-2">
-            {isUp ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-slate-400" />}
+            {isUp ? (
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+            ) : (
+              <XCircle className="w-4 h-4 text-slate-400" />
+            )}
             <span className={`font-bold ${isUp ? "text-green-600" : "text-slate-400"}`}>
               {status ? status.toUpperCase() : "UNKNOWN"}
             </span>
           </div>
           <p className="text-xs text-slate-400">{desc}</p>
         </div>
-        <div className={`p-2 rounded-full ${isUp ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"}`}>
+        <div
+          className={`p-2 rounded-full ${
+            isUp ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
+          }`}
+        >
           {icon}
         </div>
       </div>
     </Card>
-  )
+  );
 }
 
-function CommandCard({ title, desc, cmd }: { title: string, desc: string, cmd: string }) {
+function CommandCard({
+  title,
+  desc,
+  cmd,
+}: {
+  title: string;
+  desc: string;
+  cmd: string;
+}) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -294,37 +420,18 @@ function CommandCard({ title, desc, cmd }: { title: string, desc: string, cmd: s
         <CardDescription>{desc}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div 
+        <div
           className="bg-slate-100 dark:bg-slate-900 p-3 rounded-md font-mono text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors break-all border group relative"
           onClick={() => navigator.clipboard.writeText(cmd)}
           title="Click to Copy"
         >
           <span className="mr-2 text-slate-400">$</span>
           {cmd}
-          <span className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-[10px] bg-black text-white px-1 rounded">COPY</span>
+          <span className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-[10px] bg-black text-white px-1 rounded">
+            COPY
+          </span>
         </div>
       </CardContent>
     </Card>
   );
-}// Update the fetch logic inside runDiagnosis
-const runDiagnosis = async () => {
-  setIsDiagnosing(true);
-  try {
-    const res = await fetch(`${API_BASE}/health/ready`);
-    if (res.ok) {
-      const data = await res.json();
-      // FIX: Handle both flat and nested 'components' structures for backward compatibility
-      setHealthDetails(data.components || data); 
-      setStatus("ONLINE");
-    } else {
-      setStatus("OFFLINE");
-      setHealthDetails(null);
-    }
-  } catch (e) {
-    setStatus("OFFLINE");
-    setHealthDetails(null);
-  } finally {
-    setLastUpdated(new Date());
-    setIsDiagnosing(false);
-  }
-};
+}

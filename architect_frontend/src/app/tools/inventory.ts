@@ -1,11 +1,13 @@
-import { Tool } from "./types";
+// architect_frontend/src/app/tools/inventory.ts
+import type { Tool } from "./types";
 
-// Tools Command Center
-// Inventory v2.5 (generated 2026-01-02)
-// API: http://localhost:8000/api/v1
-// Normal mode shows only backend-wired runnable tools.
-// Enable Power user (debug) to reveal the full inventory.
-
+/**
+ * Tools Command Center
+ * Inventory v2.5 (generated 2026-01-02)
+ * API: http://localhost:8000/api/v1
+ * Normal mode shows only backend-wired runnable tools.
+ * Enable Power user (debug) to reveal the full inventory.
+ */
 export const INVENTORY = {
   version: "2.5",
   generated_on: "2026-01-02",
@@ -61,10 +63,7 @@ export const INVENTORY = {
       "scripts/test_api_generation.py",
       "scripts/test_tier1_load.py",
     ],
-    lexicon: [
-      "scripts/lexicon/sync_rgl.py",
-      "scripts/lexicon/wikidata_importer.py",
-    ],
+    lexicon: ["scripts/lexicon/sync_rgl.py", "scripts/lexicon/wikidata_importer.py"],
   },
   utils: [
     "utils/__init__.py",
@@ -126,69 +125,128 @@ export const INVENTORY = {
 
 export type Inventory = typeof INVENTORY;
 
+/**
+ * Flattened, de-duplicated list of every file path in the snapshot.
+ * Handy for quick lookups, search indices, or sanity checks.
+ */
+export const INVENTORY_PATHS: readonly string[] = (() => {
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  const addMany = (arr?: readonly string[]) => {
+    if (!arr) return;
+    for (const p of arr) {
+      if (!p || seen.has(p)) continue;
+      seen.add(p);
+      out.push(p);
+    }
+  };
+
+  addMany(INVENTORY.root_entrypoints);
+  addMany(INVENTORY.gf);
+
+  addMany(INVENTORY.tools.root);
+  addMany(INVENTORY.tools.everything_matrix);
+  addMany(INVENTORY.tools.qa);
+  addMany(INVENTORY.tools.debug);
+  addMany(INVENTORY.tools.health);
+  addMany(INVENTORY.tools.lexicon);
+
+  addMany(INVENTORY.scripts.root);
+  addMany(INVENTORY.scripts.lexicon);
+
+  addMany(INVENTORY.utils);
+  addMany(INVENTORY.ai_services);
+  addMany(INVENTORY.nlg);
+  addMany(INVENTORY.prototypes);
+
+  addMany(INVENTORY.tests.root);
+  addMany(INVENTORY.tests.http_api_legacy);
+  addMany(INVENTORY.tests.adapters_core_integration);
+
+  return Object.freeze(out);
+})();
+
 // --- ACTIVE TOOL REGISTRY (GUI) ---
-export const TOOLS: Tool[] = [
+// Keep this list user-facing & curated (not necessarily 1:1 with every inventory path).
+export const TOOLS = [
   {
     id: "language_health",
     name: "Language Health",
     description: "Deep scan of compilation status and API runtime health.",
     category: "maintenance",
-    defaultArgs: "--verbose"
+    defaultArgs: "--verbose",
   },
   {
     id: "diagnostic_audit",
     name: "Diagnostic Audit",
     description: "Identify zombie files and broken grammar links.",
     category: "maintenance",
-    defaultArgs: "--verbose"
+    defaultArgs: "--verbose",
   },
   {
     id: "lexicon_coverage",
     name: "Lexicon Coverage",
     description: "Report on vocabulary size and semantic gaps per language.",
     category: "data",
-    defaultArgs: "--include-files" // Equivalent to verbose for this tool
+    defaultArgs: "--include-files",
   },
   {
     id: "compile_pgf",
     name: "Compile Grammar",
     description: "Trigger a full PGF compilation sequence.",
     category: "build",
-    defaultArgs: "" // Does not support verbose
+    defaultArgs: "",
   },
   {
     id: "harvest_lexicon",
     name: "Harvest Lexicon",
     description: "Import words from Wikidata or WordNet.",
     category: "data",
-    defaultArgs: "" // Does not support verbose
+    defaultArgs: "",
   },
   {
     id: "run_judge",
     name: "Run Judge",
     description: "Execute Gold Standard regression tests via AI Judge.",
     category: "qa",
-    defaultArgs: "--verbose" // Maps to Universal Test Runner which supports verbose
+    defaultArgs: "--verbose",
   },
   {
     id: "ai_refiner",
     name: "AI Refiner",
     description: "Refine grammar rules using AI.",
     category: "ai",
-    defaultArgs: "--verbose"
+    defaultArgs: "--verbose",
   },
   {
     id: "profiler",
     name: "Performance Profiler",
     description: "Measure latency and memory usage.",
     category: "health",
-    defaultArgs: "--verbose"
+    defaultArgs: "--verbose",
   },
   {
     id: "gap_filler",
     name: "Lexicon Gap Filler",
     description: "Find missing words compared to a pivot language.",
     category: "data",
-    defaultArgs: "--verbose"
-  }
-];
+    defaultArgs: "--verbose",
+  },
+] as const satisfies readonly Tool[];
+
+export type ToolId = (typeof TOOLS)[number]["id"];
+
+export const TOOL_BY_ID: Readonly<Record<ToolId, (typeof TOOLS)[number]>> = Object.freeze(
+  TOOLS.reduce((acc, t) => {
+    acc[t.id] = t;
+    return acc;
+  }, {} as Record<ToolId, (typeof TOOLS)[number]>)
+);
+
+export const TOOL_DEFAULT_ARGS: Readonly<Record<ToolId, string>> = Object.freeze(
+  TOOLS.reduce((acc, t) => {
+    acc[t.id] = t.defaultArgs;
+    return acc;
+  }, {} as Record<ToolId, string>)
+);

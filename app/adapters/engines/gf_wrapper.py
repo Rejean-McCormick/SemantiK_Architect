@@ -1,4 +1,5 @@
 # app/adapters/engines/gf_wrapper.py
+import asyncio
 import json
 import structlog
 from pathlib import Path
@@ -33,10 +34,12 @@ class GFGrammarEngine:
         self.grammar: Optional[Any] = None
         self.inventory: Dict[str, Any] = {}
         self.iso_map: Dict[str, str] = {}
+        
+        self._load_lock: Optional[asyncio.Lock] = None
 
         self._load_inventory()
         self._load_iso_config()
-        self._load_grammar()
+        # DEFERRED: self._load_grammar_sync() is now lazy-loaded to prevent blocking the event loop on startup.
 
     # ----------------------------
     # Loading helpers
@@ -115,17 +118,34 @@ class GFGrammarEngine:
         except Exception:
             self.iso_map = {}
 
-    def _load_grammar(self) -> None:
+    def _load_grammar_sync(self) -> None:
+        """Synchronous method to load the heavy PGF binary."""
         if not pgf:
             return
         path = Path(self.pgf_path)
         if not path.exists():
             return
         try:
+            logger.info("loading_pgf_binary", path=str(path))
             self.grammar = pgf.readPGF(str(path))
+            logger.info("pgf_binary_loaded_successfully")
         except Exception as e:
             self.grammar = None
             logger.error("gf_load_failed", error=str(e), pgf_path=str(path))
+
+    async def _ensure_grammar(self) -> None:
+        """Ensures the grammar is loaded without blocking the async event loop."""
+        if self.grammar is not None:
+            return
+            
+        if self._load_lock is None:
+            self._load_lock = asyncio.Lock()
+            
+        async with self._load_lock:
+            # Double-checked locking
+            if self.grammar is None:
+                # Offload the heavy file I/O and C-binding initialization to a background thread
+                await asyncio.to_thread(self._load_grammar_sync)
 
     # ----------------------------
     # Public API (IGrammarEngine)
@@ -137,6 +157,8 @@ class GFGrammarEngine:
           - Frame (domain)
           - dict (either BioFrame-like payload or Ninai/UniversalNode)
         """
+        await self._ensure_grammar()
+        
         if not self.grammar:
             return Sentence(text="<GF Runtime Not Loaded>", lang_code=lang_code)
 
@@ -161,6 +183,7 @@ class GFGrammarEngine:
         return Sentence(text=text, lang_code=lang_code, debug_info={"ast": ast_str})
 
     def parse(self, sentence: str, language: str):
+        # Synchronous method relies on caller having already initialized or fails gracefully
         if not self.grammar:
             return []
         if language not in self.grammar.languages:
@@ -175,6 +198,7 @@ class GFGrammarEngine:
             return []
 
     def linearize(self, expr: Any, language: str) -> str:
+        # Synchronous method relies on caller having already initialized or fails gracefully
         if not self.grammar:
             return "<GF Runtime Not Loaded>"
 
@@ -200,16 +224,22 @@ class GFGrammarEngine:
             return f"<LinearizeError: {e}>"
 
     async def get_supported_languages(self) -> List[str]:
+        await self._ensure_grammar()
         if not self.grammar:
             return []
         return list(self.grammar.languages.keys())
 
     async def reload(self) -> None:
-        self._load_grammar()
         self._load_inventory()
         self._load_iso_config()
+        
+        # Reset grammar to force a reload on the next operation
+        async with self._load_lock if self._load_lock else asyncio.Lock():
+            self.grammar = None
+        await self._ensure_grammar()
 
     async def health_check(self) -> bool:
+        await self._ensure_grammar()
         return self.grammar is not None
 
     # ----------------------------

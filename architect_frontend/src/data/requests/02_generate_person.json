@@ -1,16 +1,13 @@
 {
-  "id": "generate_person_bio",
-  "label": "Generate Person (Bio)",
-  "description": "Generates a biography for Alan Turing in English.",
+  "id": "generate_person",
+  "label": "Generate Person (English)",
   "method": "POST",
-  "endpoint": "/generate",
+  "endpoint": "/api/v1/generate/en",
+  "description": "Runs generation for entity.person in English.",
   "payload": {
-    "lang": "en",
     "frame_type": "entity.person",
-    "inputs": {
-      "name": "Alan Turing",
-      "profession": "Mathematician",
-      "nationality": "British"
-    }
+    "name": "Alan Turing",
+    "profession": "Mathematician",
+    "nationality": "British"
   }
 }

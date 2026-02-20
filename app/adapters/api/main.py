@@ -1,4 +1,5 @@
 # app/adapters/api/main.py
+import os
 import uvicorn
 import structlog
 from fastapi import FastAPI
@@ -77,11 +78,19 @@ def create_app() -> FastAPI:
     is_dev = getattr(settings, "APP_ENV", "development") == "development"
     app_name = getattr(settings, "APP_NAME", "Abstract Wiki Architect")
 
+    # Allows the API to work BOTH with and without a UI base-path.
+    # Example: requests to /abstract_wiki_architect/api/v1/... will route to /api/v1/...
+    # Default in dev matches the Next.js basePath.
+    root_path = os.getenv("ARCHITECT_API_ROOT_PATH")
+    if root_path is None:
+        root_path = "/abstract_wiki_architect" if is_dev else ""
+
     app = FastAPI(
         title=app_name,
         version="2.1.0",
         description="Abstract Wiki Core Engine (Hexagonal Architecture)",
         lifespan=lifespan,
+        root_path=root_path,
         docs_url="/docs" if is_dev else None,
         redoc_url=None,
     )

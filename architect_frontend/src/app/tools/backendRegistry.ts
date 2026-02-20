@@ -33,11 +33,27 @@ export type BackendToolMeta = {
   requiresAiEnabled?: boolean;
 };
 
+// ----------------------------------------------------------------------------
+// Shared parameter docs (avoid repetition + keep wording consistent)
+// ----------------------------------------------------------------------------
+const P_VERBOSE: ToolParameter = { flag: "--verbose", description: "Enable detailed step-by-step logs" };
+const P_JSON: ToolParameter = { flag: "--json", description: "Emit machine-readable JSON summary (if supported)" };
+
+const P_DRY_RUN: ToolParameter = {
+  flag: "--dry",
+  description: "Dry run. Show what would happen without writing changes",
+  example: "--dry",
+};
+
+function withParams(...params: ToolParameter[]) {
+  // Simple helper to keep undefined out and preserve ordering.
+  return params.filter(Boolean);
+}
+
 /**
  * Backend-wired tools. Tool IDs must match backend TOOL_REGISTRY allowlist tool_id values.
- * (Legacy IDs are handled via LEGACY_TOOL_ID_ALIASES below and are not listed as runnable tools.)
  */
-export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
+export const BACKEND_TOOL_REGISTRY = {
   // --- DIAGNOSTICS & MAINTENANCE ---
   language_health: {
     title: "Language Health",
@@ -48,7 +64,7 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     risk: "safe",
     longDescription:
       "Comprehensive check of the language pipeline. Verifies GF compilation status and tests the API generation endpoint with a sample payload.",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--mode", description: "compile | api | both (default)", example: "--mode compile" },
       { flag: "--fast", description: "Skip re-check of VALID files using cache" },
       { flag: "--parallel", description: "Run language checks in parallel (when supported)" },
@@ -57,9 +73,9 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
       { flag: "--timeout", description: "Per-request timeout (seconds)", example: "--timeout 30" },
       { flag: "--langs", description: "Limit to specific codes", example: "--langs en fr" },
       { flag: "--no-disable-script", description: "Do not disable (or rewrite) scripts as part of checks" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-      { flag: "--json", description: "Emit machine-readable JSON summary (if supported)" },
-    ],
+      P_VERBOSE,
+      P_JSON
+    ),
     supportsVerbose: true,
     supportsJson: true,
   },
@@ -73,10 +89,7 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     risk: "safe",
     longDescription:
       "Deep system audit across matrix/index, generation artifacts, contrib artifacts, and RGL presence. Highlights missing or inconsistent components.",
-    parameterDocs: [
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-      { flag: "--json", description: "Emit machine-readable JSON summary (if supported)" },
-    ],
+    parameterDocs: withParams(P_VERBOSE, P_JSON),
     supportsVerbose: true,
     supportsJson: true,
   },
@@ -88,13 +101,8 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "Diagnostics & Maintenance",
     group: "Health & Cleanup",
     risk: "safe",
-    longDescription:
-      "Moves loose GF files into their canonical folders and cleans up temporary build artifacts.",
-    parameterDocs: [
-      { flag: "--dry-run", description: "Show what would be moved/deleted without acting" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-      { flag: "--json", description: "Emit machine-readable JSON summary (if supported)" },
-    ],
+    longDescription: "Moves loose GF files into their canonical folders and cleans up temporary build artifacts.",
+    parameterDocs: withParams(P_DRY_RUN, P_VERBOSE, P_JSON),
     supportsVerbose: true,
     supportsJson: true,
   },
@@ -108,13 +116,17 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "Diagnostics & Maintenance",
     group: "Performance",
     longDescription: "Benchmarks the Grammar Engine's latency, throughput, and memory usage.",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--lang", description: "Target language code", example: "--lang en" },
       { flag: "--iterations", description: "Number of sentences to generate", example: "--iterations 1000" },
       { flag: "--update-baseline", description: "Save current stats as the new baseline" },
-      { flag: "--threshold", description: "Regression threshold (fraction). Tool fails if regression exceeds this.", example: "--threshold 0.15" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      {
+        flag: "--threshold",
+        description: "Regression threshold (fraction). Tool fails if regression exceeds this.",
+        example: "--threshold 0.15",
+      },
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: true,
   },
@@ -128,12 +140,12 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     group: "Debugging",
     longDescription:
       "Emits a JSON tree for the Grammatical Framework AST. Provide either --ast, or both (--sentence and --lang).",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--ast", description: "Explicit GF AST to visualize", example: '--ast "PredVP (UsePN John_PN) (UseV run_V)"' },
       { flag: "--sentence", description: "Natural language sentence to parse", example: '--sentence "The cat eats the fish"' },
       { flag: "--lang", description: "Language code of the sentence", example: "--lang en" },
-      { flag: "--pgf", description: "Override PGF path", example: "--pgf gf/AbstractWiki.pgf" },
-    ],
+      { flag: "--pgf", description: "Override PGF path", example: "--pgf gf/AbstractWiki.pgf" }
+    ),
     commonFailureModes: [
       "Missing required inputs: must provide either --ast OR (--sentence AND --lang).",
       "PGF not found or cannot be loaded (check gf/AbstractWiki.pgf).",
@@ -150,9 +162,8 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "Build System",
     group: "Everything Matrix",
     risk: "moderate",
-    longDescription:
-      "Scans the repository to rebuild the Everything Matrix status index (writes a JSON matrix file).",
-    parameterDocs: [
+    longDescription: "Scans the repository to rebuild the Everything Matrix status index (writes a JSON matrix file).",
+    parameterDocs: withParams(
       { flag: "--out", description: "Output path for the JSON matrix", example: "--out data/indices/everything_matrix.json" },
       { flag: "--langs", description: "Limit to specific languages", example: "--langs en fr" },
       { flag: "--force", description: "Force regeneration even if caches exist" },
@@ -160,8 +171,8 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
       { flag: "--regen-lex", description: "Force rerun of lexicon scanner" },
       { flag: "--regen-app", description: "Force rerun of app scanner" },
       { flag: "--regen-qa", description: "Force rerun of QA scanner" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: false,
   },
@@ -223,12 +234,12 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     group: "GF Build",
     risk: "heavy",
     longDescription: "Orchestrates the full compilation of the AbstractWiki grammar into a PGF binary.",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--strategy", description: "Build strategy (implementation-defined)", example: "--strategy incremental" },
       { flag: "--langs", description: "Limit build to specific languages", example: "--langs en fr" },
       { flag: "--clean", description: "Clean build artifacts before compiling" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: false,
   },
@@ -241,12 +252,12 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     group: "Tier Bootstrapping",
     risk: "moderate",
     longDescription: "Scaffolds initial support for Tier 1 languages using RGL modules found on disk.",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Target language set", example: "--langs en fr" },
       { flag: "--force", description: "Overwrite existing scaffolds if present" },
-      { flag: "--dry-run", description: "Show actions without writing changes" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_DRY_RUN,
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: false,
   },
@@ -260,13 +271,13 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "Lexicon & Data",
     group: "Analysis",
     longDescription: "Compares a target language lexicon against a pivot to identify missing concepts.",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--target", description: "Language to analyze", required: true, example: "--target spa" },
       { flag: "--pivot", description: "Reference language (default: eng)", example: "--pivot eng" },
       { flag: "--data-dir", description: "Override lexicon data directory", example: "--data-dir data/lexicon" },
       { flag: "--json-out", description: "Save report to file", example: "--json-out out/gaps_spa.json" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: true,
   },
@@ -280,16 +291,15 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     risk: "moderate",
     longDescription:
       "Universal Lexicon Harvester. Subcommands: `wordnet` (labels/lemmas) and `wikidata` (labels + P106/P27 facts).",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "wordnet", description: "Subcommand: harvest from WordNet (positional)", example: "wordnet --lang en --root data/wordnet" },
       { flag: "wikidata", description: "Subcommand: harvest from Wikidata for explicit QIDs (positional)", example: "wikidata --lang en --input qids.json --domain people" },
-
       { flag: "--lang", description: "Target language (iso2)", example: "--lang en" },
       { flag: "--root", description: "WordNet root directory (wordnet only)", example: "--root data/wordnet" },
       { flag: "--out", description: "Output directory for shard JSON files", example: "--out data/lexicon" },
       { flag: "--input", description: "Input JSON containing QIDs (wikidata only)", example: "--input qids.json" },
-      { flag: "--domain", description: "Shard/domain name (wikidata only)", example: "--domain people" },
-    ],
+      { flag: "--domain", description: "Shard/domain name (wikidata only)", example: "--domain people" }
+    ),
     commonFailureModes: [
       "Missing subcommand: first arg must be 'wordnet' or 'wikidata'.",
       "Wikidata mode: missing --input qids.json.",
@@ -307,13 +317,13 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     group: "Schema & Index",
     risk: "moderate",
     longDescription: "Builds lexicon shards directly from Wikidata (online).",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--lang", description: "Target language", example: "--lang en" },
       { flag: "--out", description: "Output path/directory", example: "--out data/lexicon" },
       { flag: "--limit", description: "Limit number of items", example: "--limit 5000" },
-      { flag: "--dry-run", description: "Run without writing files" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_DRY_RUN,
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: false,
   },
@@ -326,12 +336,12 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     group: "Schema & Index",
     risk: "safe",
     longDescription: "Rebuilds the fast lexicon lookup index used by API.",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Limit to specific languages", example: "--langs en fr" },
       { flag: "--root", description: "Lexicon root directory", example: "--root data/lexicon" },
       { flag: "--out", description: "Output path (if supported)", example: "--out data/lexicon/index.json" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: false,
   },
@@ -344,14 +354,14 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     group: "Schema & Index",
     risk: "moderate",
     longDescription: "Migrates lexicon JSON shards to newer schema versions.",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--root", description: "Lexicon root directory", example: "--root data/lexicon" },
       { flag: "--in-place", description: "Modify files in-place (no separate output dir)" },
-      { flag: "--dry-run", description: "Show changes without writing" },
+      P_DRY_RUN,
       { flag: "--from", description: "Source schema version", example: "--from v1" },
       { flag: "--to", description: "Target schema version", example: "--to v2" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: false,
   },
@@ -364,12 +374,12 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     group: "Schema & Index",
     risk: "safe",
     longDescription: "Prints lexicon coverage/size statistics.",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Limit to specific languages", example: "--langs en fr" },
       { flag: "--root", description: "Lexicon root directory", example: "--root data/lexicon" },
       { flag: "--format", description: "Output format", example: "--format json" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: false,
   },
@@ -383,15 +393,14 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "AI Analysis",
     requiresAiEnabled: true,
-    longDescription:
-      "Uses AI to generate ambiguous sentences and checks if the grammar produces multiple parse trees.",
-    parameterDocs: [
+    longDescription: "Uses AI to generate ambiguous sentences and checks if the grammar produces multiple parse trees.",
+    parameterDocs: withParams(
       { flag: "--lang", description: "Target language", required: true, example: "--lang en" },
       { flag: "--sentence", description: "Specific sentence to analyze (optional)", example: '--sentence "I saw her duck"' },
       { flag: "--topic", description: "Topic for sentence generation", example: "--topic biography" },
       { flag: "--json-out", description: "Write JSON report to file", example: "--json-out out/ambiguity_en.json" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
     supportsJson: false,
   },
@@ -403,12 +412,12 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "QA Tools",
     risk: "moderate",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Languages to evaluate", example: "--langs en fr" },
       { flag: "--limit", description: "Limit items evaluated", example: "--limit 200" },
       { flag: "--out", description: "Output path for report", example: "--out out/eval_bios.json" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
   },
 
@@ -419,13 +428,13 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "QA Tools",
     risk: "safe",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Languages to report", example: "--langs en fr" },
       { flag: "--out", description: "Output path", example: "--out out/lex_coverage.json" },
       { flag: "--format", description: "Output format", example: "--format json" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-      { flag: "--fail-on-errors", description: "Exit non-zero if errors are encountered" },
-    ],
+      P_VERBOSE,
+      { flag: "--fail-on-errors", description: "Exit non-zero if errors are encountered" }
+    ),
     supportsVerbose: true,
   },
 
@@ -436,14 +445,14 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "QA Tools",
     risk: "moderate",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--suite", description: "Specific test suite CSV to run", example: "--suite tools/qa/generated_datasets/test_suite_en.csv" },
       { flag: "--in", description: "Input directory (if suite paths are relative)", example: "--in tools/qa/generated_datasets" },
       { flag: "--out", description: "Output report path", example: "--out out/test_results.json" },
       { flag: "--langs", description: "Filter by language", example: "--langs en fr" },
       { flag: "--limit", description: "Limit test cases executed", example: "--limit 500" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
   },
 
@@ -454,13 +463,13 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "QA Tools",
     risk: "moderate",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Languages to generate for", example: "--langs en fr" },
       { flag: "--out", description: "Output directory", example: "--out tools/qa/generated_datasets" },
       { flag: "--limit", description: "Limit examples generated", example: "--limit 2000" },
       { flag: "--seed", description: "Random seed", example: "--seed 1337" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
   },
 
@@ -471,11 +480,11 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "QA Tools",
     risk: "safe",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Languages to generate templates for", example: "--langs en fr" },
       { flag: "--out", description: "Output directory", example: "--out tools/qa/generated_datasets" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
   },
 
@@ -486,12 +495,12 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "QA Tools",
     risk: "heavy",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Languages to generate for", example: "--langs en fr" },
       { flag: "--out", description: "Output directory", example: "--out tools/qa/generated_datasets" },
       { flag: "--limit", description: "Limit cases", example: "--limit 5000" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_VERBOSE
+    ),
     supportsVerbose: true,
   },
 
@@ -505,12 +514,12 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     risk: "heavy",
     requiresAiEnabled: true,
     hidden: true,
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Languages to seed", example: "--langs sw yo" },
       { flag: "--limit", description: "Limit items seeded per language", example: "--limit 2000" },
-      { flag: "--dry-run", description: "Show what would be generated without writing" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_DRY_RUN,
+      P_VERBOSE
+    ),
     supportsVerbose: true,
   },
 
@@ -523,11 +532,11 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     risk: "heavy",
     requiresAiEnabled: true,
     hidden: true,
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "--langs", description: "Languages to refine", example: "--langs en fr" },
-      { flag: "--dry-run", description: "Run without writing changes" },
-      { flag: "--verbose", description: "Enable detailed step-by-step logs" },
-    ],
+      P_DRY_RUN,
+      P_VERBOSE
+    ),
     supportsVerbose: true,
   },
 
@@ -539,14 +548,14 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "Pytest • Smoke",
     risk: "safe",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "-q", description: "Quiet output" },
       { flag: "-vv", description: "Very verbose output" },
       { flag: "-k", description: "Filter tests by expression (NOTE: backend must allow the following value token)", example: '-k "smoke and not slow"' },
       { flag: "-m", description: "Run tests matching marker (NOTE: backend must allow the following value token)", example: '-m "not integration"' },
       { flag: "--maxfail", description: "Stop after N failures (NOTE: backend must allow the following value token)", example: "--maxfail 1" },
-      { flag: "--disable-warnings", description: "Disable warning summary" },
-    ],
+      { flag: "--disable-warnings", description: "Disable warning summary" }
+    ),
     supportsVerbose: true,
   },
 
@@ -557,14 +566,14 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     category: "QA & Testing",
     group: "Pytest • Judge",
     risk: "heavy",
-    parameterDocs: [
+    parameterDocs: withParams(
       { flag: "-q", description: "Quiet output" },
       { flag: "-vv", description: "Very verbose output" },
       { flag: "-k", description: "Filter tests by expression (NOTE: backend must allow the following value token)", example: '-k "judge and not slow"' },
       { flag: "-m", description: "Run tests matching marker (NOTE: backend must allow the following value token)", example: '-m "integration"' },
       { flag: "--maxfail", description: "Stop after N failures (NOTE: backend must allow the following value token)", example: "--maxfail 1" },
-      { flag: "--disable-warnings", description: "Disable warning summary" },
-    ],
+      { flag: "--disable-warnings", description: "Disable warning summary" }
+    ),
     supportsVerbose: true,
   },
 
@@ -597,29 +606,46 @@ export const BACKEND_TOOL_REGISTRY: Record<string, BackendToolMeta> = {
     risk: "safe",
     supportsVerbose: true,
   },
-} as const;
+} as const satisfies Record<string, BackendToolMeta>;
 
 export type BackendToolId = keyof typeof BACKEND_TOOL_REGISTRY;
 
-export const WIRED_TOOL_IDS = new Set<string>(Object.keys(BACKEND_TOOL_REGISTRY));
+export const WIRED_TOOL_IDS = new Set<BackendToolId>(Object.keys(BACKEND_TOOL_REGISTRY) as BackendToolId[]);
 
-export const TOOL_ID_BY_PATH: Record<string, string> = Object.fromEntries(
-  Object.entries(BACKEND_TOOL_REGISTRY).map(([toolId, meta]) => [meta.path, toolId])
+export const TOOL_ID_BY_PATH: Record<string, BackendToolId> = Object.fromEntries(
+  Object.entries(BACKEND_TOOL_REGISTRY).map(([toolId, meta]) => [meta.path, toolId as BackendToolId])
 );
-
-/**
- * Legacy tool_ids that used to exist in the UI but are not backend-wired anymore.
- * The UI should remap these before calling POST /tools/run.
- */
-export const LEGACY_TOOL_ID_ALIASES: Record<string, BackendToolId> = {
-  check_all_languages: "language_health",
-  audit_languages: "language_health",
-  test_runner: "universal_test_runner",
-} as const;
 
 /** Convenience: tool_ids that are hidden unless Debug/Power user is enabled */
-export const POWER_USER_TOOL_IDS = new Set<string>(
+export const POWER_USER_TOOL_IDS = new Set<BackendToolId>(
   Object.entries(BACKEND_TOOL_REGISTRY)
     .filter(([, meta]) => Boolean(meta.hidden))
-    .map(([toolId]) => toolId)
+    .map(([toolId]) => toolId as BackendToolId)
 );
+
+/** Helper: validate a string as a wired BackendToolId */
+export function resolveBackendToolId(id: string): BackendToolId | null {
+  return (WIRED_TOOL_IDS as Set<string>).has(id) ? (id as BackendToolId) : null;
+}
+
+/** Helper: get meta */
+export function getBackendToolMeta(id: string): BackendToolMeta | null {
+  const resolved = resolveBackendToolId(id);
+  return resolved ? BACKEND_TOOL_REGISTRY[resolved] : null;
+}
+
+// ----------------------------------------------------------------------------
+// Dev-only sanity checks (warn, don’t throw)
+// ----------------------------------------------------------------------------
+if (process.env.NODE_ENV !== "production") {
+  const seenPaths = new Map<string, BackendToolId>();
+  for (const [toolId, meta] of Object.entries(BACKEND_TOOL_REGISTRY) as [BackendToolId, BackendToolMeta][]) {
+    const prev = seenPaths.get(meta.path);
+    if (prev && prev !== toolId) {
+      // eslint-disable-next-line no-console
+      console.warn(`[backendRegistry] Duplicate path "${meta.path}" for tool_ids: ${prev}, ${toolId}`);
+    } else {
+      seenPaths.set(meta.path, toolId);
+    }
+  }
+}

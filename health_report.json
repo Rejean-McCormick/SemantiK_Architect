@@ -1,0 +1,24 @@
+{
+  "trace_id": "8abb72a4-ee3f-4f76-bede-0ba019d7adc8",
+  "total_checked": 8,
+  "paths": {
+    "repo_root": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect",
+    "cache_path": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/data/indices/audit_cache.json",
+    "report_path": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/data/reports/audit_report.json"
+  },
+  "status_counts": {
+    "OK": 8,
+    "FAIL": 0,
+    "SKIPPED": 0
+  },
+  "compile": {
+    "VALID": 0,
+    "SKIPPED": 5,
+    "BROKEN": 0
+  },
+  "runtime": {
+    "PASS": 5,
+    "FAIL": 0
+  },
+  "failures": []
+}

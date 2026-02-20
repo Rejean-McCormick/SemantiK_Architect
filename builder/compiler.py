@@ -23,37 +23,27 @@ def get_sandboxed_env():
 def setup_paths():
     """
     Constructs the exact include path string for GF.
-    Combines Core RGL + Family Folders + Specific Language Paths.
+    Dynamically includes the Core RGL base, generated sources, 
+    and ALL language family subdirectories.
     """
-    if not os.path.exists(config.RGL_PATHS_FILE):
-        print(f"❌ Error: Paths file not found at {config.RGL_PATHS_FILE}")
-        return None
-
     abs_rgl_base = os.path.abspath(config.RGL_BASE)
+    generated_src = os.path.abspath(os.path.join("generated", "src"))
     
-    with open(config.RGL_PATHS_FILE, 'r') as f:
-        path_data = json.load(f)
-
-    # 1. Base RGL Paths (API, Abstract, Common, Prelude)
+    # 1. Start with base paths
     include_paths = {
-        abs_rgl_base, 
-        os.path.join(abs_rgl_base, 'api'),
-        os.path.join(abs_rgl_base, 'abstract'),
-        os.path.join(abs_rgl_base, 'common'),
-        os.path.join(abs_rgl_base, 'prelude')
+        ".",
+        abs_rgl_base,
+        generated_src
     }
 
-    # 2. Shared Families (Romance, Germanic, etc.)
-    for family in config.FAMILY_FOLDERS:
-        full_path = os.path.join(abs_rgl_base, family)
-        if os.path.exists(full_path):
-            include_paths.add(full_path)
-
-    # 3. Specific Language Folders
-    for filename in path_data.values():
-        folder_name = os.path.dirname(filename)
-        full_path = os.path.join(abs_rgl_base, folder_name)
-        include_paths.add(full_path)
+    # 2. Dynamically add every subdirectory in gf-rgl/src
+    if os.path.exists(abs_rgl_base):
+        for item in os.listdir(abs_rgl_base):
+            item_path = os.path.join(abs_rgl_base, item)
+            if os.path.isdir(item_path):
+                include_paths.add(item_path)
+    else:
+        print(f"⚠️ Warning: RGL base path '{abs_rgl_base}' not found.")
 
     return ":".join(include_paths)
 

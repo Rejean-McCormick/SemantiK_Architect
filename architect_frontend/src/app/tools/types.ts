@@ -1,20 +1,118 @@
 // architect_frontend/src/app/tools/types.ts
 
-import type { Risk } from "./backendRegistry";
+import type { Risk, ToolParameter } from "./backendRegistry";
 import type { Status, ToolKind, Visibility } from "./classify";
+
+// ----------------------------------------------------------------------------
+// Shared primitives
+// ----------------------------------------------------------------------------
+
+/** ISO-ish datetime strings from the backend (kept permissive). */
+export type ISODateTimeString = string;
+
+/** JSON helper types (handy for stdout_json / stderr_json). */
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };
+export type JsonObject = { [k: string]: JsonValue };
+
+/**
+ * Risk/status/kind re-exports for UI convenience.
+ * Keeps UI code decoupled from backendRegistry/classify module paths.
+ */
+export type ToolRisk = Risk;
+export type ToolStatus = Status;
+export type ToolKindUI = ToolKind;
+export type ToolVisibility = Visibility;
+
+export type ConsoleStatus = "success" | "warning" | "error" | null;
+
+// ----------------------------------------------------------------------------
+// Inventory (frontend-local)
+// ----------------------------------------------------------------------------
+
+export type Tool = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  defaultArgs?: string;
+};
+
+// ----------------------------------------------------------------------------
+// Canonical UI ToolItem (local definition; avoids hard dependency on ./lib/*)
+// ----------------------------------------------------------------------------
+
+export type ToolItem = {
+  /** Stable UI key (often derived from path). */
+  key: string;
+
+  /** Display title. */
+  title: string;
+
+  /** Repo-relative path (e.g. tools/foo.py). */
+  path: string;
+
+  /** Short human description. */
+  desc: string;
+
+  /** CLI hint / example invocation. */
+  cli: string;
+
+  /** Grouping metadata for sidebar panels. */
+  category: string;
+  group: string;
+
+  /** Classification */
+  kind: ToolKindUI;
+  status: ToolStatus;
+  risk: ToolRisk;
+
+  /** Visibility controls */
+  visibility?: ToolVisibility;
+  hidden?: boolean;
+  hiddenInNormalMode?: boolean;
+
+  /** Optional richer help */
+  notes?: string[];
+  uiSteps?: string[];
+
+  /** Dynamic parameter definitions for UI checkboxes/inputs */
+  parameterDocs?: ToolParameter[];
+
+  /** Wiring helpers */
+  commandPreview?: string;
+  toolIdGuess?: string;
+  wiredToolId?: string | null;
+};
+
+// ----------------------------------------------------------------------------
+// /health/ready
+// ----------------------------------------------------------------------------
 
 /**
  * /health/ready payload
+ * Keep permissive because this endpoint often grows over time.
  */
 export type HealthReady = {
   broker?: string;
   storage?: string;
   engine?: string;
+
+  ok?: boolean;
+  version?: string;
+  commit?: string;
+  checks?: Record<string, unknown>;
+
+  // allow backend extensions without breaking the client
+  [k: string]: unknown;
 };
 
+// ----------------------------------------------------------------------------
+// /tools/run request
+// ----------------------------------------------------------------------------
+
 /**
- * /tools/run request
- * (matches backend ToolRunRequest)
+ * /tools/run request (matches backend ToolRunRequest)
  */
 export type ToolRunRequest = {
   tool_id: string;
@@ -22,15 +120,21 @@ export type ToolRunRequest = {
   dry_run?: boolean;
 };
 
-// --- Rich Telemetry Types ---
+// ----------------------------------------------------------------------------
+// /tools/run response (wire + normalized)
+// ----------------------------------------------------------------------------
+
+/**
+ * Keep literal union benefits while still allowing arbitrary string levels.
+ */
+export type ToolRunLevel = "INFO" | "WARN" | "ERROR" | (string & {});
 
 export type ToolRunEvent = {
-  ts: string;
-  level: string; // 'INFO' | 'WARN' | 'ERROR'
+  ts: ISODateTimeString;
+  level: ToolRunLevel;
   step: string;
   message: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 };
 
 export type ToolRunTruncation = {
@@ -51,77 +155,167 @@ export type ToolSummary = {
   timeout_sec: number;
 };
 
+export type ToolRunArtifactKind = "file" | "dir" | "report" | "log" | "other";
+
+export type ToolRunArtifact = {
+  path: string; // usually repo-relative
+  kind?: ToolRunArtifactKind;
+  label?: string;
+  mime?: string;
+};
+
+export type ToolRunProcessInfo = {
+  pid?: number;
+  host?: string;
+  signal?: string | null;
+  timed_out?: boolean;
+  killed?: boolean;
+};
+
 /**
- * /tools/run response
- * (matches backend ToolRunResponse, with legacy fields tolerated)
+ * /tools/run response shape "as received" from the backend.
+ * Tolerates older backends and partial failures.
+ *
+ * Only `success` is required; everything else may be missing on legacy or error paths.
  */
-export type ToolRunResponse = {
-  // Identity & Lifecycle
-  trace_id: string;
+export type ToolRunResponseWire = {
   success: boolean;
-  exit_code: number;
-  duration_ms: number;
-  started_at: string;
-  ended_at: string;
+
+  // Identity & Lifecycle
+  trace_id?: string;
+  run_id?: string;
+
+  exit_code?: number;
+  return_code?: number; // legacy alias
+
+  duration_ms?: number;
+  started_at?: ISODateTimeString;
+  ended_at?: ISODateTimeString;
 
   // Command Context
-  command: string;
-  cwd: string;
-  repo_root: string;
-  tool: ToolSummary;
+  command?: string;
+  argv?: string[];
+  cwd?: string;
+  repo_root?: string;
+
+  tool?: ToolSummary;
+  tool_id?: string;
 
   // Streams (Rich)
-  stdout: string;
-  stderr: string;
-  stdout_chars: number;
-  stderr_chars: number;
-  truncation: ToolRunTruncation;
+  stdout?: string;
+  stderr?: string;
+  stdout_chars?: number;
+  stderr_chars?: number;
+  truncation?: ToolRunTruncation;
 
   // Streams (Legacy/Fallback aliases)
   output?: string;
   error?: string;
-  return_code?: number; // legacy alias for exit_code
 
   // Argument Validation
+  args_received?: string[];
+  args_accepted?: string[];
+  args_rejected?: ToolRunArgsRejected[];
+
+  // Telemetry
+  events?: ToolRunEvent[];
+
+  // Optional machine-parsed outputs
+  stdout_json?: unknown;
+  stderr_json?: unknown;
+
+  // Artifacts produced by tool run
+  artifacts?: ToolRunArtifact[];
+
+  // Process/termination details
+  process?: ToolRunProcessInfo;
+
+  // allow backend extensions
+  [k: string]: unknown;
+};
+
+/**
+ * Normalized response shape after client-side normalization.
+ * Keep core fields required so UI code can be simple.
+ */
+export type ToolRunResponseCore = {
+  trace_id: string;
+  success: boolean;
+
+  command: string;
+
+  stdout: string;
+  stderr: string;
+  stdout_chars: number;
+  stderr_chars: number;
+
+  exit_code: number;
+  duration_ms: number;
+  started_at: ISODateTimeString;
+  ended_at: ISODateTimeString;
+
+  cwd: string;
+  repo_root: string;
+
+  tool: ToolSummary;
+
   args_received: string[];
   args_accepted: string[];
   args_rejected: ToolRunArgsRejected[];
 
-  // Telemetry
+  truncation: ToolRunTruncation;
   events: ToolRunEvent[];
 };
 
-export type ConsoleStatus = "success" | "error" | null;
+export type ToolRunResponseExtras = {
+  run_id?: string;
+  argv?: string[];
+  tool_id?: string;
 
-/**
- * Unified UI item model (built from inventory + backend wiring)
- */
-export type ToolItem = {
-  key: string;
-  title: string;
-  path: string;
+  // preserved legacy aliases / server detail fields
+  output?: string;
+  error?: string;
 
-  category: string;
-  group: string;
+  // preserved structured outputs
+  stdout_json?: unknown;
+  stderr_json?: unknown;
 
-  kind: ToolKind;
-  risk: Risk;
-  status: Status;
+  // preserved tool artifacts / process info
+  artifacts?: ToolRunArtifact[];
+  process?: ToolRunProcessInfo;
+};
 
-  // optional: if you choose to surface these in UI later
-  visibility?: Visibility;
-  hideByDefault?: boolean;
-  excludeFromUI?: boolean;
+export type ToolRunResponse = ToolRunResponseCore & ToolRunResponseExtras;
 
-  desc?: string;
+// ----------------------------------------------------------------------------
+// HTTP / Runner types (shared)
+// ----------------------------------------------------------------------------
 
-  cli: string[];
-  notes: string[];
-  uiSteps: string[];
+export type HttpMeta = {
+  ok: boolean;
+  status: number;
+  statusText: string;
+};
 
-  // wiring
-  wiredToolId?: string; // exact backend allowlisted tool_id
-  toolIdGuess: string; // best-effort guess for display/search
-  commandPreview?: string; // backend registry command preview (if wired)
-  hiddenInNormalMode?: boolean; // derived (debug-only)
+export type RunToolOptions = {
+  apiV1: string;
+  toolId: string;
+  args: string[];
+
+  /**
+   * Convenience flag for callers; request payload still uses `dry_run`.
+   * (Used by useToolRunner.)
+   */
+  dryRun?: boolean;
+
+  signal?: AbortSignal;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+};
+
+export type RunToolResult = {
+  http: HttpMeta;
+  rawText: string;
+  normalized: ToolRunResponse;
+  clientDurationMs: number;
 };

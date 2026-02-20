@@ -32,6 +32,155 @@ interface ToolConsolePanelProps {
   onClear?: () => void;
 }
 
+// -----------------------------------------------------------------------------
+// Redaction helpers (defense-in-depth for secrets in args/commands/events/bundles)
+// -----------------------------------------------------------------------------
+const SENSITIVE_KEYS = new Set([
+  "api_key",
+  "apikey",
+  "x_api_key",
+  "x-api-key",
+  "token",
+  "access_token",
+  "access-token",
+  "refresh_token",
+  "refresh-token",
+  "secret",
+  "password",
+  "authorization",
+  "auth",
+]);
+
+const SENSITIVE_FLAGS = new Set([
+  "--api-key",
+  "--api_key",
+  "--apikey",
+  "--token",
+  "--access-token",
+  "--access_token",
+  "--refresh-token",
+  "--refresh_token",
+  "--secret",
+  "--password",
+  "--authorization",
+  "--auth",
+]);
+
+function isProbablySensitiveKey(k: string): boolean {
+  const kk = (k || "").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  if (SENSITIVE_KEYS.has(kk)) return true;
+  // catch-all: "*key", "*token", "*secret", "*password"
+  return /(^|_|-)(key|token|secret|password|auth|authorization)$/.test(kk) || /(key|token|secret|password)/.test(kk);
+}
+
+function redactText(input: string): string {
+  let s = input ?? "";
+  if (!s) return s;
+
+  // --flag=value
+  s = s.replace(
+    /(--(?:api-key|api_key|apikey|token|access-token|access_token|refresh-token|refresh_token|secret|password|authorization|auth))=(\S+)/gi,
+    (_m, flag) => `${flag}=***redacted***`
+  );
+
+  // --flag value
+  s = s.replace(
+    /(--(?:api-key|api_key|apikey|token|access-token|access_token|refresh-token|refresh_token|secret|password|authorization|auth))(\s+)(\S+)/gi,
+    (_m, flag, ws) => `${flag}${ws}***redacted***`
+  );
+
+  // Common header-like leaks
+  s = s.replace(/(x-api-key:\s*)(\S+)/gi, (_m, p1) => `${p1}***redacted***`);
+  s = s.replace(/(authorization:\s*bearer\s+)(\S+)/gi, (_m, p1) => `${p1}***redacted***`);
+  s = s.replace(/(authorization:\s*)(\S+)/gi, (_m, p1) => `${p1}***redacted***`);
+
+  // JSON-ish leaks: "api_key": "..."
+  s = s.replace(
+    /("?(?:api_key|apikey|token|access_token|refresh_token|secret|password|authorization)"?\s*:\s*)"([^"]*)"/gi,
+    (_m, p1) => `${p1}"***redacted***"`
+  );
+
+  return s;
+}
+
+function redactArgv(argv: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < (argv?.length ?? 0); i++) {
+    const tok = String(argv[i] ?? "");
+    const lower = tok.toLowerCase();
+
+    // --flag=value
+    if (lower.startsWith("--") && lower.includes("=")) {
+      const [flag, _val] = lower.split("=", 2);
+      if (SENSITIVE_FLAGS.has(flag)) {
+        out.push(`${tok.split("=", 1)[0]}=***redacted***`);
+        continue;
+      }
+      out.push(redactText(tok));
+      continue;
+    }
+
+    // --flag value
+    if (SENSITIVE_FLAGS.has(lower)) {
+      out.push(tok);
+      if (i + 1 < argv.length) {
+        out.push("***redacted***");
+        i += 1;
+      }
+      continue;
+    }
+
+    out.push(redactText(tok));
+  }
+  return out;
+}
+
+function redactDeep<T>(value: T): T {
+  const v: any = value as any;
+
+  if (v == null) return value;
+  if (typeof v === "string") return redactText(v) as any;
+  if (typeof v === "number" || typeof v === "boolean") return value;
+
+  if (Array.isArray(v)) {
+    // If it looks like argv (strings starting with "-"), apply argv redaction.
+    const looksLikeArgv = v.every((x) => typeof x === "string") && v.some((x) => String(x).trim().startsWith("-"));
+    if (looksLikeArgv) return redactArgv(v as string[]) as any;
+    return v.map((x) => redactDeep(x)) as any;
+  }
+
+  if (typeof v === "object") {
+    const out: Record<string, any> = {};
+    for (const [k, vv] of Object.entries(v)) {
+      if (isProbablySensitiveKey(k)) {
+        out[k] = "***redacted***";
+      } else {
+        out[k] = redactDeep(vv);
+      }
+    }
+    return out as any;
+  }
+
+  return value;
+}
+
+function sanitizeResponse(res: ToolRunResponse): ToolRunResponse {
+  // Don’t mutate the original response; return a sanitized copy.
+  const r: any = res as any;
+
+  const next: any = { ...r };
+  next.command = redactText(String(r.command ?? ""));
+  if (Array.isArray(r.args_received)) next.args_received = redactArgv(r.args_received);
+  if (Array.isArray(r.args_accepted)) next.args_accepted = redactArgv(r.args_accepted);
+  if (Array.isArray(r.args_rejected)) next.args_rejected = redactDeep(r.args_rejected);
+  if (Array.isArray(r.events)) next.events = redactDeep(r.events);
+
+  return next as ToolRunResponse;
+}
+
+// -----------------------------------------------------------------------------
+// Download helper
+// -----------------------------------------------------------------------------
 function downloadText(filename: string, content: string) {
   try {
     const blob = new Blob([content ?? ""], { type: "text/plain;charset=utf-8" });
@@ -58,15 +207,18 @@ export default function ToolConsolePanel({
   const [activeTab, setActiveTab] = useState("console");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const safeEvents = useMemo<ToolRunEvent[]>(() => response?.events ?? [], [response]);
-  const stdout = response?.stdout ?? response?.output ?? "";
-  const stderr = response?.stderr ?? response?.error ?? "";
+  // Use sanitized response for UI rendering (command/args/events/bundles).
+  const safeResponse = useMemo(() => (response ? sanitizeResponse(response) : null), [response]);
+
+  const safeEvents = useMemo<ToolRunEvent[]>(() => safeResponse?.events ?? [], [safeResponse]);
+  const stdout = safeResponse?.stdout ?? safeResponse?.output ?? "";
+  const stderr = safeResponse?.stderr ?? safeResponse?.error ?? "";
   const stdoutChars =
-    typeof response?.stdout_chars === "number" ? response.stdout_chars : (stdout?.length ?? 0);
+    typeof safeResponse?.stdout_chars === "number" ? safeResponse.stdout_chars : (stdout?.length ?? 0);
   const stderrChars =
-    typeof response?.stderr_chars === "number" ? response.stderr_chars : (stderr?.length ?? 0);
-  const truncStdout = Boolean(response?.truncation?.stdout);
-  const truncStderr = Boolean(response?.truncation?.stderr);
+    typeof safeResponse?.stderr_chars === "number" ? safeResponse.stderr_chars : (stderr?.length ?? 0);
+  const truncStdout = Boolean(safeResponse?.truncation?.stdout);
+  const truncStderr = Boolean(safeResponse?.truncation?.stderr);
 
   // Auto-switch tabs based on state
   useEffect(() => {
@@ -74,19 +226,19 @@ export default function ToolConsolePanel({
       setActiveTab("console");
       return;
     }
-    if (!response) return;
+    if (!safeResponse) return;
 
     // Prefer stderr if failed or stderr non-empty; else stdout if non-empty; else events if present; else meta.
-    if (!response.success || stderrChars > 0) {
+    if (!safeResponse.success || stderrChars > 0) {
       setActiveTab("stderr");
     } else if (stdoutChars > 0) {
       setActiveTab("stdout");
-    } else if ((response.events?.length ?? 0) > 0) {
+    } else if ((safeResponse.events?.length ?? 0) > 0) {
       setActiveTab("events");
     } else {
       setActiveTab("meta");
     }
-  }, [isRunning, response, stdoutChars, stderrChars]);
+  }, [isRunning, safeResponse, stdoutChars, stderrChars]);
 
   // Auto-scroll the raw console
   useEffect(() => {
@@ -97,14 +249,15 @@ export default function ToolConsolePanel({
 
   const handleCopyBundle = () => {
     // Copy a richer bundle than just the response (helps debug the UI too).
+    // Redact secrets from both realtime_log and response.
     const bundle = {
       tool_id: toolId ?? null,
       is_running: isRunning,
       active_tab: activeTab,
-      realtime_log: realtimeLog,
-      response,
+      realtime_log: redactText(realtimeLog || ""),
+      response: safeResponse,
     };
-    copyToClipboard(JSON.stringify(bundle, null, 2));
+    copyToClipboard(JSON.stringify(redactDeep(bundle), null, 2));
   };
 
   // --- RENDERERS ---
@@ -137,10 +290,10 @@ export default function ToolConsolePanel({
             </div>
             <div className="flex-1 space-y-1">
               <div className="font-semibold text-slate-300">{e.step || "step"}</div>
-              <div className="text-slate-400 leading-relaxed">{e.message || ""}</div>
+              <div className="text-slate-400 leading-relaxed">{redactText(e.message || "")}</div>
               {e.data && Object.keys(e.data).length > 0 && (
                 <pre className="mt-1 bg-slate-900 p-2 rounded border border-slate-800 text-[10px] text-slate-500 overflow-x-auto">
-                  {JSON.stringify(e.data, null, 2)}
+                  {JSON.stringify(redactDeep(e.data), null, 2)}
                 </pre>
               )}
             </div>
@@ -192,9 +345,7 @@ export default function ToolConsolePanel({
     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
       <div className="space-y-4">
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-            Context
-          </h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Context</h4>
           <div className="bg-slate-900 rounded p-3 space-y-2 border border-slate-800 font-mono text-xs">
             <div className="flex justify-between gap-3">
               <span className="text-slate-500 shrink-0">Trace ID:</span>
@@ -228,7 +379,7 @@ export default function ToolConsolePanel({
               {res.args_rejected.map((r, i) => (
                 <div key={i} className="p-2 border-b border-red-900/30 last:border-0 text-xs">
                   <span className="font-mono text-red-300 bg-red-900/40 px-1 rounded">
-                    {r.arg}
+                    {redactText(r.arg)}
                   </span>
                   <span className="text-red-400 ml-2">{r.reason}</span>
                 </div>
@@ -240,11 +391,9 @@ export default function ToolConsolePanel({
 
       <div className="space-y-4">
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-            Command
-          </h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Command</h4>
           <pre className="bg-slate-950 p-3 rounded border border-slate-800 font-mono text-xs text-slate-300 whitespace-pre-wrap break-all">
-            {res.command || "—"}
+            {redactText(res.command || "—")}
           </pre>
         </div>
 
@@ -258,7 +407,7 @@ export default function ToolConsolePanel({
                 key={i}
                 className="px-2 py-1 bg-slate-800 rounded text-xs font-mono text-slate-400"
               >
-                {a}
+                {redactText(a)}
               </span>
             ))}
             {(res.args_received || []).length === 0 && (
@@ -280,14 +429,14 @@ export default function ToolConsolePanel({
             {toolId || "Console"}
           </span>
 
-          {response && (
+          {safeResponse && (
             <Badge
-              variant={response.success ? "default" : "destructive"}
+              variant={safeResponse.success ? "default" : "destructive"}
               className={`text-[10px] h-5 ${
-                response.success ? "bg-green-900 text-green-300 hover:bg-green-800" : ""
+                safeResponse.success ? "bg-green-900 text-green-300 hover:bg-green-800" : ""
               }`}
             >
-              {response.success ? "SUCCESS" : "FAILED"}
+              {safeResponse.success ? "SUCCESS" : "FAILED"}
             </Badge>
           )}
 
@@ -299,7 +448,7 @@ export default function ToolConsolePanel({
         </div>
 
         <div className="flex items-center gap-2">
-          {(response || realtimeLog) && (
+          {(safeResponse || realtimeLog) && (
             <Button
               variant="ghost"
               size="sm"
@@ -324,7 +473,7 @@ export default function ToolConsolePanel({
       </div>
 
       {/* Content Area */}
-      {response ? (
+      {safeResponse ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="px-4 border-b border-slate-800 bg-slate-900/20">
             <TabsList className="bg-transparent h-9 p-0 gap-4">
@@ -353,7 +502,7 @@ export default function ToolConsolePanel({
               <TabsTrigger
                 value="stderr"
                 className={`data-[state=active]:bg-transparent data-[state=active]:border-b-2 rounded-none px-0 pb-2 text-xs font-medium uppercase tracking-wide gap-2 ${
-                  stderrChars > 0 || !response.success
+                  stderrChars > 0 || !safeResponse.success
                     ? "text-amber-500 data-[state=active]:border-amber-500 data-[state=active]:text-amber-400"
                     : "text-slate-500 data-[state=active]:border-slate-500 data-[state=active]:text-slate-300"
                 }`}
@@ -386,7 +535,7 @@ export default function ToolConsolePanel({
               {renderStream(stderr, stderrChars, truncStderr, "STDERR")}
             </TabsContent>
             <TabsContent value="meta" className="h-full overflow-y-auto m-0">
-              {renderMeta(response)}
+              {renderMeta(safeResponse)}
             </TabsContent>
           </div>
         </Tabs>

@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '../styles/globals.css';
 // FIX: Import the navigation bar component
-import Navbar from '@/components/Navbar'; 
+import Navbar from '@/components/Navbar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -24,10 +24,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/* FIX: Add structural classes for full height and flex layout */}
-      <body className={`${inter.className} min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-500/30`}>
+      <body
+        className={`${inter.className} min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col font-sans selection:bg-blue-500/30`}
+      >
         {/* FIX: Include the global navigation bar */}
         <Navbar />
-        
+
         {/* FIX: Wrap the page content in a main element with centering */}
         <main className="flex-1 p-6 w-full max-w-7xl mx-auto">
           {children}
