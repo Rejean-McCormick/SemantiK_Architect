@@ -1,8 +1,1 @@
-concrete WikiGla of AbstractWiki = open SyntaxGla, ParadigmsGla in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiGla of AbstractWiki = WikiI with (Syntax = SyntaxGla) ** open SyntaxGla, ParadigmsGla in { flags coding = utf8 ; };

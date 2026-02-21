@@ -1,8 +1,1 @@
-concrete WikiNno of AbstractWiki = open SyntaxNno, ParadigmsNno in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiNno of AbstractWiki = WikiI with (Syntax = SyntaxNno) ** open SyntaxNno, ParadigmsNno in { flags coding=utf8 ; };

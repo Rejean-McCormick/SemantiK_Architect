@@ -1,8 +1,1 @@
-concrete WikiPes of AbstractWiki = open SyntaxPes, ParadigmsPes in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiPes of AbstractWiki = WikiI with (Syntax = SyntaxPes) ** open SyntaxPes, ParadigmsPes in { flags coding=utf8 ; };

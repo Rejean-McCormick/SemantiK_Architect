@@ -1,8 +1,1 @@
-concrete WikiTel of AbstractWiki = open SyntaxTel, ParadigmsTel in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiTel of AbstractWiki = WikiI with (Syntax = SyntaxTel) ** open SyntaxTel, ParadigmsTel in { flags coding=utf8 ; };

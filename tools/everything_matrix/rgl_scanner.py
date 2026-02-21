@@ -260,6 +260,11 @@ def scan_rgl(
                     "modules": {},
                 },
             )
+            
+            # OVERRIDE the path if the current locked path is 'api' but we are in a real language folder
+            if Path(rec["path"]).name == "api" and folder_name != "api":
+                rec["path"] = norm_folder_path
+
             rec["modules"].setdefault(module_type, norm_module_path)
 
         if (

@@ -1,8 +1,1 @@
-concrete WikiSpa of AbstractWiki = open SyntaxSpa, ParadigmsSpa in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiSpa of AbstractWiki = WikiI with (Syntax = SyntaxSpa) ** open SyntaxSpa, ParadigmsSpa in { flags coding=utf8 ; };

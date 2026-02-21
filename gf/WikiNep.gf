@@ -1,8 +1,1 @@
-concrete WikiNep of AbstractWiki = open SyntaxNep, ParadigmsNep in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiNep of AbstractWiki = WikiI with (Syntax = SyntaxNep) ** open SyntaxNep, ParadigmsNep in { flags coding=utf8 ; };

@@ -1,8 +1,1 @@
-concrete WikiAra of AbstractWiki = open SyntaxAra, ParadigmsAra in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiAra of AbstractWiki = WikiI with (Syntax = SyntaxAra) ** open SyntaxAra, ParadigmsAra in { flags coding=utf8 ; };

@@ -1,8 +1,1 @@
-concrete WikiLat of AbstractWiki = open SyntaxLat, ParadigmsLat in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiLat of AbstractWiki = WikiI with (Syntax = SyntaxLat) ** open SyntaxLat, ParadigmsLat in { flags coding=utf8 ; };

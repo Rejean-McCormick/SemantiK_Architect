@@ -1,8 +1,1 @@
-concrete WikiIta of AbstractWiki = open SyntaxIta, ParadigmsIta in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiIta of AbstractWiki = WikiI with (Syntax = SyntaxIta) ** open SyntaxIta, ParadigmsIta in { flags coding=utf8 ; };

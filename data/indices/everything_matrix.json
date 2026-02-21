@@ -1,13 +1,13 @@
 {
-  "timestamp": 1771596975.3323483,
-  "timestamp_iso": "2026-02-20T14:16:15Z",
+  "timestamp": 1771700868.1016483,
+  "timestamp_iso": "2026-02-21T19:07:48Z",
   "scoring_version": "2.4",
   "stats": {
     "total_languages": 68,
     "production_ready": 0,
-    "high_road": 31,
-    "safe_mode": 35,
-    "skipped": 2,
+    "high_road": 30,
+    "safe_mode": 26,
+    "skipped": 12,
     "runnable": 34
   },
   "languages": {
@@ -17,7 +17,10 @@
         "name": "Afrikaans",
         "tier": 1,
         "origin": "rgl",
-        "folder": "afrikaans"
+        "folder": "afrikaans",
+        "rgl_folder": "afrikaans",
+        "rgl_suffix": "Afr",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -68,7 +71,10 @@
         "name": "Amharic",
         "tier": 1,
         "origin": "rgl",
-        "folder": "amharic"
+        "folder": "amharic",
+        "rgl_folder": "amharic",
+        "rgl_suffix": "Amh",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -76,7 +82,7 @@
           "NOUN": 10.0,
           "PARA": 10.0,
           "GRAM": 10.0,
-          "SYN": 10.0
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -103,12 +109,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 9.0,
           "B_LEX": 0.0,
           "C_APP": 4.67,
           "D_QA": 0.0
         },
-        "maturity_score": 4.7,
+        "maturity_score": 4.3,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -119,7 +125,10 @@
         "name": "Arabic",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "arabic",
+        "rgl_folder": "arabic",
+        "rgl_suffix": "Ara",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -168,17 +177,17 @@
       "meta": {
         "iso": "be",
         "name": "Belarusian",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "belarusian"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -205,13 +214,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 9.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 3.6,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -221,7 +230,10 @@
         "name": "Bulgarian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "bulgarian",
+        "rgl_folder": "bulgarian",
+        "rgl_suffix": "Bul",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -323,7 +335,10 @@
         "name": "Catalan",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "catalan",
+        "rgl_folder": "catalan",
+        "rgl_suffix": "Cat",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -372,17 +387,17 @@
       "meta": {
         "iso": "cs",
         "name": "Czech",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "api"
+        "tier": 3,
+        "origin": "lexicon",
+        "folder": ""
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 10.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 5.3,
@@ -409,13 +424,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 0.0,
           "B_LEX": 1.88,
           "C_APP": 4.33,
           "D_QA": 0.0
         },
-        "maturity_score": 5.3,
-        "build_strategy": "HIGH_ROAD",
+        "maturity_score": 1.3,
+        "build_strategy": "SKIP",
         "runnable": true
       }
     },
@@ -476,7 +491,10 @@
         "name": "Danish",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "danish",
+        "rgl_folder": "danish",
+        "rgl_suffix": "Dan",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -527,7 +545,10 @@
         "name": "German",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "german",
+        "rgl_folder": "german",
+        "rgl_suffix": "Ger",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -578,7 +599,10 @@
         "name": "Greek",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "greek",
+        "rgl_folder": "greek",
+        "rgl_suffix": "Gre",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -629,7 +653,10 @@
         "name": "English",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "english",
+        "rgl_folder": "english",
+        "rgl_suffix": "Eng",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -680,7 +707,10 @@
         "name": "Spanish",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "spanish",
+        "rgl_folder": "spanish",
+        "rgl_suffix": "Spa",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -731,7 +761,10 @@
         "name": "Estonian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "estonian",
+        "rgl_folder": "estonian",
+        "rgl_suffix": "Est",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -782,7 +815,10 @@
         "name": "Basque",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "basque",
+        "rgl_folder": "basque",
+        "rgl_suffix": "Eus",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -833,7 +869,10 @@
         "name": "Persian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "persian",
+        "rgl_folder": "persian",
+        "rgl_suffix": "Pes",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -884,7 +923,10 @@
         "name": "Finnish",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "finnish",
+        "rgl_folder": "finnish",
+        "rgl_suffix": "Fin",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -933,17 +975,17 @@
       "meta": {
         "iso": "fo",
         "name": "Faroese",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "faroese"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -970,13 +1012,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 9.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 3.6,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -986,7 +1028,10 @@
         "name": "French",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "french",
+        "rgl_folder": "french",
+        "rgl_suffix": "Fre",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1035,17 +1080,17 @@
       "meta": {
         "iso": "gd",
         "name": "Scottish Gaelic",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "gaelic"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1072,12 +1117,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 9.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 3.6,
+        "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -1088,7 +1133,10 @@
         "name": "Hebrew",
         "tier": 1,
         "origin": "rgl",
-        "folder": "hebrew"
+        "folder": "hebrew",
+        "rgl_folder": "hebrew",
+        "rgl_suffix": "Heb",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1096,7 +1144,7 @@
           "NOUN": 10.0,
           "PARA": 10.0,
           "GRAM": 10.0,
-          "SYN": 10.0
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 2.1,
@@ -1123,12 +1171,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 8.0,
           "B_LEX": 0.78,
           "C_APP": 4.67,
           "D_QA": 0.0
         },
-        "maturity_score": 5.0,
+        "maturity_score": 4.2,
         "build_strategy": "HIGH_ROAD",
         "runnable": true
       }
@@ -1139,7 +1187,10 @@
         "name": "Hindi",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "hindi",
+        "rgl_folder": "hindi",
+        "rgl_suffix": "Hin",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1188,17 +1239,17 @@
       "meta": {
         "iso": "hr",
         "name": "Croatian",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "api"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 10.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1225,13 +1276,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 4.0,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -1241,7 +1292,10 @@
         "name": "Hungarian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "hungarian",
+        "rgl_folder": "hungarian",
+        "rgl_suffix": "Hun",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1249,7 +1303,7 @@
           "NOUN": 10.0,
           "PARA": 10.0,
           "GRAM": 10.0,
-          "SYN": 10.0
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1276,12 +1330,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 9.0,
           "B_LEX": 0.0,
           "C_APP": 4.33,
           "D_QA": 0.0
         },
-        "maturity_score": 4.6,
+        "maturity_score": 4.2,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -1290,17 +1344,17 @@
       "meta": {
         "iso": "hy",
         "name": "Armenian",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "armenian"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1327,13 +1381,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 9.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 3.6,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -1343,7 +1397,10 @@
         "name": "Interlingua",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "interlingua",
+        "rgl_folder": "interlingua",
+        "rgl_suffix": "Ina",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1445,7 +1502,10 @@
         "name": "Icelandic",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "icelandic",
+        "rgl_folder": "icelandic",
+        "rgl_suffix": "Ice",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1496,7 +1556,10 @@
         "name": "Italian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "italian",
+        "rgl_folder": "italian",
+        "rgl_suffix": "Ita",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1598,7 +1661,10 @@
         "name": "Japanese",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "japanese",
+        "rgl_folder": "japanese",
+        "rgl_suffix": "Jpn",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1647,17 +1713,17 @@
       "meta": {
         "iso": "kk",
         "name": "Kazakh",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "kazakh"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 5.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1684,12 +1750,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 8.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 3.2,
+        "maturity_score": 0.0,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -1698,17 +1764,17 @@
       "meta": {
         "iso": "ko",
         "name": "Korean",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "api"
+        "tier": 3,
+        "origin": "lexicon",
+        "folder": ""
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 10.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.1,
@@ -1735,12 +1801,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 0.0,
           "B_LEX": 2.57,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 4.9,
+        "maturity_score": 0.9,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -1751,7 +1817,10 @@
         "name": "Latin",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "latin",
+        "rgl_folder": "latin",
+        "rgl_suffix": "Lat",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1800,17 +1869,17 @@
       "meta": {
         "iso": "lt",
         "name": "Lithuanian",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "lithuanian"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 10.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1837,13 +1906,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 4.0,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -1853,7 +1922,10 @@
         "name": "Latvian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "latvian",
+        "rgl_folder": "latvian",
+        "rgl_suffix": "Lav",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -1902,17 +1974,17 @@
       "meta": {
         "iso": "mk",
         "name": "Macedonian",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "macedonian"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 5.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -1939,13 +2011,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 8.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 3.2,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -2006,7 +2078,10 @@
         "name": "Mongolian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "mongolian",
+        "rgl_folder": "mongolian",
+        "rgl_suffix": "Mon",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2055,17 +2130,17 @@
       "meta": {
         "iso": "ms",
         "name": "Malay",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "api"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 10.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2092,12 +2167,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 4.67,
           "D_QA": 0.0
         },
-        "maturity_score": 4.7,
+        "maturity_score": 0.7,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -2108,7 +2183,10 @@
         "name": "Maltese",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "maltese",
+        "rgl_folder": "maltese",
+        "rgl_suffix": "Mlt",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2159,7 +2237,10 @@
         "name": "Norwegian (Bokmål)",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "norwegian",
+        "rgl_folder": "norwegian",
+        "rgl_suffix": "Nor",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2210,7 +2291,10 @@
         "name": "Nepali",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "nepali",
+        "rgl_folder": "nepali",
+        "rgl_suffix": "Nep",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2261,7 +2345,10 @@
         "name": "Dutch",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "dutch",
+        "rgl_folder": "dutch",
+        "rgl_suffix": "Dut",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2312,7 +2399,10 @@
         "name": "Norwegian (Nynorsk)",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "nynorsk",
+        "rgl_folder": "nynorsk",
+        "rgl_suffix": "Nno",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2363,7 +2453,10 @@
         "name": "Punjabi",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "punjabi",
+        "rgl_folder": "punjabi",
+        "rgl_suffix": "Pnb",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2414,7 +2507,10 @@
         "name": "Polish",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "polish",
+        "rgl_folder": "polish",
+        "rgl_suffix": "Pol",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2465,7 +2561,10 @@
         "name": "Portuguese",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "portuguese",
+        "rgl_folder": "portuguese",
+        "rgl_suffix": "Por",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2516,7 +2615,10 @@
         "name": "Romanian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "romanian",
+        "rgl_folder": "romanian",
+        "rgl_suffix": "Ron",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2567,7 +2669,10 @@
         "name": "Russian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "russian",
+        "rgl_folder": "russian",
+        "rgl_suffix": "Rus",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2618,7 +2723,10 @@
         "name": "Sindhi",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "sindhi",
+        "rgl_folder": "sindhi",
+        "rgl_suffix": "Snd",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2667,17 +2775,17 @@
       "meta": {
         "iso": "sk",
         "name": "Slovak",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "api"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 10.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2704,13 +2812,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 4.0,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -2720,7 +2828,10 @@
         "name": "Slovenian",
         "tier": 1,
         "origin": "rgl",
-        "folder": "slovenian"
+        "folder": "slovenian",
+        "rgl_folder": "slovenian",
+        "rgl_suffix": "Slv",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2728,7 +2839,7 @@
           "NOUN": 10.0,
           "PARA": 10.0,
           "GRAM": 10.0,
-          "SYN": 10.0
+          "SYN": 5.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2755,12 +2866,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 9.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 4.0,
+        "maturity_score": 3.6,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -2771,7 +2882,10 @@
         "name": "Somali",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "somali",
+        "rgl_folder": "somali",
+        "rgl_suffix": "Som",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2820,17 +2934,17 @@
       "meta": {
         "iso": "sq",
         "name": "Albanian",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "albanian"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -2857,13 +2971,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 9.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 3.6,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -2873,7 +2987,10 @@
         "name": "Swedish",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "swedish",
+        "rgl_folder": "swedish",
+        "rgl_suffix": "Swe",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2924,7 +3041,10 @@
         "name": "Swahili",
         "tier": 1,
         "origin": "rgl",
-        "folder": "swahili"
+        "folder": "swahili",
+        "rgl_folder": "swahili",
+        "rgl_suffix": "Swa",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -2932,7 +3052,7 @@
           "NOUN": 10.0,
           "PARA": 10.0,
           "GRAM": 10.0,
-          "SYN": 10.0
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 2.6,
@@ -2959,12 +3079,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 8.0,
           "B_LEX": 1.1,
           "C_APP": 4.67,
           "D_QA": 0.0
         },
-        "maturity_score": 5.1,
+        "maturity_score": 4.3,
         "build_strategy": "HIGH_ROAD",
         "runnable": true
       }
@@ -2973,17 +3093,17 @@
       "meta": {
         "iso": "ta",
         "name": "Tamil",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "api"
+        "tier": 3,
+        "origin": "lexicon",
+        "folder": ""
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 10.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 1.4,
@@ -3010,12 +3130,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.55,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 4.2,
+        "maturity_score": 0.2,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }
@@ -3026,7 +3146,10 @@
         "name": "Telugu",
         "tier": 1,
         "origin": "rgl",
-        "folder": "telugu"
+        "folder": "telugu",
+        "rgl_folder": "telugu",
+        "rgl_suffix": "Tel",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -3077,7 +3200,10 @@
         "name": "Thai",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "thai",
+        "rgl_folder": "thai",
+        "rgl_suffix": "Tha",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -3179,7 +3305,10 @@
         "name": "Turkish",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "turkish",
+        "rgl_folder": "turkish",
+        "rgl_suffix": "Tur",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -3187,7 +3316,7 @@
           "NOUN": 10.0,
           "PARA": 10.0,
           "GRAM": 10.0,
-          "SYN": 10.0
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 2.7,
@@ -3214,12 +3343,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 10.0,
+          "A_RGL": 8.0,
           "B_LEX": 2.08,
           "C_APP": 4.33,
           "D_QA": 0.0
         },
-        "maturity_score": 5.4,
+        "maturity_score": 4.6,
         "build_strategy": "HIGH_ROAD",
         "runnable": true
       }
@@ -3228,17 +3357,17 @@
       "meta": {
         "iso": "uk",
         "name": "Ukrainian",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "ukrainian"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -3265,13 +3394,13 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 9.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 0.0,
           "D_QA": 0.0
         },
-        "maturity_score": 3.6,
-        "build_strategy": "SAFE_MODE",
+        "maturity_score": 0.0,
+        "build_strategy": "SKIP",
         "runnable": false
       }
     },
@@ -3281,7 +3410,10 @@
         "name": "Urdu",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "urdu",
+        "rgl_folder": "urdu",
+        "rgl_suffix": "Urd",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -3383,7 +3515,10 @@
         "name": "Chinese",
         "tier": 1,
         "origin": "rgl",
-        "folder": "api"
+        "folder": "chinese",
+        "rgl_folder": "chinese",
+        "rgl_suffix": "Chi",
+        "rgl_suffix_detected": true
       },
       "zones": {
         "A_RGL": {
@@ -3432,17 +3567,17 @@
       "meta": {
         "iso": "zu",
         "name": "Zulu",
-        "tier": 1,
-        "origin": "rgl",
-        "folder": "zulu"
+        "tier": 3,
+        "origin": "factory",
+        "folder": "generated"
       },
       "zones": {
         "A_RGL": {
-          "CAT": 10.0,
-          "NOUN": 10.0,
-          "PARA": 10.0,
-          "GRAM": 10.0,
-          "SYN": 5.0
+          "CAT": 0.0,
+          "NOUN": 0.0,
+          "PARA": 0.0,
+          "GRAM": 0.0,
+          "SYN": 0.0
         },
         "B_LEX": {
           "SEED": 0.0,
@@ -3469,12 +3604,12 @@
           "D_QA": 0.1
         },
         "zone_averages": {
-          "A_RGL": 9.0,
+          "A_RGL": 0.0,
           "B_LEX": 0.0,
           "C_APP": 4.67,
           "D_QA": 0.0
         },
-        "maturity_score": 4.3,
+        "maturity_score": 0.7,
         "build_strategy": "SAFE_MODE",
         "runnable": false
       }

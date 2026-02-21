@@ -1,8 +1,1 @@
-concrete WikiSlv of AbstractWiki = open SyntaxSlv, ParadigmsSlv in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiSlv of AbstractWiki = WikiI with (Syntax = SyntaxSlv) ** open SyntaxSlv, ParadigmsSlv in { flags coding=utf8 ; };

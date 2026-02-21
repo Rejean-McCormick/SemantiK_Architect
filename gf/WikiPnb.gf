@@ -1,8 +1,1 @@
-concrete WikiPnb of AbstractWiki = open SyntaxPnb, ParadigmsPnb in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiPnb of AbstractWiki = WikiI with (Syntax = SyntaxPnb) ** open SyntaxPnb, ParadigmsPnb in { flags coding=utf8 ; };

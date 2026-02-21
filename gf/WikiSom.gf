@@ -1,8 +1,1 @@
-concrete WikiSom of AbstractWiki = open SyntaxSom, ParadigmsSom in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiSom of AbstractWiki = WikiI with (Syntax = SyntaxSom) ** open SyntaxSom, ParadigmsSom in { flags coding=utf8 ; };

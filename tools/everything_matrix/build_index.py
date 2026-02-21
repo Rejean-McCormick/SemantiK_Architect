@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import sys
 import time
 from pathlib import Path
@@ -88,6 +89,9 @@ def _load_config() -> Dict[str, Any]:
     if isinstance(out["rgl"], dict):
         if "inventory_file" not in out["rgl"] and isinstance(cfg.get("inventory_file"), str):
             out["rgl"]["inventory_file"] = cfg["inventory_file"]
+        # Optional (new): root of gf-rgl src for suffix validation
+        if "src_root" not in out["rgl"] and isinstance(cfg.get("rgl_src_root"), str):
+            out["rgl"]["src_root"] = cfg["rgl_src_root"]
 
     # MATRIX
     if isinstance(out["matrix"], dict):
@@ -122,6 +126,9 @@ def _paths(repo: Path, cfg: Mapping[str, Any]) -> Dict[str, Path]:
     checksum_file = output_dir / "filesystem.checksum"
 
     rgl_inventory_file = repo / str(cfg_rgl.get("inventory_file", "data/indices/rgl_inventory.json"))
+    # Optional (new): where gf-rgl src lives (default matches your repo layout)
+    rgl_src = repo / str(cfg_rgl.get("src_root", "gf-rgl/src"))
+
     factory_targets_file = repo / "data" / "config" / "factory_targets.json"
 
     lex_root = repo / str(cfg_lex.get("lexicon_root", "data/lexicon"))
@@ -139,6 +146,7 @@ def _paths(repo: Path, cfg: Mapping[str, Any]) -> Dict[str, Path]:
         "matrix_file": matrix_file,
         "checksum_file": checksum_file,
         "rgl_inventory_file": rgl_inventory_file,
+        "rgl_src": rgl_src,
         "factory_targets_file": factory_targets_file,
         "lex_root": lex_root,
         "gf_root": gf_root,
@@ -205,6 +213,40 @@ def _load_factory_targets(path: Path, *, wiki_to_iso2: Mapping[str, str]) -> Dic
 
 
 # ---------------------------
+# NEW: RGL suffix detection from filesystem
+# ---------------------------
+
+def _detect_rgl_suffix(folder_path: Path) -> Optional[str]:
+    """
+    Detect GF RGL language suffix (Eng, Fre, ...) from common module filenames.
+    Prefer Syntax* since your Tier-1 bootstrap depends on Syntax{Suffix}.gf.
+    """
+    if not folder_path.is_dir():
+        return None
+
+    patterns = [
+        ("Syntax*.gf", "Syntax"),
+        ("Grammar*.gf", "Grammar"),
+        ("Paradigms*.gf", "Paradigms"),
+    ]
+    for glob_pat, prefix in patterns:
+        for f in folder_path.glob(glob_pat):
+            stem = f.stem
+            if stem.startswith(prefix) and len(stem) > len(prefix):
+                return stem[len(prefix):]
+    return None
+
+
+def _folder_name_from_rgl_path(rgl_path: Any) -> str:
+    if isinstance(rgl_path, str) and rgl_path.strip():
+        try:
+            return Path(rgl_path).name
+        except Exception:
+            return rgl_path.strip().rstrip("/").split("/")[-1]
+    return ""
+
+
+# ---------------------------
 # One-shot scanners (contracts only; no per-iso rescans here)
 # Updated to accept wiki_to_iso2 mapping for strict normalization
 # ---------------------------
@@ -221,11 +263,10 @@ def _scan_all_lexicons(lex_root: Path, *, wiki_to_iso2: Mapping[str, str]) -> Di
         return {}
     if not isinstance(out, dict):
         return {}
-    
+
     normed: Dict[str, Dict[str, float]] = {}
     for raw_key, blk in out.items():
         if isinstance(raw_key, str) and isinstance(blk, Mapping):
-            # Enforce 2-letter ISO normalization (e.g. "eng" -> "en")
             k = norm_to_iso2(raw_key, wiki_to_iso2=wiki_to_iso2)
             if k:
                 normed[k] = {kk: float(clamp10(blk.get(kk, 0.0))) for kk in zeros}
@@ -244,11 +285,10 @@ def _scan_all_apps(repo_root: Path, *, wiki_to_iso2: Mapping[str, str]) -> Dict[
         return {}
     if not isinstance(out, dict):
         return {}
-    
+
     normed: Dict[str, Dict[str, float]] = {}
     for raw_key, blk in out.items():
         if isinstance(raw_key, str) and isinstance(blk, Mapping):
-            # Enforce 2-letter ISO normalization
             k = norm_to_iso2(raw_key, wiki_to_iso2=wiki_to_iso2)
             if k:
                 normed[k] = {kk: float(clamp10(blk.get(kk, 0.0))) for kk in zeros}
@@ -267,11 +307,10 @@ def _scan_all_artifacts(gf_root: Path, *, wiki_to_iso2: Mapping[str, str]) -> Di
         return {}
     if not isinstance(out, dict):
         return {}
-    
+
     normed: Dict[str, Dict[str, float]] = {}
     for raw_key, blk in out.items():
         if isinstance(raw_key, str) and isinstance(blk, Mapping):
-            # Enforce 2-letter ISO normalization
             k = norm_to_iso2(raw_key, wiki_to_iso2=wiki_to_iso2)
             if k:
                 normed[k] = {
@@ -310,7 +349,6 @@ def scan_system() -> None:
     logger.info(f"CWD: {Path.cwd()}")
 
     cfg = _load_config()
-    # Check if v1 adapted or v2 native
     raw_cfg = read_json(CONFIG_FILE)
     is_v1 = isinstance(raw_cfg, dict) and "rgl" not in raw_cfg
     logger.info(f"Config: {CONFIG_FILE} (Detected: {'v1-flat' if is_v1 else 'v2-nested'})")
@@ -326,7 +364,8 @@ def scan_system() -> None:
     name_map_iso2 = build_name_map_iso2(iso_to_wiki, wiki_to_iso2)
 
     # fingerprint inputs (what we read/scan on a normal run)
-    content_roots = [p["lex_root"], p["factory_src"], p["gf_root"], p["flags_dir"]]
+    # NEW: include gf-rgl/src because Tier-1 demotion depends on actual module files.
+    content_roots = [p["lex_root"], p["factory_src"], p["gf_root"], p["flags_dir"], p["rgl_src"]]
     config_files = [
         CONFIG_FILE,
         p["iso_map_file"],
@@ -338,8 +377,7 @@ def scan_system() -> None:
     ]
 
     p["output_dir"].mkdir(parents=True, exist_ok=True)
-    
-    # Fingerprint check
+
     current_fp = directory_fingerprint(content_roots=content_roots, config_files=config_files)
     logger.debug(f"Calculated Fingerprint: {current_fp[:12]}...")
 
@@ -379,7 +417,7 @@ def scan_system() -> None:
 
     # 3) One-shot scans per zone (no per-iso rescans here)
     logger.info("--- Phase 1: One-Shot Scans ---")
-    
+
     logger.info("Calling lexicon_scanner...")
     lex_inv = _scan_all_lexicons(p["lex_root"], wiki_to_iso2=wiki_to_iso2)
     logger.info(f"  -> Lexicon inventory: {len(lex_inv)} languages.")
@@ -387,7 +425,7 @@ def scan_system() -> None:
     logger.info("Calling app_scanner...")
     app_inv = _scan_all_apps(BASE_DIR, wiki_to_iso2=wiki_to_iso2)
     logger.info(f"  -> App inventory: {len(app_inv)} languages.")
-    
+
     logger.info("Calling qa_scanner...")
     qa_inv = _scan_all_artifacts(p["gf_root"], wiki_to_iso2=wiki_to_iso2)
     logger.info(f"  -> QA inventory: {len(qa_inv)} languages.")
@@ -427,40 +465,43 @@ def scan_system() -> None:
     zeros_c = {"PROF": 0.0, "ASST": 0.0, "ROUT": 0.0}
     zeros_d = {"BIN": 0.0, "TEST": 0.0}
 
-    # Tracking skips for summary
     skip_counts: Dict[str, int] = {}
-    MAX_VERBOSE_SKIPS = 5  # limit how many we print per reason
+    MAX_VERBOSE_SKIPS = 5
 
     for iso2 in sorted(all_isos):
         if not iso2 or iso2 == "api":
             continue
 
-        # meta
         tier = 3
         origin = "factory"
         folder = "generated"
 
         rgl_rec = rgl_by_iso2.get(iso2)
+        rgl_folder = ""
+        rgl_suffix: Optional[str] = None
+
         if isinstance(rgl_rec, Mapping):
-            tier = 1
             origin = "rgl"
             rgl_path = rgl_rec.get("path")
-            folder = Path(rgl_path).name if isinstance(rgl_path, str) and rgl_path.strip() else "rgl"
+            rgl_folder = _folder_name_from_rgl_path(rgl_path) or "rgl"
+            folder = rgl_folder
+
+            # NEW: only mark Tier-1 if we can detect suffix from gf-rgl/src/<folder>
+            rgl_suffix = _detect_rgl_suffix(p["rgl_src"] / rgl_folder)
+            tier = 1 if rgl_suffix else 2  # demote unsupported RGL folders out of Tier-1
+
         elif (p["lex_root"] / iso2).is_dir():
             origin = "lexicon"
             folder = ""
 
-        # Zone A (proof via modules in rgl_inventory.json)
         zone_a_raw = {"CAT": 0.0, "NOUN": 0.0, "PARA": 0.0, "GRAM": 0.0, "SYN": 0.0}
         if isinstance(rgl_rec, Mapping) and isinstance(rgl_rec.get("modules"), Mapping):
             zone_a_raw = compute_zone_a_from_modules(rgl_rec["modules"])  # type: ignore[arg-type]
 
-        # Zone B/C/D from inventories
         zone_b = dict(lex_inv.get(iso2, zeros_b))
         zone_c = dict(app_inv.get(iso2, zeros_c))
         zone_d = dict(qa_inv.get(iso2, zeros_d))
 
-        # pass1
         avgs_1 = compute_zone_averages(zone_a_raw, zone_b, zone_c, zone_d)
         maturity_1 = compute_maturity(avgs_1, zone_weights)
         strat_1 = choose_build_strategy(
@@ -473,7 +514,6 @@ def scan_system() -> None:
             cfg_matrix=cfg_matrix,
         )
 
-        # ladder + pass2
         zone_a = apply_zone_a_strategy_map(zone_a_raw, strat_1)
         avgs_2 = compute_zone_averages(zone_a, zone_b, zone_c, zone_d)
         maturity_2 = compute_maturity(avgs_2, zone_weights)
@@ -490,25 +530,31 @@ def scan_system() -> None:
         runnable = (float(zone_b.get("SEED", 0.0)) >= 2.0) or (strat_2 == "HIGH_ROAD")
 
         if args.verbose and strat_2 == "SKIP":
-            # Simple heuristic reasoning for debug logs
             reason = "low_maturity"
             if float(zone_a_raw.get("CAT", 0)) == 0 and float(zone_b.get("SEED", 0)) == 0:
                 reason = "empty_lang"
             elif avgs_1["A_RGL"] < 2.0 and not (iso2 in factory_registry):
                 reason = "low_rgl_no_factory"
-            
+
             skip_counts[reason] = skip_counts.get(reason, 0) + 1
             if skip_counts[reason] <= MAX_VERBOSE_SKIPS:
                 logger.debug(f"Skipping {iso2}: {reason} (Mat: {maturity_2:.1f})")
 
+        meta: Dict[str, Any] = {
+            "iso": iso2,
+            "name": name_map_iso2.get(iso2, iso2.upper()),
+            "tier": tier,
+            "origin": origin,
+            "folder": folder,
+        }
+        # NEW: annotate RGL details to support downstream tools/debugging
+        if origin == "rgl":
+            meta["rgl_folder"] = rgl_folder
+            meta["rgl_suffix"] = rgl_suffix
+            meta["rgl_suffix_detected"] = bool(rgl_suffix)
+
         matrix_langs[iso2] = {
-            "meta": {
-                "iso": iso2,
-                "name": name_map_iso2.get(iso2, iso2.upper()),
-                "tier": tier,
-                "origin": origin,
-                "folder": folder,
-            },
+            "meta": meta,
             "zones": {
                 "A_RGL": {k: float(clamp10(v)) for k, v in zone_a.items()},
                 "B_LEX": {k: float(clamp10(v)) for k, v in zone_b.items()},
@@ -525,7 +571,6 @@ def scan_system() -> None:
             },
         }
 
-    # 7) save
     ts = time.time()
     matrix = {
         "timestamp": ts,
@@ -552,9 +597,10 @@ def scan_system() -> None:
     logger.info("--- Build Summary ---")
     logger.info(f"Total Languages:  {matrix['stats']['total_languages']}")
     logger.info(f"Production Ready: {matrix['stats']['production_ready']}")
-    logger.info(f"Build Strategies: HIGH_ROAD={matrix['stats']['high_road']}, SAFE_MODE={matrix['stats']['safe_mode']}, SKIP={matrix['stats']['skipped']}")
-    
-    # Show top skip reasons if we collected any
+    logger.info(
+        f"Build Strategies: HIGH_ROAD={matrix['stats']['high_road']}, SAFE_MODE={matrix['stats']['safe_mode']}, SKIP={matrix['stats']['skipped']}"
+    )
+
     if args.verbose and skip_counts:
         logger.debug("Top Skip Reasons:")
         for r, c in sorted(skip_counts.items(), key=lambda x: x[1], reverse=True):
@@ -562,7 +608,7 @@ def scan_system() -> None:
 
     logger.info(f"💾 Written to: {p['matrix_file']}")
     try:
-        size = p['matrix_file'].stat().st_size
+        size = p["matrix_file"].stat().st_size
         logger.info(f"   Size: {size} bytes")
     except Exception:
         pass

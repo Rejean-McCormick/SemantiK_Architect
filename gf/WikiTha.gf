@@ -1,8 +1,1 @@
-concrete WikiTha of AbstractWiki = open SyntaxTha, ParadigmsTha in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiTha of AbstractWiki = WikiI with (Syntax = SyntaxTha) ** open SyntaxTha, ParadigmsTha in { flags coding=utf8 ; };

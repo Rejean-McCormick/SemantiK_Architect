@@ -1,8 +1,1 @@
-concrete WikiTam of AbstractWiki = open SyntaxTam, ParadigmsTam in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiTam of AbstractWiki = WikiI with (Syntax = SyntaxTam) ** open SyntaxTam, ParadigmsTam in { flags coding = utf8 ; };

@@ -1,8 +1,1 @@
-concrete WikiChi of AbstractWiki = open SyntaxChi, ParadigmsChi in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiChi of AbstractWiki = WikiI with (Syntax = SyntaxChi) ** open SyntaxChi, ParadigmsChi in { flags coding=utf8 ; };

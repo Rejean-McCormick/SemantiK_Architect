@@ -1,8 +1,1 @@
-concrete WikiSlo of AbstractWiki = open SyntaxSlo, ParadigmsSlo in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiSlo of AbstractWiki = WikiI with (Syntax = SyntaxSlo) ** open SyntaxSlo, ParadigmsSlo in { flags coding = utf8 ; };

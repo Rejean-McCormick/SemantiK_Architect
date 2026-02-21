@@ -1,8 +1,1 @@
-concrete WikiZul of AbstractWiki = open SyntaxZul, ParadigmsZul in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiZul of AbstractWiki = WikiI with (Syntax = SyntaxZul) ** open SyntaxZul, ParadigmsZul in { flags coding = utf8 ; };

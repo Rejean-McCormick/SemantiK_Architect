@@ -1,8 +1,1 @@
-concrete WikiHye of AbstractWiki = open SyntaxHye, ParadigmsHye in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiHye of AbstractWiki = WikiI with (Syntax = SyntaxHye) ** open SyntaxHye, ParadigmsHye in { flags coding = utf8 ; };

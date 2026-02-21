@@ -1,8 +1,1 @@
-concrete WikiIce of AbstractWiki = open SyntaxIce, ParadigmsIce in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiIce of AbstractWiki = WikiI with (Syntax = SyntaxIce) ** open SyntaxIce, ParadigmsIce in { flags coding=utf8 ; };

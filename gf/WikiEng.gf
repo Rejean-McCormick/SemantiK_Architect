@@ -1,8 +1,1 @@
-concrete WikiEng of AbstractWiki = open SyntaxEng, ParadigmsEng in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiEng of AbstractWiki = WikiI with (Syntax = SyntaxEng) ** open SyntaxEng, ParadigmsEng in { flags coding=utf8 ; };

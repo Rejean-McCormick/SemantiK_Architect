@@ -1,52 +1,364 @@
 <#
 .SYNOPSIS
-    The "God Mode" Window Manager.
-    It cleans up zombie processes and then delegates startup logic to 'manage.py'.
+    Abstract Wiki Architect Launcher (Windows orchestrator).
+    - Verbose output is ON by default (use -NoVerbose to silence)
+    - Optionally kills project-related node.exe (or all node.exe with -KillAllNode)
+    - Starts API in WSL (uvicorn) and Worker in WSL (arq)
+    - Starts frontend in Windows (npm run dev)
+    - Writes WSL helper scripts into .\logs and keeps WSL windows open for debugging
+
+.NOTES
+    Recommended:
+      pwsh -NoExit -NoProfile -ExecutionPolicy Bypass -File .\Run-Architect.ps1
+    PowerShell requires explicit path:
+      .\Run-Architect.ps1   (not Run-Architect.ps1)
 #>
 
-$WSL_PATH = "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect"
-$WIN_PATH = "C:\MyCode\AbstractWiki\abstract-wiki-architect"
+[CmdletBinding()]
+param(
+    [switch]$KillAllNode,
+    [switch]$SkipApi,
+    [switch]$SkipWorker,
+    [switch]$SkipFrontend,
+    [switch]$SkipBrowser,
+    [switch]$NoVerbose,
+    [string]$WinRepoOverride = "",
+    [int]$BackendPort = 8000,
+    [int]$BrowserDelaySeconds = 5,
+    [string]$LaunchUrl = "http://localhost:3000/abstract_wiki_architect/tools"
+)
 
-Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "   🏗️  ABSTRACT WIKI ARCHITECT - LAUNCHER" -ForegroundColor Cyan
-Write-Host "==================================================" -ForegroundColor Cyan
+Set-StrictMode -Version Latest
 
-# --- 1. CLEANUP (Powershell Exclusive) ---
-# Python scripts running inside WSL cannot easily kill Windows Node processes.
-# We do this here to ensure a clean slate.
-Write-Host "`n[1/3] 🧹 Cleaning up zombie processes..." -ForegroundColor Yellow
+# Verbose default
+$VerbosePreference = if ($NoVerbose) { 'SilentlyContinue' } else { 'Continue' }
+$ErrorActionPreference = 'Stop'
 
-# Kill Windows Frontend
-if (Get-Process node -ErrorAction SilentlyContinue) { 
-    Stop-Process -Name node -Force -ErrorAction SilentlyContinue
-    Write-Host "   - Killed lingering Node/Next.js" -ForegroundColor Gray
+function Get-PreferredPsHostExe {
+    if (Get-Command pwsh -ErrorAction SilentlyContinue) { return "pwsh" }
+    return "powershell"
 }
 
-# Kill WSL Backend (Force kill port 8000)
-wsl bash -c "fuser -k 8000/tcp > /dev/null 2>&1 || true"
-Write-Host "   - Cleared Port 8000 (WSL)" -ForegroundColor Gray
+function Convert-ToWslPath([string]$WinPath) {
+    # Works even if target doesn't exist
+    $full = [System.IO.Path]::GetFullPath($WinPath)
+    if ($full -match '^([A-Za-z]):\\(.*)$') {
+        $drive = $matches[1].ToLower()
+        $rest  = $matches[2] -replace '\\','/'
+        return "/mnt/$drive/$rest"
+    }
+    throw "Unsupported Windows path format: $full"
+}
 
-# --- 2. DELEGATE TO MANAGE.PY (The Commander) ---
-# We spawn a single orchestrator window for the backend.
-# manage.py 'start' will:
-#   1. Run Health Checks
-#   2. Build the System
-#   3. Spawn its own separate windows for API and Worker
+function Write-TextFileLF([string]$Path, [string]$Content) {
+    $text = ($Content -replace "`r`n", "`n") -replace "`r", "`n"
+    if (-not $text.EndsWith("`n")) { $text += "`n" }
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $text, $utf8NoBom)
+}
 
-Write-Host "`n[2/3] 🚀 Spawning Services via manage.py..." -ForegroundColor Yellow
+function Start-WslPwshWindow {
+    param(
+        [Parameter(Mandatory=$true)][string]$Title,
+        [Parameter(Mandatory=$true)][string]$WslRepo,
+        [Parameter(Mandatory=$true)][string]$BashCmd,
+        [Parameter(Mandatory=$true)][string]$LogHint
+    )
 
-# Terminal 1: Backend Orchestrator (Builds & Spawns Sub-windows)
-$backendCmd = "cd $WSL_PATH; source venv/bin/activate; python3 manage.py start"
-Start-Process wsl.exe -ArgumentList "bash -c '$backendCmd; exec bash'"
+    $psHost = Get-PreferredPsHostExe
+    $helperPath = Join-Path $env:TEMP ("awa_" + [Guid]::NewGuid().ToString("N") + ".ps1")
 
-# Terminal 2: Frontend (Windows Native)
-# We assume standard npm run dev here as it's outside the Python scope
-Write-Host "   - Launching Frontend..." -ForegroundColor Gray
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$WIN_PATH\architect_frontend'; npm run dev"
+    # Use single-quoted here-string so PS does not expand $ or $(...)
+    $helperContent = @"
+`$host.UI.RawUI.WindowTitle = '$Title'
+`$VerbosePreference = 'Continue'
+`$ErrorActionPreference = 'Continue'
 
-# --- 3. FINALIZE ---
-Write-Host "`n[3/3] ✅ Systems Go!" -ForegroundColor Green
-Write-Host "   Browser opening in 5 seconds..." -ForegroundColor Gray
+Write-Host '==================================================' -ForegroundColor Cyan
+Write-Host '  $Title' -ForegroundColor Cyan
+Write-Host '==================================================' -ForegroundColor Cyan
+Write-Host 'WSL repo: $WslRepo' -ForegroundColor Gray
+Write-Host 'Logs:     $LogHint' -ForegroundColor Gray
+Write-Host ''
 
-Start-Sleep -Seconds 5
-Start-Process "http://localhost:3000/abstract_wiki_architect/tools"
+`$BashCmd = @'
+$BashCmd
+'@.Trim()
+
+& wsl.exe --cd '$WslRepo' --exec bash -lc `$BashCmd
+
+Write-Host ''
+Write-Host ('WSL exited with code: ' + `$LASTEXITCODE) -ForegroundColor Yellow
+Read-Host 'Press Enter to close this window' | Out-Null
+"@
+
+    Set-Content -Path $helperPath -Value $helperContent -Encoding UTF8
+    Start-Process $psHost -ArgumentList @("-NoExit","-NoProfile","-ExecutionPolicy","Bypass","-File",$helperPath)
+}
+
+# -----------------------------
+# 0) Resolve repo paths
+# -----------------------------
+$DefaultWinRepo = "C:\MyCode\AbstractWiki\abstract-wiki-architect"
+
+$WinRepo =
+    if ($WinRepoOverride) { $WinRepoOverride }
+    elseif (Test-Path (Join-Path $PSScriptRoot "manage.py")) { $PSScriptRoot }
+    else { $DefaultWinRepo }
+
+if (-not (Test-Path $WinRepo)) {
+    Write-Error "Repo path not found: $WinRepo"
+    exit 1
+}
+
+$WinRepo = [System.IO.Path]::GetFullPath($WinRepo)
+$ManagePy = Join-Path $WinRepo "manage.py"
+$FrontendDir = Join-Path $WinRepo "architect_frontend"
+$LogsDirWin = Join-Path $WinRepo "logs"
+
+if (-not (Test-Path $ManagePy)) {
+    Write-Error "manage.py not found at: $ManagePy"
+    exit 1
+}
+
+if (-not (Test-Path $LogsDirWin)) {
+    New-Item -ItemType Directory -Path $LogsDirWin | Out-Null
+}
+
+$WslRepo = Convert-ToWslPath $WinRepo
+
+# -----------------------------
+# 1) Header
+# -----------------------------
+Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host "   ABSTRACT WIKI ARCHITECT - LAUNCHER" -ForegroundColor Cyan
+Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host "Windows repo: $WinRepo" -ForegroundColor Gray
+Write-Host "WSL repo:     $WslRepo" -ForegroundColor Gray
+Write-Host "Logs dir:     $LogsDirWin" -ForegroundColor Gray
+
+Write-Verbose "Parameters:"
+Write-Verbose "  KillAllNode=$KillAllNode"
+Write-Verbose "  SkipApi=$SkipApi SkipWorker=$SkipWorker SkipFrontend=$SkipFrontend SkipBrowser=$SkipBrowser"
+Write-Verbose "  BackendPort=$BackendPort"
+Write-Verbose "  BrowserDelaySeconds=$BrowserDelaySeconds"
+Write-Verbose "  LaunchUrl=$LaunchUrl"
+
+# -----------------------------
+# 2) Sanity checks
+# -----------------------------
+if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+    Write-Error "wsl.exe not found. Install/enable WSL first."
+    exit 1
+}
+
+# -----------------------------
+# 3) Cleanup (Windows + WSL port)
+# -----------------------------
+Write-Host "`n[1/3] Cleaning up processes..." -ForegroundColor Yellow
+
+if ($KillAllNode) {
+    if (Get-Process node -ErrorAction SilentlyContinue) {
+        Stop-Process -Name node -Force -ErrorAction SilentlyContinue
+        Write-Host "  - Killed ALL node.exe processes" -ForegroundColor Gray
+    } else {
+        Write-Host "  - No node.exe processes found" -ForegroundColor Gray
+    }
+} else {
+    $nodeCandidates = Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
+        Where-Object {
+            $_.CommandLine -and (
+                $_.CommandLine -like "*$FrontendDir*" -or
+                $_.CommandLine -like "*$WinRepo*"
+            )
+        }
+
+    if ($nodeCandidates) {
+        foreach ($p in $nodeCandidates) {
+            Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+        }
+        Write-Host "  - Killed project-related node.exe processes" -ForegroundColor Gray
+    } else {
+        Write-Host "  - No project-related node.exe processes found" -ForegroundColor Gray
+    }
+}
+
+# Clear backend port in WSL (best effort)
+try {
+    $killPortCmd = "command -v fuser >/dev/null 2>&1 && fuser -k $BackendPort/tcp >/dev/null 2>&1 || true"
+    wsl.exe --exec bash -lc $killPortCmd | Out-Null
+    Write-Host "  - Cleared port $BackendPort (WSL)" -ForegroundColor Gray
+} catch {
+    Write-Warning "WSL port cleanup warnings: $($_.Exception.Message)"
+}
+
+# -----------------------------
+# 4) Write WSL helper scripts into .\logs
+# -----------------------------
+$ApiScriptWin    = Join-Path $LogsDirWin "start_api.sh"
+$WorkerScriptWin = Join-Path $LogsDirWin "start_worker.sh"
+
+# IMPORTANT: single-quoted here-strings so PowerShell does not expand ${TS}, $ROOT, $(...)
+$commonHeader = @'
+#!/usr/bin/env bash
+set +e
+set -o pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT" || exit 1
+
+TS="$(date +%Y%m%d_%H%M%S)"
+mkdir -p logs
+
+pick_venv() {
+  if [ -f venv/bin/activate ]; then echo "venv"; return; fi
+  if [ -f .venv/bin/activate ]; then echo ".venv"; return; fi
+  echo ""
+}
+'@.Trim()
+
+$apiScript = @'
+__COMMON__
+
+LOGFILE="logs/api_${TS}.log"
+echo "Logging to: ${ROOT}/${LOGFILE}"
+exec > >(tee -a "${LOGFILE}") 2>&1
+
+echo "PWD=$(pwd)"
+echo "WSL=$(uname -a)"
+
+VENV="$(pick_venv)"
+if [ -n "$VENV" ]; then
+  # shellcheck disable=SC1090
+  source "${VENV}/bin/activate"
+  echo "VENV_OK=${VIRTUAL_ENV}"
+else
+  echo "VENV_MISSING: expected venv/ or .venv/ in $(pwd)"
+fi
+
+echo "PY=$(command -v python3 2>/dev/null || true)"
+python3 --version 2>/dev/null || true
+
+echo ""
+echo "PGF check:"
+ls -l gf/AbstractWiki.pgf 2>/dev/null || echo "MISSING_PGF"
+
+PORT="${1:-8000}"
+
+echo ""
+echo "Starting API:"
+echo "  python3 -m uvicorn app.adapters.api.main:create_app --factory --host 0.0.0.0 --port ${PORT} --reload"
+python3 -m uvicorn app.adapters.api.main:create_app --factory --host 0.0.0.0 --port "${PORT}" --reload
+STATUS=$?
+echo "uvicorn exit code: ${STATUS}"
+
+echo ""
+echo "Dropping into an interactive shell."
+exec bash -li
+'@.Trim().Replace('__COMMON__', $commonHeader)
+
+$workerScript = @'
+__COMMON__
+
+LOGFILE="logs/worker_${TS}.log"
+echo "Logging to: ${ROOT}/${LOGFILE}"
+exec > >(tee -a "${LOGFILE}") 2>&1
+
+echo "PWD=$(pwd)"
+echo "WSL=$(uname -a)"
+
+VENV="$(pick_venv)"
+if [ -n "$VENV" ]; then
+  # shellcheck disable=SC1090
+  source "${VENV}/bin/activate"
+  echo "VENV_OK=${VIRTUAL_ENV}"
+else
+  echo "VENV_MISSING: expected venv/ or .venv/ in $(pwd)"
+fi
+
+echo "PY=$(command -v python3 2>/dev/null || true)"
+python3 --version 2>/dev/null || true
+
+echo ""
+echo "Starting worker:"
+echo "  python3 -m arq app.workers.worker.WorkerSettings --watch app"
+python3 -m arq app.workers.worker.WorkerSettings --watch app
+STATUS=$?
+echo "worker exit code: ${STATUS}"
+
+echo ""
+echo "Dropping into an interactive shell."
+exec bash -li
+'@.Trim().Replace('__COMMON__', $commonHeader)
+
+Write-TextFileLF -Path $ApiScriptWin    -Content $apiScript
+Write-TextFileLF -Path $WorkerScriptWin -Content $workerScript
+
+if (-not (Test-Path $ApiScriptWin))    { throw "Failed to write: $ApiScriptWin" }
+if (-not (Test-Path $WorkerScriptWin)) { throw "Failed to write: $WorkerScriptWin" }
+
+Write-Verbose "Wrote WSL scripts:"
+Write-Verbose "  $ApiScriptWin"
+Write-Verbose "  $WorkerScriptWin"
+
+# -----------------------------
+# 5) Start services
+# -----------------------------
+Write-Host "`n[2/3] Starting services..." -ForegroundColor Yellow
+
+if (-not $SkipApi) {
+    Start-WslPwshWindow `
+        -Title "AWA API (WSL)" `
+        -WslRepo $WslRepo `
+        -BashCmd "chmod +x ./logs/start_api.sh 2>/dev/null || true; ./logs/start_api.sh $BackendPort" `
+        -LogHint "$LogsDirWin\api_*.log"
+    Write-Host "  - API launched (new window)" -ForegroundColor Gray
+} else {
+    Write-Host "  - API skipped" -ForegroundColor Gray
+}
+
+if (-not $SkipWorker) {
+    Start-WslPwshWindow `
+        -Title "AWA WORKER (WSL)" `
+        -WslRepo $WslRepo `
+        -BashCmd "chmod +x ./logs/start_worker.sh 2>/dev/null || true; ./logs/start_worker.sh" `
+        -LogHint "$LogsDirWin\worker_*.log"
+    Write-Host "  - Worker launched (new window)" -ForegroundColor Gray
+} else {
+    Write-Host "  - Worker skipped" -ForegroundColor Gray
+}
+
+if (-not $SkipFrontend) {
+    if (Test-Path $FrontendDir) {
+        Write-Host "  - Launching frontend (npm run dev)..." -ForegroundColor Gray
+        Start-Process powershell -WorkingDirectory $FrontendDir -ArgumentList @(
+            "-NoExit",
+            "-NoProfile",
+            "-Command",
+            "npm run dev"
+        )
+    } else {
+        Write-Warning "Frontend folder not found: $FrontendDir"
+    }
+} else {
+    Write-Host "  - Frontend skipped" -ForegroundColor Gray
+}
+
+# -----------------------------
+# 6) Finalize
+# -----------------------------
+Write-Host "`n[3/3] Done." -ForegroundColor Green
+
+if (-not $SkipBrowser) {
+    Write-Host "  Opening browser in $BrowserDelaySeconds seconds..." -ForegroundColor Gray
+    Start-Sleep -Seconds $BrowserDelaySeconds
+    Start-Process $LaunchUrl
+} else {
+    Write-Host "  Browser launch skipped" -ForegroundColor Gray
+}
+
+Write-Host ""
+Write-Host "Quick check (backend listener):" -ForegroundColor Gray
+try {
+    wsl.exe --exec bash -lc "ss -ltnp 2>/dev/null | grep ':8000 ' || echo NO_LISTENER_8000"
+} catch { }

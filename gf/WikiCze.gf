@@ -1,8 +1,1 @@
-concrete WikiCze of AbstractWiki = open SyntaxCze, ParadigmsCze in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiCze of AbstractWiki = WikiI with (Syntax = SyntaxCze) ** open SyntaxCze, ParadigmsCze in { flags coding = utf8 ; };

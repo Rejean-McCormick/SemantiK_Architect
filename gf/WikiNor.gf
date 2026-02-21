@@ -1,8 +1,1 @@
-concrete WikiNor of AbstractWiki = open SyntaxNor, ParadigmsNor in {
-  lincat
-    Fact = S ;
-    Entity = NP ;
-    Predicate = VP ;
-  lin
-    mkFact s p = mkS (mkCl s p) ;
-}
+concrete WikiNor of AbstractWiki = WikiI with (Syntax = SyntaxNor) ** open SyntaxNor, ParadigmsNor in { flags coding=utf8 ; };

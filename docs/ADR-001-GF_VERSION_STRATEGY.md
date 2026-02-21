@@ -1,94 +1,242 @@
+# GF Architecture & Developer Guide
 
-### 📜 `docs/ADR-001-GF_VERSION_STRATEGY.md`
+**Version:** 2.4  
+**Last Updated:** 2026-02-20  
+**Context:** Abstract Wiki Architect (Python + Grammatical Framework)
 
-```markdown
-# ADR-001: Strict Adherence to GF v3.12 High-Performance Runtime
+## 1. Architectural Overview
 
-**Status:** Accepted  
-**Date:** 2025-12-22  
-**Context:** Abstract Wiki Architect v2.0 "Omni-Upgrade"
+This system bridges two fundamentally different paradigms:
 
-## 1. Context and Problem
-The Abstract Wiki Architect relies on the **Grammatical Framework (GF)** for its core linguistic processing. A critical version mismatch exists between our production environment and the upstream library:
+1. **Python Domain Layer:** Dynamic, object-oriented, string-heavy.
+2. **GF Engine Layer:** Statically typed, functional abstract syntax trees.
 
-* **Production Environment:** Uses **GF v3.12 (C-Runtime)**. This backend is optimized for high-throughput text generation (`libpgf`) and is significantly faster and lighter than the Haskell runtime.
-* **Upstream Library:** The `gf-rgl` repository's `master` branch has migrated to **GF v4.0 (Haskell)** syntax (introducing dependent types and token gluing changes).
-* **The Error:** Compiling the modern (v4) library with the production (v3) compiler results in `unsupported token gluing` errors, causing High-Resource languages (Tier 1) to fail compilation.
+The critical challenge is the **type mismatch**. Python sees `"Marie Curie"` as a string. GF sees a typed term (e.g., `NP`, `PN`, etc.). Our architecture uses a **Bridge Pattern**: raw runtime data is wrapped into safe GF types before linearization.
 
-## 2. Decision Options
+### The Stack
 
-### Option A: Upgrade to GF v4 (The "Modern" Path)
-* **Pros:** Native compatibility with upstream `master` branch; access to academic features (dependent types).
-* **Cons:** Requires installing the full Haskell toolchain (GHC/Cabal), adding ~1.5GB of container bloat. Crucially, the Haskell runtime is **~10x slower** than the C-runtime for linearization, violating our API latency requirements.
-
-### Option B: Downgrade Library to v3.12 (The "Stable" Path)
-* **Pros:** Preserves the high-speed C-runtime (`libpgf`); zero changes to Docker infrastructure; ensures deterministic builds; matches the `pgf` Python bindings perfectly.
-* **Cons:** Cannot use bleeding-edge RGL features (which are unnecessary for Wikipedia text generation).
-
-### Option C: Dynamic Resolution (The "Hybrid" Path)
-* **Pros:** Supports both versions via script detection.
-* **Cons:** Adds unnecessary complexity. Since we control the infrastructure, supporting a compiler we don't use (v4) is technical debt.
-
-## 3. The Decision
-We chose **Option B**.
-We prioritize **Runtime Performance** and **Deployment Stability**. The Abstract Wiki Architect will strictly enforce alignment with the **GF v3.12** ecosystem. We reject the "Dynamic Resolution" complexity in favor of a hard lock on the stable release.
-
-## 4. Implementation: The Alignment System
-We implemented a unified maintenance script `scripts/align_system.py` that serves as the "Enforcer" of this decision.
-
-**It performs three atomic actions in sequence:**
-1.  **Time Travel:** Forcefully resets the `gf-rgl` submodule to commit `e0a2215` (The GF 3.12 Stable release).
-2.  **Cache Purge:** Deletes all `.gfo` binaries to prevent version conflict.
-3.  **Omni-Bootstrap:** Reads the `everything_matrix.json` registry and auto-generates the "Bridge" files (e.g., `SyntaxEng.gf`) and Application Grammars (e.g., `WikiEng.gf`) for **all** Tier 1 languages.
-
-## 5. Build Workflow (Final)
-
-To build the engine, the workflow is now:
-
-```bash
-# 1. Align System (Downgrades RGL & Generates 45+ Language Files)
-python3 scripts/align_system.py
-
-# 2. Execute Build (Compiles the PGF binary)
-python manage.py build --parallel 8
-
-```
-
-## 6. Consequences
-
-* **Positive:** The build is deterministic and reproducible.
-* **Positive:** Compilation time remains fast (C-backend) and text generation latency is minimized.
-* **Positive:** "Tier 1" languages (English, French, Chinese, etc.) are fully operational without manual file creation.
-* **Negative:** We are "pinned" to the 2024 version of the grammar library. New languages added to RGL in the future must be backported manually if needed.
-
-```
+| Layer | File/Component | Responsibility |
+| --- | --- | --- |
+| **Abstract** | `gf/AbstractWiki.gf` | Defines the API contract (schema). |
+| **Concrete (App Grammars)** | `gf/Wiki{WikiCode}.gf` | Implements the schema using the RGL (one per language). |
+| **Bridge (Syntax Instances)** | `generated/src/Syntax{RglCode}.gf` | Provides `Syntax{RglCode}` instances used by app grammars. |
+| **Library** | GF Resource Grammar Library (RGL) | Linguistic primitives (`mkS`, `mkCl`, etc.). |
+| **Adapter** | `app/adapters/engines/gf_wrapper.py` | Converts Pydantic objects → GF trees (PGF expressions). |
 
 ---
 
-### 📝 Update: `docs/00-SETUP_AND_DEPLOYMENT.md`
+## 2. Naming: ISO vs WikiCode vs RglCode (Source of Most Bugs)
 
-Replace the "Building" section with this authoritative guide:
+### Canonical rule: naming is driven by `data/config/iso_to_wiki.json`
 
-```markdown
-### 3. System Alignment (Mandatory)
-Before building, you must align the external grammar libraries to match the production C-runtime (GF 3.12) and generate the Tier 1 application files.
+Confirmed mappings in this repo:
 
-**Run the Alignment Script:**
+- `en` → `{"wiki": "Eng"}` → app grammar is `gf/WikiEng.gf`
+- `fr` → `{"wiki": "Fre"}` → app grammar is `gf/WikiFre.gf`
+
+**Implication:** this codebase does **not** use `WikiEn.gf` / `WikiFr.gf`. ISO-2 codes do not appear directly in grammar filenames.
+
+### Terms
+
+- **ISO**: `en`, `fr`, `de` (ISO-639-1)
+- **WikiCode**: `Eng`, `Fre`, `Ger`, … (from `iso_to_wiki.json`)
+- **RglCode**: `Eng`, `Fre`, `Ger`, … (the GF module suffix that your bridge instance targets)
+
+**Important nuance:** WikiCode and RglCode often match, but the **source of truth is different**:
+- WikiCode: `iso_to_wiki.json`
+- RglCode: what your RGL folder actually exposes (e.g., `GrammarEng.gf`, `ParadigmsEng.gf`)
+
+---
+
+## 3. Directory Structure & File Hygiene
+
+The system historically used two “generated” roots:
+
+- `generated/src` (**canonical**)
+- `gf/generated/src` (**legacy mirror**)
+
+On Windows-mounted filesystems (`/mnt/c/...`), symlinks can be unreliable. The commander supports both and will **sync** between them, but you must treat **`generated/src` as canonical**.
+
+### ✅ Allowed / Canonical
+
+- `gf/AbstractWiki.gf` — abstract syntax
+- `gf/Wiki{WikiCode}.gf` — app concrete grammars (e.g., `gf/WikiEng.gf`, `gf/WikiFre.gf`)
+- `generated/src/Syntax{RglCode}.gf` — bridge “Syntax instances” (e.g., `generated/src/SyntaxEng.gf`)
+- `gf/AbstractWiki.pgf` — compiled binary (usually git-ignored)
+- `data/config/iso_to_wiki.json` — authoritative mapping (ISO → WikiCode)
+
+### ⚠️ Allowed but Legacy (should be unified)
+
+- `gf/generated/src/*` — legacy generated location  
+  Prefer to make it a symlink to `generated/` if your FS supports symlinks; otherwise keep it synchronized and do not hand-edit.
+
+### ❌ Prohibited / Remove or Avoid Creating
+
+- `gf/Wiki.gf` — legacy/ambiguous
+- `gf/WikiEn.gf`, `gf/WikiFr.gf` — wrong naming convention for this repo
+- `gf/Symbolic*.gf` — **CRITICAL:** local files can conflict with the RGL’s `Symbolic` modules
+- Any `*.RGL_BROKEN` variants under include paths — can shadow correct modules depending on search path order
+
+**Rule of thumb:** if you see “Generated dirs distinct” warnings, assume stale/shadowing risk until you’ve re-synced and rebuilt.
+
+---
+
+## 4. GF + RGL Versioning (Alignment Contract)
+
+### 4.1 Runtime toolchain reality
+
+- **GF Core (compiler/runtime):** The current upstream “Latest” GF core release is **GF 3.12**. :contentReference[oaicite:0]{index=0}  
+- **RGL is separate:** Upstream packages treat **gf-rgl** as its own repo/artifact (not “bundled inside” GF core anymore). :contentReference[oaicite:1]{index=1}  
+
+### 4.2 This project’s contract
+
+- `builder/orchestrator.py` refuses to compile if `gf-rgl` is not pinned to the configured ref/commit.
+- `python manage.py align --force` is the canonical entrypoint to:
+  1) pin `gf-rgl` to the expected ref, and  
+  2) regenerate Tier-1 bridge/app grammars.
+
+### 4.3 Pinning: use a ref that exists in *your* gf-rgl clone
+
+Your repo has encountered failures because the pin ref/commit didn’t exist locally (even after fetch). The robust rule:
+
+- **Pin by “ref” (tag/branch/commit), not by a magic short hash.**
+- Default pin must be a ref that actually exists in `gf-rgl`.
+
+Upstream `gf-rgl` tags currently include (examples): `20250812`, `20250429`, `GF-3.10`, `RELEASE-3.9`, `RELEASE-3.8`. :contentReference[oaicite:2]{index=2}  
+(And the tag page itself notes that the “latest tag is called release-3.12”, but that ref may not be present in all clones/forks; always pin to what *your* repo can resolve.) :contentReference[oaicite:3]{index=3}  
+
+**Practical guidance:**
+- Treat `gf-rgl/` as a normal git clone (submodule configuration is **not assumed**).
+- Your alignment tool must:
+  - `git -C gf-rgl fetch --tags` (or equivalent)
+  - validate the ref exists
+  - checkout/reset to it
+
+---
+
+## 5. The “Safe” RGL API (Reference)
+
+We restrict our RGL usage to a stable subset.
+
+### Core Semantic Constructors
+
+| Function | Signature | Description |
+| --- | --- | --- |
+| `mkS` | `Cl -> S` | Clause → Sentence |
+| `mkCl` | `NP -> VP -> Cl` | Predication (“John walks”) |
+| `mkNP` | `Det -> N -> NP` | Determination (“the animal”) |
+| `mkVP` | `V2 -> NP -> VP` or `VP -> NP -> VP` | Transitive VP |
+| `mkAP` | `A -> AP` | Adjectival phrase |
+
+### Structural Helpers
+
+| Function | Type | Usage |
+| --- | --- | --- |
+| `and_Conj` | `Conj` | List conjunction |
+| `in_Prep` | `Prep` | “in” |
+| `symb` | `String -> NP` | **Type bridge** for raw strings |
+
+> Note: the exact module providing `symb` depends on RGL version; do not shadow `Symbolic*` locally.
+
+---
+
+## 6. Implementation Rules (Anti-Crash / Stability Rules)
+
+### Rule #1: Inlining Rule (Scope Safety)
+
+Avoid `let` inside `lin` rules when composing complex RGL macros.
+
+**Bad:**
+```haskell
+mkEvent subj obj =
+  let v = mkV "participate"
+  in mkS (mkCl subj (mkVP v obj))
+````
+
+**Good:**
+
+```haskell
+mkEvent subj obj =
+  mkS (mkCl subj (mkVP (mkV "participate") obj))
+```
+
+### Rule #2: Symbolic Rule (Runtime String Safety)
+
+Do not run morphology over runtime variables with `mkPN`/`mkN` when the input is unknown at compile time.
+
+* **Bad:** `mkLiteral s = mkNP (mkPN s)`
+* **Good:** `mkLiteral s = symb s`
+
+### Rule #3: Modifier Type Rule
+
+If you define a `Modifier`, use `Adv` (not `AdV`) unless you have a controlled, language-specific reason.
+
+---
+
+## 7. The Python Adapter Pattern
+
+The Python wrapper (`gf_wrapper.py`) must construct ASTs using grammar bridge functions, not raw strings directly.
+
+```python
+# Wrong: raw strings passed directly
+# pgf.Expr("mkBio", ["Marie", "Physicist"])
+
+# Right: wrap strings using bridge constructors that exist in AbstractWiki.gf
+subj = pgf.Expr("mkLiteral", [pgf.readExpr('"Marie"')])
+prop = pgf.Expr("mkStrProperty", [pgf.readExpr('"Physicist"')])
+expr = pgf.Expr("mkBio", [subj, prop])
+```
+
+**Rule:** the adapter must match the exact function names + arities in `gf/AbstractWiki.gf`.
+
+---
+
+## 8. Troubleshooting Dictionary
+
+| Symptom / Error                                                            | Diagnosis                                             | Fix                                                                                        |
+| -------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `Cannot connect to the Docker daemon at unix:///var/run/docker.sock` (WSL) | WSL Linux docker socket isn’t wired to Docker Desktop | Enable Docker Desktop WSL integration *or* ensure your tooling uses `docker.exe` from WSL. |
+| `gf-rgl is not pinned to the expected ...`                                 | RGL pin mismatch                                      | Run alignment (or set the pin ref to something that exists locally).                       |
+| `Ref 'release-3.xx' not found in gf-rgl (even after fetch)`                | The ref doesn’t exist in your clone/fork              | Pick an existing tag in your `gf-rgl` (e.g., `20250812`) and pin to that.                  |
+| `fatal: No url found for submodule path 'gf-rgl' in .gitmodules`           | Your repo is not using gf-rgl as a submodule          | Alignment must treat `gf-rgl/` as a normal git clone; remove submodule assumptions.        |
+| `SyntaxX.gf does not exist`                                                | Missing bridge instance                               | Run `python tools/bootstrap_tier1.py --force` (or `manage.py align`).                      |
+| `atomic term conflict` / `Symbolic*` conflicts                             | Local `Symbolic*.gf` shadowing RGL                    | Delete local `gf/Symbolic*.gf`.                                                            |
+| `Function ... not found`                                                   | PGF stale or wrong grammar set compiled               | Rebuild PGF and restart API.                                                               |
+| “Generated dirs distinct” warnings                                         | `generated/src` and `gf/generated/src` diverged       | Prefer `generated/src`; re-sync and rebuild; don’t hand-edit legacy mirror.                |
+| `'venv/bin/python' is not recognized` (PowerShell)                         | `manage.py` assumes Unix venv layout                  | Run build commands in WSL, or update `manage.py` to resolve venv python per-OS.            |
+
+---
+
+## 9. Build Commands (Current Canonical Flow)
+
+### Recommended: build in WSL
+
+The default `manage.py` configuration assumes Unix venv paths (`venv/bin/python`). Running `manage.py build` in Windows PowerShell will fail unless you provide a Windows venv layout and/or a Windows-aware venv resolver.
+
+### Minimal “Known Good” Flow (Tier-1, small set)
+
 ```bash
-# This downgrades RGL to v3.12 and bootstraps all high-resource languages
-python3 scripts/align_system.py
+# 1) Align (pins gf-rgl + generates Tier-1 bridges/app grammars)
+python manage.py align --force
 
+# 2) Build only a small language set while iterating
+python manage.py build --langs en fr
 ```
 
-*Note: If you skip this step, the build will fail with "unsupported token gluing" errors or "Source not found".*
-
-**Build the Engine:**
+### If you need to refresh RGL inventory for the matrix
 
 ```bash
-python manage.py build --parallel 8
-
+python tools/everything_matrix/build_index.py --regen-rgl
+python tools/bootstrap_tier1.py --force
 ```
 
+### Cleaning
+
+Do **not** delete all `gf/Wiki*.gf` anymore — those are canonical app grammars in this repo (WikiCode naming). Prefer:
+
+```bash
+python manage.py clean
 ```
 
-```
+If you must do a manual clean, focus on compiled artifacts (`*.gfo`, `*.pgf`) and generated outputs, not source grammars.
+
