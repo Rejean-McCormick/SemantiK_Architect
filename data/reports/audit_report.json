@@ -1,70 +1,29 @@
 {
-  "generated_at": 1771958151.2568467,
+  "generated_at": 1771963199.8764005,
   "repo_root": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect",
   "summary": {
     "compile_valid_or_skipped": 0,
-    "compile_broken": 0,
-    "runtime_pass": 4,
+    "compile_broken": 1,
+    "runtime_pass": 0,
     "runtime_fail": 0,
-    "overall_ok": 4,
-    "overall_fail": 0
+    "overall_ok": 0,
+    "overall_fail": 1
   },
   "results": [
     {
-      "gf_lang": null,
-      "api_lang": "en",
-      "overall": "OK",
-      "compile": null,
-      "runtime": {
-        "api_lang": "en",
-        "status": "PASS",
-        "http_status": 200,
-        "duration_ms": 4.2877197265625,
-        "error": null,
-        "sample_text": "Shaka is a zulu warrior"
-      }
-    },
-    {
-      "gf_lang": null,
-      "api_lang": "es",
-      "overall": "OK",
-      "compile": null,
-      "runtime": {
-        "api_lang": "es",
-        "status": "PASS",
-        "http_status": 200,
-        "duration_ms": 13.321876525878906,
-        "error": null,
-        "sample_text": "<Language 'es' not found>"
-      }
-    },
-    {
-      "gf_lang": null,
-      "api_lang": "fr",
-      "overall": "OK",
-      "compile": null,
-      "runtime": {
-        "api_lang": "fr",
-        "status": "PASS",
-        "http_status": 200,
-        "duration_ms": 13.464689254760742,
-        "error": null,
-        "sample_text": "<Language 'fr' not found>"
-      }
-    },
-    {
-      "gf_lang": null,
-      "api_lang": "it",
-      "overall": "OK",
-      "compile": null,
-      "runtime": {
-        "api_lang": "it",
-        "status": "PASS",
-        "http_status": 200,
-        "duration_ms": 9.115219116210938,
-        "error": null,
-        "sample_text": "Shaka is a zulu warrior"
-      }
+      "gf_lang": "Ron",
+      "api_lang": "ro",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Ron",
+        "filename": "gf/WikiRon.gf",
+        "status": "BROKEN",
+        "error": "Timeout after 90s",
+        "duration_s": 0.0,
+        "file_hash": "ad0adedfee83edbf267d10c3c2194c76a1dff22bbb07bc3faccfdbf3be345341",
+        "iso2": "ro"
+      },
+      "runtime": null
     }
   ]
 }

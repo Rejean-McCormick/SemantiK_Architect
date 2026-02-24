@@ -58,6 +58,31 @@ def _normalize_lang_filter(tokens: Optional[Sequence[str]]) -> Set[str]:
     return {t.strip().lower() for t in (tokens or []) if isinstance(t, str) and t.strip()}
 
 
+def _check_pgf_staleness(stream: Any) -> None:
+    """Warns the user if .gfo object caches are newer than the main .pgf binary."""
+    from .paths import REPO_ROOT
+    
+    pgf_path = REPO_ROOT / "gf" / "AbstractWiki.pgf"
+    gfo_dir = REPO_ROOT / "gf"
+    
+    if not pgf_path.exists():
+        return
+
+    pgf_mtime = pgf_path.stat().st_mtime
+    
+    newest_gfo_time = 0.0
+    if gfo_dir.exists() and gfo_dir.is_dir():
+        for p in gfo_dir.glob("*.gfo"):
+            mtime = p.stat().st_mtime
+            if mtime > newest_gfo_time:
+                newest_gfo_time = mtime
+
+    if newest_gfo_time > pgf_mtime:
+        print("\n⚠️  [WARNING] STALE BINARY DETECTED!", file=stream)
+        print("⚠️  You have compiled .gfo files that are NEWER than your AbstractWiki.pgf.", file=stream)
+        print("⚠️  Runtime tests will not reflect your latest changes. Please run 'compile_pgf' first.\n", file=stream)
+
+
 # -----------------------------------------------------------------------------
 # Conversion helpers (until compile_audit/api_runtime fully adopt models.py)
 # -----------------------------------------------------------------------------
@@ -197,6 +222,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     api_checker: Optional[api_runtime.ArchitectApiRuntimeChecker] = None
     if want_api:
+        # --> INJECT THE WARNING CHECK HERE <--
+        _check_pgf_staleness(stream)
+
         if args.verbose:
             print(f"🌐 Runtime audit: api_url={args.api_url}, threads={args.parallel}, limit={args.limit or 'all'}", file=stream)
 
