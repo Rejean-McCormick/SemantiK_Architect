@@ -34,6 +34,36 @@ def py_script(
     )
 
 
+def py_module(
+    tool_id: str,
+    module: str,
+    rel_check_path: str,
+    description: str,
+    *,
+    timeout_sec: int = DEFAULT_TIMEOUT_SEC,
+    allow_args: bool = False,
+    allowed_flags: Sequence[str] = (),
+    allow_positionals: bool = False,
+    requires_ai_enabled: bool = False,
+    flags_with_value: Sequence[str] = (),
+    flags_with_multi_value: Sequence[str] = (),
+) -> ToolSpec:
+    return ToolSpec(
+        tool_id=tool_id,
+        description=description,
+        # Used for existence checks in the tools runner (module itself is executed via -m).
+        rel_target=rel_check_path,
+        cmd=(PYTHON_EXE, "-u", "-m", module),
+        timeout_sec=timeout_sec,
+        allow_args=allow_args,
+        allowed_flags=tuple(allowed_flags),
+        allow_positionals=allow_positionals,
+        requires_ai_enabled=requires_ai_enabled,
+        flags_with_value=tuple(flags_with_value),
+        flags_with_multi_value=tuple(flags_with_multi_value),
+    )
+
+
 def build_registry() -> Dict[str, ToolSpec]:
     return {
         # --- BUILD ---
@@ -81,15 +111,24 @@ def build_registry() -> Dict[str, ToolSpec]:
             "Audits RGL grammar module presence/consistency.",
             timeout_sec=600,
         ),
-        "compile_pgf": py_script(
+        "compile_pgf": py_module(
             "compile_pgf",
-            "builder/orchestrator.py",
+            "builder.orchestrator",
+            "builder/orchestrator/__main__.py",
             "Two-phase GF build orchestrator to produce AbstractWiki.pgf.",
             timeout_sec=1800,
             allow_args=True,
-            allowed_flags=("--strategy", "--langs", "--clean", "--verbose"),
+            allowed_flags=(
+                "--strategy",
+                "--langs",
+                "--clean",
+                "--verbose",
+                "--max-workers",
+                "--no-preflight",
+                "--regen-safe",
+            ),
             allow_positionals=False,
-            flags_with_value=("--strategy",),
+            flags_with_value=("--strategy", "--max-workers"),
             flags_with_multi_value=("--langs",),
         ),
         "bootstrap_tier1": py_script(

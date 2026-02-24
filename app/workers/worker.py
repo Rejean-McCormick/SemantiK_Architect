@@ -43,18 +43,132 @@ tracer = get_tracer(__name__)
 
 
 # -----------------------------
+# Path helpers
+# -----------------------------
+def _normalize_pgf_path(value: str) -> str:
+    value = (value or "").strip()
+    if not value:
+        return value
+    if value.endswith(("/", "\\")) or not value.lower().endswith(".pgf"):
+        return os.path.join(value, "AbstractWiki.pgf")
+    return value
+
+
+def _effective_pgf_path() -> str:
+    """
+    Prefer explicit env overrides (containers/tests), then validated settings.
+    Supports both PGF_PATH (preferred) and legacy AW_PGF_PATH.
+    """
+    env_path = os.getenv("PGF_PATH") or os.getenv("AW_PGF_PATH")
+    if env_path:
+        return _normalize_pgf_path(env_path)
+    return _normalize_pgf_path(getattr(settings, "PGF_PATH", "") or "")
+
+
+def _discover_iso_map_path(repo_root: Path) -> Optional[Path]:
+    candidates = [
+        repo_root / "data" / "config" / "iso_to_wiki.json",
+        repo_root / "config" / "iso_to_wiki.json",
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
+
+
+def _load_iso_to_wiki(repo_root: Path) -> Dict[str, str]:
+    """
+    Loads ISO->Wiki GF language mapping if available.
+    Normalizes to: { "en": "Eng", "fr": "Fre", ... }
+    """
+    p = _discover_iso_map_path(repo_root)
+    if not p:
+        return {}
+    try:
+        raw = json.loads(p.read_text(encoding="utf-8")) or {}
+    except Exception as e:
+        logger.warning("iso_to_wiki_load_failed", path=str(p), error=str(e))
+        return {}
+
+    out: Dict[str, str] = {}
+    for k, v in (raw or {}).items():
+        if not isinstance(k, str):
+            continue
+        key = k.lower().strip()
+        if not key:
+            continue
+
+        if isinstance(v, dict):
+            wiki = v.get("wiki")
+            if isinstance(wiki, str) and wiki.strip():
+                out[key] = wiki.strip().replace("Wiki", "")
+        elif isinstance(v, str) and v.strip():
+            out[key] = v.strip().replace("Wiki", "")
+    return out
+
+
+def _resolve_wiki_code(lang_code: str, repo_root: Path) -> str:
+    code = (lang_code or "").lower().strip()
+    iso_map = _load_iso_to_wiki(repo_root)
+    mapped = iso_map.get(code)
+    if mapped:
+        return mapped
+    # Fallback: ISO 'eng' -> 'Eng', 'xyz' -> 'Xyz'
+    return (lang_code or "").title()
+
+
+def _resolve_src_file(lang_code: str, repo_root: Path) -> Path:
+    wiki_code = _resolve_wiki_code(lang_code, repo_root)
+    # Prefer canonical generated output; fall back to legacy gf/ location.
+    candidates = [
+        repo_root / "generated" / "src" / f"Wiki{wiki_code}.gf",
+        repo_root / "gf" / f"Wiki{wiki_code}.gf",
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    # return first candidate as "expected" location for error messages
+    return candidates[0]
+
+
+def _map_build_strategy(strategy: str) -> tuple[str, bool]:
+    """
+    Returns (orchestrator_strategy, clean_flag).
+
+    Worker accepts legacy values ("fast/full/incremental") and maps them to
+    orchestrator strategies ("AUTO/HIGH_ROAD/SAFE_MODE").
+    """
+    s = (strategy or "").strip().lower()
+
+    if s in {"", "auto", "fast", "inc", "incremental"}:
+        return "AUTO", False
+    if s in {"full", "clean"}:
+        return "AUTO", True
+
+    if s in {"high", "highroad", "high-road", "high_road"}:
+        return "HIGH_ROAD", False
+    if s in {"safe", "safemode", "safe-mode", "safe_mode"}:
+        return "SAFE_MODE", False
+
+    # Pass-through for implementation-defined values (prefer uppercase)
+    return (strategy or "AUTO").strip().upper(), False
+
+
+# -----------------------------
 # Runtime: in-memory PGF cache
 # -----------------------------
 @dataclass
 class GrammarRuntime:
     """
     Holds a loaded PGF in memory (if pgf runtime is installed).
-    Also supports "zombie language" purging based on the Everything Matrix verdict.
+    Also supports "zombie language" detection based on the Everything Matrix verdict.
     """
+
     _pgf: Optional[Any] = None
     _last_mtime: float = 0.0
 
     def load(self, pgf_path: str) -> None:
+        pgf_path = _normalize_pgf_path(pgf_path)
         logger.info("runtime_loading_pgf", path=pgf_path)
 
         if not pgf:
@@ -69,18 +183,16 @@ class GrammarRuntime:
             self._last_mtime = os.path.getmtime(pgf_path)
             raw_pgf = pgf.readPGF(pgf_path)
 
-            # Purge zombie languages (linked but not runnable) using Everything Matrix
+            # Detect (but do not delete) zombie languages using Everything Matrix
             matrix_path = Path(settings.FILESYSTEM_REPO_PATH) / "data" / "indices" / "everything_matrix.json"
             if matrix_path.exists():
                 try:
                     matrix = json.loads(matrix_path.read_text(encoding="utf-8"))
-                    languages = matrix.get("languages", {})
-                    # Iterate over a list of keys to avoid modification issues during iteration
+                    languages = matrix.get("languages", {}) or {}
                     for lang_name in list(getattr(raw_pgf, "languages", {}).keys()):
-                        iso_guess = lang_name[-3:].lower()
+                        iso_guess = (lang_name[-3:] if isinstance(lang_name, str) else "").lower()
                         verdict = (languages.get(iso_guess, {}) or {}).get("verdict", {}) or {}
                         runnable = verdict.get("runnable", True)
-                        
                         if not runnable:
                             logger.warning(
                                 "runtime_zombie_language_detected",
@@ -88,11 +200,6 @@ class GrammarRuntime:
                                 iso=iso_guess,
                                 reason="matrix.verdict.runnable=False",
                             )
-                            # [FIX] REMOVED the deletion line. Newer GF bindings return a read-only 
-                            # mappingproxy which crashes on 'del'. It is harmless to keep the 
-                            # language loaded in the backend memory.
-                            # del raw_pgf.languages[lang_name] 
-
                 except Exception as e:
                     logger.error("runtime_matrix_filter_failed", error=str(e))
             else:
@@ -107,50 +214,12 @@ class GrammarRuntime:
         return self._pgf
 
     async def reload(self) -> None:
-        pgf_path = os.getenv("AW_PGF_PATH") or settings.PGF_PATH
+        pgf_path = _effective_pgf_path()
         logger.info("runtime_reloading_triggered", path=pgf_path)
         self.load(pgf_path)
 
 
 runtime = GrammarRuntime()
-
-
-# -----------------------------
-# Helpers
-# -----------------------------
-def _effective_pgf_path() -> str:
-    # Prefer env override used in tests/containers; fall back to settings.
-    return os.getenv("AW_PGF_PATH") or settings.PGF_PATH
-
-
-def _load_iso_to_wiki(repo_root: Path) -> Dict[str, Any]:
-    """
-    Loads ISO->Wiki GF language mapping if available.
-    Uses Path.exists() so tests can patch it deterministically.
-    """
-    map_path = repo_root / "data" / "config" / "iso_to_wiki.json"
-    if not map_path.exists():
-        return {}
-    try:
-        with map_path.open("r", encoding="utf-8") as f:
-            return json.load(f) or {}
-    except Exception as e:
-        logger.warning("iso_to_wiki_load_failed", path=str(map_path), error=str(e))
-        return {}
-
-
-def _resolve_wiki_code(lang_code: str, repo_root: Path) -> str:
-    iso_map = _load_iso_to_wiki(repo_root)
-    wiki = (iso_map.get(lang_code) or {}).get("wiki")
-    if isinstance(wiki, str) and wiki.strip():
-        return wiki.strip()
-    # Fallback: ISO 'eng' -> 'Eng', 'xyz' -> 'Xyz'
-    return lang_code.title()
-
-
-def _resolve_src_file(lang_code: str, repo_root: Path) -> Path:
-    wiki_code = _resolve_wiki_code(lang_code, repo_root)
-    return repo_root / "gf" / f"Wiki{wiki_code}.gf"
 
 
 # -----------------------------
@@ -167,6 +236,7 @@ async def _run_cmd(
     Run a blocking subprocess in a thread.
     Captures stdout/stderr for logging and error reporting.
     """
+
     def _runner() -> subprocess.CompletedProcess:
         return subprocess.run(
             argv,
@@ -181,6 +251,51 @@ async def _run_cmd(
     return await asyncio.to_thread(_runner)
 
 
+async def _run_indexer(repo_root: Path, *, langs: list[str]) -> None:
+    indexer = repo_root / "tools" / "everything_matrix" / "build_index.py"
+    if not indexer.exists():
+        raise RuntimeError(f"Indexer missing: {indexer}")
+
+    argv = [sys.executable, "-u", str(indexer)]
+    if langs:
+        argv += ["--langs", *langs]
+
+    proc = await _run_cmd(argv, cwd=str(repo_root))
+    if getattr(proc, "returncode", 1) != 0:
+        err = (getattr(proc, "stderr", "") or "").strip()
+        out = (getattr(proc, "stdout", "") or "").strip()
+        raise RuntimeError(f"Indexing failed:\n{err or out}")
+
+
+async def _run_orchestrator(repo_root: Path, *, langs: list[str], strategy: str, clean: bool) -> None:
+    """
+    In-process orchestrator call (no script-path dependency).
+    """
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    def _runner() -> Path:
+        from builder.orchestrator import build_pgf  # local import to honor sys.path injection
+
+        return build_pgf(
+            strategy=(strategy or "AUTO").strip().upper(),
+            langs=langs or None,
+            clean=bool(clean),
+            verbose=False,
+            max_workers=None,
+            no_preflight=False,
+            regen_safe=False,
+        )
+
+    try:
+        pgf_path = await asyncio.to_thread(_runner)
+        logger.info("orchestrator_completed", pgf_path=str(pgf_path), langs=langs, strategy=strategy, clean=clean)
+    except SystemExit as e:
+        raise RuntimeError(f"Build orchestrator failed (SystemExit code={getattr(e, 'code', None)})") from e
+    except Exception as e:
+        raise RuntimeError(f"Build orchestrator failed: {e}") from e
+
+
 # -----------------------------
 # ARQ Jobs
 # -----------------------------
@@ -188,9 +303,9 @@ async def build_language(ctx: Dict[str, Any], request: Dict[str, Any]) -> str:
     """
     Canonical job triggered by the Event Bus bridge.
 
-    Implements the *correct* build pipeline (no "single-file pgf" dead end):
+    Pipeline:
       1) Index knowledge layer: tools/everything_matrix/build_index.py
-      2) Compile/link grammar layer: gf/build_orchestrator.py (when present)
+      2) Compile/link grammar layer (in-process): builder.orchestrator.build_pgf
       3) Reload in-memory runtime if available
       4) Emit BUILD_COMPLETED / BUILD_FAILED
     """
@@ -198,56 +313,44 @@ async def build_language(ctx: Dict[str, Any], request: Dict[str, Any]) -> str:
 
     payload = BuildRequestedPayload(**request)
     lang_code = payload.lang_code
-    strategy = (payload.strategy or "fast").lower()
+    requested_strategy = (payload.strategy or "auto").strip()
+
+    orch_strategy, clean = _map_build_strategy(requested_strategy)
 
     with tracer.start_as_current_span("worker_build_language") as span:
         span.set_attribute("language.code", lang_code)
-        span.set_attribute("build.strategy", strategy)
+        span.set_attribute("build.strategy.requested", requested_strategy)
+        span.set_attribute("build.strategy.orchestrator", orch_strategy)
+        span.set_attribute("build.clean", bool(clean))
 
         try:
-            logger.info("build_job_started", lang=lang_code, strategy=strategy)
+            logger.info(
+                "build_job_started",
+                lang=lang_code,
+                strategy=requested_strategy,
+                orch_strategy=orch_strategy,
+                clean=clean,
+            )
 
-            # Emit lifecycle event
             if broker:
                 await broker.publish(
                     SystemEvent(
                         type=EventType.BUILD_STARTED,
-                        payload={"lang_code": lang_code, "strategy": strategy, "requester_id": payload.requester_id},
+                        payload={
+                            "lang_code": lang_code,
+                            "strategy": requested_strategy,
+                            "requester_id": payload.requester_id,
+                        },
                     )
                 )
 
-            # "fast" means: request exists, but do not attempt full PGF rebuild here.
-            # Full rebuild is "full".
-            if strategy == "fast":
-                logger.info("build_job_fast_noop", lang=lang_code, note="fast strategy does not rebuild PGF")
-                return f"Build fast acknowledged for {lang_code} (no PGF rebuild)."
-
             repo_root = Path(settings.FILESYSTEM_REPO_PATH)
 
-            # Step 1: Indexer (updates data/indices/everything_matrix.json etc.)
-            indexer = repo_root / "tools" / "everything_matrix" / "build_index.py"
-            if not os.path.exists(str(indexer)):
-                raise RuntimeError(f"Indexer missing: {indexer}")
+            # Step 1: Index (scoped)
+            await _run_indexer(repo_root, langs=[lang_code])
 
-            idx_proc = await _run_cmd([sys.executable, "-u", str(indexer)], cwd=str(repo_root))
-            if getattr(idx_proc, "returncode", 1) != 0:
-                err = (getattr(idx_proc, "stderr", "") or "").strip()
-                out = (getattr(idx_proc, "stdout", "") or "").strip()
-                raise RuntimeError(f"Indexing failed:\n{err or out}")
-
-            # Step 2: Builder (optional orchestrator)
-            builder = repo_root / "gf" / "build_orchestrator.py"
-            if os.path.exists(str(builder)):
-                build_proc = await _run_cmd([sys.executable, "-u", str(builder)], cwd=str(repo_root / "gf"))
-                if getattr(build_proc, "returncode", 1) != 0:
-                    stderr_tail = (getattr(build_proc, "stderr", "") or "").strip()[-4000:]
-                    stdout_tail = (getattr(build_proc, "stdout", "") or "").strip()[-4000:]
-                    raise RuntimeError(
-                        "GF build orchestrator failed.\n"
-                        f"STDERR (tail):\n{stderr_tail}\n\nSTDOUT (tail):\n{stdout_tail}"
-                    )
-            else:
-                logger.warning("gf_orchestrator_missing_fallback", path=str(builder), note="skipping orchestrator step")
+            # Step 2: Build Orchestrator (scoped, in-process)
+            await _run_orchestrator(repo_root, langs=[lang_code], strategy=orch_strategy, clean=clean)
 
             # Validate artifact
             pgf_path = _effective_pgf_path()
@@ -263,7 +366,7 @@ async def build_language(ctx: Dict[str, Any], request: Dict[str, Any]) -> str:
                 await broker.publish(
                     SystemEvent(
                         type=EventType.BUILD_COMPLETED,
-                        payload={"lang_code": lang_code, "strategy": strategy, "pgf_path": pgf_path},
+                        payload={"lang_code": lang_code, "strategy": requested_strategy, "pgf_path": pgf_path},
                     )
                 )
 
@@ -288,40 +391,20 @@ async def build_language(ctx: Dict[str, Any], request: Dict[str, Any]) -> str:
             raise
 
 
-# Back-compat job: compile a single language directly (used by tests and older callers)
+# Back-compat job: compile a single language (kept for older callers)
 async def compile_grammar(ctx: Dict[str, Any], language_code: str) -> str:
     repo_root = Path(settings.FILESYSTEM_REPO_PATH)
+
+    # Scoped incremental build (no events)
+    await _run_indexer(repo_root, langs=[language_code])
+    await _run_orchestrator(repo_root, langs=[language_code], strategy="AUTO", clean=False)
+
     pgf_path = _effective_pgf_path()
-
-    # Pre-check: indexer tool should exist (do not run it here)
-    indexer = repo_root / "tools" / "everything_matrix" / "build_index.py"
-    if not os.path.exists(str(indexer)):
-        raise RuntimeError(f"Indexer missing: {indexer}")
-
-    # Resolve source file via iso_to_wiki mapping (or fallback)
-    src_file = _resolve_src_file(language_code, repo_root)
-    if not os.path.exists(str(src_file)):
-        msg = f"Source GF file missing: {src_file}"
-        logger.warning("compile_source_missing", lang=language_code, path=str(src_file))
-        return msg
-
-    # Compile (direct GF CLI; tests patch asyncio.to_thread so this call is mocked)
-    proc = await _run_cmd(["gf", "-make", str(src_file)], cwd=str(repo_root / "gf"))
-
-    if getattr(proc, "returncode", 1) != 0:
-        err = (getattr(proc, "stderr", "") or "").strip()
-        out = (getattr(proc, "stdout", "") or "").strip()
-        raise RuntimeError(f"GF Compilation Failed:\n{err or out}")
-
-    # Validate PGF output exists
     if not os.path.exists(pgf_path):
         raise RuntimeError(f"Build completed but PGF artifact missing at: {pgf_path}")
 
-    # Reload runtime (best-effort)
     await runtime.reload()
-
-    out = (getattr(proc, "stdout", "") or "").strip()
-    return out or f"Compiled {language_code} successfully."
+    return f"Compiled {language_code} successfully."
 
 
 # -----------------------------
@@ -454,13 +537,6 @@ async def startup(ctx: Dict[str, Any]) -> None:
     ctx["bridge_task"] = asyncio.create_task(_run_bridge(ctx))
     ctx["watcher_task"] = asyncio.create_task(watch_grammar_file(ctx))
 
-    if os.getenv("PGF_PATH") and not os.getenv("AW_PGF_PATH"):
-        logger.warning(
-            "env_pgf_path_mismatch",
-            note="PGF_PATH is set but AW_PGF_PATH is not; settings.PGF_PATH may ignore PGF_PATH depending on config.py",
-            PGF_PATH=os.getenv("PGF_PATH"),
-        )
-
 
 async def shutdown(ctx: Dict[str, Any]) -> None:
     logger.info("worker_shutdown")
@@ -488,6 +564,7 @@ class WorkerSettings:
     """
     ARQ configuration.
     """
+
     redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
     queue_name = settings.REDIS_QUEUE_NAME
 

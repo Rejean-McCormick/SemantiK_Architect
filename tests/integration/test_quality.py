@@ -1,11 +1,15 @@
 # tests/integration/test_quality.py
-import pytest
+from __future__ import annotations
+
 import json
 import os
 from pathlib import Path
+
+import pytest
+
 from app.shared.config import settings
 
-# [FIX] Import the concrete adapter instead of the missing core engine
+# Import the concrete adapter (PGF-backed) used by the running system
 from app.adapters.engines.gf_wrapper import GFGrammarEngine as GrammarEngine
 
 # Mock judge to ensure tests don't crash if AI services aren't configured locally
@@ -15,6 +19,7 @@ except ImportError:
     class MockJudge:
         def evaluate_case(self, text, case):
             return {"score": 0.0, "verdict": "SKIPPED", "critique": "Judge module missing."}
+
     judge = MockJudge()
 
 
@@ -57,7 +62,6 @@ def load_gold_standard_cases():
     Loads the ground truth dataset for validation during test collection.
     Returns an empty list if file is missing (to avoid collection crashes).
     """
-    # Defensive check on settings presence
     if not hasattr(settings, "GOLD_STANDARD_PATH") or not settings.GOLD_STANDARD_PATH:
         return []
 
@@ -73,7 +77,6 @@ def load_gold_standard_cases():
         return []
 
 
-# Pre-load cases for parametrization
 TEST_CASES = load_gold_standard_cases()
 
 
@@ -82,25 +85,23 @@ def engine():
     """
     Initializes the GrammarEngine once for the whole test module.
     """
-    # Ensure PGF path is set and valid
-    pgf_path = getattr(settings, "PGF_PATH", "gf/AbstractWiki.pgf")
+    eng = GrammarEngine()
 
-    # In CI/Test environments without a build, we skip rather than fail
-    if not os.path.exists(pgf_path):
-        pytest.skip(f"PGF binary not found at {pgf_path}. Please build the grammar first.")
+    # Skip early if PGF binary isn't present where the engine resolved it.
+    if not Path(eng.pgf_path).exists():
+        pytest.skip(f"PGF binary not found at {eng.pgf_path}. Please build the grammar first.")
 
-    # [FIX] GFGrammarEngine reads settings internally; no args needed
-    return GrammarEngine()
+    return eng
 
 
 # ==============================================================================
 # QUALITY REGRESSION SUITE
 # ==============================================================================
 
-@pytest.mark.asyncio  # [FIX] Mark as async because the Engine is async
+@pytest.mark.asyncio
 @pytest.mark.skipif(
     not TEST_CASES,
-    reason=f"Gold standard file not found or empty at {getattr(settings, 'GOLD_STANDARD_PATH', 'UNKNOWN')}"
+    reason=f"Gold standard file not found or empty at {getattr(settings, 'GOLD_STANDARD_PATH', 'UNKNOWN')}",
 )
 @pytest.mark.parametrize("case", TEST_CASES, ids=lambda c: f"{c.get('lang', 'unk')}-{c.get('id', 'unk')}")
 async def test_language_quality_regression(engine, case):
@@ -117,15 +118,20 @@ async def test_language_quality_regression(engine, case):
     expected = case["expected"]
     case_id = case.get("id", "unknown")
 
-    # 1. Validation: Ensure language exists in binary
-    if engine.grammar:
-        gf_lang = f"Wiki{lang.title()}"
-        if gf_lang not in engine.grammar.languages:
-            pytest.skip(f"Language {lang} ({gf_lang}) not found in PGF binary.")
-    else:
-        pytest.skip("Grammar not loaded in engine.")
+    # 1) Ensure grammar is loaded (GFGrammarEngine loads lazily)
+    status = await engine.status()
+    if not status.get("loaded"):
+        pytest.skip(
+            "Grammar not loaded in engine. "
+            f"pgf_path={status.get('pgf_path')} error_type={status.get('error_type')} error={status.get('error')}"
+        )
 
-    # 2. Generation: Run the Engine
+    # 2) Validation: ensure language resolves to an actual concrete key in the PGF
+    resolved = engine._resolve_concrete_name(lang)  # noqa: SLF001 (test-only access)
+    if not resolved:
+        pytest.skip(f"Language '{lang}' not found in PGF binary (unable to resolve to a concrete grammar).")
+
+    # 3) Generation
     generated_text = ""
     try:
         result = await engine.generate(lang, intent)
@@ -137,20 +143,22 @@ async def test_language_quality_regression(engine, case):
 
     except Exception as e:
         pytest.fail(
-            f"Engine generation crashed.\n"
+            "Engine generation crashed.\n"
             f"  Language: {lang}\n"
-            f"  PGF:      {getattr(settings, 'PGF_PATH', 'unknown')}\n"
+            f"  Resolved: {resolved}\n"
+            f"  PGF:      {engine.pgf_path}\n"
             f"  Intent:   {intent}\n"
             f"  Error:    {str(e)}"
         )
 
     assert generated_text, (
-        f"Engine returned empty string.\n"
+        "Engine returned empty string.\n"
         f"  Language: {lang}\n"
+        f"  Resolved: {resolved}\n"
         f"  Intent:   {intent}"
     )
 
-    # 3. Evaluation: Invoke The AI Judge (sync)
+    # 4) Evaluation: Invoke The AI Judge (sync)
     report = judge.evaluate_case(generated_text, case)
 
     # If Judge is unavailable/misconfigured, SKIP (do not fail the grammar pipeline)
@@ -162,7 +170,7 @@ async def test_language_quality_regression(engine, case):
     verdict = report.get("verdict", "FAIL")
     critique = report.get("critique", "No critique provided.")
 
-    # 4. Reporting (Visible with pytest -s)
+    # 5) Reporting (Visible with pytest -s)
     print(f"\n[{verdict}] {lang} (ID: {case_id}) | Score: {score}")
     if score < 0.8:
         print(f"   Intent:   {intent}")
@@ -170,10 +178,10 @@ async def test_language_quality_regression(engine, case):
         print(f"   Actual:   {generated_text}")
         print(f"   Critique: {critique}")
 
-    # 5. Assertion
     failure_msg = (
         f"\nQuality Failure in {lang} (ID: {case_id}):\n"
         f"---------------------------------------------------\n"
+        f"Language: {lang} (resolved={resolved})\n"
         f"Intent:   {intent}\n"
         f"Expected: {expected}\n"
         f"Actual:   {generated_text}\n"
@@ -191,6 +199,5 @@ def test_judge_connectivity():
     if not getattr(settings, "GOOGLE_API_KEY", None):
         pytest.skip("AI testing skipped: GOOGLE_API_KEY missing.")
 
-    # If judge client isn't initialized, skip (do not fail suite on local misconfig)
     if not hasattr(judge, "_client") or judge._client is None:
         pytest.skip("AI testing skipped: Judge client not initialized (likely invalid/missing key).")

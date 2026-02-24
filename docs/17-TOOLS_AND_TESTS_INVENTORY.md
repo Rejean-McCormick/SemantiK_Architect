@@ -30,13 +30,14 @@ Primary entry points for managing the overall system lifecycle.
 
 Scripts that turn source grammars into the runtime PGF.
 
-| Tool             | Location                  | Purpose                                                                                                                                    | Key Arguments                                                                                                             |
-| ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| **Orchestrator** | `builder/orchestrator.py` | Runs the two-phase build (Verify → Link). Compiles `.gfo` and links into `AbstractWiki.pgf`. Triggers factory paths for missing languages. | Config-driven (matrix/index); CLI supports `--strategy`, `--langs`, `--clean`, `--verbose` when invoked via tools runner. |
-| **Compiler**     | `builder/compiler.py`     | Low-level wrapper around `gf`. Manages include paths and environment isolation.                                                            | *(Internal module)*                                                                                                       |
-| **Strategist**   | `builder/strategist.py`   | Chooses build strategy (GOLD/SILVER/BRONZE/IRON) and writes build plan.                                                                    | *(Internal module)*                                                                                                       |
-| **Forge**        | `builder/forge.py`        | Writes `Wiki*.gf` concrete files according to build plan.                                                                                  | *(Internal module)*                                                                                                       |
-| **Healer**       | `builder/healer.py`       | Reads build failures and dispatches AI repair for broken grammars.                                                                         | *(Internal module)*                                                                                                       |
+| Tool                    | Location                  | Purpose                                                                                                                                            | Key Arguments                                                                                                                                                                   |
+| ----------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Orchestrator**        | `builder/orchestrator/`   | Canonical two-phase build (Verify → Link). Compiles `.gfo` and links into `AbstractWiki.pgf`. Supports SAFE_MODE generation for missing languages. | CLI: `python -m builder.orchestrator` supports `--strategy`, `--langs`, `--clean`, `--verbose`, `--max-workers`, `--no-preflight`, `--regen-safe` (and matrix-driven defaults). |
+| **Orchestrator (Shim)** | `builder/orchestrator.py` | Backwards-compatible wrapper that delegates to the package entrypoint (kept for legacy callers/tools).                                             | *(Same as package CLI; delegates to `python -m builder.orchestrator`)*                                                                                                          |
+| **Compiler**            | `builder/compiler.py`     | Low-level wrapper around `gf`. Manages include paths and environment isolation.                                                                    | *(Internal module)*                                                                                                                                                             |
+| **Strategist**          | `builder/strategist.py`   | Chooses build strategy (GOLD/SILVER/BRONZE/IRON) and writes build plan.                                                                            | *(Internal module)*                                                                                                                                                             |
+| **Forge**               | `builder/forge.py`        | Writes `Wiki*.gf` concrete files according to build plan.                                                                                          | *(Internal module)*                                                                                                                                                             |
+| **Healer**              | `builder/healer.py`       | Reads build failures and dispatches AI repair for broken grammars.                                                                                 | *(Internal module)*                                                                                                                                                             |
 
 ---
 
@@ -58,15 +59,15 @@ System intelligence layer that scans repo state and language readiness.
 
 Tools used to keep the repo sane and the system healthy.
 
-> **Note (GUI Tools):** The Tools Dashboard runs via a strict backend allowlist. The “Key Arguments” below reflect the allowlisted argv flags for GUI execution.  
+> **Note (GUI Tools):** The Tools Dashboard runs via a strict backend allowlist. The “Key Arguments” below reflect the allowlisted argv flags for GUI execution.
 > **Security:** Do **not** pass secrets via argv. Tool args can be echoed into logs/telemetry/UI/debug bundles. For API-mode checks, provide the API key via environment/secret injection (recommended: `ARCHITECT_API_KEY`; fallbacks: `AWA_API_KEY`, `API_SECRET`, `API_KEY`).
 
-| Tool                 | Location                    | Purpose                                                                    | Key Arguments                                                                                                                             |
-| -------------------- | --------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **Language Health**  | `tools/language_health.py`  | Deep scan utility for the language pipeline.                               | `--mode`, `--fast`, `--parallel`, `--api-url`, `--timeout`, `--limit`, `--langs …`, `--no-disable-script`, `--verbose`, `--json`         |
-| **Diagnostic Audit** | `tools/diagnostic_audit.py` | Forensics audit for stale artifacts and inconsistent outputs.              | `--verbose`, `--json`                                                                                                                     |
-| **Root Cleanup**     | `tools/cleanup_root.py`     | Moves loose artifacts into expected folders and cleans known junk outputs. | `--dry-run`, `--verbose`, `--json`                                                                                                        |
-| **Bootstrap Tier 1** | `tools/bootstrap_tier1.py`  | Scaffolds Tier 1 wrappers / bridge files for selected languages.           | `--langs …`, `--force`, `--dry-run`, `--verbose`                                                                                          |
+| Tool                 | Location                    | Purpose                                                                    | Key Arguments                                                                                                                    |
+| -------------------- | --------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Language Health**  | `tools/language_health.py`  | Deep scan utility for the language pipeline.                               | `--mode`, `--fast`, `--parallel`, `--api-url`, `--timeout`, `--limit`, `--langs …`, `--no-disable-script`, `--verbose`, `--json` |
+| **Diagnostic Audit** | `tools/diagnostic_audit.py` | Forensics audit for stale artifacts and inconsistent outputs.              | `--verbose`, `--json`                                                                                                            |
+| **Root Cleanup**     | `tools/cleanup_root.py`     | Moves loose artifacts into expected folders and cleans known junk outputs. | `--dry-run`, `--verbose`, `--json`                                                                                               |
+| **Bootstrap Tier 1** | `tools/bootstrap_tier1.py`  | Scaffolds Tier 1 wrappers / bridge files for selected languages.           | `--langs …`, `--force`, `--dry-run`, `--verbose`                                                                                 |
 
 ---
 
@@ -89,17 +90,17 @@ Lexicon mining/harvesting and related vocabulary maintenance.
 
 QA tools that validate runtime output, lexicon integrity, and regression coverage.
 
-| Tool                                  | Location                                        | Purpose                                                                      | Key Arguments                                                                              |
-| ------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| **Universal Test Runner**             | `tools/qa/universal_test_runner.py`             | Runs CSV-based suites and emits a report.                                    | `--suite`, `--in`, `--out`, `--langs …`, `--limit`, `--verbose`, `--fail-fast`, `--strict` |
-| **Bio Evaluator**                     | `tools/qa/eval_bios.py`                         | Compares generated biographies against Wikidata facts (QA harness).          | `--langs …`, `--limit`, `--out`, `--verbose`                                               |
-| **Lexicon Coverage Report**           | `tools/qa/lexicon_coverage_report.py`           | Coverage report for intended vs implemented lexicon and errors.              | `--langs …`, `--out`, `--format`, `--verbose`, `--fail-on-errors`                          |
-| **Ambiguity Detector (AI)**           | `tools/qa/ambiguity_detector.py`                | Uses AI to generate ambiguous sentences and checks for multiple parse trees. | `--lang`, `--sentence`, `--topic`, `--json-out`, `--verbose` *(requires AI enabled)*       |
-| **Batch Test Generator**              | `tools/qa/batch_test_generator.py`              | Generates large regression datasets (CSV) for QA.                            | `--langs …`, `--out`, `--limit`, `--seed`, `--verbose`                                     |
-| **Test Suite Generator**              | `tools/qa/test_suite_generator.py`              | Generates empty CSV templates for manual fill-in.                            | `--langs …`, `--out`, `--verbose`                                                          |
-| **Lexicon Regression Test Generator** | `tools/qa/generate_lexicon_regression_tests.py` | Builds regression tests from lexicon inventory for CI.                       | `--langs …`, `--out`, `--limit`, `--verbose`, `--lexicon-dir`                              |
-| **Profiler**                          | `tools/health/profiler.py`                      | Benchmarks Grammar Engine performance.                                       | `--lang`, `--iterations`, `--update-baseline`, `--threshold`, `--verbose`                  |
-| **AST Visualizer**                    | `tools/debug/visualize_ast.py`                  | Generates JSON AST from sentence/intent or explicit AST.                     | `--lang`, `--sentence`, `--ast`, `--pgf`                                                   |
+| Tool                                  | Location                                        | Purpose                                                                         | Key Arguments                                                                              |
+| ------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Universal Test Runner**             | `tools/qa/universal_test_runner.py`             | Runs CSV-based suites and emits a report.                                       | `--suite`, `--in`, `--out`, `--langs …`, `--limit`, `--verbose`, `--fail-fast`, `--strict` |
+| **Bio Evaluator**                     | `tools/qa/eval_bios.py`                         | Compares generated biographies against Wikidata facts (QA harness).             | `--langs …`, `--limit`, `--out`, `--verbose`                                               |
+| **Lexicon Coverage Report**           | `tools/qa/lexicon_coverage_report.py`           | Coverage report for intended vs implemented lexicon and errors.                 | `--langs …`, `--out`, `--format`, `--verbose`, `--fail-on-errors`                          |
+| **Ambiguity Detector**                | `tools/qa/ambiguity_detector.py`                | Generates/uses curated ambiguous sentences and checks for multiple parse trees. | `--lang`, `--sentence`, `--topic`, `--json-out`, `--verbose`                               |
+| **Batch Test Generator**              | `tools/qa/batch_test_generator.py`              | Generates large regression datasets (CSV) for QA.                               | `--langs …`, `--out`, `--limit`, `--seed`, `--verbose`                                     |
+| **Test Suite Generator**              | `tools/qa/test_suite_generator.py`              | Generates empty CSV templates for manual fill-in.                               | `--langs …`, `--out`, `--verbose`                                                          |
+| **Lexicon Regression Test Generator** | `tools/qa/generate_lexicon_regression_tests.py` | Builds regression tests from lexicon inventory for CI.                          | `--langs …`, `--out`, `--limit`, `--verbose`, `--lexicon-dir`                              |
+| **Profiler**                          | `tools/health/profiler.py`                      | Benchmarks Grammar Engine performance.                                          | `--lang`, `--iterations`, `--update-baseline`, `--threshold`, `--verbose`                  |
+| **AST Visualizer**                    | `tools/debug/visualize_ast.py`                  | Generates JSON AST from sentence/intent or explicit AST.                        | `--lang`, `--sentence`, `--ast`, `--pgf`                                                   |
 
 ---
 
@@ -146,12 +147,13 @@ Automated regression harness. Run with `pytest <path>`.
 
 The GUI runs tools through a strict **backend allowlist registry** (no arbitrary execution).
 
-| Endpoint                    | Purpose                                                                                                                                                                                                                                  |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Endpoint                     | Purpose                                                                                                                                                                                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET /api/v1/tools/registry` | Returns tool metadata (`tool_id`, description, timeout, availability, AI gating).                                                                                                                                                        |
 | `POST /api/v1/tools/run`     | Runs a tool by `tool_id` plus argv-style args and optional dry-run mode. Returns a **stable response envelope** containing `trace_id`, command, stdout/stderr, truncation info, accepted/rejected args, lifecycle events, and exit code. |
 
 **Request shape (high-level):**
+
 * `tool_id`: string
 * `args`: string[] *(argv-style)*
 * `dry_run`: boolean *(optional; preferred for GUI-level dry-run switching)*

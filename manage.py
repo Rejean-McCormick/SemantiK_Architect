@@ -49,7 +49,6 @@ def _python_exe() -> str:
 
 PYTHON = _python_exe()
 
-GF_BUILDER = ROOT_DIR / "builder" / "orchestrator.py"
 INDEXER = ROOT_DIR / "tools" / "everything_matrix" / "build_index.py"
 
 # Alignment entrypoints
@@ -142,7 +141,6 @@ def _safe_symlink(link_path: Path, target_path: Path) -> bool:
     """
     try:
         if link_path.is_symlink():
-            # If symlink exists but points elsewhere, replace it.
             try:
                 if link_path.resolve() != target_path.resolve():
                     link_path.unlink()
@@ -152,7 +150,6 @@ def _safe_symlink(link_path: Path, target_path: Path) -> bool:
                 link_path.unlink()
 
         if link_path.exists():
-            # Existing real directory/file: do not pretend it's unified.
             return False
 
         link_path.parent.mkdir(parents=True, exist_ok=True)
@@ -207,7 +204,6 @@ def reconcile_generated_dirs(verbose: bool = False) -> None:
     LEGACY_GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     CANON_GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Best case: generated -> gf/generated
     linked = _safe_symlink(CANON_GENERATED_ROOT, LEGACY_GENERATED_ROOT)
 
     copied_l2c = 0
@@ -307,12 +303,9 @@ def _langs_mode(help_text: str) -> Literal["multi", "single"]:
     for line in (help_text or "").splitlines():
         if "--langs" not in line:
             continue
-        # Common argparse formatting for nargs="*": [LANGS ...]
         if "[" in line and "..." in line:
             return "multi"
-        # Some tools show "--langs LANGS" (single)
         return "single"
-    # Default to multi (most robust for modern scripts)
     return "multi"
 
 
@@ -344,7 +337,6 @@ def check_env() -> None:
         if hint:
             log(f"       {hint}", Colors.WARNING)
 
-        # WSL: docker.exe works even when /var/run/docker.sock isn't available
         if is_wsl():
             alt = _try_docker_cmd("docker.exe")
             if alt is not None:
@@ -366,12 +358,19 @@ def check_env() -> None:
     except Exception as e:
         log(f"    ❌ Redis check failed: {e}", Colors.FAIL)
 
-    # 3) GF Binary
+    # 3) GF Binary (prefer orchestrator-resolved GF_BIN if available)
+    gf_exe = "gf"
     try:
-        run_cmd(["gf", "--version"], capture=True, check=True)
+        from builder.orchestrator import config as orch_config  # type: ignore
+        gf_exe = orch_config.GF_BIN  # type: ignore[attr-defined]
+    except Exception:
+        gf_exe = "gf"
+
+    try:
+        run_cmd([gf_exe, "--version"], capture=True, check=True)
         log("    ✅ GF compiler found.", Colors.GREEN)
     except Exception:
-        log("    ❌ 'gf' binary not found in PATH.", Colors.FAIL)
+        log("    ❌ 'gf' binary not found/working.", Colors.FAIL)
         sys.exit(1)
 
 
@@ -383,13 +382,13 @@ def clean_artifacts() -> None:
 
     targets: list[Path] = []
 
-    # Zombie language folders in BOTH possible generated locations
     for base in (CANON_GENERATED_DIR, LEGACY_GENERATED_DIR):
         targets.extend([base / "bul", base / "pol"])
 
     targets.extend([
         BUILD_LOGS,
         ROOT_DIR / "gf" / "AbstractWiki.gfo",
+        ROOT_DIR / "gf" / "AbstractWiki.pgf",
     ])
 
     for target in targets:
@@ -417,8 +416,7 @@ def align_system(
     """
     Aligns GF/RGL and generates Tier-1 bridge/app grammars.
 
-    Key: this wrapper probes align_system.py --help so we DON'T pass flags it doesn't support
-    (prevents the exact '--tier 1' / '--langs' parsing failures you hit earlier).
+    Key: this wrapper probes align_system.py --help so we DON'T pass flags it doesn't support.
     """
     reconcile_generated_dirs(verbose=True)
     log("\n🧭 Aligning GF/RGL System", Colors.HEADER)
@@ -433,20 +431,16 @@ def align_system(
 
     help_text = _align_help(entry)
 
-    # Prefer ref; fall back to commit; fall back to DEFAULT_RGL_REF (ref-first contract)
     chosen_ref = ref or commit or DEFAULT_RGL_REF
 
     cmd: list[str] = entry[:]
 
-    # Support both styles: --ref or --commit
     if chosen_ref:
         if _help_supports(help_text, "--ref"):
             cmd += ["--ref", chosen_ref]
         elif _help_supports(help_text, "--commit"):
             cmd += ["--commit", chosen_ref]
-        # else: tool may be hardcoded; don't pass anything
 
-    # Langs: handle nargs vs single-string
     if langs and _help_supports(help_text, "--langs"):
         mode = _langs_mode(help_text)
         if mode == "multi":
@@ -454,7 +448,6 @@ def align_system(
         else:
             cmd += ["--langs", ",".join(langs)]
 
-    # Optional flags (only if supported)
     if _help_supports(help_text, "--tier"):
         cmd += ["--tier", str(int(tier))]
 
@@ -464,7 +457,6 @@ def align_system(
     if no_time_travel and _help_supports(help_text, "--no-time-travel"):
         cmd += ["--no-time-travel"]
 
-    # Run (capture so we can show a real error tail instead of "Alignment failed.")
     proc = run_cmd(cmd, cwd=ROOT_DIR, capture=True, check=False)
     if proc.stdout:
         print(proc.stdout, end="")
@@ -473,7 +465,6 @@ def align_system(
 
     if proc.returncode != 0:
         log("    ❌ Alignment failed.", Colors.FAIL)
-        # Helpful tail (often contains: tag list / missing ref / usage)
         _print_tail("stderr", proc.stderr or "", n=60)
         sys.exit(proc.returncode)
 
@@ -495,7 +486,6 @@ def build_system(
         clean_artifacts()
 
     if align:
-        # Alignment should be safe by default (no overwrite) but still pins RGL + ensures required files exist.
         align_system(langs=langs, tier=1, force=False, no_time_travel=False, ref=rgl_ref)
 
     log("\n[2/5] 🧠 Indexing Knowledge Layer", Colors.HEADER)
@@ -507,18 +497,33 @@ def build_system(
         sys.exit(e.returncode)
 
     log("\n[3/5] 🏗️  Compiling Grammar Layer", Colors.HEADER)
-    cmd_build = [PYTHON, str(GF_BUILDER), "--strategy", strategy]
-    if langs:
-        cmd_build += ["--langs", *langs]
-    if parallel is not None:
-        cmd_build += ["--max-workers", str(int(parallel))]
 
     try:
-        run_cmd(cmd_build, cwd=ROOT_DIR / "gf", check=True)
-    except subprocess.CalledProcessError as e:
-        log("❌ Compilation Failed.", Colors.FAIL)
-        _print_tail("stderr", e.stderr or "", n=80)
-        sys.exit(e.returncode)
+        from builder.orchestrator import build_pgf  # type: ignore
+    except Exception:
+        build_pgf = None  # type: ignore[assignment]
+
+    if build_pgf is None:
+        log("❌ Orchestrator import failed: builder.orchestrator.build_pgf not available.", Colors.FAIL)
+        sys.exit(1)
+
+    try:
+        pgf_path = build_pgf(
+            strategy=strategy,
+            langs=langs,
+            clean=False,          # manage.py already cleaned if requested
+            verbose=False,
+            max_workers=parallel,
+            no_preflight=False,
+            regen_safe=False,
+        )
+        log(f"    ✅ PGF built: {pgf_path}", Colors.GREEN)
+    except SystemExit as e:
+        code = int(getattr(e, "code", 1) or 1)
+        sys.exit(code)
+    except Exception as e:
+        log(f"❌ Compilation Failed: {e}", Colors.FAIL)
+        sys.exit(1)
 
 
 def kill_stale_processes() -> None:
@@ -541,7 +546,6 @@ def start_services() -> None:
     api_cmd = f"cd {ROOT_DIR} && {PYTHON} -m uvicorn app.adapters.api.main:create_app --factory --host 0.0.0.0 --port 8000 --reload"
     worker_cmd = f"cd {ROOT_DIR} && {PYTHON} -m arq app.workers.worker.WorkerSettings --watch app"
 
-    # Native Windows: don't attempt WSL window spawning.
     if IS_WINDOWS and not is_wsl():
         log("    🪟 Native Windows Detected (no auto-spawn).", Colors.BLUE)
         _print_manual_commands(api_cmd, worker_cmd)
@@ -617,7 +621,6 @@ def doctor() -> None:
         log("    ❌ gf-rgl/ folder missing! Run setup.", Colors.FAIL)
     else:
         log("    ✅ gf-rgl/ found.", Colors.GREEN)
-        # Best-effort show current HEAD (doesn't fail doctor if git isn't present)
         try:
             p = run_cmd(["git", "-C", str(ROOT_DIR / "gf-rgl"), "rev-parse", "--short", "HEAD"], capture=True, check=False)
             head = (p.stdout or "").strip()
@@ -632,7 +635,6 @@ def doctor() -> None:
     else:
         log("    ✅ config.py found.", Colors.GREEN)
 
-    # Wiki*.gf should live under gf/, NOT under generated roots.
     stray_wiki = []
     for base in (CANON_GENERATED_DIR, LEGACY_GENERATED_DIR):
         if base.exists():
@@ -713,7 +715,6 @@ def main() -> None:
     if args.command == "start":
         check_env()
         kill_stale_processes()
-        # IMPORTANT: start aligns by default (orchestrator enforces alignment)
         build_system(clean=False, parallel=None, langs=None, strategy="AUTO", align=True, rgl_ref=None)
         start_services()
 

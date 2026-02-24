@@ -113,15 +113,33 @@ def qa_registry() -> Dict[str, ToolSpec]:
             flags_with_value=("--out", "--format"),
             flags_with_multi_value=("--langs",),
         ),
+
+        # UPDATED: universal_test_runner flags now match tools/qa/universal_test_runner.py
         "universal_test_runner": py_script(
             "universal_test_runner",
             "tools/qa/universal_test_runner.py",
             "Advanced CSV test runner (supports more complex constructions).",
             timeout_sec=1800,
             allow_args=True,
-            allowed_flags=("--suite", "--in", "--out", "--langs", "--limit", "--verbose", "--fail-fast", "--strict"),
+            allowed_flags=(
+                "--dataset-dir",
+                "--pattern",
+                "--langs",
+                "--limit",
+                "--fail-fast",
+                "--strict",
+                "--print-failures",
+                "--json-report",
+                "--verbose",
+            ),
             allow_positionals=False,
-            flags_with_value=("--suite", "--in", "--out", "--limit"),
+            flags_with_value=(
+                "--dataset-dir",
+                "--pattern",
+                "--limit",
+                "--print-failures",
+                "--json-report",
+            ),
             flags_with_multi_value=("--langs",),
         ),
         "test_runner": py_script(
@@ -130,11 +148,28 @@ def qa_registry() -> Dict[str, ToolSpec]:
             "Legacy alias for universal_test_runner.",
             timeout_sec=1800,
             allow_args=True,
-            allowed_flags=("--suite", "--in", "--out", "--langs", "--limit", "--verbose", "--fail-fast", "--strict"),
+            allowed_flags=(
+                "--dataset-dir",
+                "--pattern",
+                "--langs",
+                "--limit",
+                "--fail-fast",
+                "--strict",
+                "--print-failures",
+                "--json-report",
+                "--verbose",
+            ),
             allow_positionals=False,
-            flags_with_value=("--suite", "--in", "--out", "--limit"),
+            flags_with_value=(
+                "--dataset-dir",
+                "--pattern",
+                "--limit",
+                "--print-failures",
+                "--json-report",
+            ),
             flags_with_multi_value=("--langs",),
         ),
+
         "batch_test_generator": py_script(
             "batch_test_generator",
             "tools/qa/batch_test_generator.py",
@@ -168,6 +203,7 @@ def qa_registry() -> Dict[str, ToolSpec]:
             flags_with_value=("--out", "--limit", "--lexicon-dir"),
             flags_with_multi_value=("--langs",),
         ),
+
         # --- AI SERVICES (gated) ---
         "seed_lexicon": py_script(
             "seed_lexicon",
@@ -192,6 +228,7 @@ def qa_registry() -> Dict[str, ToolSpec]:
             requires_ai_enabled=True,
             flags_with_multi_value=("--langs",),
         ),
+
         # --- TESTS (Inventory) ---
         "test_api_smoke": pytest_file(
             "test_api_smoke",

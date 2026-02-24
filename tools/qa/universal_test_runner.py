@@ -34,7 +34,7 @@ import asyncio
 import threading
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Callable, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, Callable, TypeVar, Coroutine
 
 T = TypeVar("T")
 
@@ -99,21 +99,36 @@ class _AsyncLoopThread:
             self._loop = loop
             self._ready.set()
             loop.run_forever()
+
             # graceful shutdown
-            pending = asyncio.all_tasks(loop=loop)
+            try:
+                pending = asyncio.all_tasks(loop)
+            except Exception:
+                pending = set()
+
             for task in pending:
                 task.cancel()
+
+            if pending:
+                try:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                except Exception:
+                    pass
+
             try:
-                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                loop.close()
             except Exception:
                 pass
-            loop.close()
 
-        self._thread = threading.Thread(target=_thread_main, name="universal_test_runner_loop", daemon=True)
+        self._thread = threading.Thread(
+            target=_thread_main,
+            name="universal_test_runner_loop",
+            daemon=True,
+        )
         self._thread.start()
         self._ready.wait(timeout=5)
 
-    def run(self, coro_factory: Callable[[], "asyncio.Future[T] | asyncio.coroutines.Coroutine[Any, Any, T]"]) -> T:
+    def run(self, coro_factory: Callable[[], Coroutine[Any, Any, T]]) -> T:
         if not self._loop:
             raise RuntimeError("Async loop thread failed to initialize.")
         fut = asyncio.run_coroutine_threadsafe(coro_factory(), self._loop)
@@ -251,12 +266,13 @@ class _Renderer:
             self._engine = GFGrammarEngine()
 
             # Force lazy-load now (this is the key “proper” fix).
-            self._ready = bool(self._loop.run(lambda: self._engine.health_check()))
+            self._ready = bool(self._loop.run(lambda: self._engine.health_check()))  # type: ignore[union-attr]
 
             if self._ready:
-                self._supported_languages = list(self._loop.run(lambda: self._engine.get_supported_languages()))
+                self._supported_languages = list(
+                    self._loop.run(lambda: self._engine.get_supported_languages())  # type: ignore[union-attr]
+                )
             else:
-                # Diagnostics: PGF path, existence, and whether pgf bindings imported.
                 pgf_path = getattr(self._engine, "pgf_path", None)
                 pgf_exists = bool(pgf_path and Path(str(pgf_path)).exists())
                 pgf_bindings_ok = getattr(gf_mod, "pgf", None) is not None
@@ -272,7 +288,11 @@ class _Renderer:
         except Exception as e:
             self._engine = None
             self._ready = False
-            self._diag = {"error": str(e), "cwd": os.getcwd(), "project_root": str(PROJECT_ROOT) if PROJECT_ROOT else None}
+            self._diag = {
+                "error": str(e),
+                "cwd": os.getcwd(),
+                "project_root": str(PROJECT_ROOT) if PROJECT_ROOT else None,
+            }
 
     def close(self) -> None:
         self._loop.close()
@@ -459,7 +479,6 @@ def run_universal_tests(
                 logger.info("---- SUPPORTED LANGUAGES (sample) ----")
                 for x in diag.get("supported_languages_sample", []):
                     logger.info(f"- {x}")
-            # Exit success only if engine is ready
             return 0 if renderer.available() else 2
 
         if not dataset_dir.exists():
@@ -500,7 +519,6 @@ def run_universal_tests(
             logger.info("----------------------------------------")
 
             file_pass = file_fail = file_skip = file_crash = 0
-            file_active = 0
 
             with fpath.open("r", encoding="utf-8", newline="") as fh:
                 reader = csv.DictReader(fh)
@@ -521,7 +539,6 @@ def run_universal_tests(
                             row, fieldnames=fieldnames, lang_code=lang, lexicon=lexicon
                         )
 
-                        # Authoring workflow: skip rows missing expected, unless strict
                         if not expected:
                             if strict:
                                 file_fail += 1
@@ -610,7 +627,6 @@ def run_universal_tests(
                                 )
                             continue
 
-                        file_active += 1
                         total_active += 1
 
                         actual = renderer.render_bio(

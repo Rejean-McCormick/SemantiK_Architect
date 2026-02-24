@@ -2,6 +2,7 @@
 import asyncio
 import json
 import os
+import re
 import threading
 import structlog
 from pathlib import Path
@@ -29,7 +30,6 @@ class GFGrammarEngine:
       This fixes tools like universal_test_runner which check engine.grammar is not None.
     """
 
-    # Accept common external frame types that represent “person bio” payloads
     _BIO_FRAME_TYPES = {
         "bio",
         "biography",
@@ -41,8 +41,6 @@ class GFGrammarEngine:
     }
 
     def __init__(self, lib_path: str | None = None):
-        # NOTE: lib_path kept for compatibility; PGF path is controlled by env/settings.
-        # IMPORTANT: read os.environ first so CLI/tool overrides (e.g. universal_test_runner --pgf) work reliably.
         configured = (
             os.getenv("PGF_PATH")
             or getattr(settings, "PGF_PATH", None)
@@ -51,39 +49,36 @@ class GFGrammarEngine:
         )
         self.pgf_path: str = str(self._resolve_path(configured))
 
-        # Internal storage (do NOT access directly outside this file)
         self._grammar: Optional[Any] = None
 
+        # Inventory (from rgl_inventory.json)
         self.inventory: Dict[str, Any] = {}
-        self.iso_map: Dict[str, str] = {}
 
-        # ✅ Diagnostics (so callers can explain WHY it's unavailable)
+        # Language normalization maps (from iso_to_wiki.json + inventory fallback)
+        # - wiki_to_iso2: maps aliases (wiki/iso3/wikixxx/etc) -> iso2
+        # - iso2_to_wiki: maps iso2 -> wiki suffix (Fre/Ger/Eng/etc)
+        # - iso2_to_iso3: maps iso2 -> iso3 (fra/deu/etc) when known
+        self.wiki_to_iso2: Dict[str, str] = {}
+        self.iso2_to_wiki: Dict[str, str] = {}
+        self.iso2_to_iso3: Dict[str, str] = {}
+
+        # Diagnostics
         self.last_load_error: Optional[str] = None
         self.last_load_error_type: Optional[str] = None  # "pgf_missing" | "pgf_file_missing" | "pgf_read_failed"
 
-        # Concurrency controls:
-        # - async lock prevents concurrent loads in event loop
-        # - thread lock prevents concurrent loads across threads/process tool runners
         self._async_load_lock: asyncio.Lock = asyncio.Lock()
         self._thread_load_lock: threading.Lock = threading.Lock()
 
         self._load_inventory()
         self._load_iso_config()
-        # DEFERRED: load happens lazily. Sync tools will load on first .grammar access.
+        self._derive_wiki_from_inventory()
 
     # ----------------------------
     # Path helpers
     # ----------------------------
     def _resolve_path(self, p: str | Path) -> Path:
-        """
-        Resolve PGF path robustly for:
-        - API server (cwd may vary)
-        - GUI/tool runner subprocess (cwd may vary)
-        - CLI overrides via env (may pass a directory)
-        """
         path = Path(p)
 
-        # If a directory is provided, assume AbstractWiki.pgf inside it.
         if path.exists() and path.is_dir():
             path = path / "AbstractWiki.pgf"
 
@@ -94,21 +89,14 @@ class GFGrammarEngine:
         if base:
             return (Path(base) / path).resolve()
 
-        # Fallback: project root (app/.. -> repo root)
         project_root = Path(__file__).resolve().parents[3]
         return (project_root / path).resolve()
 
     # ----------------------------
-    # Grammar access (the key fix)
+    # Grammar access (sync tools fix)
     # ----------------------------
     @property
     def grammar(self) -> Optional[Any]:
-        """
-        Returns the loaded grammar.
-
-        - In sync contexts (no running event loop): auto-loads on first access.
-        - In async contexts: never blocks; returns None until async load is done.
-        """
         if self._grammar is not None:
             return self._grammar
 
@@ -117,7 +105,6 @@ class GFGrammarEngine:
             asyncio.get_running_loop()
             return None
         except RuntimeError:
-            # No running loop => safe to load synchronously (tools/CLI)
             self._load_grammar_sync()
             return self._grammar
 
@@ -151,6 +138,17 @@ class GFGrammarEngine:
             self.inventory = {}
 
     def _load_iso_config(self) -> None:
+        """
+        Loads config/iso_to_wiki.json (or data/config/iso_to_wiki.json) and builds:
+          - wiki_to_iso2
+          - iso2_to_wiki
+          - iso2_to_iso3
+        This matches how tools/language_health/norm.py expects to normalize codes.
+        """
+        self.wiki_to_iso2 = {}
+        self.iso2_to_wiki = {}
+        self.iso2_to_iso3 = {}
+
         try:
             candidates: list[Path] = []
             if settings and getattr(settings, "FILESYSTEM_REPO_PATH", None):
@@ -169,45 +167,136 @@ class GFGrammarEngine:
                     break
 
             if not config_path:
-                self.iso_map = {}
                 return
 
             with config_path.open("r", encoding="utf-8") as f:
-                raw_data = json.load(f)
+                raw = json.load(f)
 
-            # Normalize to: iso(lower) -> wiki suffix (e.g., "Eng", "Ger", "Fra", "Deu")
-            iso_map: Dict[str, str] = {}
-            for code, value in (raw_data or {}).items():
-                if not isinstance(code, str):
+            if not isinstance(raw, dict):
+                return
+
+            def _strip_wiki_prefix(s: str) -> str:
+                t = (s or "").strip()
+                if t.casefold().startswith("wiki") and len(t) > 4:
+                    return t[4:]
+                return t
+
+            # Accept both:
+            #  - iso2 -> {wiki: "Fre", iso3: "fra", ...}
+            #  - alias (fre/fra/wikiFre) -> iso2
+            for k, v in raw.items():
+                if not isinstance(k, str):
                     continue
-                key = code.lower().strip()
-                if not key:
+                kk = k.strip().casefold()
+                if not kk:
                     continue
 
-                if isinstance(value, dict):
-                    suffix = value.get("wiki")
-                    if isinstance(suffix, str) and suffix.strip():
-                        iso_map[key] = suffix.strip().replace("Wiki", "")
-                elif isinstance(value, str) and value.strip():
-                    iso_map[key] = value.strip().replace("Wiki", "")
+                if isinstance(v, dict):
+                    iso2 = v.get("iso2")
+                    if not (isinstance(iso2, str) and len(iso2.strip()) == 2):
+                        # if the key itself is iso2, accept it
+                        if len(kk) == 2 and kk.isalpha():
+                            iso2 = kk
+                        else:
+                            iso2 = None
+                    else:
+                        iso2 = iso2.strip().casefold()
 
-            self.iso_map = iso_map
+                    wiki = v.get("wiki")
+                    wiki_code = None
+                    if isinstance(wiki, str) and wiki.strip():
+                        wiki_code = _strip_wiki_prefix(wiki.strip())
+
+                    iso3 = v.get("iso3") or v.get("iso_639_3") or v.get("iso639_3")
+                    iso3_code = None
+                    if isinstance(iso3, str) and iso3.strip():
+                        iso3c = iso3.strip().casefold()
+                        if len(iso3c) == 3 and iso3c.isalpha():
+                            iso3_code = iso3c
+
+                    if iso2 and len(iso2) == 2:
+                        # iso2 always maps to itself
+                        self.wiki_to_iso2[iso2] = iso2
+                        self.wiki_to_iso2[f"wiki{iso2}"] = iso2
+
+                        if wiki_code:
+                            self.iso2_to_wiki[iso2] = wiki_code
+                            self.wiki_to_iso2[wiki_code.casefold()] = iso2
+                            self.wiki_to_iso2[f"wiki{wiki_code.casefold()}"] = iso2
+
+                        if iso3_code:
+                            self.iso2_to_iso3[iso2] = iso3_code
+                            # allow iso3 normalization
+                            self.wiki_to_iso2[iso3_code] = iso2
+                            self.wiki_to_iso2[f"wiki{iso3_code}"] = iso2
+
+                elif isinstance(v, str):
+                    vv = v.strip().casefold()
+                    if not vv:
+                        continue
+
+                    # Case A: alias -> iso2 (common normalization map shape)
+                    if len(vv) == 2 and vv.isalpha():
+                        self.wiki_to_iso2[kk] = vv
+                        if kk.startswith("wiki") and len(kk) > 4:
+                            self.wiki_to_iso2[kk[4:]] = vv
+                        self.wiki_to_iso2[vv] = vv
+                        self.wiki_to_iso2[f"wiki{vv}"] = vv
+                        continue
+
+                    # Case B: iso2 -> wiki suffix (string form)
+                    if len(kk) == 2 and kk.isalpha():
+                        iso2 = kk
+                        wiki_code = _strip_wiki_prefix(v.strip())
+                        if wiki_code:
+                            self.iso2_to_wiki[iso2] = wiki_code
+                            self.wiki_to_iso2[iso2] = iso2
+                            self.wiki_to_iso2[f"wiki{iso2}"] = iso2
+                            self.wiki_to_iso2[wiki_code.casefold()] = iso2
+                            self.wiki_to_iso2[f"wiki{wiki_code.casefold()}"] = iso2
+
         except Exception:
-            self.iso_map = {}
+            self.wiki_to_iso2 = {}
+            self.iso2_to_wiki = {}
+            self.iso2_to_iso3 = {}
+
+    def _derive_wiki_from_inventory(self) -> None:
+        """
+        Inventory fallback: if iso2_to_wiki is missing entries, try to infer the
+        3-letter wiki suffix from module names like SyntaxFre / LexiconGer.
+        """
+        if not isinstance(self.inventory, dict) or not self.inventory:
+            return
+
+        rx = re.compile(r"^(?:Syntax|Lexicon|Paradigms|All|Grammar)([A-Za-z]{3})$")
+        for iso2, payload in self.inventory.items():
+            if not (isinstance(iso2, str) and len(iso2.strip()) == 2):
+                continue
+            iso2c = iso2.strip().casefold()
+            if iso2c in self.iso2_to_wiki:
+                continue
+            if not isinstance(payload, dict):
+                continue
+            mods = payload.get("modules")
+            if not isinstance(mods, list):
+                continue
+            suffix = None
+            for m in mods:
+                if not isinstance(m, str):
+                    continue
+                mm = m.strip()
+                hit = rx.match(mm)
+                if hit:
+                    suffix = hit.group(1)
+                    break
+            if suffix:
+                self.iso2_to_wiki[iso2c] = suffix
 
     def _load_grammar_sync(self) -> None:
-        """
-        Synchronous method to load the heavy PGF binary.
-        Sets detailed diagnostics so callers can report actionable failures.
-
-        Thread-safe: multiple threads/tools won't race-load.
-        """
         with self._thread_load_lock:
-            # Double-check inside lock
             if self._grammar is not None:
                 return
 
-            # reset last error on every attempt
             self.last_load_error = None
             self.last_load_error_type = None
 
@@ -243,12 +332,8 @@ class GFGrammarEngine:
                 logger.error("gf_load_failed", error=str(e), pgf_path=str(path))
 
     async def _ensure_grammar(self) -> None:
-        """
-        Ensures the grammar is loaded without blocking the async event loop.
-        """
         if self._grammar is not None:
             return
-
         async with self._async_load_lock:
             if self._grammar is None:
                 await asyncio.to_thread(self._load_grammar_sync)
@@ -257,10 +342,6 @@ class GFGrammarEngine:
     # Public API (IGrammarEngine)
     # ----------------------------
     async def status(self) -> Dict[str, Any]:
-        """
-        Tool-friendly status for diagnostics and demos.
-        Safe to call repeatedly.
-        """
         await self._ensure_grammar()
         payload: Dict[str, Any] = {
             "loaded": self._grammar is not None,
@@ -273,12 +354,6 @@ class GFGrammarEngine:
         return payload
 
     async def generate(self, lang_code: str, frame: Any) -> Sentence:
-        """
-        Generate text from:
-          - BioFrame
-          - Frame (domain)
-          - dict (either BioFrame-like payload or Ninai/UniversalNode)
-        """
         await self._ensure_grammar()
 
         if not self._grammar:
@@ -309,7 +384,6 @@ class GFGrammarEngine:
         return Sentence(text=text, lang_code=lang_code, debug_info={"ast": ast_str})
 
     def parse(self, sentence: str, language: str):
-        # Sync parse: ensure grammar exists (this will auto-load in sync contexts via property)
         g = self.grammar
         if not g:
             return []
@@ -325,7 +399,6 @@ class GFGrammarEngine:
             return []
 
     def linearize(self, expr: Any, language: str) -> str:
-        # Sync linearize: ensure grammar exists (auto-loads in sync contexts)
         g = self.grammar
         if not g:
             return "<GF Runtime Not Loaded>"
@@ -358,6 +431,7 @@ class GFGrammarEngine:
     async def reload(self) -> None:
         self._load_inventory()
         self._load_iso_config()
+        self._derive_wiki_from_inventory()
 
         async with self._async_load_lock:
             with self._thread_load_lock:
@@ -374,18 +448,38 @@ class GFGrammarEngine:
     # ----------------------------
     # Language resolution
     # ----------------------------
+    def _norm_to_iso2(self, code: str) -> Optional[str]:
+        """
+        Normalize (iso2/iso3/wiki/wikixxx) -> iso2 using wiki_to_iso2.
+        Mirrors tools/language_health/norm.py behavior.
+        """
+        if not isinstance(code, str):
+            return None
+        k = code.strip().casefold()
+        if not k:
+            return None
+        if k.startswith("wiki") and len(k) > 4:
+            k = k[4:]
+
+        hit = self.wiki_to_iso2.get(k)
+        if isinstance(hit, str) and len(hit) == 2:
+            return hit
+
+        # last resort: accept raw iso2
+        if len(k) == 2 and k.isalpha():
+            return k
+
+        return None
+
     def _resolve_concrete_name(self, lang_code: str) -> Optional[str]:
         """
-        Robustly resolve external language inputs (iso2/iso3/wiki codes) into a concrete
-        PGF language key present in grammar.languages.
-
-        Tries, in order:
-        - exact match (case-sensitive)
-        - case-insensitive exact match
-        - iso_to_wiki mapping (e.g. "de" -> "Ger" => "WikiGer")
-        - inventory iso3 mapping (e.g. "de" -> "deu" => "WikiDeu")
-        - direct iso3 fallback (e.g. "deu" => "WikiDeu")
-        - heuristic suffix matching across available grammar.languages
+        Resolve external language inputs into a concrete PGF language key present in grammar.languages.
+        Supports:
+          - exact concrete keys (WikiEng, WikiGer, ...)
+          - iso2 (en/de/fr)
+          - wiki suffixes (eng/ger/fre/...)
+          - iso3 (fra/deu/...) when configured
+          - wikixxx (wikiger, wikifra, ...)
         """
         g = self._grammar
         if not g:
@@ -401,80 +495,78 @@ class GFGrammarEngine:
 
         # 1) Case-insensitive exact match
         lower_to_key = {k.lower(): k for k in g.languages.keys()}
-        raw_lower = raw.lower()
-        if raw_lower in lower_to_key:
-            return lower_to_key[raw_lower]
+        rl = raw.lower()
+        if rl in lower_to_key:
+            return lower_to_key[rl]
 
-        iso_clean = raw_lower
-
-        # Helper to try a list of candidates (case-sensitive first, then case-insensitive)
         def _try_candidates(cands: List[str]) -> Optional[str]:
             for c in cands:
                 if not c:
                     continue
                 if c in g.languages:
                     return c
-                c_low = c.lower()
-                if c_low in lower_to_key:
-                    return lower_to_key[c_low]
+                cl = c.lower()
+                if cl in lower_to_key:
+                    return lower_to_key[cl]
             return None
 
-        suffix = self.iso_map.get(iso_clean)
-        iso3 = None
+        iso2 = self._norm_to_iso2(raw)
+        iso3 = self.iso2_to_iso3.get(iso2) if iso2 else None
+        wiki = self.iso2_to_wiki.get(iso2) if iso2 else None
 
-        # Pull iso3 from inventory when available (inventory keys are often iso2)
-        inv = self.inventory.get(iso_clean)
-        if isinstance(inv, dict):
-            iso3_val = inv.get("iso3") or inv.get("iso_639_3")
-            if isinstance(iso3_val, str) and iso3_val.strip():
-                iso3 = iso3_val.strip().lower()
+        candidates: List[str] = []
 
-        # Also accept inventory keyed by iso3
-        if iso3 is None and len(iso_clean) == 3:
-            iso3 = iso_clean
+        # Primary: iso2 -> Wiki{wikiSuffix}
+        if wiki:
+            s = wiki.strip()
+            candidates.extend(
+                [
+                    f"Wiki{s}",
+                    f"Wiki{s.capitalize()}",
+                    f"Wiki{s.upper()}",
+                    s,
+                    s.capitalize(),
+                    s.upper(),
+                    s.lower(),
+                ]
+            )
 
-        # 2) iso_to_wiki mapping (might be "Ger"/"Fre"/"Fra"/"Deu", etc)
-        if suffix:
-            # Try common shapes: "Wiki{Suffix}", plain suffix, and capitalization variants
-            cands = []
-            s = suffix.strip()
-            if s:
-                cands.append(s)
-                cands.append(s.capitalize())
-                cands.append(s.upper())
-                cands.append(s.lower())
-                cands.append(f"Wiki{s}")
-                cands.append(f"Wiki{s.capitalize()}")
-            hit = _try_candidates(cands)
-            if hit:
-                return hit
-
-        # 3) iso3-based mapping (often matches actual concrete module names in this repo: WikiDeu, WikiFra, etc)
+        # Secondary: iso2 -> Wiki{iso3}
         if iso3:
-            cands = [
-                f"Wiki{iso3.capitalize()}",
-                iso3,
-                iso3.upper(),
-                iso3.lower(),
-            ]
-            hit = _try_candidates(cands)
-            if hit:
-                return hit
+            s3 = iso3.strip()
+            candidates.extend(
+                [
+                    f"Wiki{s3.capitalize()}",
+                    f"Wiki{s3.upper()}",
+                    s3,
+                    s3.upper(),
+                    s3.lower(),
+                ]
+            )
 
-        # 4) Heuristic: find any available language key ending with mapped suffix / iso3
-        # (useful when PGF contains WikiDeu but iso_to_wiki maps "de" -> "Ger", or vice-versa)
+        # Tertiary: try iso2 shapes (some PGFs use WikiEn / WikiFr, etc)
+        if iso2:
+            candidates.extend([f"Wiki{iso2.upper()}", f"Wiki{iso2.capitalize()}", iso2])
+
+        hit = _try_candidates(candidates)
+        if hit:
+            return hit
+
+        # Heuristic: suffix matching across available grammar.languages
         probes: List[str] = []
-        if suffix:
-            probes.append(suffix.lower())
+        if wiki:
+            probes.append(wiki.casefold())
         if iso3:
-            probes.append(iso3.lower())
+            probes.append(iso3.casefold())
+        if iso2:
+            probes.append(iso2.casefold())
 
         for p in probes:
             for k in g.languages.keys():
-                kl = k.lower()
-                if kl.endswith(p):
+                kl = k.casefold()
+                if kl == p or kl == f"wiki{p}":
                     return k
-                if kl.endswith(f"wiki{p}"):
+                if kl.endswith(p) or kl.endswith(f"wiki{p}"):
                     return k
 
         return None
@@ -503,14 +595,16 @@ class GFGrammarEngine:
             frame_type_raw = obj.get("frame_type") or obj.get("type") or ""
             frame_type = str(frame_type_raw).lower().strip() if frame_type_raw is not None else ""
 
-            # “looks like a bio/person payload” heuristic for external tools/tests
             looks_like_person = any(k in obj for k in ("name", "profession", "nationality", "gender", "subject"))
 
-            if frame_type in self._BIO_FRAME_TYPES or (frame_type.startswith("entity.") and "person" in frame_type) or looks_like_person:
+            if (
+                frame_type in self._BIO_FRAME_TYPES
+                or (frame_type.startswith("entity.") and "person" in frame_type)
+                or looks_like_person
+            ):
                 subject = obj.get("subject") if isinstance(obj.get("subject"), dict) else {}
                 props = obj.get("properties") if isinstance(obj.get("properties"), dict) else {}
 
-                # Support “flat” convenience keys (used by Tools Command Center + API payloads)
                 if isinstance(subject, dict):
                     if obj.get("name"):
                         subject = {**subject, "name": obj.get("name")}
