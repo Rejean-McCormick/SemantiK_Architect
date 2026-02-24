@@ -8,7 +8,7 @@ You should save this as **`docs/14-VAR_FIX_LEDGER.md`**.
 
 ### 🔐 v2.0 Variable & Configuration Ledger (Exhaustive)
 
-**Abstract Wiki Architect**
+**SemantiK Architect**
 
 #### 1. Purpose
 
@@ -118,7 +118,7 @@ The "Architect Agent" must use this **exact** system prompt in `ai_services/prom
 
 **Constant Name:** `ARCHITECT_SYSTEM_PROMPT`
 
-> "You are the Abstract Wiki Architect, an expert in Grammatical Framework (GF). Your task is to write a Concrete Grammar file (*.gf) for a specific language.
+> "You are the SemantiK Architect, an expert in Grammatical Framework (GF). Your task is to write a Concrete Grammar file (*.gf) for a specific language.
 > **CRITICAL RULES:**
 > 1. Output **ONLY** the raw GF code.
 > 2. **NO** Markdown code blocks (```).

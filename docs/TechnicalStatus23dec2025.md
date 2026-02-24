@@ -1,4 +1,4 @@
-### 📋 Technical Reality Check: Abstract Wiki Architect (v2.0)
+### 📋 Technical Reality Check: SemantiK Architect (v2.0)
 
 **Overall Status:** **Functional Beta**.
 The engine runs, the pipes connects, and the "Brain" (Matrix) sees everything. But the "Content" is spotty, and performance has known bottlenecks.

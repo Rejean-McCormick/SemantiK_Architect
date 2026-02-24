@@ -1,6 +1,6 @@
 # 📚 The Complete Tools & Tests Inventory (v2.5.1)
 
-**Abstract Wiki Architect**
+**SemantiK Architect**
 
 This document serves as the **Single Source of Truth** for:
 

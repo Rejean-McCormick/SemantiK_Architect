@@ -1,4 +1,4 @@
-Here is the formal documentation for the **Abstract Wiki Architect: Multilingual Engine V2**.
+Here is the formal documentation for the **SemantiK Architect: Multilingual Engine V2**.
 
 This document defines the architecture, directory structure, and logic required to scale the system from \~40 to 300+ languages using a **Hybrid Factory** approach.
 

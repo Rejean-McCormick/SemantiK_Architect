@@ -6,7 +6,7 @@ This version incorporates the **v2.1 Overloading Strategy** (handling partial da
 
 # 📐 Schema Alignment Protocol & The "Triangle of Doom"
 
-**Abstract Wiki Architect v2.1**
+**SemantiK Architect v2.1**
 
 ## 1. The Core Problem: Alignment Failure
 

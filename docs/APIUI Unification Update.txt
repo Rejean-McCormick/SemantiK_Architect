@@ -1,4 +1,4 @@
-## Abstract Wiki Architect — Enterprise-Grade API/UI Unification Update
+## SemantiK Architect — Enterprise-Grade API/UI Unification Update
 
 ### Summary
 

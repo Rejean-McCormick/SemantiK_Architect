@@ -1,5 +1,5 @@
 
-# 🚀 Abstract Wiki Architect: Unified Build & Launch System (v2.0)
+# 🚀 SemantiK Architect: Unified Build & Launch System (v2.0)
 
 ## 1. High-Level Architecture
 

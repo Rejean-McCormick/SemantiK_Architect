@@ -1,4 +1,4 @@
-# Abstract Wiki Architect: v2.1 Upgrade Specification
+# SemantiK Architect: v2.1 Upgrade Specification
 
 **Codename:** "The Brain Transplant"
 **Status:** IMPLEMENTED

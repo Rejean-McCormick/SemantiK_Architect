@@ -1,11 +1,11 @@
 
 # 🔌 API Reference & Semantic Frames
 
-**Abstract Wiki Architect v2.1**
+**SemantiK Architect v2.1**
 
 ## 1. Overview
 
-The Abstract Wiki Architect exposes a **Hybrid Natural Language Generation (NLG) Engine** via a RESTful API.
+The SemantiK Architect exposes a **Hybrid Natural Language Generation (NLG) Engine** via a RESTful API.
 It supports two primary input modes:
 
 1. **Strict Path (BioFrame):** Simple, flat JSON objects validated against a rigid Pydantic schema.

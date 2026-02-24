@@ -1,8 +1,8 @@
 # 📜 Decision Log & Architecture Records
 
-**Abstract Wiki Architect v2.0**
+**SemantiK Architect v2.0**
 
-This document records the **key architectural choices** behind the Abstract Wiki Architect and the alternatives that were considered. It is meant to be a concise "Why we did it this way" reference for reviewers and future contributors.
+This document records the **key architectural choices** behind the SemantiK Architect and the alternatives that were considered. It is meant to be a concise "Why we did it this way" reference for reviewers and future contributors.
 
 ---
 

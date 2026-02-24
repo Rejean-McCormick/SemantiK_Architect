@@ -1,7 +1,7 @@
 
 # 🧩 RGL Integration & Dynamic Discovery Strategy
 
-**Abstract Wiki Architect — Internal Reference (Everything Matrix / iso2-keyed)**
+**SemantiK Architect — Internal Reference (Everything Matrix / iso2-keyed)**
 
 ## 1) The “Naming Mismatch” Problem
 

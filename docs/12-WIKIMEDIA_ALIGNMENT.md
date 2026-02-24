@@ -1,9 +1,9 @@
 
 # 🌐 Abstract Wikipedia Alignment & Standards
 
-**Abstract Wiki Architect v2.0**
+**SemantiK Architect v2.0**
 
-This document defines how the **Abstract Wiki Architect (AWA)** aligns with, diverges from, and integrates with the official technical standards of the **Abstract Wikipedia** project (Wikifunctions, Ninai, and Universal Dependencies).
+This document defines how the **SemantiK Architect (AWA)** aligns with, diverges from, and integrates with the official technical standards of the **Abstract Wikipedia** project (Wikifunctions, Ninai, and Universal Dependencies).
 
 ---
 

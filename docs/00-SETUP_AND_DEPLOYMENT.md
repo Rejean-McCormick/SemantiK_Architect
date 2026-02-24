@@ -1,8 +1,8 @@
 # 🛠️ Setup & Deployment Guide
 
-**Abstract Wiki Architect v2.5**
+**SemantiK Architect v2.5**
 
-This guide covers installation, configuration, and deployment of the Abstract Wiki Architect. Because the core engine depends on **Grammatical Framework (GF)** C-libraries (`libpgf`), the backend **must run in a Linux environment**.
+This guide covers installation, configuration, and deployment of the SemantiK Architect. Because the core engine depends on **Grammatical Framework (GF)** C-libraries (`libpgf`), the backend **must run in a Linux environment**.
 
 For developers on Windows, the recommended setup is a **Hybrid Architecture**:
 

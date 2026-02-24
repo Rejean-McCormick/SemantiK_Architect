@@ -1,5 +1,5 @@
 # THEORY_NOTES.md  
-Abstract Wiki Architect – Theoretical Positioning
+SemantiK Architect – Theoretical Positioning
 
 This document explains how the architecture in this repository relates to
 existing ideas in NLG and linguistic theory. It is not an implementation
@@ -10,7 +10,7 @@ compatible with**.
 
 ## 1. Purpose
 
-Abstract Wiki Architect is designed as a **practical NLG stack** for Abstract Wikipedia, but its internal structure is informed by:
+SemantiK Architect is designed as a **practical NLG stack** for Abstract Wikipedia, but its internal structure is informed by:
 
 - **Grammar engineering / grammar matrix approaches**
 - **Construction grammar / frame semantics**

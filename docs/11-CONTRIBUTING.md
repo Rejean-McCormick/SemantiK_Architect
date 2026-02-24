@@ -1,4 +1,4 @@
-# 🤝 Contributing to Abstract Wiki Architect v2.0
+# 🤝 Contributing to SemantiK Architect v2.0
 
 Thank you for your interest in contributing! This project is a complex **Hybrid Neuro-Symbolic Architecture** (Python/WSL + C/Linux + AI Agents), so we enforce strict guidelines to prevent "Works on my machine" issues.
 

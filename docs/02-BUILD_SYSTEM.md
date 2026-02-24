@@ -2,12 +2,12 @@
 
 # 🏗️ The Build System & Everything Matrix
 
-**Abstract Wiki Architect v2.1**
+**SemantiK Architect v2.1**
 
 ## 1. Overview: Data-Driven Orchestration
 
 In a traditional system, you might hardcode a list of supported languages (e.g., `LANGS = ['en', 'fr']`).
-In the Abstract Wiki Architect, this is forbidden.
+In the SemantiK Architect, this is forbidden.
 
 Instead, we use a **Data-Driven Architecture**. The system scans its own file system to discover what languages are available, grades their quality, and dynamically decides how to build them. This "Self-Awareness" is stored in a central registry called the **Everything Matrix**.
 

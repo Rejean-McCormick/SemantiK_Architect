@@ -1,6 +1,6 @@
 # 🛠️ Developer Tools & Unified Launch System
 
-**Abstract Wiki Architect v2.5**
+**SemantiK Architect v2.5**
 
 ## 1. The "God Mode" Launcher (`Run-Architect.ps1`)
 

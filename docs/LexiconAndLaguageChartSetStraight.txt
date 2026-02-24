@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-The Abstract Wiki Architect currently suffers from a **"Split Brain" Architecture** regarding language identification. The system creates friction between the **Web Standard** (ISO 639-1, 2-letter) used by the API/Wikidata and the **Academic Standard** (RGL, 3-letter) used by the Grammatical Framework engine.
+The SemantiK Architect currently suffers from a **"Split Brain" Architecture** regarding language identification. The system creates friction between the **Web Standard** (ISO 639-1, 2-letter) used by the API/Wikidata and the **Academic Standard** (RGL, 3-letter) used by the Grammatical Framework engine.
 
 This document outlines the current architectural inconsistency, identifies the root cause of the "eng/en" anomaly, and defines the **Enterprise Grade specification** for normalizing the system.
 

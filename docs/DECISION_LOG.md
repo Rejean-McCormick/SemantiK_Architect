@@ -1,7 +1,7 @@
 # DESIGN_DECISIONS.md  
-Abstract Wiki Architect – Design Decisions
+SemantiK Architect – Design Decisions
 
-This document records the **key architectural choices** behind Abstract Wiki Architect
+This document records the **key architectural choices** behind SemantiK Architect
 and the alternatives that were considered. It is meant to be a concise “why we did it
 this way” reference for reviewers and future contributors.
 
@@ -314,7 +314,7 @@ The key design choices are:
 - A **light but explicit semantics + discourse layer**.
 - A **test-first, QA-heavy** workflow.
 
-Together, these choices are intended to make Abstract Wiki Architect:
+Together, these choices are intended to make SemantiK Architect:
 
 - scalable across many languages,
 - understandable by both engineers and linguists,

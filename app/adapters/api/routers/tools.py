@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from app.adapters.api.dependencies import verify_api_key
 from app.adapters.api.tools.config import (
@@ -56,7 +57,9 @@ _SENSITIVE_FLAG_EXACT = {
     "--authorization",
     "--auth",
 }
-_SENSITIVE_FLAG_RE = re.compile(r"^--?[A-Za-z0-9._-]*(key|token|secret|pass(word|wd)?|bearer|auth)[A-Za-z0-9._-]*$")
+_SENSITIVE_FLAG_RE = re.compile(
+    r"^--?[A-Za-z0-9._-]*(key|token|secret|pass(word|wd)?|bearer|auth)[A-Za-z0-9._-]*$"
+)
 
 
 def _is_sensitive_flag(flag: str) -> bool:
@@ -664,7 +667,34 @@ async def run_tool(payload: ToolRunRequest) -> ToolRunResponse:
     emit_event(events, "INFO", "process_spawned", f"Executing command with timeout {spec.timeout_sec}s")
 
     env_vars = {"TOOL_TRACE_ID": trace_id}
-    exit_code, stdout, stderr, duration_ms = run_process_extended(final_cmd_list, spec.timeout_sec, env_vars)
+    try:
+        # subprocess.run() is blocking; run it in a threadpool so the API
+        # can still serve requests while a tool executes.
+        exit_code, stdout, stderr, duration_ms = await run_in_threadpool(
+            run_process_extended,
+            final_cmd_list,
+            spec.timeout_sec,
+            env_vars,
+        )
+    except Exception as e:
+        ended_at = iso_now()
+        msg = f"Tool runner crashed while executing subprocess: {type(e).__name__}: {e}"
+        emit_event(events, "ERROR", "process_failed", msg)
+        # cmd_for_response is already redacted if needed
+        return error_envelope(
+            http_status=500,
+            trace_id=trace_id,
+            started_at=started_at,
+            ended_at=ended_at,
+            tool_id=payload.tool_id,
+            spec=spec,
+            command=cmd_for_response,
+            message=msg,
+            events=events,
+            args_received=normalized_args_log,
+            args_accepted=args_accepted_log,
+            args_rejected=args_rejected_log,
+        )
 
     ended_at = iso_now()
     emit_event(events, "INFO", "process_exited", f"Process exited with code {exit_code}", {"duration_ms": duration_ms})

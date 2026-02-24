@@ -38,6 +38,27 @@ class Settings(BaseSettings):
 
     DEBUG: bool = True
 
+    # --- HTTP Routing / Deployment Topology ---
+    # Public UI base path when deployed behind nginx (Next.js basePath).
+    # Keep as /abstract_wiki_architect by convention, but allow override via env.
+    ARCHITECT_BASE_PATH: str = Field(
+        default="/abstract_wiki_architect",
+        description="Public UI base path (Next.js basePath).",
+    )
+
+    # FastAPI/Starlette root_path for URL generation (OpenAPI/Swagger).
+    # IMPORTANT: default is empty for local dev (no nginx prefix).
+    ARCHITECT_API_ROOT_PATH: str = Field(
+        default="",
+        description="Public mount prefix for the API when behind a reverse proxy. Empty for local dev.",
+    )
+
+    # Canonical API prefix (do not include ARCHITECT_API_ROOT_PATH here).
+    API_V1_PREFIX: str = Field(
+        default="/api/v1",
+        description="Canonical API prefix (versioned).",
+    )
+
     # --- Security ---
     # Default to None. This enables the "Dev Bypass" in dependencies.py.
     # If you want security, set API_SECRET in your .env file.
@@ -130,6 +151,40 @@ class Settings(BaseSettings):
 
         return value
 
+    @staticmethod
+    def _normalize_url_path(value: str, *, allow_empty: bool = True) -> str:
+        s = (value or "").strip()
+        if not s or s == "/":
+            return "" if allow_empty else "/"
+        if not s.startswith("/"):
+            s = "/" + s
+        s = s.rstrip("/")
+        return s
+
+    @staticmethod
+    def _join_url_paths(*parts: str) -> str:
+        cleaned = []
+        for p in parts:
+            if p is None:
+                continue
+            p = str(p).strip()
+            if not p:
+                continue
+            cleaned.append(p.strip("/"))
+        if not cleaned:
+            return ""
+        return "/" + "/".join(cleaned)
+
+    @property
+    def PUBLIC_API_V1_PATH(self) -> str:
+        """
+        Public-facing /api/v1 path as seen by clients (may include ARCHITECT_API_ROOT_PATH).
+        Example:
+          - local dev:                 /api/v1
+          - behind nginx base path:    /abstract_wiki_architect/api/v1
+        """
+        return self._join_url_paths(self.ARCHITECT_API_ROOT_PATH, self.API_V1_PREFIX)
+
     @model_validator(mode="after")
     def _configure_security_and_test_defaults(self) -> "Settings":
         """
@@ -149,6 +204,23 @@ class Settings(BaseSettings):
             if not self.API_SECRET and not self.API_KEY:
                 self.API_KEY = "test-api-key"
                 self.API_SECRET = self.API_KEY
+
+        return self
+
+    @model_validator(mode="after")
+    def _normalize_http_paths(self) -> "Settings":
+        # Normalize basePath/root_path/prefix so downstream string ops are stable.
+        self.ARCHITECT_BASE_PATH = self._normalize_url_path(
+            self.ARCHITECT_BASE_PATH, allow_empty=False
+        ) or "/abstract_wiki_architect"
+
+        # root_path is allowed to be empty for local dev.
+        self.ARCHITECT_API_ROOT_PATH = self._normalize_url_path(
+            self.ARCHITECT_API_ROOT_PATH, allow_empty=True
+        )
+
+        # Ensure API prefix is a proper absolute path segment.
+        self.API_V1_PREFIX = self._normalize_url_path(self.API_V1_PREFIX, allow_empty=False) or "/api/v1"
 
         return self
 

@@ -3,7 +3,7 @@
 
 Status: draft  
 Owner: (TBD)  
-Scope: integrate selected parts of **Grammatical Framework (GF)** into **Abstract Wiki Architect (AWA)** without changing AWA’s core architecture.
+Scope: integrate selected parts of **Grammatical Framework (GF)** into **SemantiK Architect (AWA)** without changing AWA’s core architecture.
 
 ---
 
@@ -592,5 +592,5 @@ Example meta snippet:
 
 GF becomes an **offline knowledge provider** for richer paradigms and tests, under clear versioning and provenance.
 
-This design keeps Abstract Wiki Architect aligned with Abstract Wikipedia/Wikifunctions needs while leveraging decades of grammar-engineering work in GF.
+This design keeps SemantiK Architect aligned with Abstract Wikipedia/Wikifunctions needs while leveraging decades of grammar-engineering work in GF.
 

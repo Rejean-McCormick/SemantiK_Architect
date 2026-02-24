@@ -6,7 +6,7 @@ This version strictly enforces the **ISO 639-1 (2-letter)** directory standard (
 
 # 📚 Lexicon Architecture & Workflow
 
-**Abstract Wiki Architect v2.1**
+**SemantiK Architect v2.1**
 
 ## 1. Core Philosophy: Usage-Based Sharding
 

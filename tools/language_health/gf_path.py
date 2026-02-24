@@ -10,8 +10,9 @@ Centralizes:
 
 Key behaviors:
   - Prefer the *best* compile source dir by sampling/counting language-like Wiki???.gf modules.
-  - Always include both repo_root/generated/src and repo_root/gf/generated/src on the GF path if present,
-    to avoid "duplicate location" surprises during compilation/import resolution.
+  - Always include both repo_root/generated/src and repo_root/gf/generated/src on the GF path if present.
+  - IMPORTANT: GF does not search recursively. For the RGL, we must include leaf dirs under gf-rgl/src
+    (e.g. gf-rgl/src/abstract) so imports like Cat.gf resolve correctly.
 """
 
 from __future__ import annotations
@@ -37,6 +38,18 @@ _DEFAULT_PRELUDE_SEARCH_REL: Tuple[str, ...] = (
     "gf",
     ".",
 )
+
+# RGL leaf dirs: include these first (mirrors typical GF_FLAGS ordering)
+_RGL_PRIORITY_DIRS: Tuple[str, ...] = (
+    "prelude",
+    "abstract",
+    "common",
+    "api",
+)
+
+# Bound how many gf-rgl/src/* leaf dirs we include (safety against pathological trees)
+_RGL_MAX_DIRS_ENV = "GF_RGL_SRC_MAX_DIRS"
+_RGL_MAX_DIRS_DEFAULT = 512
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +116,78 @@ def _sample_language_module_count(dir_path: Path, cap: int = 200) -> int:
     return n
 
 
+def _safe_int_env(name: str, default: int) -> int:
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        v = int(raw)
+        return v if v > 0 else default
+    except Exception:
+        return default
+
+
+def _list_immediate_subdirs(parent: Path, max_count: int) -> List[Path]:
+    """
+    List immediate subdirectories of `parent`, sorted by name (deterministic).
+    """
+    out: List[Path] = []
+    try:
+        if not parent.exists() or not parent.is_dir():
+            return out
+        subs = [p for p in parent.iterdir() if p.is_dir()]
+        subs.sort(key=lambda p: p.name)
+        for p in subs:
+            out.append(p)
+            if len(out) >= max_count:
+                break
+    except Exception:
+        return out
+    return out
+
+
+def _rgl_leaf_dirs(repo_root: Path) -> List[Path]:
+    """
+    GF does not recurse: include gf-rgl/src and ALSO gf-rgl/src/* leaf dirs
+    so modules like Cat.gf (in gf-rgl/src/abstract) resolve.
+    """
+    repo_root = repo_root.resolve()
+    rgl_root = (repo_root / "gf-rgl" / "src").resolve()
+    if not rgl_root.exists() or not rgl_root.is_dir():
+        return []
+
+    max_dirs = _safe_int_env(_RGL_MAX_DIRS_ENV, _RGL_MAX_DIRS_DEFAULT)
+
+    out: List[Path] = []
+    seen: set[str] = set()
+
+    # Always include the root itself (some modules may live directly under src/)
+    out.append(rgl_root)
+    seen.add(rgl_root.name)
+
+    # Priority dirs first
+    for name in _RGL_PRIORITY_DIRS:
+        d = (rgl_root / name).resolve()
+        if d.exists() and d.is_dir():
+            out.append(d)
+            seen.add(name)
+
+    # Then include other immediate subdirs (deterministic), bounded
+    for d in _list_immediate_subdirs(rgl_root, max_count=max_dirs):
+        if d.name in seen:
+            continue
+        # Skip hidden/system dirs
+        if d.name.startswith("."):
+            continue
+        out.append(d)
+        seen.add(d.name)
+
+        if len(out) >= max_dirs:
+            break
+
+    return out
+
+
 # ---------------------------------------------------------------------------
 # REPO ROOT DETECTION
 # ---------------------------------------------------------------------------
@@ -160,7 +245,7 @@ def detect_compile_src_dir(
     Returns:
       (compile_src_dir, label_relative_to_repo_root)
 
-    Selection rule (validated against "duplicate gf files" situations):
+    Selection rule:
       - Among candidates that exist, pick the one with the *most* language-like Wiki???.gf files.
       - Break ties by the canonical preference order:
           generated/src > gf/generated/src > gf
@@ -302,9 +387,7 @@ def build_gf_path(
 
     Includes (in order):
       - discovered Prelude.gf parent dirs
-      - gf-rgl/src/prelude (if present as a directory)
-      - gf-rgl/src
-      - gf-rgl/src/api
+      - gf-rgl/src and gf-rgl/src/* leaf dirs (priority order then sorted; bounded)
       - repo_root/generated/src (if present)
       - repo_root/gf/generated/src (if present)
       - repo_root/gf
@@ -318,21 +401,19 @@ def build_gf_path(
     repo_root = repo_root.resolve()
     compile_src_dir = compile_src_dir.resolve()
 
-    rgl_root = (repo_root / "gf-rgl" / "src").resolve()
-    rgl_api = (rgl_root / "api").resolve()
-    rgl_prelude_dir = (rgl_root / "prelude").resolve()
-
     gen_src_root = (repo_root / "generated" / "src").resolve()
     gen_src_under_gf = (repo_root / "gf" / "generated" / "src").resolve()
     gf_dir = (repo_root / "gf").resolve()
 
     parts: List[Path] = []
+
+    # Prelude dirs first
     parts.extend(find_prelude_dirs(repo_root, max_hits=prelude_max_hits))
 
-    # If the repo has gf-rgl/src/prelude as a directory, include it explicitly as well.
-    parts.extend([rgl_prelude_dir, rgl_root, rgl_api])
+    # RGL paths (must include leaf dirs like gf-rgl/src/abstract)
+    parts.extend(_rgl_leaf_dirs(repo_root))
 
-    # Include both generated locations if they exist (this is the non-cheap “duplicates” guardrail).
+    # Include both generated locations if they exist.
     parts.extend([gen_src_root, gen_src_under_gf])
 
     # Always include gf + compile src + repo root

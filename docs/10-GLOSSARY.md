@@ -1,6 +1,6 @@
 # 📖 Project Glossary & Terminology
 
-**Abstract Wiki Architect**
+**SemantiK Architect**
 
 This document defines the specialized terminology used across the project. It bridges the gap between **Software Engineering** concepts and **Computational Linguistics** concepts.
 

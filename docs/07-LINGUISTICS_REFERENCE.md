@@ -1,12 +1,12 @@
 # 🎓 Linguistics Reference & Theory
 
-**Abstract Wiki Architect v2.0**
+**SemantiK Architect v2.0**
 
 ## 1. Purpose & Positioning
 
 This document explains **why** the system is built the way it is. It maps the engineering components (Engines, Matrices, JSON) to their corresponding concepts in linguistic theory.
 
-The Abstract Wiki Architect v2.0 is designed to be:
+The SemantiK Architect v2.0 is designed to be:
 
 * **Engineered for Scale:** Capable of supporting 300+ languages through automation.
 * **Interoperable:** Native support for the **Ninai** protocol and **Universal Dependencies (UD)** standards.
@@ -130,4 +130,4 @@ We implement a simplified version of **Centering Theory**.
 | **Discourse Planner** | Centering Theory / Coreference | Redis Session Store |
 | **UD Exporter** | Dependency Grammar | `ud_mapping.py` |
 
-This document confirms that the Abstract Wiki Architect v2.0 is a **Hybrid Neuro-Symbolic System**, leveraging the best of formal linguistics (GF/UD) and modern engineering (Redis/AI).
+This document confirms that the SemantiK Architect v2.0 is a **Hybrid Neuro-Symbolic System**, leveraging the best of formal linguistics (GF/UD) and modern engineering (Redis/AI).

@@ -1,0 +1,16 @@
+{
+  "id": "generate_person_de",
+  "label": "Generate Person (German)",
+  "method": "POST",
+  "endpoint": "/generate/de",
+  "description": "Runs generation for entity.person in German.",
+  "payload": {
+    "frame_type": "entity.person",
+    "subject": {
+      "name": "Alan Turing",
+      "profession": "Mathematician",
+      "nationality": "British",
+      "gender": "m"
+    }
+  }
+}

@@ -2,9 +2,9 @@
 
 # 🌍 Adding a New Language
 
-**Abstract Wiki Architect v2.1**
+**SemantiK Architect v2.1**
 
-This guide documents the standard workflow for adding support for a new language (e.g., `pt` for Portuguese or `ha` for Hausa) to the Abstract Wiki Architect. The process involves registering the language, bootstrapping data (manually or via AI), and configuring the topology.
+This guide documents the standard workflow for adding support for a new language (e.g., `pt` for Portuguese or `ha` for Hausa) to the SemantiK Architect. The process involves registering the language, bootstrapping data (manually or via AI), and configuring the topology.
 
 ---
 

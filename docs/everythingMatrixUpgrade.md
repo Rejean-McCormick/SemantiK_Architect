@@ -1,6 +1,6 @@
 # 🧠 The Everything Matrix v2.1: Health & Decision Specification
 
-**Abstract Wiki Architect**
+**SemantiK Architect**
 
 ## 1. Executive Summary
 

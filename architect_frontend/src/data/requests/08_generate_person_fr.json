@@ -1,0 +1,13 @@
+{
+  "id": "generate_person_fr",
+  "label": "Generate Person (French)",
+  "method": "POST",
+  "endpoint": "/api/v1/generate/fr",
+  "description": "Runs generation for entity.person in French.",
+  "payload": {
+    "frame_type": "entity.person",
+    "name": "Alan Turing",
+    "profession": "Mathematician",
+    "nationality": "British"
+  }
+}

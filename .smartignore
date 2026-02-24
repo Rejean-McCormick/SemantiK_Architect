@@ -2,35 +2,48 @@
 # SMART IGNORE - AI Debugging Context Optimization
 # =======================================================
 
-# --- 1. Grammar Framework (External Libraries) ---
-# Massive external dependencies that confuse AI context
-gf/
-gf-rgl/
-
-# --- 2. Build Artifacts & Dependencies ---
-# Standard build outputs and library folders
-node_modules/
-.next/
-build/
-dist/
-coverage/
-__pycache__/
+# ---------------------------------
+# 1. Version Control & Environment Variables
+# ---------------------------------
 .git/
+.env
+.env.*
+!.env.example   # Always commit the example config!
+
+# ---------------------------------
+# 2. Python Build & Runtime
+# ---------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
 .venv/
 venv/
 env/
+.env/
+linux_env/
+build/
+dist/
+*.egg-info/
+.eggs/
+*.spec
 
-# --- 3. Large Data & Assets ---
-# Runtime data, logs, and static binary assets
-# (Exclude these to prevent dumping gigabytes of test data)
-data/
-public/
-assets/
-images/
-logs/
+# ---------------------------------
+# 3. Node.js & Frontend (Next.js/React)
+# ---------------------------------
+node_modules/
+.npm/
+.yarn/
+.pnp.*
+.turbo/
+.eslintcache
+.stylelintcache
+.next/
+out/
+*.tsbuildinfo
 
-# --- 4. Lock Files (Noise) ---
-# AI only needs package.json/pyproject.toml, not the lock traces
+# ---------------------------------
+# 4. Lock Files (Context Noise)
+# ---------------------------------
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
@@ -38,18 +51,59 @@ poetry.lock
 Pipfile.lock
 *.lock
 
-# --- 5. Noisy Extensions & Binary Files ---
-# Source maps
-*.map
+# ---------------------------------
+# 5. Grammatical Framework (GF)
+# ---------------------------------
+# Ignore massive external dependencies
+gf-rgl/
 
-# Large datasets
+# Ignore compiled binaries
+*.gfo
+*.pgf
+*.o
+
+# Ignore temporary and generated GF directories
+gf/tmp/
+gf/temp/
+gf/generated/
+gf/incubator/
+
+# EXCEPTIONS: Ensure GF source files and scripts are kept
+!gf/*.gf
+!gf/*.py
+!gf/contrib/
+
+# ---------------------------------
+# 6. Testing, Coverage & Tooling
+# ---------------------------------
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.mypy_cache/
+.cache/
+
+# ---------------------------------
+# 7. Databases, Large Data & Migrations
+# ---------------------------------
+data/
 *.csv
 *.jsonl
+*.parquet
 *.db
 *.sqlite
-*.parquet
+*.sqlite3
+alembic/__pycache__/  # Keep alembic.ini and versions/, just ignore cache
 
-# Binary Images/Media
+# ---------------------------------
+# 8. Media, Binaries & Static Assets
+# ---------------------------------
+public/
+assets/
+images/
+*.map           # Source maps
 *.png
 *.jpg
 *.jpeg
@@ -62,3 +116,30 @@ Pipfile.lock
 *.zip
 *.gz
 *.tar
+*.node
+*.a
+*.so
+*.dylib
+*.dll
+*.deb
+
+# ---------------------------------
+# 9. Logs & Project-Specific Generated Data
+# ---------------------------------
+logs/
+*.log
+build_logs/
+qa_tools/generated_datasets/
+qa/generated_datasets/
+!qa/generated_datasets/.gitignore
+
+# ---------------------------------
+# 10. IDE & OS Junk
+# ---------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.orig
+.DS_Store
+Thumbs.db

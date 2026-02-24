@@ -37,6 +37,7 @@ logger = logging.getLogger("Orchestrator")
 GF_BIN = (os.getenv("GF_BIN", "gf") or "gf").strip()
 
 GF_DIR = ROOT_DIR / "gf"
+CONTRIB_DIR = GF_DIR / "contrib"  # ADR 006: Human-in-the-Loop overrides
 RGL_DIR = ROOT_DIR / "gf-rgl"
 RGL_SRC = RGL_DIR / "src"
 RGL_API = RGL_SRC / "api"
@@ -87,6 +88,7 @@ ISO_MAP_FILE = ROOT_DIR / "data" / "config" / "iso_to_wiki.json"
 
 # Ensure directories exist
 LOG_DIR.mkdir(parents=True, exist_ok=True)
+CONTRIB_DIR.mkdir(parents=True, exist_ok=True)
 GENERATED_SRC_ROOT.mkdir(parents=True, exist_ok=True)
 GENERATED_SRC_GF.mkdir(parents=True, exist_ok=True)
 GENERATED_SRC_DEFAULT.mkdir(parents=True, exist_ok=True)
@@ -492,6 +494,12 @@ def _discover_rgl_lang_dirs() -> List[Path]:
             dirs.append(p)
     return dirs
 
+def _discover_contrib_dirs() -> List[Path]:
+    """Finds all language subdirectories inside gf/contrib/"""
+    if not CONTRIB_DIR.exists():
+        return []
+    return [p for p in CONTRIB_DIR.iterdir() if p.is_dir()]
+
 
 _RGL_LANG_DIRS: List[Path] = _discover_rgl_lang_dirs()
 _GF_PATH_CACHE: Optional[str] = None
@@ -530,6 +538,7 @@ def _gf_path_args() -> str:
     CRITICAL: include:
       - gf-rgl/src + gf-rgl/src/api
       - all first-level language dirs under gf-rgl/src (Prelude/SyntaxXXX/etc)
+      - gf/contrib/{lang}/ (ADR 006: Manual overrides)
       - gf/ (local modules like AbstractWiki.gf and Wiki*.gf)
       - generated/src dirs (SAFE_MODE + both legacy locations)
       - repo root (last resort)
@@ -542,6 +551,7 @@ def _gf_path_args() -> str:
         str(RGL_SRC.resolve()) if RGL_SRC.exists() else str(RGL_SRC),
         str(RGL_API.resolve()) if RGL_API.exists() else str(RGL_API),
         *[str(d.resolve()) for d in _RGL_LANG_DIRS if d.exists()],
+        *[str(d.resolve()) for d in _discover_contrib_dirs() if d.exists()],
         str(GF_DIR.resolve()) if GF_DIR.exists() else str(GF_DIR),
         *[str(d) for d in _generated_src_candidates() if d.exists()],
         str(ROOT_DIR.resolve()),
@@ -730,6 +740,11 @@ def ensure_source_exists(lang_code: str, strategy: str, *, regen_safe: bool = Fa
     SAFE_MODE: always lives under SAFE_MODE_SRC to avoid stale HIGH_ROAD contamination.
     """
     gf_filename = get_gf_name(lang_code)
+
+    # ADR 006: Tier 2 (Human-in-the-Loop / Manual Overrides) takes priority
+    contrib_path = CONTRIB_DIR / lang_code / gf_filename
+    if contrib_path.exists():
+        return contrib_path
 
     if strategy == "HIGH_ROAD":
         p = GF_DIR / gf_filename
@@ -940,9 +955,11 @@ def main() -> None:
                     logger.info(f"  [OK] {lang} ({strategy})")
                 else:
                     first = (msg.splitlines()[0] if msg else "Unknown error")[:140]
-                    logger.info(f"  [FAIL] {lang} ({strategy}): {first}...")
+                    # ADR 006: Skip broken languages and alert for human intervention
+                    logger.warning(f"  [SKIP] {lang} ({strategy}): Compilation failed. Human intervention required via /tools (HITL). Error: {first}...")
             except Exception as e:
-                logger.error(f"  [ERR] Exception for {code}: {e}")
+                # ADR 006: Skip on missing source and alert for human intervention
+                logger.warning(f"  [SKIP] {code}: Source missing or error. Human intervention required (HITL). Details: {e}")
 
     logger.info(f"Phase 1 complete in {time.time() - phase1_start:.2f}s")
 

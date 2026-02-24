@@ -12,27 +12,13 @@ Default behavior
 - Skips rows with empty EXPECTED text (authoring workflow)
 - Exits non-zero if any FAIL/CRASH, or if zero tests actually ran
 
-CSV Schemas
-
-(Recommended v2)
-- Test_ID (optional)
-- Frame_Type (optional; defaults to "bio")
-- Name
-- Gender
-- Profession_ID     (QID like "Q33999") OR Profession_Lemma* column
-- Nationality_ID    (QID like "Q38")    OR Nationality_Lemma* column
-- EXPECTED_TEXT     (or EXPECTED_FULL_SENTENCE / EXPECTED_FULL_TEXT)
-
-(Legacy)
-- Name
-- Gender or "Gender (Male/Female)"
-- Profession_Lemma* column (e.g., Profession_Lemma_in_Italian)
-- Nationality_Lemma* column
-- EXPECTED_FULL_SENTENCE
-
 Notes
 - For QID resolution, this script uses app.shared.lexicon.LexiconRuntime if available.
-- For rendering, it directly instantiates the GFGrammarEngine (v2.1 Adapter).
+- For rendering, it instantiates the GFGrammarEngine (v2.1 Adapter).
+
+Key reliability guarantees in this runner:
+- The GFGrammarEngine is lazy-loaded; we *must* call health_check()/generate() once to load PGF.
+- Async calls are executed via a dedicated background event loop thread (safe even if caller has a running loop).
 """
 
 from __future__ import annotations
@@ -45,10 +31,12 @@ import re
 import sys
 import time
 import asyncio
+import threading
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Callable, TypeVar
 
+T = TypeVar("T")
 
 # -----------------------------------------------------------------------------
 # Project bootstrap (avoid brittle sys.path hacks; still works from subprocess)
@@ -65,8 +53,17 @@ def _find_project_root(start: Path) -> Optional[Path]:
 
 THIS_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = _find_project_root(THIS_DIR) or _find_project_root(Path.cwd())
+
 if PROJECT_ROOT and str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+# Ensure relative paths (like ".env") resolve as expected when tools execute from elsewhere.
+# This is safe for CLI tooling and prevents “works locally, fails in tool runner” drift.
+if PROJECT_ROOT:
+    try:
+        os.chdir(str(PROJECT_ROOT))
+    except Exception:
+        pass
 
 # [REFACTOR] Use standardized logger
 try:
@@ -74,8 +71,62 @@ try:
     logger = ToolLogger(__file__)
 except ImportError:
     import logging
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger = logging.getLogger("TestRunner")
+
+
+# -----------------------------------------------------------------------------
+# Async execution helper (robust + efficient)
+# -----------------------------------------------------------------------------
+class _AsyncLoopThread:
+    """
+    Runs an asyncio event loop on a dedicated background thread.
+
+    Why:
+    - Avoids calling asyncio.run() per test case (slow).
+    - Works even when this script is invoked from an environment that already has a running loop.
+    """
+
+    def __init__(self) -> None:
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._thread: Optional[threading.Thread] = None
+        self._ready = threading.Event()
+
+        def _thread_main() -> None:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            self._loop = loop
+            self._ready.set()
+            loop.run_forever()
+            # graceful shutdown
+            pending = asyncio.all_tasks(loop=loop)
+            for task in pending:
+                task.cancel()
+            try:
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            except Exception:
+                pass
+            loop.close()
+
+        self._thread = threading.Thread(target=_thread_main, name="universal_test_runner_loop", daemon=True)
+        self._thread.start()
+        self._ready.wait(timeout=5)
+
+    def run(self, coro_factory: Callable[[], "asyncio.Future[T] | asyncio.coroutines.Coroutine[Any, Any, T]"]) -> T:
+        if not self._loop:
+            raise RuntimeError("Async loop thread failed to initialize.")
+        fut = asyncio.run_coroutine_threadsafe(coro_factory(), self._loop)
+        return fut.result()
+
+    def close(self) -> None:
+        if self._loop:
+            try:
+                self._loop.call_soon_threadsafe(self._loop.stop)
+            except Exception:
+                pass
+        if self._thread:
+            self._thread.join(timeout=2)
 
 
 # -----------------------------------------------------------------------------
@@ -145,7 +196,6 @@ class _LexiconResolver:
     def __init__(self) -> None:
         self._runtime = None
         try:
-            # Preferred modern runtime
             from app.shared.lexicon import LexiconRuntime  # type: ignore
 
             self._runtime = LexiconRuntime()
@@ -168,7 +218,6 @@ class _LexiconResolver:
             entry = self._runtime.lookup(qid, lang_code)  # returns LexiconEntry or None
             if not entry:
                 return None
-            # Most useful for router is lemma (human form), not gf_fun.
             lemma = getattr(entry, "lemma", None)
             return _clean_cell(lemma) or None
         except Exception:
@@ -180,43 +229,92 @@ class _LexiconResolver:
 # -----------------------------------------------------------------------------
 class _Renderer:
     """
-    Wraps the v2.1 Grammar Engine for the test runner.
-    Resolves the 'Missing Router' issue by using the Adapter directly.
+    Wraps the v2.1 GFGrammarEngine for the test runner.
+
+    Proper fix:
+    - GFGrammarEngine is lazy-loaded; checking engine.grammar on init is wrong.
+    - We call engine.health_check() once via a background loop to force loading.
+    - Provide actionable diagnostics if loading fails.
     """
+
     def __init__(self) -> None:
         self._engine = None
+        self._loop = _AsyncLoopThread()
+        self._ready: bool = False
+        self._supported_languages: List[str] = []
+        self._diag: Dict[str, Any] = {}
+
         try:
             from app.adapters.engines.gf_wrapper import GFGrammarEngine
+            import app.adapters.engines.gf_wrapper as gf_mod  # to inspect pgf import status
+
             self._engine = GFGrammarEngine()
+
+            # Force lazy-load now (this is the key “proper” fix).
+            self._ready = bool(self._loop.run(lambda: self._engine.health_check()))
+
+            if self._ready:
+                self._supported_languages = list(self._loop.run(lambda: self._engine.get_supported_languages()))
+            else:
+                # Diagnostics: PGF path, existence, and whether pgf bindings imported.
+                pgf_path = getattr(self._engine, "pgf_path", None)
+                pgf_exists = bool(pgf_path and Path(str(pgf_path)).exists())
+                pgf_bindings_ok = getattr(gf_mod, "pgf", None) is not None
+
+                self._diag = {
+                    "pgf_path": str(pgf_path) if pgf_path else None,
+                    "pgf_exists": pgf_exists,
+                    "pgf_bindings_importable": pgf_bindings_ok,
+                    "cwd": os.getcwd(),
+                    "project_root": str(PROJECT_ROOT) if PROJECT_ROOT else None,
+                }
+
         except Exception as e:
-            logger.warning(f"Failed to initialize GFGrammarEngine: {e}")
             self._engine = None
+            self._ready = False
+            self._diag = {"error": str(e), "cwd": os.getcwd(), "project_root": str(PROJECT_ROOT) if PROJECT_ROOT else None}
+
+    def close(self) -> None:
+        self._loop.close()
 
     def available(self) -> bool:
-        return self._engine is not None and self._engine.grammar is not None
+        return self._engine is not None and self._ready is True
+
+    def diagnostics(self) -> Dict[str, Any]:
+        return {
+            "ready": self._ready,
+            "supported_languages_count": len(self._supported_languages),
+            "supported_languages_sample": self._supported_languages[:10],
+            **(self._diag or {}),
+        }
 
     def render_bio(self, *, name: str, gender: str, profession: str, nationality: str, lang_code: str) -> str:
         if not self.available():
-            raise RuntimeError("Grammar Engine not available. Check PGF file and gf-rgl installation.")
+            diag = self.diagnostics()
+            raise RuntimeError(
+                "Grammar Engine not available.\n"
+                f"Diagnostics: {json.dumps(diag, ensure_ascii=False)}\n"
+                "Fix checklist:\n"
+                "- Ensure the 'pgf' Python bindings are installed in the tool runner environment.\n"
+                "- Ensure AbstractWiki.pgf exists at the configured PGF path.\n"
+                "- Ensure the PGF contains the target language (e.g., WikiEng / WikiIta etc.)."
+            )
 
         from app.core.domain.frame import BioFrame
-        
-        # Construct v2.1 BioFrame
-        # Note: We manually construct the frame here to mock the API ingress
+
         frame = BioFrame(
             frame_type="bio",
             subject={
                 "name": name,
                 "gender": gender,
                 "profession": profession,
-                "nationality": nationality
-            }
+                "nationality": nationality,
+            },
         )
 
         try:
-            # Run async engine method synchronously
-            sentence = asyncio.run(self._engine.generate(lang_code, frame))
-            return sentence.text
+            sentence = self._loop.run(lambda: self._engine.generate(lang_code, frame))  # type: ignore[union-attr]
+            return str(sentence.text)
         except Exception as e:
             raise RuntimeError(f"Generation failed: {e}")
 
@@ -253,9 +351,7 @@ class RunSummary:
 # Runner
 # -----------------------------------------------------------------------------
 DEFAULT_DATASET_DIR_CANDIDATES = [
-    # Preferred (new layout)
     THIS_DIR / "generated_datasets",
-    # Legacy (older layout)
     (PROJECT_ROOT / "qa_tools" / "generated_datasets") if PROJECT_ROOT else None,
     (PROJECT_ROOT / "tools" / "qa" / "generated_datasets") if PROJECT_ROOT else None,
     (PROJECT_ROOT / "generated_datasets") if PROJECT_ROOT else None,
@@ -264,15 +360,13 @@ DEFAULT_DATASET_DIR_CANDIDATES = [
 
 def _resolve_dataset_dir(explicit: Optional[str]) -> Path:
     if explicit:
-        p = Path(explicit).expanduser().resolve()
-        return p
+        return Path(explicit).expanduser().resolve()
     env = os.getenv("AWA_TEST_DATASET_DIR", "").strip()
     if env:
         return Path(env).expanduser().resolve()
     for c in DEFAULT_DATASET_DIR_CANDIDATES:
         if c and c.exists() and c.is_dir():
             return c
-    # fall back to THIS_DIR/generated_datasets even if missing (we'll error nicely)
     return THIS_DIR / "generated_datasets"
 
 
@@ -288,18 +382,16 @@ def _extract_inputs_from_row(
     fieldnames: List[str],
     lang_code: str,
     lexicon: _LexiconResolver,
-) -> Tuple[str, str, str, str, str, str]:
+) -> Tuple[str, str, str, str, str, str, str]:
     test_id_col = _first_present(fieldnames, TEST_ID_COLUMN_CANDIDATES)
     frame_col = _first_present(fieldnames, FRAME_COLUMN_CANDIDATES)
     name_col = _first_present(fieldnames, NAME_COLUMN_CANDIDATES)
     gender_col = _first_present(fieldnames, GENDER_COLUMN_CANDIDATES)
     expected_col = _first_present(fieldnames, EXPECTED_COLUMN_CANDIDATES)
 
-    # Legacy lemma columns
     prof_lemma_col = _first_prefixed(fieldnames, PROF_LEMMA_PREFIXES)
     nat_lemma_col = _first_prefixed(fieldnames, NAT_LEMMA_PREFIXES)
 
-    # v2 ID columns
     prof_id_col = _first_present(fieldnames, PROF_ID_COLUMN_CANDIDATES)
     nat_id_col = _first_present(fieldnames, NAT_ID_COLUMN_CANDIDATES)
 
@@ -313,12 +405,8 @@ def _extract_inputs_from_row(
 
     name = _clean_cell(row.get(name_col, ""))
     gender = _clean_cell(row.get(gender_col, "")) or "Unknown"
-
     expected = _clean_cell(row.get(expected_col or "", ""))
 
-    # Profession / Nationality resolution strategy:
-    # 1) Prefer lemma columns if present (legacy authoring style)
-    # 2) Else use ID columns and resolve via lexicon runtime (QIDs -> lemma)
     profession = ""
     nationality = ""
 
@@ -348,6 +436,8 @@ def run_universal_tests(
     max_failures_to_print: int,
     json_report_path: Optional[Path],
     verbose: bool,
+    diagnose_only: bool,
+    list_languages: bool,
 ) -> int:
     logger.info("========================================")
     logger.info("   UNIVERSAL TEST RUNNER (Enterprise)   ")
@@ -357,293 +447,298 @@ def run_universal_tests(
     if lang_filter:
         logger.info(f"Lang filter: {', '.join(lang_filter)}")
 
-    if not dataset_dir.exists():
-        logger.error(f"Test directory not found: {dataset_dir}")
-        logger.info("Hint: Run tools/qa/test_suite_generator.py first, or set AWA_TEST_DATASET_DIR.")
-        return 2
-
-    csv_files = _iter_csv_files(dataset_dir, pattern)
-    if not csv_files:
-        logger.error("No CSV files found.")
-        logger.info("Hint: Run tools/qa/test_suite_generator.py first.")
-        return 2
-
     renderer = _Renderer()
-    if not renderer.available():
-        logger.error("Grammar Engine not available.")
-        logger.info("Hint: Check if AbstractWiki.pgf exists in 'gf/' and 'pgf' library is installed.")
-        return 2
+    try:
+        if list_languages or diagnose_only:
+            diag = renderer.diagnostics()
+            logger.info("")
+            logger.info("---- ENGINE DIAGNOSTICS ----")
+            logger.info(json.dumps(diag, ensure_ascii=False, indent=2))
+            if list_languages:
+                logger.info("")
+                logger.info("---- SUPPORTED LANGUAGES (sample) ----")
+                for x in diag.get("supported_languages_sample", []):
+                    logger.info(f"- {x}")
+            # Exit success only if engine is ready
+            return 0 if renderer.available() else 2
 
-    lexicon = _LexiconResolver()
-    if verbose:
-        logger.info(f"Lexicon resolver: {'ON' if lexicon.available() else 'OFF'}")
+        if not dataset_dir.exists():
+            logger.error(f"Test directory not found: {dataset_dir}")
+            logger.info("Hint: Run tools/qa/test_suite_generator.py first, or set AWA_TEST_DATASET_DIR.")
+            return 2
 
-    started = time.time()
-    results: List[CaseResult] = []
+        csv_files = _iter_csv_files(dataset_dir, pattern)
+        if not csv_files:
+            logger.error("No CSV files found.")
+            logger.info("Hint: Run tools/qa/test_suite_generator.py first.")
+            return 2
 
-    total_passed = total_failed = total_skipped = total_crashed = 0
-    total_active = 0
+        if not renderer.available():
+            logger.error("Grammar Engine not available.")
+            logger.info(f"Diagnostics: {json.dumps(renderer.diagnostics(), ensure_ascii=False)}")
+            logger.info("Hint: Check if AbstractWiki.pgf exists in 'gf/' and 'pgf' library is installed.")
+            return 2
 
-    for fpath in csv_files:
-        lang = _infer_lang_from_filename(fpath.name) or "unknown"
-        if lang_filter and lang.lower() not in {x.lower() for x in lang_filter}:
-            continue
+        lexicon = _LexiconResolver()
+        if verbose:
+            logger.info(f"Lexicon resolver: {'ON' if lexicon.available() else 'OFF'}")
 
-        logger.info("")
-        logger.info("----------------------------------------")
-        logger.info(f"Suite: {fpath.name}  [lang={lang}]")
-        logger.info("----------------------------------------")
+        started = time.time()
+        results: List[CaseResult] = []
 
-        file_pass = file_fail = file_skip = file_crash = 0
-        file_active = 0
+        total_passed = total_failed = total_skipped = total_crashed = 0
+        total_active = 0
 
-        with fpath.open("r", encoding="utf-8", newline="") as fh:
-            reader = csv.DictReader(fh)
-            if not reader.fieldnames:
-                logger.error("CSV has no headers.")
+        for fpath in csv_files:
+            lang = _infer_lang_from_filename(fpath.name) or "unknown"
+            if lang_filter and lang.lower() not in {x.lower() for x in lang_filter}:
                 continue
 
-            fieldnames = list(reader.fieldnames)
-            row_count = 0
+            logger.info("")
+            logger.info("----------------------------------------")
+            logger.info(f"Suite: {fpath.name}  [lang={lang}]")
+            logger.info("----------------------------------------")
 
-            for row in reader:
-                row_count += 1
-                if limit_per_file and row_count > limit_per_file:
-                    break
+            file_pass = file_fail = file_skip = file_crash = 0
+            file_active = 0
 
-                try:
-                    test_id, frame_type, name, gender, profession, nationality, expected = _extract_inputs_from_row(
-                        row, fieldnames=fieldnames, lang_code=lang, lexicon=lexicon
-                    )
+            with fpath.open("r", encoding="utf-8", newline="") as fh:
+                reader = csv.DictReader(fh)
+                if not reader.fieldnames:
+                    logger.error("CSV has no headers.")
+                    continue
 
-                    # Authoring workflow: skip rows missing expected, unless strict
-                    if not expected:
-                        if strict:
-                            file_fail += 1
-                            total_failed += 1
-                            results.append(
-                                CaseResult(
-                                    file=fpath.name,
-                                    lang=lang,
-                                    test_id=test_id,
-                                    frame_type=frame_type,
-                                    status="FAIL",
-                                    expected="(missing EXPECTED)",
-                                    actual="",
-                                    detail="Expected text is empty (strict mode).",
-                                )
-                            )
-                            if fail_fast:
-                                raise RuntimeError("Fail-fast: missing EXPECTED in strict mode.")
-                        else:
-                            file_skip += 1
-                            total_skipped += 1
-                            results.append(
-                                CaseResult(
-                                    file=fpath.name,
-                                    lang=lang,
-                                    test_id=test_id,
-                                    frame_type=frame_type,
-                                    status="SKIP",
-                                    expected="",
-                                    actual="",
-                                    detail="Missing EXPECTED text.",
-                                )
-                            )
-                        continue
+                fieldnames = list(reader.fieldnames)
+                row_count = 0
 
-                    # Only bio supported here (universal runner can be extended later)
-                    if frame_type.lower() not in {"bio", "biography"}:
-                        file_skip += 1
-                        total_skipped += 1
-                        results.append(
-                            CaseResult(
-                                file=fpath.name,
-                                lang=lang,
-                                test_id=test_id,
-                                frame_type=frame_type,
-                                status="SKIP",
-                                expected=expected,
-                                actual="",
-                                detail=f"Unsupported frame_type: {frame_type}",
-                            )
-                        )
-                        continue
-
-                    # Must have resolved inputs
-                    if not name or not profession or not nationality:
-                        msg = f"Missing inputs (name={bool(name)}, profession={bool(profession)}, nationality={bool(nationality)})"
-                        if strict:
-                            file_fail += 1
-                            total_failed += 1
-                            results.append(
-                                CaseResult(
-                                    file=fpath.name,
-                                    lang=lang,
-                                    test_id=test_id,
-                                    frame_type=frame_type,
-                                    status="FAIL",
-                                    expected=expected,
-                                    actual="",
-                                    detail=msg,
-                                )
-                            )
-                            if fail_fast:
-                                raise RuntimeError("Fail-fast: missing required inputs in strict mode.")
-                        else:
-                            file_skip += 1
-                            total_skipped += 1
-                            results.append(
-                                CaseResult(
-                                    file=fpath.name,
-                                    lang=lang,
-                                    test_id=test_id,
-                                    frame_type=frame_type,
-                                    status="SKIP",
-                                    expected=expected,
-                                    actual="",
-                                    detail=msg,
-                                )
-                            )
-                        continue
-
-                    file_active += 1
-                    total_active += 1
-
-                    actual = renderer.render_bio(
-                        name=name,
-                        gender=gender,
-                        profession=profession,
-                        nationality=nationality,
-                        lang_code=lang,
-                    ).strip()
-
-                    if actual == expected:
-                        file_pass += 1
-                        total_passed += 1
-                        results.append(
-                            CaseResult(
-                                file=fpath.name,
-                                lang=lang,
-                                test_id=test_id,
-                                frame_type=frame_type,
-                                status="PASS",
-                                expected=expected,
-                                actual=actual,
-                            )
-                        )
-                    else:
-                        file_fail += 1
-                        total_failed += 1
-                        results.append(
-                            CaseResult(
-                                file=fpath.name,
-                                lang=lang,
-                                test_id=test_id,
-                                frame_type=frame_type,
-                                status="FAIL",
-                                expected=expected,
-                                actual=actual,
-                                detail=f"Input: {name} ({gender}) | {profession} | {nationality}",
-                            )
-                        )
-
-                        if max_failures_to_print > 0 and file_fail <= max_failures_to_print:
-                            logger.error(f"FAIL {test_id}")
-                            logger.info(f"  Input:    {name} ({gender}) | {profession} | {nationality}")
-                            logger.info(f"  Expected: {expected}")
-                            logger.info(f"  Actual:   {actual}")
-
-                        if fail_fast:
-                            raise RuntimeError("Fail-fast: first mismatch encountered.")
-
-                except Exception as e:
-                    # Crash for this row
-                    file_crash += 1
-                    total_crashed += 1
-                    results.append(
-                        CaseResult(
-                            file=fpath.name,
-                            lang=lang,
-                            test_id=_clean_cell(row.get("Test_ID", "")) or "Unknown",
-                            frame_type=_clean_cell(row.get("Frame_Type", "")) or "bio",
-                            status="CRASH",
-                            expected=_clean_cell(row.get("EXPECTED_TEXT", "")),
-                            actual="",
-                            detail=str(e),
-                        )
-                    )
-                    logger.error(f"CRASH: {str(e)}")
-                    if fail_fast:
+                for row in reader:
+                    row_count += 1
+                    if limit_per_file and row_count > limit_per_file:
                         break
 
-        # File summary
-        denom = file_pass + file_fail
-        if denom > 0:
-            rate = (file_pass / denom) * 100.0
-            logger.info(f"Result: {file_pass} passed, {file_fail} failed, {file_skip} skipped, {file_crash} crashed  ({rate:.1f}% pass)")
-        else:
-            logger.info(f"Result: {file_pass} passed, {file_fail} failed, {file_skip} skipped, {file_crash} crashed")
+                    try:
+                        test_id, frame_type, name, gender, profession, nationality, expected = _extract_inputs_from_row(
+                            row, fieldnames=fieldnames, lang_code=lang, lexicon=lexicon
+                        )
 
-        if fail_fast and (file_fail > 0 or file_crash > 0):
-            break
+                        # Authoring workflow: skip rows missing expected, unless strict
+                        if not expected:
+                            if strict:
+                                file_fail += 1
+                                total_failed += 1
+                                results.append(
+                                    CaseResult(
+                                        file=fpath.name,
+                                        lang=lang,
+                                        test_id=test_id,
+                                        frame_type=frame_type,
+                                        status="FAIL",
+                                        expected="(missing EXPECTED)",
+                                        actual="",
+                                        detail="Expected text is empty (strict mode).",
+                                    )
+                                )
+                                if fail_fast:
+                                    raise RuntimeError("Fail-fast: missing EXPECTED in strict mode.")
+                            else:
+                                file_skip += 1
+                                total_skipped += 1
+                                results.append(
+                                    CaseResult(
+                                        file=fpath.name,
+                                        lang=lang,
+                                        test_id=test_id,
+                                        frame_type=frame_type,
+                                        status="SKIP",
+                                        expected="",
+                                        actual="",
+                                        detail="Missing EXPECTED text.",
+                                    )
+                                )
+                            continue
 
-    finished = time.time()
-    duration = finished - started
+                        if frame_type.lower() not in {"bio", "biography"}:
+                            file_skip += 1
+                            total_skipped += 1
+                            results.append(
+                                CaseResult(
+                                    file=fpath.name,
+                                    lang=lang,
+                                    test_id=test_id,
+                                    frame_type=frame_type,
+                                    status="SKIP",
+                                    expected=expected,
+                                    actual="",
+                                    detail=f"Unsupported frame_type: {frame_type}",
+                                )
+                            )
+                            continue
 
-    logger.info("")
-    logger.info("========================================")
-    logger.info(f"RUN COMPLETE in {duration:.2f}s")
-    logger.info("========================================")
-    logger.info(f"Passed:  {total_passed}")
-    logger.info(f"Failed:  {total_failed}")
-    logger.info(f"Skipped: {total_skipped}")
-    logger.info(f"Crashed: {total_crashed}")
-    logger.info(f"Active:  {total_active}")
+                        if not name or not profession or not nationality:
+                            msg = f"Missing inputs (name={bool(name)}, profession={bool(profession)}, nationality={bool(nationality)})"
+                            if strict:
+                                file_fail += 1
+                                total_failed += 1
+                                results.append(
+                                    CaseResult(
+                                        file=fpath.name,
+                                        lang=lang,
+                                        test_id=test_id,
+                                        frame_type=frame_type,
+                                        status="FAIL",
+                                        expected=expected,
+                                        actual="",
+                                        detail=msg,
+                                    )
+                                )
+                                if fail_fast:
+                                    raise RuntimeError("Fail-fast: missing required inputs in strict mode.")
+                            else:
+                                file_skip += 1
+                                total_skipped += 1
+                                results.append(
+                                    CaseResult(
+                                        file=fpath.name,
+                                        lang=lang,
+                                        test_id=test_id,
+                                        frame_type=frame_type,
+                                        status="SKIP",
+                                        expected=expected,
+                                        actual="",
+                                        detail=msg,
+                                    )
+                                )
+                            continue
 
-    summary = RunSummary(
-        started_at=started,
-        finished_at=finished,
-        duration_s=duration,
-        files=len(csv_files),
-        passed=total_passed,
-        failed=total_failed,
-        skipped=total_skipped,
-        crashed=total_crashed,
-        total=(total_passed + total_failed + total_skipped + total_crashed),
-    )
+                        file_active += 1
+                        total_active += 1
 
-    if json_report_path:
-        payload = {
-            "summary": asdict(summary),
-            "results": [asdict(r) for r in results],
-        }
-        json_report_path.parent.mkdir(parents=True, exist_ok=True)
-        json_report_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        logger.info(f"\nWrote JSON report: {json_report_path}")
+                        actual = renderer.render_bio(
+                            name=name,
+                            gender=gender,
+                            profession=profession,
+                            nationality=nationality,
+                            lang_code=lang,
+                        ).strip()
 
-    # Exit codes:
-    # 0 = success (no fail/crash and at least 1 active test)
-    # 1 = fail/crash present
-    # 2 = misconfigured / nothing ran
-    
-    exit_code = 0
-    if total_failed > 0 or total_crashed > 0:
-        exit_code = 1
-    if total_active == 0:
-        exit_code = 2
+                        if actual == expected:
+                            file_pass += 1
+                            total_passed += 1
+                            results.append(
+                                CaseResult(
+                                    file=fpath.name,
+                                    lang=lang,
+                                    test_id=test_id,
+                                    frame_type=frame_type,
+                                    status="PASS",
+                                    expected=expected,
+                                    actual=actual,
+                                )
+                            )
+                        else:
+                            file_fail += 1
+                            total_failed += 1
+                            results.append(
+                                CaseResult(
+                                    file=fpath.name,
+                                    lang=lang,
+                                    test_id=test_id,
+                                    frame_type=frame_type,
+                                    status="FAIL",
+                                    expected=expected,
+                                    actual=actual,
+                                    detail=f"Input: {name} ({gender}) | {profession} | {nationality}",
+                                )
+                            )
 
-    # [REFACTOR] Standardized Summary for GUI
-    summary_msg = f"Passed: {total_passed}, Failed: {total_failed}, Crashed: {total_crashed}."
-    
-    if hasattr(logger, "finish"):
-        logger.finish(
-            message=summary_msg,
-            success=(exit_code == 0),
-            details=asdict(summary)
+                            if max_failures_to_print > 0 and file_fail <= max_failures_to_print:
+                                logger.error(f"FAIL {test_id}")
+                                logger.info(f"  Input:    {name} ({gender}) | {profession} | {nationality}")
+                                logger.info(f"  Expected: {expected}")
+                                logger.info(f"  Actual:   {actual}")
+
+                            if fail_fast:
+                                raise RuntimeError("Fail-fast: first mismatch encountered.")
+
+                    except Exception as e:
+                        file_crash += 1
+                        total_crashed += 1
+                        results.append(
+                            CaseResult(
+                                file=fpath.name,
+                                lang=lang,
+                                test_id=_clean_cell(row.get("Test_ID", "")) or "Unknown",
+                                frame_type=_clean_cell(row.get("Frame_Type", "")) or "bio",
+                                status="CRASH",
+                                expected=_clean_cell(row.get("EXPECTED_TEXT", "")),
+                                actual="",
+                                detail=str(e),
+                            )
+                        )
+                        logger.error(f"CRASH: {str(e)}")
+                        if fail_fast:
+                            break
+
+            denom = file_pass + file_fail
+            if denom > 0:
+                rate = (file_pass / denom) * 100.0
+                logger.info(
+                    f"Result: {file_pass} passed, {file_fail} failed, {file_skip} skipped, {file_crash} crashed  ({rate:.1f}% pass)"
+                )
+            else:
+                logger.info(f"Result: {file_pass} passed, {file_fail} failed, {file_skip} skipped, {file_crash} crashed")
+
+            if fail_fast and (file_fail > 0 or file_crash > 0):
+                break
+
+        finished = time.time()
+        duration = finished - started
+
+        logger.info("")
+        logger.info("========================================")
+        logger.info(f"RUN COMPLETE in {duration:.2f}s")
+        logger.info("========================================")
+        logger.info(f"Passed:  {total_passed}")
+        logger.info(f"Failed:  {total_failed}")
+        logger.info(f"Skipped: {total_skipped}")
+        logger.info(f"Crashed: {total_crashed}")
+        logger.info(f"Active:  {total_active}")
+
+        summary = RunSummary(
+            started_at=started,
+            finished_at=finished,
+            duration_s=duration,
+            files=len(csv_files),
+            passed=total_passed,
+            failed=total_failed,
+            skipped=total_skipped,
+            crashed=total_crashed,
+            total=(total_passed + total_failed + total_skipped + total_crashed),
         )
-        
-    return exit_code
+
+        if json_report_path:
+            payload = {
+                "summary": asdict(summary),
+                "results": [asdict(r) for r in results],
+            }
+            json_report_path.parent.mkdir(parents=True, exist_ok=True)
+            json_report_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            logger.info(f"\nWrote JSON report: {json_report_path}")
+
+        exit_code = 0
+        if total_failed > 0 or total_crashed > 0:
+            exit_code = 1
+        if total_active == 0:
+            exit_code = 2
+
+        summary_msg = f"Passed: {total_passed}, Failed: {total_failed}, Crashed: {total_crashed}."
+        if hasattr(logger, "finish"):
+            logger.finish(message=summary_msg, success=(exit_code == 0), details=asdict(summary))
+
+        return exit_code
+
+    finally:
+        renderer.close()
 
 
 # -----------------------------------------------------------------------------
@@ -660,15 +755,29 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--print-failures", type=int, default=10, help="Print first N failures per file (0 = none).")
     p.add_argument("--json-report", default=None, help="Write a JSON report to this path.")
     p.add_argument("--verbose", action="store_true", help="Verbose diagnostics.")
+
+    # New: demo-friendly + production-friendly diagnostics/overrides
+    p.add_argument("--pgf", default=None, help="Override PGF path (file or directory). Sets PGF_PATH env for this run.")
+    p.add_argument("--diagnose", action="store_true", help="Print engine diagnostics and exit (0 if ready, else 2).")
+    p.add_argument("--list-languages", action="store_true", help="List supported languages (requires engine ready).")
     return p.parse_args(argv)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    # [REFACTOR] Standardized Start
     if hasattr(logger, "start"):
         logger.start("Universal Test Runner")
 
     args = _parse_args(argv)
+
+    # Apply PGF override before importing/initializing engine (settings reads env).
+    if args.pgf:
+        raw = str(args.pgf).strip()
+        if raw:
+            p = Path(raw).expanduser()
+            # If a directory is provided, assume AbstractWiki.pgf inside it.
+            if p.exists() and p.is_dir():
+                p = p / "AbstractWiki.pgf"
+            os.environ["PGF_PATH"] = str(p)
 
     dataset_dir = _resolve_dataset_dir(args.dataset_dir)
     lang_filter = [x.strip() for x in (args.langs or "").split(",") if x.strip()] or None
@@ -684,6 +793,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         max_failures_to_print=max(0, int(args.print_failures)),
         json_report_path=json_report_path,
         verbose=bool(args.verbose),
+        diagnose_only=bool(args.diagnose),
+        list_languages=bool(args.list_languages),
     )
 
 

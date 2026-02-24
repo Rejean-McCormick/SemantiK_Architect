@@ -2,7 +2,7 @@
 
 ### 1. Context and Problem Statement
 
-The Abstract Wiki Architect operates in two distinct phases of the software lifecycle:
+The SemantiK Architect operates in two distinct phases of the software lifecycle:
 
 1. **Architecting (Draft Mode):** Developers and AI agents must invent new grammar functions (e.g., `mkIsAProperty`, `mkRobot`) rapidly to test linguistic theories.
 2. **Publishing (Production Mode):** The system generates high-reliability content using agreed-upon standards and shared libraries.
@@ -92,4 +92,4 @@ To support the Prototype Path, we define a recursive schema that mimics the *str
 
 **Status:** `ACCEPTED`
 **Date:** 2025-12-23
-**Author:** Abstract Wiki Architect Team
+**Author:** SemantiK Architect Team

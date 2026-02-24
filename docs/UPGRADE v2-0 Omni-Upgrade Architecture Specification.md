@@ -6,7 +6,7 @@ This document is the definitive technical blueprint for the upgrade. It expands 
 
 # 🏗️ v2.0 "Omni-Upgrade" Architecture Specification (Exhaustive)
 
-**Abstract Wiki Architect**
+**SemantiK Architect**
 
 ## 1. Executive Summary
 

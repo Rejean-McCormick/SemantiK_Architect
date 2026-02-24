@@ -2,7 +2,7 @@
 
 ## 1. Objective
 
-Consolidate and organize the Python scripts currently scattered across `tools/` and `utils/` to improve maintainability, clarify intent, and standardize logging output for the Abstract Wiki Architect GUI.
+Consolidate and organize the Python scripts currently scattered across `tools/` and `utils/` to improve maintainability, clarify intent, and standardize logging output for the SemantiK Architect GUI.
 
 ## 2. Current State Analysis
 

@@ -11,7 +11,8 @@ Design notes:
   - Uses `requests` if available, otherwise falls back to urllib
   - Supports trace ID propagation via header: x-trace-id
   - Avoids leaking API keys (caller should redact in logs)
-  - Requests text/plain output (server may still return JSON containing surface_text/meta)
+  - Requests JSON first, but accepts text/plain as fallback (some servers return JSON with text/plain)
+  - Default test payload matches the *canonical* server schema (BioFrame.subject is required)
 """
 
 from __future__ import annotations
@@ -60,10 +61,10 @@ class ArchitectApiRuntimeChecker:
         self._generate_prefix: Optional[str] = None
 
     def _headers(self) -> Dict[str, str]:
-        # Default output mode is "text/plain" (often still returned as JSON with surface_text + meta).
+        # Prefer JSON but accept text/plain as fallback.
         headers: Dict[str, str] = {
             "Content-Type": "application/json",
-            "Accept": "text/plain",
+            "Accept": "application/json, text/plain",
         }
         if self.api_key:
             headers["X-API-Key"] = self.api_key
@@ -72,6 +73,43 @@ class ArchitectApiRuntimeChecker:
         if self.trace_id:
             headers["x-trace-id"] = self.trace_id
         return headers
+
+    @staticmethod
+    def _dedupe(seq: List[str]) -> List[str]:
+        seen = set()
+        out: List[str] = []
+        for x in seq:
+            if x not in seen:
+                seen.add(x)
+                out.append(x)
+        return out
+
+    def _candidate_api_roots(self) -> List[str]:
+        """
+        Return candidate API roots to probe.
+
+        Real-world layouts we handle:
+          - http://host:8000                  -> try /api/v1/... and /abstract_wiki_architect/api/v1/...
+          - http://host:8000/abstract_wiki_architect -> try /api/v1/...
+          - http://host:8000/.../api/v1      -> treat as already-versioned root
+        """
+        base = (self.api_url or "").rstrip("/")
+        if not base:
+            base = "http://localhost:8000"
+
+        cands = [base]
+
+        # If user passed a versioned root already, also try its parent.
+        if base.endswith("/api/v1"):
+            cands.append(base[: -len("/api/v1")].rstrip("/"))
+
+        # If not already mounted, also try the known mount prefix.
+        # This project’s Swagger UI shows routes under /abstract_wiki_architect/...
+        for b in list(cands):
+            if "/abstract_wiki_architect" not in b:
+                cands.append(b.rstrip("/") + "/abstract_wiki_architect")
+
+        return self._dedupe([c.rstrip("/") for c in cands if c])
 
     def _http_get_json(self, url: str) -> Tuple[int, Any, str]:
         # returns: (http_status, parsed_json_or_none, raw_text)
@@ -147,46 +185,51 @@ class ArchitectApiRuntimeChecker:
         """
         Discover languages endpoint + generate prefix.
 
-        We try common layouts and accept the first that returns 200 + JSON.
-        If /info or /health is used as the probe, we still try to pick the best
-        (api/v1 preferred; otherwise unversioned).
+        We try common layouts for each candidate root and accept the first that
+        returns 200 + JSON for languages.
         """
-        if not self.api_url:
-            self.api_url = "http://localhost:8000"
+        for root in self._candidate_api_roots():
+            # If root already ends with /api/v1, treat it as versioned root.
+            if root.endswith("/api/v1"):
+                candidates = [
+                    (f"{root}/languages", f"{root}/generate"),
+                    (f"{root}/languages", f"{root}/generate"),  # keep simple/consistent
+                ]
+            else:
+                candidates = [
+                    # versioned
+                    (f"{root}/api/v1/languages", f"{root}/api/v1/generate"),
+                    # unversioned
+                    (f"{root}/languages", f"{root}/generate"),
+                    # reachability probes (still point generation to unversioned)
+                    (f"{root}/info", f"{root}/generate"),
+                    (f"{root}/health", f"{root}/generate"),
+                ]
 
-        candidates = [
-            # versioned
-            (f"{self.api_url}/api/v1/languages", f"{self.api_url}/api/v1/generate"),
-            # unversioned
-            (f"{self.api_url}/languages", f"{self.api_url}/generate"),
-            # reachability probes
-            (f"{self.api_url}/info", f"{self.api_url}/generate"),
-            (f"{self.api_url}/health", f"{self.api_url}/generate"),
-        ]
+            for lang_url, gen_prefix in candidates:
+                status, data, _raw = self._http_get_json(lang_url)
+                if status == 200 and data is not None:
+                    # If we probed /info or /health, prefer a real languages endpoint if available.
+                    if lang_url.endswith("/info") or lang_url.endswith("/health"):
+                        st2, data2, _ = self._http_get_json(f"{root}/api/v1/languages")
+                        if st2 == 200 and data2 is not None:
+                            self._languages_endpoint = f"{root}/api/v1/languages"
+                            self._generate_prefix = f"{root}/api/v1/generate"
+                            return
+                        st3, data3, _ = self._http_get_json(f"{root}/languages")
+                        if st3 == 200 and data3 is not None:
+                            self._languages_endpoint = f"{root}/languages"
+                            self._generate_prefix = f"{root}/generate"
+                            return
 
-        for lang_url, gen_prefix in candidates:
-            status, data, _raw = self._http_get_json(lang_url)
-            if status == 200 and data is not None:
-                # If we probed /info or /health, prefer a real languages endpoint if available.
-                if lang_url.endswith("/info") or lang_url.endswith("/health"):
-                    st2, data2, _ = self._http_get_json(f"{self.api_url}/api/v1/languages")
-                    if st2 == 200 and data2 is not None:
-                        self._languages_endpoint = f"{self.api_url}/api/v1/languages"
-                        self._generate_prefix = f"{self.api_url}/api/v1/generate"
-                        return
-                    st3, data3, _ = self._http_get_json(f"{self.api_url}/languages")
-                    if st3 == 200 and data3 is not None:
-                        self._languages_endpoint = f"{self.api_url}/languages"
-                        self._generate_prefix = f"{self.api_url}/generate"
-                        return
+                    self._languages_endpoint = lang_url
+                    self._generate_prefix = gen_prefix
+                    return
 
-                self._languages_endpoint = lang_url
-                self._generate_prefix = gen_prefix
-                return
-
-        # fallback defaults (even if probe fails, keep consistent paths)
-        self._languages_endpoint = f"{self.api_url}/api/v1/languages"
-        self._generate_prefix = f"{self.api_url}/api/v1/generate"
+        # fallback defaults: prefer the mounted layout last-known to exist in this repo
+        # (still safe if wrong; caller will see FAILs, but we tried all candidates above)
+        self._languages_endpoint = f"{self.api_url.rstrip('/')}/api/v1/languages"
+        self._generate_prefix = f"{self.api_url.rstrip('/')}/api/v1/generate"
 
     def discover_languages(self) -> List[str]:
         """
@@ -290,8 +333,24 @@ class ArchitectApiRuntimeChecker:
 
 def default_test_payload() -> Dict[str, Any]:
     """
-    Strict Path BioFrame expects a flat JSON object (no nested subject/properties).
-    Keep payload shape minimal/safe.
+    Canonical BioFrame schema (server-side) requires a nested "subject" object.
+
+    This payload is intentionally minimal/safe and should remain stable.
+    """
+    return {
+        "frame_type": "bio",
+        "subject": {
+            "name": "Shaka",
+            "profession": "warrior",
+            "nationality": "zulu",
+            "gender": "m",
+        },
+    }
+
+
+def legacy_flat_test_payload() -> Dict[str, Any]:
+    """
+    Legacy/flat BioFrame payload (older clients/servers). Not used by default.
     """
     return {
         "frame_type": "bio",
@@ -302,4 +361,9 @@ def default_test_payload() -> Dict[str, Any]:
     }
 
 
-__all__ = ["RuntimeResult", "ArchitectApiRuntimeChecker", "default_test_payload"]
+__all__ = [
+    "RuntimeResult",
+    "ArchitectApiRuntimeChecker",
+    "default_test_payload",
+    "legacy_flat_test_payload",
+]

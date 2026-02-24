@@ -1,10 +1,10 @@
 # 🏛️ Engine Architecture & Internals
 
-**Abstract Wiki Architect v2.1**
+**SemantiK Architect v2.1**
 
 ## 1. High-Level System Overview
 
-The Abstract Wiki Architect is a **Hybrid Natural Language Generation (NLG) Engine**. It combines the determinism of Rule-Based Systems (Grammatical Framework) with the flexibility of modern AI Agents and the interoperability of Semantic Web standards.
+The SemantiK Architect is a **Hybrid Natural Language Generation (NLG) Engine**. It combines the determinism of Rule-Based Systems (Grammatical Framework) with the flexibility of modern AI Agents and the interoperability of Semantic Web standards.
 
 It is designed to solve the **"Long Tail" Problem**: ensuring verifiable, high-quality encyclopedic text generation for 300+ languages, from high-resource languages like English (Tier 1) to under-resourced languages like Zulu or Quechua (Tier 3).
 

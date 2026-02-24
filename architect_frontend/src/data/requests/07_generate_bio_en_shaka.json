@@ -1,0 +1,16 @@
+{
+  "id": "generate_bio_en_shaka",
+  "label": "Generate Bio (English: Shaka)",
+  "method": "POST",
+  "endpoint": "/api/v1/generate/en",
+  "description": "Runs generation for bio frame in English (nested subject payload).",
+  "payload": {
+    "frame_type": "bio",
+    "subject": {
+      "name": "Shaka",
+      "profession": "warrior",
+      "nationality": "zulu",
+      "gender": "m"
+    }
+  }
+}

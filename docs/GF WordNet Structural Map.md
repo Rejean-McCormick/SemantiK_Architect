@@ -2,7 +2,7 @@
 # 🗺️ GF WordNet Structural Map (v1.0)
 
 **Target Repository:** `gf-wordnet`
-**Purpose:** Lexicon Harvesting & Data Injection for Abstract Wiki Architect.
+**Purpose:** Lexicon Harvesting & Data Injection for SemantiK Architect.
 
 ## 1. The Core Architecture (The "Rosetta Stone")
 

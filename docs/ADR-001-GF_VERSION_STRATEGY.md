@@ -2,7 +2,7 @@
 
 **Version:** 2.4  
 **Last Updated:** 2026-02-20  
-**Context:** Abstract Wiki Architect (Python + Grammatical Framework)
+**Context:** SemantiK Architect (Python + Grammatical Framework)
 
 ## 1. Architectural Overview
 
