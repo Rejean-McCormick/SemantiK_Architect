@@ -17,7 +17,7 @@ CONCEPT_MAP = {
 }
 
 # Map ISO codes (Architect) to Concrete Syntax names (GF)
-# If your GF names follow "WikiEng", "WikiFra", this helper tries to guess them.
+# If your GF names follow "WikiEng", "WikiFre", this helper tries to guess them.
 # Add manual exceptions here.
 ISO_TO_GF_MANUAL = {
     "zho": "WikiChi",  # Example: ISO is zho, GF might use Chi/Zho
@@ -93,7 +93,7 @@ def run():
         gf_lang_name = ISO_TO_GF_MANUAL.get(iso_code)
         
         if not gf_lang_name:
-            # Fallback heuristic: eng -> WikiEng, fra -> WikiFra
+            # Fallback heuristic: eng -> WikiEng, fra -> WikiFre
             # You might need to adjust logic based on your actual .gf names
             candidates = [
                 f"Wiki{iso_code.capitalize()}", # WikiEng

@@ -37,7 +37,7 @@ This document defines the specialized terminology used across the project. It br
 
 ### **Concrete Syntax**
 * **Definition:** The language-specific implementation of the Abstract Syntax. It defines *how* to say it (e.g., "In French, the adjective comes after the noun").
-* **Context:** Defined in `WikiFra.gf`, `WikiEng.gf`.
+* **Context:** Defined in `WikiFre.gf`, `WikiEng.gf`.
 
 ### **Linearization**
 * **Definition:** The process of turning a tree structure (Abstract Syntax) into a flat string of text (Concrete Syntax).

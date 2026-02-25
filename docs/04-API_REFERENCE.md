@@ -174,7 +174,7 @@ Returns the status of the Lexicon Store (Zone B) and Grammar Engine (Zone C).
 {
   "surface_text": "Shaka est un guerrier zoulou.",
   "meta": {
-    "engine": "WikiFra",
+    "engine": "WikiFre",
     "strategy": "HighRoad",
     "latency_ms": 12
   }

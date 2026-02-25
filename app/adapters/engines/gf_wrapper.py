@@ -479,7 +479,7 @@ class GFGrammarEngine:
           - iso2 (en/de/fr)
           - wiki suffixes (eng/ger/fre/...)
           - iso3 (fra/deu/...) when configured
-          - wikixxx (wikiger, wikifra, ...)
+          - wikixxx (wikiger, wikifre, ...)
         """
         g = self._grammar
         if not g:

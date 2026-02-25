@@ -78,7 +78,7 @@ class ArchitectAgent:
         if not self._client:
             return None
 
-        # [FIX] Determine the correct GF module name (e.g. WikiChi instead of WikiZho)
+        # [FIX] Determine the correct GF module name (e.g. WikiChi instead of WikiChi)
         rgl_code = self.get_rgl_code(lang_code)
         module_name = f"Wiki{rgl_code}"
 

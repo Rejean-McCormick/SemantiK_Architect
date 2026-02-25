@@ -1,29 +1,80 @@
 {
-  "generated_at": 1771963199.8764005,
+  "generated_at": 1771967295.4720597,
   "repo_root": "/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect",
   "summary": {
-    "compile_valid_or_skipped": 0,
-    "compile_broken": 1,
-    "runtime_pass": 0,
+    "compile_valid_or_skipped": 3,
+    "compile_broken": 0,
+    "runtime_pass": 3,
     "runtime_fail": 0,
-    "overall_ok": 0,
-    "overall_fail": 1
+    "overall_ok": 3,
+    "overall_fail": 0
   },
   "results": [
     {
-      "gf_lang": "Ron",
-      "api_lang": "ro",
-      "overall": "FAIL",
+      "gf_lang": "Ger",
+      "api_lang": "de",
+      "overall": "OK",
       "compile": {
-        "gf_lang": "Ron",
-        "filename": "gf/WikiRon.gf",
-        "status": "BROKEN",
-        "error": "Timeout after 90s",
-        "duration_s": 0.0,
-        "file_hash": "ad0adedfee83edbf267d10c3c2194c76a1dff22bbb07bc3faccfdbf3be345341",
-        "iso2": "ro"
+        "gf_lang": "Ger",
+        "filename": "gf/WikiGer.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 4.324634790420532,
+        "file_hash": "7adafe0183cde67dd1259ece838a4dc1e6385245b647e293859e8c5347a883cf",
+        "iso2": "de"
       },
-      "runtime": null
+      "runtime": {
+        "api_lang": "de",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 106.11295700073242,
+        "error": null,
+        "sample_text": "Shaka is a warrior ( zulu )"
+      }
+    },
+    {
+      "gf_lang": "Eng",
+      "api_lang": "en",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Eng",
+        "filename": "gf/WikiEng.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 1.862412929534912,
+        "file_hash": "65a1d49b82ec5d812ec02086ad6bb622fe7869b3d462b7e076f2addf18ec228e",
+        "iso2": "en"
+      },
+      "runtime": {
+        "api_lang": "en",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 105.06892204284668,
+        "error": null,
+        "sample_text": "Shaka is a zulu warrior"
+      }
+    },
+    {
+      "gf_lang": "Fre",
+      "api_lang": "fr",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Fre",
+        "filename": "gf/WikiFre.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 4.904165506362915,
+        "file_hash": "27f449ae02428b0bf6bff8ca1b1513eed6528ab85d6f5f4aba869ab5e0dc112c",
+        "iso2": "fr"
+      },
+      "runtime": {
+        "api_lang": "fr",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 103.71065139770508,
+        "error": null,
+        "sample_text": "Shaka is a warrior ( zulu )"
+      }
     }
   ]
 }

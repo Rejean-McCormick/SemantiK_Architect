@@ -1,13 +1,24 @@
+import json
 import pgf
 
-grammar = pgf.readPGF('gf/AbstractWiki.pgf')
-langs = grammar.languages
+PGF_PATH = "gf/AbstractWiki.pgf"
 
-expr = pgf.readExpr('mkFact lex_animal_N lex_walk_V')
+def wiki_lang_from_iso(iso: str) -> str:
+    with open("data/config/iso_to_wiki.json", "r", encoding="utf-8") as f:
+        mapping = json.load(f)
+    return f"Wiki{mapping[iso]['wiki']}"
 
-print(f'\n[Abstract]: {expr}')
-print('-' * 30)
-for lang_code in ['WikiEng', 'WikiFra', 'WikiGer', 'WikiSpa']:
-    if lang_code in langs:
-        print(f'[{lang_code[-3:]}]: {langs[lang_code].linearize(expr)}')
+g = pgf.readPGF(PGF_PATH)
+langs = g.languages
 
+expr = pgf.readExpr('mkBioNat (mkEntityStr "Marie Curie") (strNat "Polish")')
+
+print(f"\n[Abstract]: {expr}")
+print("-" * 30)
+
+for iso in ["en", "fr", "de", "es", "it"]:
+    key = wiki_lang_from_iso(iso)
+    if key in langs:
+        print(f"[{iso} {key}]: {langs[key].linearize(expr)}")
+    else:
+        print(f"[{iso} {key}]: MISSING_IN_PGF")

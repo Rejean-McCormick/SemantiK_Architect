@@ -101,7 +101,7 @@ The API supports `Accept: text/x-conllu`. The output mimics a dependency parse:
 
 ```text
 # text = Marie Curie est une physicienne.
-# source = AbstractWiki v2.0 (WikiFra)
+# source = AbstractWiki v2.0 (WikiFre)
 1   Marie     Marie     PROPN   _   _   2   nsubj   _   _
 2   Curie     Curie     PROPN   _   _   3   nsubj   _   _
 3   est       être      VERB    _   _   0   root    _   _

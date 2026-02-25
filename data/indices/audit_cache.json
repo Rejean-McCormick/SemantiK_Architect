@@ -32,7 +32,7 @@
   "gf/WikiEng.gf": {
     "status": "VALID",
     "hash": "65a1d49b82ec5d812ec02086ad6bb622fe7869b3d462b7e076f2addf18ec228e",
-    "last_check": 1771958589.162276
+    "last_check": 1771967295.362155
   },
   "gf/WikiDan.gf": {
     "status": "VALID",
@@ -92,7 +92,7 @@
   "gf/WikiFre.gf": {
     "status": "VALID",
     "hash": "27f449ae02428b0bf6bff8ca1b1513eed6528ab85d6f5f4aba869ab5e0dc112c",
-    "last_check": 1771958589.1622794
+    "last_check": 1771967295.362156
   },
   "gf/WikiInu.gf": {
     "status": "BROKEN",
@@ -287,7 +287,7 @@
   "gf/WikiGer.gf": {
     "status": "VALID",
     "hash": "7adafe0183cde67dd1259ece838a4dc1e6385245b647e293859e8c5347a883cf",
-    "last_check": 1771960279.4033813
+    "last_check": 1771967295.362153
   },
   "gf/WikiAra.gf": {
     "status": "VALID",

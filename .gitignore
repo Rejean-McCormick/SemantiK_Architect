@@ -123,4 +123,4 @@ gf/incubator/
 # Exceptions - Keep these!
 !gf/*.gf        # Keep source grammars
 !gf/*.py        # Keep build scripts
-!gf/contrib/    # Keep manual contributions
+!gf/contrib/    # Keep manual contributionsdata/tests/reports/
