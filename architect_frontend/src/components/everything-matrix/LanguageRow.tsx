@@ -1,3 +1,4 @@
+// architect_frontend/src/components/everything-matrix/LanguageRow.tsx
 import { LanguageEntry } from "@/types/EverythingMatrix";
 import ScoreCell from "./ScoreCell";
 
@@ -30,16 +31,15 @@ function normScore(value: unknown, opts?: { scale01to10?: boolean }): number {
  * - zone has a max in (0..1], AND
  * - at least one of A/B has signal in normal 0..10 (so we don't scale fully-empty rows)
  */
-function zoneLooksLegacy01(
-  zone: Record<string, unknown>,
-  keys: readonly string[],
-  refABMax: number
-): boolean {
+function zoneLooksLegacy01(zone: unknown, keys: readonly string[], refABMax: number): boolean {
+  const z = (zone ?? {}) as Record<string, unknown>;
+
   const nums = keys.map((k) => {
-    const v = zone?.[k];
+    const v = z[k];
     const n = typeof v === "number" ? v : Number(v);
     return Number.isFinite(n) ? n : 0;
   });
+
   const max = Math.max(...nums);
   return max > 0 && max <= 1.0 && refABMax > 1.0;
 }
@@ -92,12 +92,8 @@ export default function LanguageRow({ entry }: LanguageRowProps) {
   const maxB = Math.max(normScore(B.SEED), normScore(B.CONC), normScore(B.WIDE), normScore(B.SEM));
   const refABMax = Math.max(maxA, maxB);
 
-  const cLegacy01 = zoneLooksLegacy01(C as Record<string, unknown>, ["PROF", "ASST", "ROUT"], refABMax);
-  const dLegacy01 = zoneLooksLegacy01(D as Record<string, unknown>, ["BIN", "TEST"], refABMax);
-
-  const isoKeyMismatch =
-    (meta?.iso || "").trim().toLowerCase() !== "" &&
-    (meta?.iso || "").trim().toLowerCase() !== (entry?.meta?.iso || "").trim().toLowerCase();
+  const cLegacy01 = zoneLooksLegacy01(C, ["PROF", "ASST", "ROUT"], refABMax);
+  const dLegacy01 = zoneLooksLegacy01(D, ["BIN", "TEST"], refABMax);
 
   return (
     <tr className={`hover:bg-slate-50 transition-colors ${rowOpacityClass}`}>
@@ -105,7 +101,10 @@ export default function LanguageRow({ entry }: LanguageRowProps) {
       <td className="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-4 py-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <span className={`h-2 w-2 rounded-full ${runnableDot}`} title={verdict?.runnable ? "Runnable" : "Not runnable"} />
+            <span
+              className={`h-2 w-2 rounded-full ${runnableDot}`}
+              title={verdict?.runnable ? "Runnable" : "Not runnable"}
+            />
             <span className="font-semibold text-slate-900 text-lg whitespace-nowrap">{displayName}</span>
             <span className="text-xs font-mono text-slate-400 uppercase tracking-wider whitespace-nowrap">
               {isoLabel}
@@ -128,21 +127,10 @@ export default function LanguageRow({ entry }: LanguageRowProps) {
                 Legacy scale
               </span>
             )}
-
-            {isoKeyMismatch && (
-              <span
-                className="ml-1 rounded-full bg-amber-50 text-amber-800 ring-1 ring-amber-200 px-2 py-0.5 font-semibold text-[10px] uppercase tracking-wide"
-                title="Row key and meta.iso appear inconsistent. Canonical build_index emits iso2 keys."
-              >
-                Key mismatch
-              </span>
-            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span
-              className={`rounded-full px-2 py-0.5 font-bold text-[10px] uppercase tracking-wide ring-1 ${strategyColor}`}
-            >
+            <span className={`rounded-full px-2 py-0.5 font-bold text-[10px] uppercase tracking-wide ring-1 ${strategyColor}`}>
               {buildStrategy}
             </span>
 
@@ -171,41 +159,46 @@ export default function LanguageRow({ entry }: LanguageRowProps) {
       </td>
 
       {/* ZONE A */}
-      <ScoreCell score={normScore(A.CAT)} title={`CAT: ${A.CAT}`} />
-      <ScoreCell score={normScore(A.NOUN)} title={`NOUN: ${A.NOUN}`} />
-      <ScoreCell score={normScore(A.PARA)} title={`PARA: ${A.PARA}`} />
-      <ScoreCell score={normScore(A.GRAM)} title={`GRAM: ${A.GRAM}`} />
-      <ScoreCell score={normScore(A.SYN)} title={`SYN: ${A.SYN}`} isZoneEnd />
+      <ScoreCell score={normScore(A.CAT)} detail={A.CAT} detailLabel="CAT" />
+      <ScoreCell score={normScore(A.NOUN)} detail={A.NOUN} detailLabel="NOUN" />
+      <ScoreCell score={normScore(A.PARA)} detail={A.PARA} detailLabel="PARA" />
+      <ScoreCell score={normScore(A.GRAM)} detail={A.GRAM} detailLabel="GRAM" />
+      <ScoreCell score={normScore(A.SYN)} detail={A.SYN} detailLabel="SYN" isZoneEnd />
 
       {/* ZONE B */}
-      <ScoreCell score={normScore(B.SEED)} title={`SEED: ${B.SEED}`} />
-      <ScoreCell score={normScore(B.CONC)} title={`CONC: ${B.CONC}`} />
-      <ScoreCell score={normScore(B.WIDE)} title={`WIDE: ${B.WIDE}`} />
-      <ScoreCell score={normScore(B.SEM)} title={`SEM: ${B.SEM}`} isZoneEnd />
+      <ScoreCell score={normScore(B.SEED)} detail={B.SEED} detailLabel="SEED" />
+      <ScoreCell score={normScore(B.CONC)} detail={B.CONC} detailLabel="CONC" />
+      <ScoreCell score={normScore(B.WIDE)} detail={B.WIDE} detailLabel="WIDE" />
+      <ScoreCell score={normScore(B.SEM)} detail={B.SEM} detailLabel="SEM" isZoneEnd />
 
       {/* ZONE C (canonical 0..10; legacy 0..1 scaled if detected) */}
       <ScoreCell
         score={normScore(C.PROF, { scale01to10: cLegacy01 })}
-        title={`PROF: ${C.PROF}${cLegacy01 ? " (legacy×10)" : ""}`}
+        detail={C.PROF}
+        detailLabel={cLegacy01 ? "PROF (legacy 0..1)" : "PROF"}
       />
       <ScoreCell
         score={normScore(C.ASST, { scale01to10: cLegacy01 })}
-        title={`ASST: ${C.ASST}${cLegacy01 ? " (legacy×10)" : ""}`}
+        detail={C.ASST}
+        detailLabel={cLegacy01 ? "ASST (legacy 0..1)" : "ASST"}
       />
       <ScoreCell
         score={normScore(C.ROUT, { scale01to10: cLegacy01 })}
-        title={`ROUT: ${C.ROUT}${cLegacy01 ? " (legacy×10)" : ""}`}
+        detail={C.ROUT}
+        detailLabel={cLegacy01 ? "ROUT (legacy 0..1)" : "ROUT"}
         isZoneEnd
       />
 
       {/* ZONE D (canonical 0..10; legacy 0..1 scaled if detected) */}
       <ScoreCell
         score={normScore(D.BIN, { scale01to10: dLegacy01 })}
-        title={`BIN: ${D.BIN}${dLegacy01 ? " (legacy×10)" : ""}`}
+        detail={D.BIN}
+        detailLabel={dLegacy01 ? "BIN (legacy 0..1)" : "BIN"}
       />
       <ScoreCell
         score={normScore(D.TEST, { scale01to10: dLegacy01 })}
-        title={`TEST: ${D.TEST}${dLegacy01 ? " (legacy×10)" : ""}`}
+        detail={D.TEST}
+        detailLabel={dLegacy01 ? "TEST (legacy 0..1)" : "TEST"}
       />
     </tr>
   );

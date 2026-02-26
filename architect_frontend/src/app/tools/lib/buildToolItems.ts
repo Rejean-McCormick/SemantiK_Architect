@@ -1,6 +1,12 @@
 // architect_frontend/src/app/tools/lib/buildToolItems.ts
 import { INVENTORY } from "../inventory";
-import { BACKEND_TOOL_REGISTRY, type BackendToolId, type Risk, type ToolParameter } from "../backendRegistry";
+import {
+  BACKEND_TOOL_REGISTRY,
+  type BackendToolId,
+  type BackendToolMeta, // ✅ use the exported meta type (includes parameterDocs, hidden, etc.)
+  type Risk,
+  type ToolParameter,
+} from "../backendRegistry";
 import { TOOL_DESCRIPTIONS, defaultDesc } from "../descriptions";
 import {
   classify,
@@ -40,8 +46,6 @@ export type ToolItem = {
   hiddenInNormalMode?: boolean;
   parameterDocs?: ToolParameter[];
 };
-
-type BackendToolMeta = (typeof BACKEND_TOOL_REGISTRY)[BackendToolId];
 
 type BuildToolItemsOpts = {
   /**
@@ -193,7 +197,7 @@ export function buildToolItems(opts: BuildToolItemsOpts = {}): ToolItem[] {
     if (cls.excludeFromUI) continue;
 
     const wiredToolId = TOOL_ID_BY_PATH[path];
-    const wiredMeta = wiredToolId ? (BACKEND_TOOL_REGISTRY[wiredToolId] as BackendToolMeta) : undefined;
+    const wiredMeta: BackendToolMeta | undefined = wiredToolId ? BACKEND_TOOL_REGISTRY[wiredToolId] : undefined;
     const wired = Boolean(wiredToolId);
 
     const status = (cls.statusOverride ?? statusFromPath(path)) as Status;
@@ -239,7 +243,7 @@ export function buildToolItems(opts: BuildToolItemsOpts = {}): ToolItem[] {
       toolIdGuess,
       commandPreview,
       hiddenInNormalMode: cls.hideByDefault || false,
-      parameterDocs: wiredMeta?.parameterDocs || [],
+      parameterDocs: wiredMeta?.parameterDocs || [], // ✅ now recognized
     });
   }
 
@@ -290,7 +294,7 @@ export function buildToolItems(opts: BuildToolItemsOpts = {}): ToolItem[] {
       toolIdGuess: toolId,
       commandPreview,
       hiddenInNormalMode: cls.hideByDefault || false,
-      parameterDocs: meta.parameterDocs || [],
+      parameterDocs: meta.parameterDocs || [], // ✅ now recognized
     });
   }
 

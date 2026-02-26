@@ -13,31 +13,11 @@ import {
 export type AIPanelMode = "guide" | "explain" | "suggest_fields";
 
 export interface AIPanelProps {
-  /**
-   * The type of entity being edited (e.g. "construction", "bio", "function").
-   */
   entityType: string;
-
-  /**
-   * ID of the entity if we are editing an existing one.
-   */
   entityId?: string;
-
-  /**
-   * Current form values.
-   */
   currentValues: Record<string, unknown>;
-
-  /**
-   * Target language code (e.g. "en", "fr").
-   */
   language?: string;
-
-  /**
-   * Hook to apply AI-suggested updates back into the form.
-   */
   onApplySuggestion?: (updates: Record<string, unknown>) => void;
-
   className?: string;
 }
 
@@ -59,7 +39,6 @@ const AIPanel: React.FC<AIPanelProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Store accumulated updates from patches
   const [lastSuggestionPayload, setLastSuggestionPayload] =
     useState<Record<string, unknown> | null>(null);
 
@@ -87,35 +66,31 @@ const AIPanel: React.FC<AIPanelProps> = ({
       setIsLoading(true);
       setError(null);
 
-      // 1) Add user message to chat
       const userMsg: AIMessage = { role: "user", content: trimmedInput };
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
 
       try {
-        // 2) Build request
+        // NOTE: IntentRequest type does NOT include `mode` (TS error otherwise).
+        // Keep `mode` UI-only; the prompt text itself already steers behavior.
         const requestPayload: IntentRequest = {
           message: trimmedInput,
           lang: language,
           workspace_slug: entityId,
-          mode,
           context_frame: {
             frame_type: entityType,
             payload: currentValues,
           },
         };
 
-        // 3) Call API
         const response: IntentResponse = await architectApi.processIntent(requestPayload);
 
-        // 4) Handle assistant messages
         if (Array.isArray(response.assistant_messages) && response.assistant_messages.length > 0) {
           setMessages((prev) => [...prev, ...response.assistant_messages]);
         } else {
           setMessages((prev) => [...prev, { role: "assistant", content: "Done." }]);
         }
 
-        // 5) Handle patches
         if (Array.isArray(response.patches) && response.patches.length > 0) {
           const updates: Record<string, unknown> = {};
 
@@ -130,13 +105,14 @@ const AIPanel: React.FC<AIPanelProps> = ({
           setLastSuggestionPayload(null);
         }
       } catch (e: unknown) {
+        // eslint-disable-next-line no-console
         console.error("AI panel error", e);
         setError(e instanceof Error ? e.message : "The Architect assistant could not be reached.");
       } finally {
         setIsLoading(false);
       }
     },
-    [canSend, trimmedInput, entityId, currentValues, language, entityType, mode]
+    [canSend, trimmedInput, entityId, currentValues, language, entityType]
   );
 
   const handleApplySuggestion = useCallback(() => {
@@ -200,7 +176,6 @@ const AIPanel: React.FC<AIPanelProps> = ({
         </div>
       </header>
 
-      {/* Quick actions */}
       <section className="mb-3 flex gap-2">
         <button
           type="button"
@@ -225,13 +200,10 @@ const AIPanel: React.FC<AIPanelProps> = ({
         </button>
       </section>
 
-      {/* Chat */}
       <section className="mb-3 flex-1 overflow-hidden rounded-md border border-slate-200 bg-slate-50">
         <div className="h-full max-h-64 overflow-y-auto p-2 text-xs">
           {messages.length === 0 ? (
-            <p className="text-slate-500 italic">
-              No conversation yet. Ask the Architect about this entity...
-            </p>
+            <p className="text-slate-500 italic">No conversation yet. Ask the Architect about this entity...</p>
           ) : (
             <ul className="space-y-3">
               {messages.map((m, idx) => (
@@ -274,14 +246,11 @@ const AIPanel: React.FC<AIPanelProps> = ({
         </div>
       )}
 
-      {/* Suggestion banner */}
       {lastSuggestionPayload && onApplySuggestion && (
         <div className="mb-2 flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 shadow-sm">
           <div className="mr-2">
             <p className="text-[11px] font-medium text-emerald-800">Suggestion Available</p>
-            <p className="text-[10px] text-emerald-600">
-              The Architect proposed updates to the form fields.
-            </p>
+            <p className="text-[10px] text-emerald-600">The Architect proposed updates to the form fields.</p>
           </div>
           <button
             type="button"
@@ -293,7 +262,6 @@ const AIPanel: React.FC<AIPanelProps> = ({
         </div>
       )}
 
-      {/* Input */}
       <form onSubmit={handleSubmit} className="mt-auto flex flex-col gap-2">
         <textarea
           value={input}

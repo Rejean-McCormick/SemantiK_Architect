@@ -49,10 +49,19 @@ function ReferenceCardImpl(props: ReferenceCardProps) {
   const { grouped, powerUser, activeToolId, runTool, argsByToolId, setArgsByToolId, repoUrl } = props;
 
   const sorted = useMemo(() => {
-    // Convert Map -> stable arrays to avoid re-sorting each render
-    const cats = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    // Avoid iterating MapIterator via spread (breaks when TS target < ES2015).
+    const cats: Array<[string, Map<string, ToolItem[]>]> = [];
+    grouped.forEach((byGroup, cat) => {
+      cats.push([cat, byGroup]);
+    });
+    cats.sort((a, b) => a[0].localeCompare(b[0]));
+
     return cats.map(([cat, byGroup]) => {
-      const groups = [...byGroup.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      const groups: Array<[string, ToolItem[]]> = [];
+      byGroup.forEach((groupItems, groupName) => {
+        groups.push([groupName, groupItems]);
+      });
+      groups.sort((a, b) => a[0].localeCompare(b[0]));
       return [cat, groups] as const;
     });
   }, [grouped]);
@@ -85,146 +94,150 @@ function ReferenceCardImpl(props: ReferenceCardProps) {
                 <div className="text-xs font-semibold text-slate-500">{groupName}</div>
 
                 <div className="space-y-2">
-                  {groupItems.map((it) => (
-                    <details key={it.key} id={it.key} className="rounded-lg border border-slate-200 bg-white">
-                      <summary className="cursor-pointer select-none list-none px-4 py-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-sm text-slate-800">{it.title}</span>
-                          <WiringBadge wired={Boolean(it.wiredToolId)} hidden={Boolean(it.hiddenInNormalMode)} />
-                          <RiskBadge risk={it.risk} />
-                          <StatusBadge status={it.status} />
-                          <span className="font-mono text-[11px] text-slate-500">{it.path}</span>
-                        </div>
-                        <span className="text-xs text-slate-500">Expand</span>
-                      </summary>
+                  {groupItems.map((it: ToolItem) => {
+                    const repoLink = repoFileUrl(repoUrl, it.path);
 
-                      <div className="px-4 pb-4 pt-1 text-sm text-slate-700 space-y-3">
-                        {it.desc ? <div className="text-slate-600">{it.desc}</div> : null}
+                    return (
+                      <details key={it.key} id={it.key} className="rounded-lg border border-slate-200 bg-white">
+                        <summary className="cursor-pointer select-none list-none px-4 py-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm text-slate-800">{it.title}</span>
+                            <WiringBadge wired={Boolean(it.wiredToolId)} hidden={Boolean(it.hiddenInNormalMode)} />
+                            <RiskBadge risk={it.risk} />
+                            <StatusBadge status={it.status} />
+                            <span className="font-mono text-[11px] text-slate-500">{it.path}</span>
+                          </div>
+                          <span className="text-xs text-slate-500">Expand</span>
+                        </summary>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div className="rounded-md border border-slate-200 p-3 bg-slate-50">
-                            <div className="text-xs text-slate-500 mb-1">tool_id</div>
+                        <div className="px-4 pb-4 pt-1 text-sm text-slate-700 space-y-3">
+                          {it.desc ? <div className="text-slate-600">{it.desc}</div> : null}
 
-                            <div className="font-mono text-xs flex items-center justify-between gap-2">
-                              <span>{it.wiredToolId ?? "—"}</span>
-                              <button
-                                type="button"
-                                className="text-slate-500 hover:text-slate-800 disabled:opacity-50"
-                                onClick={() => it.wiredToolId && copyToClipboard(it.wiredToolId)}
-                                disabled={!it.wiredToolId}
-                                title="Copy tool_id"
-                              >
-                                <Copy className="w-3 h-3" />
-                              </button>
-                            </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="rounded-md border border-slate-200 p-3 bg-slate-50">
+                              <div className="text-xs text-slate-500 mb-1">tool_id</div>
 
-                            <div className="mt-2 flex gap-2 flex-wrap">
-                              <Button
-                                size="sm"
-                                onClick={() => runTool(it)}
-                                disabled={activeToolId !== null || !it.wiredToolId}
-                                variant={it.risk === "heavy" ? "destructive" : "default"}
-                                title={it.wiredToolId ? "Run (backend-wired)" : "Run disabled (not wired)"}
-                              >
-                                <Play className="w-4 h-4 mr-1" /> Run
-                              </Button>
-
-                              <Button variant="outline" size="sm" onClick={() => copyToClipboard(it.path)}>
-                                <Copy className="w-4 h-4 mr-1" /> Copy path
-                              </Button>
-
-                              {repoFileUrl(repoUrl, it.path) ? (
-                                <a
-                                  href={repoFileUrl(repoUrl, it.path)!}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-xs rounded-md border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-50"
+                              <div className="font-mono text-xs flex items-center justify-between gap-2">
+                                <span>{it.wiredToolId ?? "—"}</span>
+                                <button
+                                  type="button"
+                                  className="text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                                  onClick={() => it.wiredToolId && copyToClipboard(it.wiredToolId)}
+                                  disabled={!it.wiredToolId}
+                                  title="Copy tool_id"
                                 >
-                                  Open in Repo <ExternalLink className="w-3 h-3" />
-                                </a>
-                              ) : null}
-                            </div>
-
-                            {it.wiredToolId ? (
-                              <div className="mt-3">
-                                <div className="text-xs text-slate-500 mb-1">Args</div>
-                                <input
-                                  value={argsByToolId[it.wiredToolId] || ""}
-                                  onChange={(e) =>
-                                    setArgsByToolId((prev) => ({
-                                      ...prev,
-                                      [it.wiredToolId as string]: e.target.value,
-                                    }))
-                                  }
-                                  placeholder='e.g. --lang fr --dry-run'
-                                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-200"
-                                  disabled={activeToolId !== null}
-                                />
-                                <div className="mt-2 text-[11px] text-slate-500">
-                                  Command preview:{" "}
-                                  <span className="font-mono">{it.commandPreview || "(unknown)"}</span>
-                                </div>
+                                  <Copy className="w-3 h-3" />
+                                </button>
                               </div>
-                            ) : (
-                              <div className="mt-3 text-[11px] text-slate-500">
-                                tool_id guess: <span className="font-mono">{it.toolIdGuess}</span>
-                              </div>
-                            )}
-                          </div>
 
-                          <div className="rounded-md border border-slate-200 p-3 bg-slate-50">
-                            <div className="text-xs text-slate-500 mb-1">CLI</div>
-                            <div className="space-y-1">
-                              {it.cli.map((cmd) => (
-                                <div key={cmd} className="font-mono text-xs flex items-center justify-between gap-2">
-                                  <span className="truncate">{cmd}</span>
-                                  <button
-                                    type="button"
-                                    className="text-slate-500 hover:text-slate-800"
-                                    onClick={() => copyToClipboard(cmd)}
-                                    title="Copy command"
+                              <div className="mt-2 flex gap-2 flex-wrap">
+                                <Button
+                                  size="sm"
+                                  onClick={() => runTool(it)}
+                                  disabled={activeToolId !== null || !it.wiredToolId}
+                                  variant={it.risk === "heavy" ? "destructive" : "default"}
+                                  title={it.wiredToolId ? "Run (backend-wired)" : "Run disabled (not wired)"}
+                                >
+                                  <Play className="w-4 h-4 mr-1" /> Run
+                                </Button>
+
+                                <Button variant="outline" size="sm" onClick={() => copyToClipboard(it.path)}>
+                                  <Copy className="w-4 h-4 mr-1" /> Copy path
+                                </Button>
+
+                                {repoLink ? (
+                                  <a
+                                    href={repoLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs rounded-md border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-50"
                                   >
-                                    <Copy className="w-3 h-3" />
-                                  </button>
+                                    Open in Repo <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                ) : null}
+                              </div>
+
+                              {it.wiredToolId ? (
+                                <div className="mt-3">
+                                  <div className="text-xs text-slate-500 mb-1">Args</div>
+                                  <input
+                                    value={argsByToolId[it.wiredToolId] || ""}
+                                    onChange={(e) =>
+                                      setArgsByToolId((prev) => ({
+                                        ...prev,
+                                        [it.wiredToolId as string]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder='e.g. --lang fr --dry-run'
+                                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-200"
+                                    disabled={activeToolId !== null}
+                                  />
+                                  <div className="mt-2 text-[11px] text-slate-500">
+                                    Command preview:{" "}
+                                    <span className="font-mono">{it.commandPreview || "(unknown)"}</span>
+                                  </div>
                                 </div>
-                              ))}
+                              ) : (
+                                <div className="mt-3 text-[11px] text-slate-500">
+                                  tool_id guess: <span className="font-mono">{it.toolIdGuess}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="rounded-md border border-slate-200 p-3 bg-slate-50">
+                              <div className="text-xs text-slate-500 mb-1">CLI</div>
+                              <div className="space-y-1">
+                                {it.cli.map((cmd: string) => (
+                                  <div key={cmd} className="font-mono text-xs flex items-center justify-between gap-2">
+                                    <span className="truncate">{cmd}</span>
+                                    <button
+                                      type="button"
+                                      className="text-slate-500 hover:text-slate-800"
+                                      onClick={() => copyToClipboard(cmd)}
+                                      title="Copy command"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div className="rounded-md border border-slate-200 p-3">
-                            <div className="text-xs text-slate-500 mb-2">Interface steps</div>
-                            <div className="space-y-1">
-                              {it.uiSteps.map((n) => (
-                                <div key={n} className="text-xs text-slate-700">
-                                  • {n}
-                                </div>
-                              ))}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="rounded-md border border-slate-200 p-3">
+                              <div className="text-xs text-slate-500 mb-2">Interface steps</div>
+                              <div className="space-y-1">
+                                {it.uiSteps.map((n: string) => (
+                                  <div key={n} className="text-xs text-slate-700">
+                                    • {n}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="rounded-md border border-slate-200 p-3">
+                              <div className="text-xs text-slate-500 mb-2">Notes</div>
+                              <div className="space-y-1">
+                                {it.notes.map((n: string) => (
+                                  <div key={n} className="text-xs text-slate-700">
+                                    • {n}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
 
-                          <div className="rounded-md border border-slate-200 p-3">
-                            <div className="text-xs text-slate-500 mb-2">Notes</div>
-                            <div className="space-y-1">
-                              {it.notes.map((n) => (
-                                <div key={n} className="text-xs text-slate-700">
-                                  • {n}
-                                </div>
-                              ))}
-                            </div>
+                          <div className="text-xs text-slate-500">
+                            Anchor:{" "}
+                            <Link className="font-mono underline" href={docsHref(it.key)}>
+                              {docsHref(it.key)}
+                            </Link>
                           </div>
                         </div>
-
-                        <div className="text-xs text-slate-500">
-                          Anchor:{" "}
-                          <Link className="font-mono underline" href={docsHref(it.key)}>
-                            {docsHref(it.key)}
-                          </Link>
-                        </div>
-                      </div>
-                    </details>
-                  ))}
+                      </details>
+                    );
+                  })}
                 </div>
               </div>
             ))}

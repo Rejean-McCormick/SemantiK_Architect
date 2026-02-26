@@ -610,17 +610,18 @@ export const BACKEND_TOOL_REGISTRY = {
 
 export type BackendToolId = keyof typeof BACKEND_TOOL_REGISTRY;
 
-export const WIRED_TOOL_IDS = new Set<BackendToolId>(Object.keys(BACKEND_TOOL_REGISTRY) as BackendToolId[]);
+// --- Typed entries to avoid "property does not exist" on optional fields (e.g. meta.hidden)
+const REGISTRY_ENTRIES = Object.entries(BACKEND_TOOL_REGISTRY) as [BackendToolId, BackendToolMeta][];
+
+export const WIRED_TOOL_IDS = new Set<BackendToolId>(REGISTRY_ENTRIES.map(([toolId]) => toolId));
 
 export const TOOL_ID_BY_PATH: Record<string, BackendToolId> = Object.fromEntries(
-  Object.entries(BACKEND_TOOL_REGISTRY).map(([toolId, meta]) => [meta.path, toolId as BackendToolId])
+  REGISTRY_ENTRIES.map(([toolId, meta]) => [meta.path, toolId])
 );
 
 /** Convenience: tool_ids that are hidden unless Debug/Power user is enabled */
 export const POWER_USER_TOOL_IDS = new Set<BackendToolId>(
-  Object.entries(BACKEND_TOOL_REGISTRY)
-    .filter(([, meta]) => Boolean(meta.hidden))
-    .map(([toolId]) => toolId as BackendToolId)
+  REGISTRY_ENTRIES.filter(([, meta]) => Boolean(meta.hidden)).map(([toolId]) => toolId)
 );
 
 /** Helper: validate a string as a wired BackendToolId */
@@ -639,7 +640,7 @@ export function getBackendToolMeta(id: string): BackendToolMeta | null {
 // ----------------------------------------------------------------------------
 if (process.env.NODE_ENV !== "production") {
   const seenPaths = new Map<string, BackendToolId>();
-  for (const [toolId, meta] of Object.entries(BACKEND_TOOL_REGISTRY) as [BackendToolId, BackendToolMeta][]) {
+  for (const [toolId, meta] of REGISTRY_ENTRIES) {
     const prev = seenPaths.get(meta.path);
     if (prev && prev !== toolId) {
       // eslint-disable-next-line no-console

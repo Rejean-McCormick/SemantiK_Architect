@@ -25,22 +25,18 @@ _INVALID_PLACEHOLDERS = {
 
 class GeminiAdapter:
     """
-    Driven Adapter for Google's Gemini models.
+    Driven Adapter for Google's Gemini models (Google GenAI SDK).
 
     - Supports BYOK (user_api_key from request header) with env fallback.
-    - Prefers the new `google-genai` SDK, with a compatibility fallback to the
-      legacy `google.generativeai` package if installed.
+    - Uses the `google-genai` SDK only (no legacy `google.generativeai` fallback).
     """
 
     def __init__(self, user_api_key: Optional[str] = None, model_name: Optional[str] = None):
         self.api_key: Optional[str] = None
         self.source: str = "None"
 
-        # New SDK (google-genai)
+        # google-genai client
         self._client = None
-
-        # Legacy SDK (google.generativeai)
-        self._legacy_model = None
 
         # Model selection
         self.model_name: str = (
@@ -57,37 +53,22 @@ class GeminiAdapter:
         if not self.api_key:
             logger.warning(
                 "llm_init_skipped",
-                msg="No valid Gemini API key found (user header, GEMINI_API_KEY, GOOGLE_API_KEY). AI features disabled.",
+                msg=(
+                    "No valid Gemini API key found (user header, GEMINI_API_KEY, GOOGLE_API_KEY). "
+                    "AI features disabled."
+                ),
             )
             return
 
-        # 3) Prefer new SDK
+        # 3) Initialize google-genai client
         try:
             # google-genai: pip install google-genai
             from google import genai  # type: ignore
 
             self._client = genai.Client(api_key=self.api_key)
-            return
         except Exception as e:
-            logger.info("llm_sdk_unavailable", sdk="google-genai", error=str(e))
-
-        # 4) Fallback to legacy SDK (deprecated, but keep compatibility if present)
-        try:
-            import google.generativeai as genai_legacy  # type: ignore
-
-            genai_legacy.configure(api_key=self.api_key)
-
-            legacy_model_name = (
-                model_name
-                or os.getenv("GEMINI_MODEL")
-                or os.getenv("GOOGLE_MODEL")
-                or "gemini-pro"
-            )
-            self._legacy_model = genai_legacy.GenerativeModel(legacy_model_name)
-        except Exception as e:
-            logger.error("llm_config_failed", error=str(e))
+            logger.error("llm_init_failed", sdk="google-genai", error=str(e))
             self._client = None
-            self._legacy_model = None
 
     @staticmethod
     def _is_valid_key(key: Optional[str]) -> bool:
@@ -113,7 +94,7 @@ class GeminiAdapter:
 
     @property
     def enabled(self) -> bool:
-        return self._client is not None or self._legacy_model is not None
+        return self._client is not None
 
     def generate_text(self, prompt: str) -> str:
         if not self.enabled:
@@ -121,16 +102,10 @@ class GeminiAdapter:
             return "Error: AI generation is disabled because no valid Gemini API key was found."
 
         try:
-            # New SDK
-            if self._client is not None:
-                resp = self._client.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt,
-                )
-                return getattr(resp, "text", None) or str(resp)
-
-            # Legacy SDK
-            resp = self._legacy_model.generate_content(prompt)  # type: ignore[union-attr]
+            resp = self._client.models.generate_content(  # type: ignore[union-attr]
+                model=self.model_name,
+                contents=prompt,
+            )
             return getattr(resp, "text", None) or str(resp)
 
         except Exception as e:
@@ -141,7 +116,14 @@ class GeminiAdapter:
                 raise ConnectionError(f"Gemini API quota/rate-limit exceeded ({self.source}).") from e
 
             # Invalid key / auth failures
-            if "API_KEY_INVALID" in msg or "invalid api key" in msg.lower() or "401" in msg or "403" in msg:
+            if (
+                "API_KEY_INVALID" in msg
+                or "invalid api key" in msg.lower()
+                or "UNAUTHENTICATED" in msg
+                or "PERMISSION_DENIED" in msg
+                or "401" in msg
+                or "403" in msg
+            ):
                 logger.error("llm_auth_failed", source=self.source, error=msg)
                 return "Error: AI generation is disabled because the provided Gemini API key is invalid."
 

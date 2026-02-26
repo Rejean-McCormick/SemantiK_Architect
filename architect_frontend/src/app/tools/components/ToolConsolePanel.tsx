@@ -1,7 +1,7 @@
 // architect_frontend/src/app/tools/components/ToolConsolePanel.tsx
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Terminal,
   Clock,
@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+
 import type { ToolRunResponse, ToolRunEvent } from "../types";
 import { formatBytes, formatDuration, formatTime, copyToClipboard } from "../utils";
 
@@ -31,6 +32,113 @@ interface ToolConsolePanelProps {
   toolId?: string;
   onClear?: () => void;
 }
+
+/**
+ * Minimal, dependency-free Tabs implementation (replaces "@/components/ui/tabs").
+ * Keeps the same API surface as shadcn/radix-like Tabs:
+ *   <Tabs value=... onValueChange=...>
+ *     <TabsList>
+ *       <TabsTrigger value="a" />
+ *     </TabsList>
+ *     <TabsContent value="a" />
+ *   </Tabs>
+ *
+ * IMPORTANT: sets data-state="active|inactive" so your Tailwind selectors
+ * (data-[state=active]:...) keep working.
+ */
+type TabsCtx = { value: string; setValue: (v: string) => void };
+const TabsContext = React.createContext<TabsCtx | null>(null);
+
+export type TabsProps = React.HTMLAttributes<HTMLDivElement> & {
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (v: string) => void;
+};
+
+function Tabs({ value, defaultValue, onValueChange, className, children, ...props }: TabsProps) {
+  const [internal, setInternal] = useState<string>(defaultValue ?? "");
+  const controlled = typeof value === "string";
+  const cur = controlled ? (value as string) : internal;
+
+  const setValue = useCallback(
+    (v: string) => {
+      if (!controlled) setInternal(v);
+      onValueChange?.(v);
+    },
+    [controlled, onValueChange]
+  );
+
+  return (
+    <TabsContext.Provider value={{ value: cur, setValue }}>
+      <div className={className} {...props}>
+        {children}
+      </div>
+    </TabsContext.Provider>
+  );
+}
+
+const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} role="tablist" className={cn("inline-flex", className)} {...props} />
+  )
+);
+TabsList.displayName = "TabsList";
+
+export type TabsTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { value: string };
+
+const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
+  ({ className, value, onClick, ...props }, ref) => {
+    const ctx = React.useContext(TabsContext);
+    if (!ctx) {
+      return (
+        <button ref={ref} className={className} onClick={onClick} {...props} />
+      );
+    }
+
+    const active = ctx.value === value;
+
+    return (
+      <button
+        ref={ref}
+        role="tab"
+        type="button"
+        aria-selected={active}
+        data-state={active ? "active" : "inactive"}
+        className={className}
+        onClick={(e) => {
+          ctx.setValue(value);
+          onClick?.(e);
+        }}
+        {...props}
+      />
+    );
+  }
+);
+TabsTrigger.displayName = "TabsTrigger";
+
+export type TabsContentProps = React.HTMLAttributes<HTMLDivElement> & { value: string };
+
+const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
+  ({ className, value, children, ...props }, ref) => {
+    const ctx = React.useContext(TabsContext);
+    const active = ctx?.value === value;
+
+    if (!active) return null;
+
+    return (
+      <div
+        ref={ref}
+        role="tabpanel"
+        data-state="active"
+        className={className}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+TabsContent.displayName = "TabsContent";
 
 // -----------------------------------------------------------------------------
 // Redaction helpers (defense-in-depth for secrets in args/commands/events/bundles)
@@ -69,8 +177,10 @@ const SENSITIVE_FLAGS = new Set([
 function isProbablySensitiveKey(k: string): boolean {
   const kk = (k || "").toLowerCase().replace(/[^a-z0-9_-]/g, "");
   if (SENSITIVE_KEYS.has(kk)) return true;
-  // catch-all: "*key", "*token", "*secret", "*password"
-  return /(^|_|-)(key|token|secret|password|auth|authorization)$/.test(kk) || /(key|token|secret|password)/.test(kk);
+  return (
+    /(^|_|-)(key|token|secret|password|auth|authorization)$/.test(kk) ||
+    /(key|token|secret|password)/.test(kk)
+  );
 }
 
 function redactText(input: string): string {
@@ -111,7 +221,7 @@ function redactArgv(argv: string[]): string[] {
 
     // --flag=value
     if (lower.startsWith("--") && lower.includes("=")) {
-      const [flag, _val] = lower.split("=", 2);
+      const [flag] = lower.split("=", 2);
       if (SENSITIVE_FLAGS.has(flag)) {
         out.push(`${tok.split("=", 1)[0]}=***redacted***`);
         continue;
@@ -143,8 +253,9 @@ function redactDeep<T>(value: T): T {
   if (typeof v === "number" || typeof v === "boolean") return value;
 
   if (Array.isArray(v)) {
-    // If it looks like argv (strings starting with "-"), apply argv redaction.
-    const looksLikeArgv = v.every((x) => typeof x === "string") && v.some((x) => String(x).trim().startsWith("-"));
+    const looksLikeArgv =
+      v.every((x) => typeof x === "string") &&
+      v.some((x) => String(x).trim().startsWith("-"));
     if (looksLikeArgv) return redactArgv(v as string[]) as any;
     return v.map((x) => redactDeep(x)) as any;
   }
@@ -152,11 +263,7 @@ function redactDeep<T>(value: T): T {
   if (typeof v === "object") {
     const out: Record<string, any> = {};
     for (const [k, vv] of Object.entries(v)) {
-      if (isProbablySensitiveKey(k)) {
-        out[k] = "***redacted***";
-      } else {
-        out[k] = redactDeep(vv);
-      }
+      out[k] = isProbablySensitiveKey(k) ? "***redacted***" : redactDeep(vv);
     }
     return out as any;
   }
@@ -165,10 +272,9 @@ function redactDeep<T>(value: T): T {
 }
 
 function sanitizeResponse(res: ToolRunResponse): ToolRunResponse {
-  // Don’t mutate the original response; return a sanitized copy.
   const r: any = res as any;
-
   const next: any = { ...r };
+
   next.command = redactText(String(r.command ?? ""));
   if (Array.isArray(r.args_received)) next.args_received = redactArgv(r.args_received);
   if (Array.isArray(r.args_accepted)) next.args_accepted = redactArgv(r.args_accepted);
@@ -193,7 +299,7 @@ function downloadText(filename: string, content: string) {
     a.remove();
     URL.revokeObjectURL(url);
   } catch {
-    // If the browser blocks this, user can still copy.
+    // no-op
   }
 }
 
@@ -207,20 +313,25 @@ export default function ToolConsolePanel({
   const [activeTab, setActiveTab] = useState("console");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Use sanitized response for UI rendering (command/args/events/bundles).
   const safeResponse = useMemo(() => (response ? sanitizeResponse(response) : null), [response]);
 
   const safeEvents = useMemo<ToolRunEvent[]>(() => safeResponse?.events ?? [], [safeResponse]);
-  const stdout = safeResponse?.stdout ?? safeResponse?.output ?? "";
-  const stderr = safeResponse?.stderr ?? safeResponse?.error ?? "";
-  const stdoutChars =
-    typeof safeResponse?.stdout_chars === "number" ? safeResponse.stdout_chars : (stdout?.length ?? 0);
-  const stderrChars =
-    typeof safeResponse?.stderr_chars === "number" ? safeResponse.stderr_chars : (stderr?.length ?? 0);
-  const truncStdout = Boolean(safeResponse?.truncation?.stdout);
-  const truncStderr = Boolean(safeResponse?.truncation?.stderr);
+  const stdout = safeResponse?.stdout ?? (safeResponse as any)?.output ?? "";
+  const stderr = safeResponse?.stderr ?? (safeResponse as any)?.error ?? "";
 
-  // Auto-switch tabs based on state
+  const stdoutChars =
+    typeof (safeResponse as any)?.stdout_chars === "number"
+      ? (safeResponse as any).stdout_chars
+      : (stdout?.length ?? 0);
+
+  const stderrChars =
+    typeof (safeResponse as any)?.stderr_chars === "number"
+      ? (safeResponse as any).stderr_chars
+      : (stderr?.length ?? 0);
+
+  const truncStdout = Boolean((safeResponse as any)?.truncation?.stdout);
+  const truncStderr = Boolean((safeResponse as any)?.truncation?.stderr);
+
   useEffect(() => {
     if (isRunning) {
       setActiveTab("console");
@@ -228,19 +339,12 @@ export default function ToolConsolePanel({
     }
     if (!safeResponse) return;
 
-    // Prefer stderr if failed or stderr non-empty; else stdout if non-empty; else events if present; else meta.
-    if (!safeResponse.success || stderrChars > 0) {
-      setActiveTab("stderr");
-    } else if (stdoutChars > 0) {
-      setActiveTab("stdout");
-    } else if ((safeResponse.events?.length ?? 0) > 0) {
-      setActiveTab("events");
-    } else {
-      setActiveTab("meta");
-    }
+    if (!(safeResponse as any).success || stderrChars > 0) setActiveTab("stderr");
+    else if (stdoutChars > 0) setActiveTab("stdout");
+    else if (((safeResponse as any).events?.length ?? 0) > 0) setActiveTab("events");
+    else setActiveTab("meta");
   }, [isRunning, safeResponse, stdoutChars, stderrChars]);
 
-  // Auto-scroll the raw console
   useEffect(() => {
     if (activeTab === "console" && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -248,8 +352,6 @@ export default function ToolConsolePanel({
   }, [realtimeLog, activeTab]);
 
   const handleCopyBundle = () => {
-    // Copy a richer bundle than just the response (helps debug the UI too).
-    // Redact secrets from both realtime_log and response.
     const bundle = {
       tool_id: toolId ?? null,
       is_running: isRunning,
@@ -260,40 +362,41 @@ export default function ToolConsolePanel({
     copyToClipboard(JSON.stringify(redactDeep(bundle), null, 2));
   };
 
-  // --- RENDERERS ---
-
   const renderTimeline = (events: ToolRunEvent[]) => (
     <div className="space-y-3 p-4 font-mono text-xs">
       {events.length === 0 && <div className="text-slate-500 italic">No events recorded.</div>}
       {events.map((e, i) => {
-        const level = (e.level || "").toUpperCase();
+        const level = String((e as any).level || "").toUpperCase();
         const isErr = level === "ERROR";
         const isWarn = level === "WARN" || level === "WARNING";
+        const data = (e as any).data;
+
         return (
           <div key={i} className="flex gap-3 group">
             <div className="w-20 text-slate-500 shrink-0 text-right select-none">
-              {e.ts ? formatTime(e.ts) : "—"}
+              {(e as any).ts ? formatTime((e as any).ts) : "—"}
             </div>
+
             <div
-              className={`
-                shrink-0 w-16 text-center font-bold rounded-sm px-1 py-0.5 h-fit
-                ${
-                  isErr
-                    ? "bg-red-900/30 text-red-400"
-                    : isWarn
-                    ? "bg-amber-900/30 text-amber-400"
-                    : "bg-slate-800 text-slate-400"
-                }
-              `}
+              className={cn(
+                "shrink-0 w-16 text-center font-bold rounded-sm px-1 py-0.5 h-fit",
+                isErr
+                  ? "bg-red-900/30 text-red-400"
+                  : isWarn
+                  ? "bg-amber-900/30 text-amber-400"
+                  : "bg-slate-800 text-slate-400"
+              )}
             >
               {level || "INFO"}
             </div>
+
             <div className="flex-1 space-y-1">
-              <div className="font-semibold text-slate-300">{e.step || "step"}</div>
-              <div className="text-slate-400 leading-relaxed">{redactText(e.message || "")}</div>
-              {e.data && Object.keys(e.data).length > 0 && (
+              <div className="font-semibold text-slate-300">{(e as any).step || "step"}</div>
+              <div className="text-slate-400 leading-relaxed">{redactText((e as any).message || "")}</div>
+
+              {data && typeof data === "object" && Object.keys(data).length > 0 && (
                 <pre className="mt-1 bg-slate-900 p-2 rounded border border-slate-800 text-[10px] text-slate-500 overflow-x-auto">
-                  {JSON.stringify(redactDeep(e.data), null, 2)}
+                  {JSON.stringify(redactDeep(data), null, 2)}
                 </pre>
               )}
             </div>
@@ -349,34 +452,34 @@ export default function ToolConsolePanel({
           <div className="bg-slate-900 rounded p-3 space-y-2 border border-slate-800 font-mono text-xs">
             <div className="flex justify-between gap-3">
               <span className="text-slate-500 shrink-0">Trace ID:</span>
-              <span className="text-slate-300 select-all break-all">{res.trace_id || "—"}</span>
+              <span className="text-slate-300 select-all break-all">{(res as any).trace_id || "—"}</span>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-slate-500 shrink-0">Exit Code:</span>
-              <span className={res.exit_code === 0 ? "text-green-400" : "text-red-400"}>
-                {typeof res.exit_code === "number" ? res.exit_code : "—"}
+              <span className={(res as any).exit_code === 0 ? "text-green-400" : "text-red-400"}>
+                {typeof (res as any).exit_code === "number" ? (res as any).exit_code : "—"}
               </span>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-slate-500 shrink-0">Duration:</span>
               <span className="text-slate-300">
-                {typeof res.duration_ms === "number" ? formatDuration(res.duration_ms) : "—"}
+                {typeof (res as any).duration_ms === "number" ? formatDuration((res as any).duration_ms) : "—"}
               </span>
             </div>
             <div className="pt-2 border-t border-slate-800">
               <span className="text-slate-500 block mb-1">CWD:</span>
-              <div className="text-slate-300 break-all">{res.cwd || "—"}</div>
+              <div className="text-slate-300 break-all">{(res as any).cwd || "—"}</div>
             </div>
           </div>
         </div>
 
-        {res.args_rejected && res.args_rejected.length > 0 && (
+        {(res as any).args_rejected && (res as any).args_rejected.length > 0 && (
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-red-400 mb-2 flex items-center gap-2">
               <AlertTriangle className="w-3 h-3" /> Arguments Rejected
             </h4>
             <div className="bg-red-950/20 rounded border border-red-900/50 overflow-hidden">
-              {res.args_rejected.map((r, i) => (
+              {(res as any).args_rejected.map((r: any, i: number) => (
                 <div key={i} className="p-2 border-b border-red-900/30 last:border-0 text-xs">
                   <span className="font-mono text-red-300 bg-red-900/40 px-1 rounded">
                     {redactText(r.arg)}
@@ -393,7 +496,7 @@ export default function ToolConsolePanel({
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Command</h4>
           <pre className="bg-slate-950 p-3 rounded border border-slate-800 font-mono text-xs text-slate-300 whitespace-pre-wrap break-all">
-            {redactText(res.command || "—")}
+            {redactText((res as any).command || "—")}
           </pre>
         </div>
 
@@ -402,7 +505,7 @@ export default function ToolConsolePanel({
             Arguments Received
           </h4>
           <div className="flex flex-wrap gap-1">
-            {(res.args_received || []).map((a, i) => (
+            {((res as any).args_received || []).map((a: string, i: number) => (
               <span
                 key={i}
                 className="px-2 py-1 bg-slate-800 rounded text-xs font-mono text-slate-400"
@@ -410,7 +513,7 @@ export default function ToolConsolePanel({
                 {redactText(a)}
               </span>
             ))}
-            {(res.args_received || []).length === 0 && (
+            {(((res as any).args_received || []) as any[]).length === 0 && (
               <span className="text-xs text-slate-600 italic">None</span>
             )}
           </div>
@@ -431,12 +534,13 @@ export default function ToolConsolePanel({
 
           {safeResponse && (
             <Badge
-              variant={safeResponse.success ? "default" : "destructive"}
-              className={`text-[10px] h-5 ${
-                safeResponse.success ? "bg-green-900 text-green-300 hover:bg-green-800" : ""
-              }`}
+              variant={(safeResponse as any).success ? "default" : "destructive"}
+              className={cn(
+                "text-[10px] h-5",
+                (safeResponse as any).success ? "bg-green-900 text-green-300 hover:bg-green-800" : ""
+              )}
             >
-              {safeResponse.success ? "SUCCESS" : "FAILED"}
+              {(safeResponse as any).success ? "SUCCESS" : "FAILED"}
             </Badge>
           )}
 
@@ -501,11 +605,12 @@ export default function ToolConsolePanel({
 
               <TabsTrigger
                 value="stderr"
-                className={`data-[state=active]:bg-transparent data-[state=active]:border-b-2 rounded-none px-0 pb-2 text-xs font-medium uppercase tracking-wide gap-2 ${
-                  stderrChars > 0 || !safeResponse.success
+                className={cn(
+                  "data-[state=active]:bg-transparent data-[state=active]:border-b-2 rounded-none px-0 pb-2 text-xs font-medium uppercase tracking-wide gap-2",
+                  stderrChars > 0 || !(safeResponse as any).success
                     ? "text-amber-500 data-[state=active]:border-amber-500 data-[state=active]:text-amber-400"
                     : "text-slate-500 data-[state=active]:border-slate-500 data-[state=active]:text-slate-300"
-                }`}
+                )}
               >
                 <AlertOctagon className="w-3.5 h-3.5" /> Stderr
                 {stderrChars > 0 && (
@@ -540,11 +645,10 @@ export default function ToolConsolePanel({
           </div>
         </Tabs>
       ) : (
-        // Fallback / Active State (Simple Log View)
         <div className="flex-1 flex flex-col min-h-0">
           <div className="bg-slate-900/20 border-b border-slate-800 px-4 py-2 flex items-center gap-2">
             <span className="text-[10px] uppercase font-bold text-slate-600">Raw Stream</span>
-            {isRunning && <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>}
+            {isRunning && <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />}
           </div>
           <div
             ref={scrollRef}

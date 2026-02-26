@@ -28,6 +28,9 @@ import {
 } from "lucide-react";
 import type { TestDefinition } from "@/types/test-runner";
 
+// Type the inventory prop without introducing a runtime import.
+type Inventory = typeof import("../tools/inventory").INVENTORY;
+
 interface SystemHealth {
   broker: "up" | "down";
   storage: "up" | "down";
@@ -39,10 +42,13 @@ type SystemHealthResponse = SystemHealth | { components: SystemHealth };
 
 interface DevDashboardProps {
   availableTests: TestDefinition[];
+  inventory?: Inventory;
 }
 
 const ENV_API_BASE = process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL || "";
 const DEFAULT_BACKEND_ORIGIN = "http://localhost:8000";
+
+const COMMON_API_BASE_PATHS = ["/api/v1", "/abstract_wiki_architect/api/v1"] as const;
 
 function stripTrailingSlash(s: string) {
   return (s || "").replace(/\/+$/, "");
@@ -70,29 +76,24 @@ function buildCandidateApiBases(envBaseRaw: string): string[] {
   // 1) If user configured an API base, try it first.
   if (envBase) candidates.push(envBase);
 
-  // 2) If envBase is absolute URL, also probe common layouts on that origin.
+  // 2) Probe common layouts on the same origin (absolute or relative envBase).
   try {
     const u = new URL(envBase);
     const origin = u.origin;
-
-    // If they provided a versioned base (/api/v1...), also try origin defaults.
-    candidates.push(`${origin}/api/v1`);
-    candidates.push(`${origin}/api/v1`);
-
-    // If they provided a mounted prefix (/abstract_wiki_architect/...), also try adding /api/v1.
-    if (u.pathname.replace(/\/+$/, "").endsWith("/abstract_wiki_architect")) {
-      candidates.push(`${origin}/api/v1`);
+    for (const p of COMMON_API_BASE_PATHS) {
+      candidates.push(`${origin}${p}`);
     }
   } catch {
-    // envBase might be relative (e.g. "/api/v1") — that's fine.
-    // Also probe both common relative prefixes for same-origin deployments.
-    candidates.push("/api/v1");
-    candidates.push("/api/v1");
+    // envBase might be relative (e.g. "/api/v1") or empty — probe same-origin paths.
+    for (const p of COMMON_API_BASE_PATHS) {
+      candidates.push(p);
+    }
   }
 
-  // 3) Always include localhost dev defaults (Next:3000 + API:8000).
-  candidates.push(`${DEFAULT_BACKEND_ORIGIN}/api/v1`);
-  candidates.push(`${DEFAULT_BACKEND_ORIGIN}/api/v1`);
+  // 3) Always include localhost backend dev defaults (API:8000).
+  for (const p of COMMON_API_BASE_PATHS) {
+    candidates.push(`${DEFAULT_BACKEND_ORIGIN}${p}`);
+  }
 
   return dedupe(candidates.map(stripTrailingSlash));
 }
@@ -105,13 +106,25 @@ function buildUrl(apiBase: string, endpoint: string) {
 
   const base = stripTrailingSlash(apiBase);
 
-  // If endpoint is absolute path, treat it as absolute-from-origin if apiBase is absolute.
+  // Absolute path endpoint: prefer joining to apiBase when it matches a known mount.
   if (raw.startsWith("/")) {
+    for (const prefix of COMMON_API_BASE_PATHS) {
+      if (raw === prefix || raw.startsWith(`${prefix}/`)) {
+        if (base.endsWith(prefix)) {
+          // Example:
+          // base:  http://host/abstract_wiki_architect/api/v1
+          // raw:   /api/v1/health/ready
+          // =>     http://host/abstract_wiki_architect/api/v1/health/ready
+          return `${base}${raw.slice(prefix.length)}`;
+        }
+      }
+    }
+
+    // Otherwise treat as absolute-from-origin if apiBase is absolute, else return raw.
     try {
       const u = new URL(base);
       return `${u.origin}${raw}`;
     } catch {
-      // apiBase might be relative; return absolute-from-current-origin
       return raw;
     }
   }
@@ -141,14 +154,17 @@ async function resolveApiBase(envBaseRaw: string): Promise<string | null> {
   const cands = buildCandidateApiBases(envBaseRaw);
   for (const c of cands) {
     // Only accept bases that actually respond on /health/ready.
-    // (This auto-fixes the "/api/v1" vs "/api/v1" mismatch.)
+    // (This auto-fixes "/abstract_wiki_architect/api/v1" vs "/api/v1" mismatches.)
     // eslint-disable-next-line no-await-in-loop
     if (await probeReady(c)) return c;
   }
   return null;
 }
 
-export default function DevDashboard({ availableTests = [] }: DevDashboardProps) {
+export default function DevDashboard({
+  availableTests = [],
+  inventory,
+}: DevDashboardProps) {
   const [status, setStatus] = useState<"CONNECTING" | "ONLINE" | "OFFLINE">(
     "CONNECTING"
   );
@@ -275,11 +291,19 @@ export default function DevDashboard({ availableTests = [] }: DevDashboardProps)
           <p className="text-slate-500 dark:text-slate-400">
             System Diagnostics & Test Bench
           </p>
-          {apiBase && (
-            <p className="mt-1 text-xs text-slate-400 font-mono break-all">
-              API: {apiBase}
-            </p>
-          )}
+
+          <div className="mt-1 space-y-1">
+            {apiBase && (
+              <p className="text-xs text-slate-400 font-mono break-all">
+                API: {apiBase}
+              </p>
+            )}
+            {inventory && (
+              <p className="text-xs text-slate-400 font-mono break-all">
+                Inventory: v{inventory.version} · generated {inventory.generated_on}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-4 bg-slate-100 dark:bg-slate-900 p-2 rounded-lg border">
@@ -467,7 +491,7 @@ function HealthCard({
 }: {
   title: string;
   status?: "up" | "down";
-  icon: any;
+  icon: React.ReactNode;
   desc: string;
 }) {
   const isUp = status === "up";

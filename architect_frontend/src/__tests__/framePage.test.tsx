@@ -1,70 +1,81 @@
-// architect_frontend\src\__tests__\framePage.test.tsx
 // architect_frontend/src/__tests__/framePage.test.tsx
 
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent } from "@testing-library/react";
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-import FramePage from "@/app/abstract_wiki_architect/[slug]/page";
+import EditorPage from "@/app/editor/page";
+import { architectApi } from "@/lib/api";
 
-// Mock the FrameForm so we can drive the page state without depending on
-// actual form details.
-jest.mock("@/components/FrameForm", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return function MockFrameForm(props: any) {
-    return (
-      <div>
-        <div data-testid="frame-form-mock" />
-        <button
-          type="button"
-          onClick={() =>
-            props.onResult?.({
-              text: "Generated biography text",
-            })
-          }
-        >
-          Trigger result
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onError?.("Something went wrong")}
-        >
-          Trigger error
-        </button>
-      </div>
+// Mock de l'API utilisée par EditorPage
+jest.mock("@/lib/api", () => ({
+  __esModule: true,
+  architectApi: {
+    listLanguages: jest.fn(),
+    generate: jest.fn(),
+  },
+}));
+
+describe("EditorPage", () => {
+  const mockListLanguages = architectApi.listLanguages as unknown as jest.Mock;
+  const mockGenerate = architectApi.generate as unknown as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("renders the editor shell and loads languages", async () => {
+    mockListLanguages.mockResolvedValueOnce([{ code: "en", name: "English" }]);
+
+    render(<EditorPage />);
+
+    // UI de base
+    expect(screen.getByText(/Frame Input/i)).toBeInTheDocument();
+    expect(screen.getByText(/Output/i)).toBeInTheDocument();
+
+    // Langues chargées
+    await waitFor(() => expect(mockListLanguages).toHaveBeenCalledTimes(1));
+    expect(
+      screen.getByRole("option", { name: /English \(en\)/i })
+    ).toBeInTheDocument();
+  });
+
+  it("runs generation and displays the result", async () => {
+    mockListLanguages.mockResolvedValueOnce([{ code: "en", name: "English" }]);
+    mockGenerate.mockResolvedValueOnce({
+      surface_text: "Generated biography text",
+    });
+
+    render(<EditorPage />);
+
+    await waitFor(() => expect(mockListLanguages).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: /Realize Text/i }));
+
+    await waitFor(() => expect(mockGenerate).toHaveBeenCalledTimes(1));
+    expect(mockGenerate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lang: "en",
+        frame_type: "bio",
+        frame_payload: expect.objectContaining({
+          name: "Marie Curie",
+        }),
+      })
     );
-  };
-});
 
-describe("FramePage", () => {
-  it("renders the correct title and description for the bio context", () => {
-    render(<FramePage params={{ slug: "bio" }} />);
-
-    // Title comes from FRAME_CONTEXTS (bio context).
-    expect(
-      screen.getByRole("heading", { name: /person biography/i }),
-    ).toBeInTheDocument();
-
-    // Description text should also be visible.
-    expect(
-      screen.getByText(/lead sentence for a person/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Generated biography text")).toBeInTheDocument();
   });
 
-  it("shows the generation result after FrameForm triggers onResult", () => {
-    render(<FramePage params={{ slug: "bio" }} />);
+  it("shows an error when generation fails", async () => {
+    mockListLanguages.mockResolvedValueOnce([{ code: "en", name: "English" }]);
+    mockGenerate.mockRejectedValueOnce(new Error("Generation failed"));
 
-    fireEvent.click(screen.getByText(/trigger result/i));
+    render(<EditorPage />);
 
-    expect(
-      screen.getByText("Generated biography text"),
-    ).toBeInTheDocument();
-  });
+    await waitFor(() => expect(mockListLanguages).toHaveBeenCalledTimes(1));
 
-  it("shows an error when FrameForm triggers onError", () => {
-    render(<FramePage params={{ slug: "bio" }} />);
+    fireEvent.click(screen.getByRole("button", { name: /Realize Text/i }));
 
-    fireEvent.click(screen.getByText(/trigger error/i));
-
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(await screen.findByText(/Error:\s*Generation failed/i)).toBeInTheDocument();
   });
 });

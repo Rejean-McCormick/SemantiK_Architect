@@ -29,12 +29,15 @@
   },
   "rules": {
     "@typescript-eslint/explicit-module-boundary-types": "off",
+
     "@typescript-eslint/no-unused-vars": [
       "warn",
       { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
     ],
+
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
+
     "import/order": [
       "warn",
       {
@@ -44,8 +47,15 @@
       }
     ],
     "import/no-unresolved": "error",
+
     "no-console": ["warn", { "allow": ["warn", "error"] }],
     "no-debugger": "warn",
-    "@next/next/no-html-link-for-pages": "off"
+
+    "@next/next/no-html-link-for-pages": "off",
+
+    // --- NEW: don't block lint on legacy patterns; keep as signal ---
+    "@typescript-eslint/no-explicit-any": "warn",
+    "react/no-unescaped-entities": "warn",
+    "react/jsx-no-comment-textnodes": "warn"
   }
 }

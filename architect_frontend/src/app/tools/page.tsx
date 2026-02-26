@@ -130,19 +130,25 @@ function groupItems(items: ToolItem[]): GroupedTools {
   const byCat: GroupedTools = new Map();
 
   for (const it of items) {
-    if (!byCat.has(it.category)) byCat.set(it.category, new Map());
-    const byGroup = byCat.get(it.category)!;
-
-    if (!byGroup.has(it.group)) byGroup.set(it.group, []);
-    byGroup.get(it.group)!.push(it);
-  }
-
-  // Stable rendering (group-level sort; ToolListPanel sorts cat/group labels)
-  for (const [, byGroup] of byCat) {
-    for (const [, arr] of byGroup) {
-      arr.sort((a, b) => collator.compare(a.title, b.title));
+    let byGroup = byCat.get(it.category);
+    if (!byGroup) {
+      byGroup = new Map();
+      byCat.set(it.category, byGroup);
     }
+
+    const existing = byGroup.get(it.group) as ToolItem[] | undefined;
+    if (existing) existing.push(it);
+    else byGroup.set(it.group, [it]);
   }
+
+  // Stable rendering: avoid `for...of` on Map (ES2015 iterators) to prevent TS2802
+  byCat.forEach((byGroup) => {
+    byGroup.forEach((arr) => {
+      (arr as ToolItem[]).sort((a: ToolItem, b: ToolItem) =>
+        collator.compare(a.title, b.title)
+      );
+    });
+  });
 
   return byCat;
 }
@@ -473,8 +479,7 @@ export default function ToolsDashboard() {
                   • Set <span className="font-mono">NEXT_PUBLIC_REPO_URL</span>{" "}
                   to enable file links.
                 </>
-              )}
-              {" "}
+              )}{" "}
               • Mode: <span className="font-mono">{dryRun ? "dry-run" : "live"}</span>
             </div>
 

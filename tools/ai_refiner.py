@@ -1,14 +1,13 @@
 # tools/ai_refiner.py
 import argparse
-import glob
 import os
 import sys
 import time
-import textwrap
 from pathlib import Path
 from typing import Dict, Optional, List
+
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai  # NEW: google-genai SDK
 
 # --- Configuration ---
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -56,6 +55,7 @@ def print_header(langs: List[str], dry_run: bool):
     print("----------------------------------------")
     sys.stdout.flush()
 
+
 def log(msg: str, verbose: bool = False, is_verbose_only: bool = False):
     if is_verbose_only and not verbose:
         return
@@ -65,25 +65,24 @@ def log(msg: str, verbose: bool = False, is_verbose_only: bool = False):
 
 # --- Logic ---
 
-def setup_gemini():
+def setup_gemini() -> "genai.Client":
     if not GOOGLE_API_KEY:
         print("❌ Error: GOOGLE_API_KEY not found in environment variables.")
         sys.exit(1)
-    
+
     try:
-        genai.configure(api_key=GOOGLE_API_KEY)
-        return genai.GenerativeModel(MODEL_NAME)
+        # NEW: google-genai client
+        return genai.Client(api_key=GOOGLE_API_KEY)
     except Exception as e:
         print(f"❌ Error initializing AI client: {e}")
         sys.exit(1)
 
+
 def read_factory_files(iso_code: str, verbose: bool = False) -> Optional[Dict[str, str]]:
     """Reads the generated Tier 3 files for context."""
-    # Try exact match first
     target_folder = GF_GENERATED_PATH / iso_code
-    
+
     if not target_folder.exists():
-        # Fallback: search case-insensitive
         log(f"Exact folder {iso_code} not found. Searching...", verbose, True)
         for p in GF_GENERATED_PATH.iterdir():
             if p.is_dir() and p.name.lower() == iso_code.lower():
@@ -93,18 +92,15 @@ def read_factory_files(iso_code: str, verbose: bool = False) -> Optional[Dict[st
             log(f"❌ Could not find source files for {iso_code}", verbose)
             return None
 
-    files = {}
-    # Look for Res, Syntax, Wiki files
-    # pattern: *{iso}*.gf or similar. The prompt assumes Res{Lang}.gf
-    # We grab all .gf files in the folder to be safe
+    files: Dict[str, str] = {}
     gf_files = list(target_folder.glob("*.gf"))
-    
+
     if not gf_files:
         log(f"❌ No .gf files found in {target_folder}", verbose)
         return None
 
     for fpath in gf_files:
-        if fpath.name.startswith("Wiki") or fpath.name.startswith("Res") or fpath.name.startswith("Syntax"):
+        if fpath.name.startswith(("Wiki", "Res", "Syntax")):
             try:
                 files[fpath.name] = fpath.read_text(encoding="utf-8")
                 log(f"   Loaded: {fpath.name}", verbose, True)
@@ -113,12 +109,13 @@ def read_factory_files(iso_code: str, verbose: bool = False) -> Optional[Dict[st
 
     return files
 
+
 def parse_ai_response(response_text: str) -> Dict[str, str]:
     """Splits the single AI string back into files."""
-    files = {}
+    files: Dict[str, str] = {}
     current_file = None
-    lines = response_text.split('\n')
-    buffer = []
+    lines = response_text.split("\n")
+    buffer: List[str] = []
 
     for line in lines:
         if line.strip().startswith("### FILE:"):
@@ -128,52 +125,57 @@ def parse_ai_response(response_text: str) -> Dict[str, str]:
             buffer = []
         else:
             buffer.append(line)
-            
+
     if current_file and buffer:
         files[current_file] = "\n".join(buffer)
-        
+
     return files
 
+
 def refine_language(
-    model, 
-    iso_code: str, 
-    instructions: str, 
-    dry_run: bool, 
-    verbose: bool
+    client: "genai.Client",
+    iso_code: str,
+    instructions: str,
+    dry_run: bool,
+    verbose: bool,
 ) -> bool:
     log(f"🧠 Refining: {iso_code}...", verbose)
-    
+
     # 1. Load Context
     files = read_factory_files(iso_code, verbose)
     if not files:
         return False
-        
+
     # 2. Build Prompt
     user_prompt = f"Language ISO: {iso_code}\n"
     if instructions:
         user_prompt += f"Instructions: {instructions}\n"
-    
+
     user_prompt += "\n--- EXISTING CODE ---\n"
     for fname, content in files.items():
         user_prompt += f"\n### FILE: {fname}\n{content}\n"
-        
+
     log(f"   Sending {len(files)} files to {MODEL_NAME}...", verbose)
-    
+
     # 3. Call AI
     try:
         start_t = time.time()
-        response = model.generate_content(SYSTEM_PROMPT + "\n\n" + user_prompt)
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=SYSTEM_PROMPT + "\n\n" + user_prompt,
+        )
         duration = time.time() - start_t
         log(f"   AI Response received in {duration:.1f}s.", verbose)
-        
-        refined_files = parse_ai_response(response.text)
-        
+
+        text = getattr(response, "text", None) or str(response)
+        refined_files = parse_ai_response(text)
+
         if not refined_files:
             log("❌ AI returned invalid format (no ### FILE: markers).", verbose)
             if verbose:
-                print("--- Raw Response ---\n" + response.text[:500] + "...\n--------------------")
+                print("--- Raw Response ---\n" + text[:500] + "...\n--------------------")
             return False
-            
+
         # 4. Save
         out_dir = GF_CONTRIB_PATH / iso_code
         if not dry_run:
@@ -185,30 +187,30 @@ def refine_language(
             log(f"✅ Refinement complete for {iso_code}")
         else:
             log(f"   [DRY-RUN] Would write {len(refined_files)} files to {out_dir}", verbose)
-            
+
         return True
 
     except Exception as e:
         log(f"❌ AI Error: {e}", verbose)
         return False
 
+
 # --- Main ---
 
 def main():
     parser = argparse.ArgumentParser(description="AI Grammar Refiner (Upgrade Pidgin to Proper GF).")
-    
+
     parser.add_argument("--langs", help="Comma-separated list of ISO codes (e.g. 'zul,xho').")
     parser.add_argument("--instructions", help="Specific linguistic instructions for the AI.")
     parser.add_argument("--dry-run", action="store_true", help="Do not write files.")
     parser.add_argument("--verbose", action="store_true", help="Detailed logging.")
-    
+
     # Legacy support
     if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
-         # Assume: python ai_refiner.py <code> <name> [instr]
-         print("⚠️  Deprecation Warning: Positional arguments are deprecated. Use --langs.")
-         iso = sys.argv[1]
-         instr = sys.argv[3] if len(sys.argv) > 3 else ""
-         args = argparse.Namespace(langs=iso, instructions=instr, dry_run=False, verbose=True)
+        print("⚠️  Deprecation Warning: Positional arguments are deprecated. Use --langs.")
+        iso = sys.argv[1]
+        instr = sys.argv[3] if len(sys.argv) > 3 else ""
+        args = argparse.Namespace(langs=iso, instructions=instr, dry_run=False, verbose=True)
     else:
         args = parser.parse_args()
 
@@ -217,24 +219,25 @@ def main():
         sys.exit(1)
 
     targets = [l.strip() for l in args.langs.split(",") if l.strip()]
-    
+
     print_header(targets, args.dry_run)
-    
-    model = setup_gemini()
-    
+
+    client = setup_gemini()
+
     success_count = 0
     start_time = time.time()
-    
+
     for lang in targets:
-        if refine_language(model, lang, args.instructions, args.dry_run, args.verbose):
+        if refine_language(client, lang, args.instructions, args.dry_run, args.verbose):
             success_count += 1
-            
+
     duration = time.time() - start_time
-    
+
     print("----------------------------------------")
     print(f"Finished in {duration:.2f}s")
     print(f"Success: {success_count}/{len(targets)}")
     print("========================================")
+
 
 if __name__ == "__main__":
     main()

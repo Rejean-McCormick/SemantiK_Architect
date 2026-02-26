@@ -24,9 +24,10 @@ import time
 import re
 from pathlib import Path
 from typing import Optional, Dict, Any, List
-from dotenv import load_dotenv
 
-import google.generativeai as genai
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 # --- Configuration ---
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -45,7 +46,7 @@ LEXICON_DIR = DATA_DIR / "lexicon"
 # Load Env
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-MODEL_NAME = os.getenv("AI_MODEL_NAME", "gemini-2.0-flash") # Updated default
+MODEL_NAME = os.getenv("AI_MODEL_NAME", "gemini-2.0-flash")  # Updated default
 
 # System Prompt (Frozen)
 SYSTEM_PROMPT = """You are a computational linguist building a lexicon for an Abstract Wikipedia project.
@@ -80,6 +81,7 @@ Ensure the 'lemma' keys are in the Target Language (not English).
 
 # --- Logging Helpers ---
 
+
 def print_header(langs: List[str], limit: int, dry_run: bool):
     print("========================================")
     print("    AI LEXICON SEEDER")
@@ -92,6 +94,7 @@ def print_header(langs: List[str], limit: int, dry_run: bool):
     print("----------------------------------------")
     sys.stdout.flush()
 
+
 def log(msg: str, verbose: bool = False, is_verbose_only: bool = False):
     if is_verbose_only and not verbose:
         return
@@ -99,30 +102,33 @@ def log(msg: str, verbose: bool = False, is_verbose_only: bool = False):
     print(f"{prefix} {msg}")
     sys.stdout.flush()
 
+
 # --- Logic ---
 
-def init_ai():
-    """Initializes the Google AI client."""
+
+def init_ai() -> genai.Client:
+    """Initializes the Google AI client (google-genai)."""
     if not GOOGLE_API_KEY:
         print("❌ Error: GOOGLE_API_KEY not found in environment variables.")
         print("   Please check your .env file.")
         sys.exit(1)
-    
+
     try:
-        genai.configure(api_key=GOOGLE_API_KEY)
-        return genai.GenerativeModel(MODEL_NAME)
+        return genai.Client(api_key=GOOGLE_API_KEY)
     except Exception as e:
         print(f"❌ Error initializing AI client: {e}")
         sys.exit(1)
 
+
 def clean_json_response(text: str) -> str:
     """Strips markdown fences and whitespace."""
-    cleaned = text.strip()
+    cleaned = (text or "").strip()
     # Remove ```json ... ``` blocks
     if cleaned.startswith("```"):
         cleaned = re.sub(r"^```\w*\n", "", cleaned)
         cleaned = re.sub(r"\n```$", "", cleaned)
     return cleaned.strip()
+
 
 def validate_and_fix_payload(data: Dict[str, Any], lang_code: str) -> Dict[str, Any]:
     """
@@ -131,59 +137,69 @@ def validate_and_fix_payload(data: Dict[str, Any], lang_code: str) -> Dict[str, 
     """
     if "lemmas" not in data:
         raise ValueError("Missing 'lemmas' key in response.")
-    
+
     # Normalize Meta
     if "meta" not in data:
         data["meta"] = {}
     data["meta"]["language"] = lang_code
     data["meta"]["source"] = "ai_seed"
-    data["meta"]["generated_at"] = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+    data["meta"]["generated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # Normalize Lemmas
     valid_lemmas = {}
     for key, entry in data["lemmas"].items():
         if not key or not isinstance(entry, dict):
             continue
-        
+
         # Enforce minimal fields
         if "pos" not in entry:
-            entry["pos"] = "NOUN" # Fallback
-            
+            entry["pos"] = "NOUN"  # Fallback
+
         # Normalize POS tags
-        entry["pos"] = entry["pos"].upper()
-        
+        entry["pos"] = str(entry["pos"]).upper()
+
         valid_lemmas[key] = entry
-    
+
     data["lemmas"] = valid_lemmas
     return data
 
+
 def seed_language(
-    model, 
-    lang_code: str, 
-    limit: int, 
-    dry_run: bool, 
-    verbose: bool
+    client: genai.Client,
+    lang_code: str,
+    limit: int,
+    dry_run: bool,
+    verbose: bool,
 ) -> bool:
     """Runs the seeding process for a single language."""
     log(f"🌱 Seeding {lang_code}...", verbose)
-    
+
     prompt = SYSTEM_PROMPT.format(limit=limit).replace("<ISO_CODE>", lang_code)
     prompt += f"\nTarget Language Code: {lang_code}"
-    
+
     log(f"Sending prompt ({len(prompt)} chars)...", verbose, is_verbose_only=True)
     if verbose:
         log(f"Prompt Preview: {prompt[:100]}...", verbose, is_verbose_only=True)
 
+    raw_text = ""
     try:
-        response = model.generate_content(prompt)
-        raw_text = response.text
-        
+        # Ask for strict JSON to reduce parsing failures.
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                response_mime_type="application/json",
+            ),
+        )
+        raw_text = getattr(response, "text", "") or ""
+
         if verbose:
-             log(f"Raw Response ({len(raw_text)} chars). Parsing...", verbose, is_verbose_only=True)
+            log(f"Raw Response ({len(raw_text)} chars). Parsing...", verbose, is_verbose_only=True)
 
         json_text = clean_json_response(raw_text)
         data = json.loads(json_text)
-        
+
         # Validate
         clean_data = validate_and_fix_payload(data, lang_code)
         count = len(clean_data["lemmas"])
@@ -204,7 +220,7 @@ def seed_language(
 
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(clean_data, f, indent=2, ensure_ascii=False)
-        
+
         log(f"   ✅ Saved to: {output_file}", verbose)
         return True
 
@@ -217,7 +233,9 @@ def seed_language(
         log(f"   ❌ API/System Error: {e}", verbose)
         return False
 
+
 # --- Main ---
+
 
 def main():
     # 1. Parse Arguments
@@ -226,17 +244,12 @@ def main():
     parser.add_argument("--limit", type=int, default=50, help="Number of lemmas to generate.")
     parser.add_argument("--dry-run", action="store_true", help="Do not write files.")
     parser.add_argument("--verbose", action="store_true", help="Detailed logging.")
-    
+
     # Legacy support detection
     if len(sys.argv) == 3 and not sys.argv[1].startswith("-"):
         # Legacy usage: python script.py <code> <name>
         print("⚠️  Deprecation Warning: Positional arguments are deprecated. Use --langs.")
-        args = argparse.Namespace(
-            langs=sys.argv[1],
-            limit=50,
-            dry_run=False,
-            verbose=True
-        )
+        args = argparse.Namespace(langs=sys.argv[1], limit=50, dry_run=False, verbose=True)
     else:
         args = parser.parse_args()
 
@@ -247,35 +260,36 @@ def main():
     # [FIX] Normalize all input codes using the shared logic
     # This prevents CLI users from creating 'eng' folders by mistake
     raw_targets = [l.strip() for l in args.langs.split(",") if l.strip()]
-    targets = []
-    
+    targets: List[str] = []
+
     for raw in raw_targets:
         canonical = lexicon.normalize_code(raw)
         if canonical != raw:
             print(f"🔧 Normalizing: {raw} -> {canonical}")
         targets.append(canonical)
-    
+
     # 2. Print Header
     print_header(targets, args.limit, args.dry_run)
 
     # 3. Init AI
-    model = init_ai()
-    
+    client = init_ai()
+
     # 4. Process
     success_count = 0
     start_time = time.time()
-    
+
     for lang in targets:
-        if seed_language(model, lang, args.limit, args.dry_run, args.verbose):
+        if seed_language(client, lang, args.limit, args.dry_run, args.verbose):
             success_count += 1
-            
+
     duration = time.time() - start_time
-    
+
     # 5. Summary
     print("----------------------------------------")
     print(f"Finished in {duration:.2f}s")
     print(f"Success: {success_count}/{len(targets)}")
     print("========================================")
+
 
 if __name__ == "__main__":
     main()
