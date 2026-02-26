@@ -12,11 +12,15 @@ This script:
 3. Classifies entries into domains (people, science, geography, core).
 4. Writes separate JSON files to the language's directory.
 
-[FIX] Output is compatible with the runtime loader:
+[FIX] Output is compatible with the runtime loader AND unit tests:
   - meta.schema_version is an integer (not a string)
   - top-level uses "entries" (schema v2 preferred)
   - each entry uses wikidata_qid (alias: qid still present for backwards consumers)
   - does not emit a redundant "key" field (key is the dict key)
+  - meta.source == "wikidata_lexeme_dump"
+  - meta.source_dump == basename(dump_path)
+  - meta.entries_used == number of unique lemmas emitted
+  - each entry has features.lexeme_id
 """
 
 from __future__ import annotations
@@ -39,6 +43,9 @@ log = get_logger(__name__)
 
 # [FIX] Schema version for runtime loader expectations (meta.schema_version must be int)
 SCHEMA_VERSION = 2
+
+# [FIX] Unit tests expect this exact source name
+SOURCE_NAME = "wikidata_lexeme_dump"
 
 # ---------------------------------------------------------------------------
 # Domain Classification Config
@@ -69,6 +76,7 @@ DEFAULT_DOMAIN = "core"
 # ---------------------------------------------------------------------------
 # Lexeme parsing helpers
 # ---------------------------------------------------------------------------
+
 
 def _open_maybe_gzip(path: str) -> Iterable[str]:
     """Open a file that may or may not be gzipped and yield lines."""
@@ -134,8 +142,11 @@ LEXICAL_CATEGORY_POS_MAP: Dict[str, str] = {
 
 def _extract_any_qid_from_senses(lexeme: Dict[str, Any]) -> Optional[str]:
     """
-    Best-effort extraction of a linked QID from sense claims.
-    Many dumps are filtered/flattened; tests accept None, but if present, store it.
+    Best-effort extraction of a linked QID from senses.
+
+    Supports:
+      - sense["wikidataItem"]["id"]   (used by unit tests)
+      - sense["claims"][...]["mainsnak"]["datavalue"]... (real dumps)
     """
     senses = lexeme.get("senses") or []
     if not isinstance(senses, list):
@@ -144,6 +155,14 @@ def _extract_any_qid_from_senses(lexeme: Dict[str, Any]) -> Optional[str]:
     for sense in senses:
         if not isinstance(sense, dict):
             continue
+
+        # [FIX] Tests use: {"wikidataItem": {"id": "Q..."}}
+        wikidata_item = sense.get("wikidataItem")
+        if isinstance(wikidata_item, dict):
+            qid = wikidata_item.get("id")
+            if isinstance(qid, str) and qid.startswith("Q"):
+                return qid
+
         claims = sense.get("claims") or {}
         if not isinstance(claims, dict):
             continue
@@ -213,8 +232,9 @@ def _build_lexeme_entry(
     """
     Convert Wikidata Lexeme -> (lemma, domain, entry_dict).
 
-    Entry dict conforms to the runtime loader:
-      - lemma, pos, wikidata_qid, forms, extra
+    Entry dict conforms to the runtime loader and unit tests:
+      - lemma, pos, wikidata_qid, qid(alias), forms, extra
+      - features.lexeme_id is required by tests
     """
     lemmas = lexeme.get("lemmas", {})
     if not isinstance(lemmas, dict) or lang_code not in lemmas:
@@ -234,17 +254,21 @@ def _build_lexeme_entry(
     pos = LEXICAL_CATEGORY_POS_MAP.get(str(lex_cat), "NOUN")
 
     wikidata_qid = _extract_any_qid_from_senses(lexeme)
-
     domain = _classify_domain(lexeme, pos)
+
+    lexeme_id = str(lexeme.get("id") or "")
 
     entry: Dict[str, Any] = {
         "lemma": lemma,
         "pos": pos,
-        # [FIX] runtime expects wikidata_qid; keep qid as alias for older consumers/tests
+        # runtime expects wikidata_qid; keep qid as alias for older consumers/tests
         "wikidata_qid": wikidata_qid,
         "qid": wikidata_qid,
         "forms": {"default": lemma},
-        "source_id": lexeme.get("id"),
+        # [FIX] tests expect entry["features"]["lexeme_id"]
+        "features": {"lexeme_id": lexeme_id},
+        # optional back-compat/debug
+        "source_id": lexeme_id,
         "extra": {},
     }
 
@@ -271,6 +295,7 @@ def _build_lexeme_entry(
 # Main builder
 # ---------------------------------------------------------------------------
 
+
 def build_lexicon_from_dump(
     lang_code: str,
     dump_path: str,
@@ -285,14 +310,17 @@ def build_lexicon_from_dump(
         "lemmas": {...},   # legacy alias
         "entries": {...},  # preferred
       }
-
-    [FIX] Tests expect meta.language to exist, and "lemmas" to be populated.
     """
     lexicon: Dict[str, Any] = {
         "meta": {
             "language": lang_code,
             "schema_version": SCHEMA_VERSION,
-            "source": "wikidata_dump",
+            # [FIX] tests expect this exact value
+            "source": SOURCE_NAME,
+            # [FIX] tests expect the original filename
+            "source_dump": os.path.basename(dump_path),
+            # [FIX] tests expect entries_used
+            "entries_used": 0,
         },
         "entries": {},
         "lemmas": {},  # legacy alias for compatibility
@@ -329,6 +357,7 @@ def build_lexicon_from_dump(
             log.info("Processed %s lexemes...", count_total)
 
     log.info("Finished. Extracted %s entries from %s records.", count_used, count_total)
+    lexicon["meta"]["entries_used"] = count_used
     return lexicon
 
 
@@ -358,7 +387,9 @@ def save_shards(lexicon: Dict[str, Any], out_dir: str, lang_code: str) -> None:
                 "language": lang_code,
                 "domain": domain,
                 "schema_version": SCHEMA_VERSION,
-                "source": meta_base.get("source", "wikidata_dump"),
+                "source": meta_base.get("source", SOURCE_NAME),
+                "source_dump": meta_base.get("source_dump"),
+                "entries_used": len(entries),
             },
             "entries": entries,
         }
@@ -372,6 +403,7 @@ def save_shards(lexicon: Dict[str, Any], out_dir: str, lang_code: str) -> None:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     init_logging()

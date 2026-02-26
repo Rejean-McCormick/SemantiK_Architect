@@ -30,7 +30,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-SCHEMA_VERSION: int = 1
+SCHEMA_VERSION: int = 2
 
 
 # ---------------------------------------------------------------------------

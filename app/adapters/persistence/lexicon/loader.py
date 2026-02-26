@@ -648,11 +648,20 @@ def load_lexicon(lang_code: str) -> Lexicon:
                     _merge_entry(lex.honours, key, _to_honour(key, v), lang=lang, file_name=file_name)
                     continue
 
-                semantic = (
-                    str(v.get("semantic_class") or v.get("sense") or v.get("category") or "")
-                    .strip()
-                    .lower()
-                )
+                # Routing semantic:
+                # - semantic_class / category are explicit semantic tags (profession, nationality, etc.)
+                # - sense is often free-text gloss and must NOT block POS-based inference
+                semantic = str(v.get("semantic_class") or v.get("category") or "").strip().lower()
+                sense = str(v.get("sense") or "").strip().lower()
+
+                # Allow "sense" only when it is a known routing tag (not a gloss like "scientist in physics")
+                if not semantic and sense in {
+                    "profession", "occupation",
+                    "nationality", "demonym",
+                    "title",
+                    "honour", "honor", "award",
+                }:
+                    semantic = sense
 
                 # Heuristic routing for legacy-flat/root and for entries lacking semantic tags.
                 pos = str(v.get("pos") or "").strip().upper()

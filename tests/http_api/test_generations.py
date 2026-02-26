@@ -19,7 +19,7 @@ class FakeGenerateTextUseCase:
     async def execute(self, lang_code: str, frame: Any) -> Sentence:
         # Simulate successful generation logic
         subject_name = "Unknown"
-        
+
         # [FIX] Handle both BioFrame objects and Ninai (recursive dicts)
         # 1. Pydantic Model (BioFrame)
         if hasattr(frame, "subject"):
@@ -27,17 +27,7 @@ class FakeGenerateTextUseCase:
                 subject_name = frame.subject.get("name", "Unknown")
             elif hasattr(frame.subject, "name"):
                 subject_name = frame.subject.name
-                
-        # 2. Ninai Protocol (Recursive Dict) - Simplified Extraction
-        # In a real scenario, the NinaiAdapter converts this to a Frame BEFORE
-        # calling the UseCase. If the UseCase receives a raw dict, it means
-        # the Router passed it directly (which shouldn't happen with correct Adapter binding),
-        # or we are testing a lower-level path.
-        # However, for this Mock, we just want to return a string.
-        
-        # If frame came from NinaiAdapter, it is ALREADY a Frame object.
-        # So the logic above (hasattr frame, "subject") covers it.
-        
+
         return Sentence(
             text=f"Fake generated text for {subject_name} in {lang_code}",
             lang_code=lang_code,
@@ -54,13 +44,13 @@ def client(fake_use_case: FakeGenerateTextUseCase) -> TestClient:
     Creates a TestClient with the GenerateText dependency overridden.
     """
     app = create_app()
-    
+
     # Override the dependency in the FastAPI app
     app.dependency_overrides[get_generate_text_use_case] = lambda: fake_use_case
-    
+
     with TestClient(app) as c:
         yield c
-    
+
     # Cleanup overrides
     app.dependency_overrides.clear()
 
@@ -87,22 +77,25 @@ def test_generate_endpoint_success(client: TestClient) -> None:
     Verifies that POST /generate/{lang} returns 200 OK and the expected structure.
     """
     payload = _valid_bio_payload()
-    lang_code = "eng"
-    
+
+    # The API normalizes ISO-639-3 aliases like "eng" to the canonical ISO-639-1 "en".
+    request_lang_code = "eng"
+    expected_lang_code = "en"
+
     # [FIX] Add Auth Header (pytest default key)
     headers = {"x-api-key": "test-api-key"}
 
     response = client.post(
-        f"{API_PREFIX}/generate/{lang_code}", 
+        f"{API_PREFIX}/generate/{request_lang_code}",
         json=payload,
         headers=headers
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify Domain Entity (Sentence) serialization
-    assert data["lang_code"] == lang_code
+    assert data["lang_code"] == expected_lang_code
     assert "Ada Lovelace" in data["text"]
     assert "text" in data
     assert data["debug_info"]["source"] == "FakeGenerateTextUseCase"
@@ -113,17 +106,19 @@ def test_generate_validation_error(client: TestClient) -> None:
     """
     # Missing 'frame_type' and 'subject'
     invalid_payload = {"broken": "data"}
-    lang_code = "eng"
-    
+
+    # Use a canonical code here (doesn't matter for 422, but keeps tests consistent).
+    lang_code = "en"
+
     # [FIX] Add Auth Header (pytest default key)
     headers = {"x-api-key": "test-api-key"}
 
     response = client.post(
-        f"{API_PREFIX}/generate/{lang_code}", 
+        f"{API_PREFIX}/generate/{lang_code}",
         json=invalid_payload,
         headers=headers
     )
-    
+
     assert response.status_code == 422
 
 def test_generate_ninai_protocol_detection(client: TestClient) -> None:
@@ -140,16 +135,17 @@ def test_generate_ninai_protocol_detection(client: TestClient) -> None:
             "british"
         ]
     }
-    
+
     # [FIX] Add Auth Header (pytest default key)
     headers = {"x-api-key": "test-api-key"}
-    
+
+    # Use canonical code: API expects /generate/{lang} and normalizes aliases anyway.
     response = client.post(
-        f"{API_PREFIX}/generate/eng", 
+        f"{API_PREFIX}/generate/en",
         json=ninai_payload,
         headers=headers
     )
-    
+
     # Should succeed (200) if adapter works
     assert response.status_code == 200
     assert "Ada Lovelace" in response.json()["text"]

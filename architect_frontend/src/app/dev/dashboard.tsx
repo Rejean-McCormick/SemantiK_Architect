@@ -77,22 +77,22 @@ function buildCandidateApiBases(envBaseRaw: string): string[] {
 
     // If they provided a versioned base (/api/v1...), also try origin defaults.
     candidates.push(`${origin}/api/v1`);
-    candidates.push(`${origin}/abstract_wiki_architect/api/v1`);
+    candidates.push(`${origin}/api/v1`);
 
     // If they provided a mounted prefix (/abstract_wiki_architect/...), also try adding /api/v1.
     if (u.pathname.replace(/\/+$/, "").endsWith("/abstract_wiki_architect")) {
-      candidates.push(`${origin}/abstract_wiki_architect/api/v1`);
+      candidates.push(`${origin}/api/v1`);
     }
   } catch {
-    // envBase might be relative (e.g. "/abstract_wiki_architect/api/v1") — that's fine.
+    // envBase might be relative (e.g. "/api/v1") — that's fine.
     // Also probe both common relative prefixes for same-origin deployments.
     candidates.push("/api/v1");
-    candidates.push("/abstract_wiki_architect/api/v1");
+    candidates.push("/api/v1");
   }
 
   // 3) Always include localhost dev defaults (Next:3000 + API:8000).
   candidates.push(`${DEFAULT_BACKEND_ORIGIN}/api/v1`);
-  candidates.push(`${DEFAULT_BACKEND_ORIGIN}/abstract_wiki_architect/api/v1`);
+  candidates.push(`${DEFAULT_BACKEND_ORIGIN}/api/v1`);
 
   return dedupe(candidates.map(stripTrailingSlash));
 }
@@ -141,7 +141,7 @@ async function resolveApiBase(envBaseRaw: string): Promise<string | null> {
   const cands = buildCandidateApiBases(envBaseRaw);
   for (const c of cands) {
     // Only accept bases that actually respond on /health/ready.
-    // (This auto-fixes the "/api/v1" vs "/abstract_wiki_architect/api/v1" mismatch.)
+    // (This auto-fixes the "/api/v1" vs "/api/v1" mismatch.)
     // eslint-disable-next-line no-await-in-loop
     if (await probeReady(c)) return c;
   }
