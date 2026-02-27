@@ -1,1 +1,1 @@
-concrete WikiMon of AbstractWiki = WikiI with (Syntax = SyntaxMon) ** open SyntaxMon, ParadigmsMon in { flags coding=utf8 ; };
+concrete WikiMon of SemantikArchitect = WikiI with (Syntax = SyntaxMon) ** open SyntaxMon, ParadigmsMon in { flags coding=utf8 ; };

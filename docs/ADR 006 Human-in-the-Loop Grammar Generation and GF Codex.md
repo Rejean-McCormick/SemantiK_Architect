@@ -29,7 +29,7 @@ To ensure high-quality code on the first attempt, requests to the LLM will no lo
 * *The Symbolic Rule:* Mandatory use of `symb` for raw strings instead of `mkPN` to prevent `unsupported token gluing` errors.
 
 
-2. **Strict Skeletons:** Strict definition of the types imposed by `AbstractWiki.gf` (e.g., mandatory use of `Predicate = VP ;` and an absolute ban on hallucinating `VPS`).
+2. **Strict Skeletons:** Strict definition of the types imposed by `semantik_architect.gf` (e.g., mandatory use of `Predicate = VP ;` and an absolute ban on hallucinating `VPS`).
 3. **"Few-Shot" Examples:** Perfect templates of validated GF grammars (e.g., one SVO model, one SOV model) to guide the AI's coding style.
 
 ## 4. The New Deployment Workflow
@@ -38,7 +38,7 @@ To ensure high-quality code on the first attempt, requests to the LLM will no lo
 2. **Generation (Copilot):** The tool sends the "GF Codex" and the typological order (SVO, SOV) of the target language to the LLM API.
 3. **Human Validation:** The operator receives the GF draft, reviews it, and uses `tools/language_health.py --mode compile` to ensure the code compiles perfectly with the RGL library.
 4. **Save & Commit:** Once the file compiles successfully, it is manually pushed to the repository under `gf/contrib/{lang}/Wiki{Lang}.gf`.
-5. **Deterministic Build:** During the regular pipeline (`build_300.py` / `orchestrator.py`), the orchestrator detects the file in `contrib/` and links it directly into the `AbstractWiki.pgf` binary without making any API calls.
+5. **Deterministic Build:** During the regular pipeline (`build_300.py` / `orchestrator.py`), the orchestrator detects the file in `contrib/` and links it directly into the `semantik_architect.pgf` binary without making any API calls.
 
 ## 5. Consequences
 

@@ -27,7 +27,7 @@ Your task is to upgrade a "Pidgin" (simplified) grammar implementation into a li
 The input will be three GF files:
 1. Res{Lang}.gf (Resource: Parameters and Types)
 2. Syntax{Lang}.gf (Syntax: Clause formation rules)
-3. Wiki{Lang}.gf (Concrete: Linearization of AbstractWiki)
+3. Wiki{Lang}.gf (Concrete: Linearization of SemantikArchitect)
 
 The current implementation uses simple string concatenation (String Grammar).
 Your goal is to:

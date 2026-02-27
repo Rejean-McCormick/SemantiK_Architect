@@ -1,1 +1,1 @@
-concrete WikiSwe of AbstractWiki = WikiI with (Syntax = SyntaxSwe) ** open SyntaxSwe, ParadigmsSwe in { flags coding=utf8 ; };
+concrete WikiSwe of SemantikArchitect = WikiI with (Syntax = SyntaxSwe) ** open SyntaxSwe, ParadigmsSwe in { flags coding=utf8 ; };

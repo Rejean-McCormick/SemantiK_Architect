@@ -10,7 +10,7 @@ The system generates "Tier 3" (AI-generated) languages by following this strict 
 3. **RGL Translation:** The Architect converts ISO-3 (`zho`) to GF-RGL (`Chi`) using `data/config/iso_to_wiki.json`.
 4. **Generation:** Gemini 2.0 Flash writes the grammar using a **standalone skeleton** (no `WikiI` inheritance).
 5. **Direct Output:** The sanitized file is written directly to `gf/WikiChi.gf`.
-6. **Compilation:** `manage.py build` compiles `gf/AbstractWiki.pgf` including the new file.
+6. **Compilation:** `manage.py build` compiles `gf/semantik_architect.pgf` including the new file.
 
 ---
 
@@ -19,7 +19,7 @@ The system generates "Tier 3" (AI-generated) languages by following this strict 
 | Component | Path | Description |
 | --- | --- | --- |
 | **Generator Output** | **`gf/`** | **CRITICAL.** Files are written directly to the root GF folder. `gf/generated/src/` is deprecated/unused for High Road. |
-| **Abstract Grammar** | `gf/AbstractWiki.gf` | The abstract syntax defining `Fact`, `Entity`, `Predicate`. |
+| **Abstract Grammar** | `gf/semantik_architect.gf` | The abstract syntax defining `Fact`, `Entity`, `Predicate`. |
 | **ISO Mapping** | `data/config/iso_to_wiki.json` | Maps `zho` -> `Chi`, `afr` -> `Afr`. Essential for correct filenames. |
 | **Agent Logic** | `ai_services/architect.py` | Contains the Prompt Skeleton and Regex Sanitizer. |
 
@@ -34,14 +34,14 @@ When generating code, the `ArchitectAgent` enforces these strict rules to ensure
 * **Input:** ISO-3 Code (e.g., `tur`).
 * **Internal Logic:** Lookup RGL code.
 * **Filename:** `WikiTur.gf` (Not `WikiTur.gf` unless RGL matches ISO).
-* **Module Name:** `concrete WikiTur of AbstractWiki`.
+* **Module Name:** `concrete WikiTur of SemantikArchitect`.
 
 #### B. The Prompt Skeleton
 
 The prompt explicitly provides this structure to prevent hallucinations:
 
 ```haskell
-concrete WikiXxx of AbstractWiki = open SyntaxXxx, ParadigmsXxx in {
+concrete WikiXxx of SemantikArchitect = open SyntaxXxx, ParadigmsXxx in {
   lincat
     Fact = S ;
     Entity = NP ;
@@ -57,7 +57,7 @@ concrete WikiXxx of AbstractWiki = open SyntaxXxx, ParadigmsXxx in {
 The `_sanitize_output` function uses Regex to aggressively remove these patterns if the AI hallucinates them:
 
 1. **Inheritance:** `= WikiI` or `= Wiki` is stripped. The grammar must be **standalone** using `open`.
-2. **Wrong Abstract:** `of Wiki` is rewritten to `of AbstractWiki`.
+2. **Wrong Abstract:** `of Wiki` is rewritten to `of SemantikArchitect`.
 3. **Invalid Syntax:** `Predicate = VPS` is strictly forbidden (replaced by `VP` in the skeleton).
 
 ---

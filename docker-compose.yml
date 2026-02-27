@@ -31,7 +31,7 @@ services:
       - GF_LIB_PATH=/app/gf-rgl
 
       # IMPORTANT: current Settings.PGF_PATH honors AW_PGF_PATH, not PGF_PATH
-      - AW_PGF_PATH=/app/gf/AbstractWiki.pgf
+      - AW_PGF_PATH=/app/gf/semantik_architect.pgf
 
       # Keep queue name explicit for ARQ WorkerSettings
       - REDIS_QUEUE_NAME=architect_tasks
@@ -59,7 +59,7 @@ services:
       # Match Backend paths exactly
       - FILESYSTEM_REPO_PATH=/app
       - GF_LIB_PATH=/app/gf-rgl
-      - AW_PGF_PATH=/app/gf/AbstractWiki.pgf
+      - AW_PGF_PATH=/app/gf/semantik_architect.pgf
 
       # Must match WorkerSettings.queue_name
       - REDIS_QUEUE_NAME=architect_tasks

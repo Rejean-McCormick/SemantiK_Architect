@@ -1,4 +1,4 @@
-concrete WikiGus of AbstractWiki = open SyntaxGus, ParadigmsGus in {
+concrete WikiGus of SemantikArchitect = open SyntaxGus, ParadigmsGus in {
   lincat
     Fact = S ;
     Entity = NP ;

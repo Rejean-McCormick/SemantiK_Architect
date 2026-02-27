@@ -2,7 +2,7 @@ import pgf
 import sys
 
 # Load the compiled binary
-pgf_path = "gf/AbstractWiki.pgf"
+pgf_path = "gf/semantik_architect.pgf"
 try:
     grammar = pgf.readPGF(pgf_path)
 except FileNotFoundError:

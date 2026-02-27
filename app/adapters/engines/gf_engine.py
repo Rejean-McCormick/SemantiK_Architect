@@ -30,7 +30,7 @@ def _normalize_pgf_path(value: str) -> str:
     if not value:
         return value
     if value.endswith(("/", "\\")) or not value.lower().endswith(".pgf"):
-        return os.path.join(value, "AbstractWiki.pgf")
+        return os.path.join(value, "semantik_architect.pgf")
     return value
 
 
@@ -117,7 +117,7 @@ class GFEngine(IGrammarEngine):
         self._supported_languages = self._get_supported_languages()  # ISO2 where possible
 
     def _load_pgf(self) -> Optional[pgf.PGF]:
-        """Loads the master PGF file (AbstractWiki.pgf) into memory."""
+        """Loads the master PGF file (semantik_architect.pgf) into memory."""
         pgf_file = _effective_pgf_path()
         if not pgf_file or not os.path.exists(pgf_file):
             logger.error("pgf_file_missing", path=pgf_file or "(empty)")

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame: Relational role / position / office",
+  "title": "Semantik Architect  Frame: Relational role / position / office",
   "type": "object",
   "additionalProperties": false,
   "properties": {

@@ -122,7 +122,7 @@ Because we have shifted to a Human-in-the-Loop model, the automated `if not comp
 
 **The New Pipeline Behavior:**
 
-1. **Deterministic Build:** During the regular pipeline (`build_300.py` or `orchestrator.py`), the orchestrator looks for verified files in `contrib/` and links them directly into the `AbstractWiki.pgf` binary.
+1. **Deterministic Build:** During the regular pipeline (`build_300.py` or `orchestrator.py`), the orchestrator looks for verified files in `contrib/` and links them directly into the `semantik_architect.pgf` binary.
 2. **Graceful Degradation:** If a language is broken or missing, the orchestrator simply skips it (`SKIP`) and logs an alert that human intervention is required.
 3. **Zero API Calls:** No LLM API calls are made during the build sequence, ensuring 100% determinism and eliminating mid-build latency.
 

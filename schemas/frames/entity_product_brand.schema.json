@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame Schema: Product / Brand",
+  "title": "Semantik Architect  Frame Schema: Product / Brand",
   "description": "JSON schema for the ProductBrandFrame semantic structure used for commercial products and brands.",
   "type": "object",
   "additionalProperties": false,

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame Schema: Quantitative Measure Relation",
+  "title": "Semantik Architect  Frame Schema: Quantitative Measure Relation",
   "description": "JSON schema for the QuantitativeFrame semantic structure used for numeric facts such as populations, areas, distances, GDP, scores, and other one-dimensional measures.",
   "type": "object",
   "additionalProperties": false,

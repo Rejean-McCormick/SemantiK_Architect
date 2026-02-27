@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://abstract-wiki.org/schemas/frames/narrative_reception_impact.schema.json",
-  "title": "Abstract Wiki Frame: Reception / impact (narrative)",
+  "title": "Semantik Architect  Frame: Reception / impact (narrative)",
   "description": "Frame capturing the reception and impact of a subject (typically a work, idea, person, or event), including critical and public reception, impact domains, metrics, and awards.",
   "type": "object",
   "additionalProperties": false,

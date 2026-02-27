@@ -387,8 +387,8 @@ def clean_artifacts() -> None:
 
     targets.extend([
         BUILD_LOGS,
-        ROOT_DIR / "gf" / "AbstractWiki.gfo",
-        ROOT_DIR / "gf" / "AbstractWiki.pgf",
+        ROOT_DIR / "gf" / "semantik_architect.gfo",
+        ROOT_DIR / "gf" / "semantik_architect.pgf",
     ])
 
     for target in targets:

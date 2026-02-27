@@ -291,7 +291,7 @@ def main() -> None:
                 ctx.logger.warning(f"{iso_key}: Paradigms{suffix}.gf not found; generating app without Paradigms{suffix}.")
 
             app_content = (
-                f"concrete Wiki{wiki_suffix} of AbstractWiki = WikiI with (Syntax = Syntax{suffix}) ** "
+                f"concrete Wiki{wiki_suffix} of SemantikArchitect = WikiI with (Syntax = Syntax{suffix}) ** "
                 f"open {', '.join(open_modules)} in {{ flags coding=utf8 ; }};\n"
             )
 

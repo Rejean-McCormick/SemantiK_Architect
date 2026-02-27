@@ -3,7 +3,7 @@ setlocal EnableExtensions
 TITLE Semantik Architect (WSL - plain)
 
 REM Windows path of the repo (edit only this)
-set "WIN_REPO=C:\MyCode\AbstractWiki\abstract-wiki-architect"
+set "WIN_REPO=C:\MyCode\SemantiK_Architect\Semantik_architect"
 
 REM Convert to a WSL path
 for /f "usebackq delims=" %%I in (`wsl.exe wslpath -a "%WIN_REPO%"`) do set "WSL_REPO=%%I"

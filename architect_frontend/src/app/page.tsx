@@ -11,7 +11,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { Language } from "@/types/language";
 import { Terminal, Wrench } from "lucide-react"; // Optional icons if you have lucide-react
 
-export default function AbstractWikiArchitectHomePage() {
+export default function Semantik ArchitectArchitectHomePage() {
   // --- STATE ---
   // We manage the global language selection here.
   // Defaults to "eng" (English) or empty.

@@ -57,7 +57,7 @@ Every language is graded on 14 specific metrics. These are not boolean flags; th
 
 | Block | Metric Name | Definition | Requirement |
 | --- | --- | --- | --- |
-| **13** | `BIN` | **Binary** | Is present in `AbstractWiki.pgf`? |
+| **13** | `BIN` | **Binary** | Is present in `semantik_architect.pgf`? |
 | **14** | `TEST` | **Regression** | Gold Standard Pass Rate. |
 
 ---
@@ -110,7 +110,7 @@ The Matrix is populated by three specialized "Census Takers" running in parallel
 
 * **Target:** `gf/` and `tests/logs/`
 * **Logic:**
-* Verifies if the language key exists in `AbstractWiki.pgf`.
+* Verifies if the language key exists in `semantik_architect.pgf`.
 * Parses the latest JUnit XML report from `pytest` to extract pass/fail rates.
 
 

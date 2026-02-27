@@ -1,1 +1,1 @@
-concrete WikiFre of AbstractWiki = WikiI with (Syntax = SyntaxFre) ** open SyntaxFre, ParadigmsFre in { flags coding=utf8 ; };
+concrete WikiFre of SemantikArchitect = WikiI with (Syntax = SyntaxFre) ** open SyntaxFre, ParadigmsFre in { flags coding=utf8 ; };

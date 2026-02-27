@@ -1,4 +1,4 @@
-concrete WikiSco of AbstractWiki = open SyntaxSco, ParadigmsSco in {
+concrete WikiSco of SemantikArchitect = open SyntaxSco, ParadigmsSco in {
   lincat
     Fact = S ;
     Entity = NP ;

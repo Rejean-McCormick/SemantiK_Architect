@@ -1,1 +1,1 @@
-concrete WikiHye of AbstractWiki = WikiI with (Syntax = SyntaxHye) ** open SyntaxHye, ParadigmsHye in { flags coding = utf8 ; };
+concrete WikiHye of SemantikArchitect = WikiI with (Syntax = SyntaxHye) ** open SyntaxHye, ParadigmsHye in { flags coding = utf8 ; };

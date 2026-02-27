@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame Schema: Language",
+  "title": "Semantik Architect  Frame Schema: Language",
   "description": "JSON schema for the LanguageFrame semantic structure used for natural languages, constructed languages, sign languages, and dialects.",
   "type": "object",
   "additionalProperties": false,

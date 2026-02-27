@@ -31,7 +31,7 @@ These must be defined in `app/shared/config.py` using Pydantic `BaseSettings`.
 | **`AI_MODEL_NAME`** | `str` | `"gemini-1.5-pro"` | The specific LLM model version for Architect & Judge agents. |
 | **`GOOGLE_API_KEY`** | `str` | `""` | API Key for Google Gemini services. |
 | **`GF_LIB_PATH`** | `str` | `"/app/gf-rgl"` | Absolute path to the RGL source inside the container. |
-| **`PGF_PATH`** | `str` | `"/app/gf/AbstractWiki.pgf"` | Path to the compiled binary grammar file. |
+| **`PGF_PATH`** | `str` | `"/app/gf/semantik_architect.pgf"` | Path to the compiled binary grammar file. |
 
 ---
 
@@ -123,7 +123,7 @@ The "Architect Agent" must use this **exact** system prompt in `ai_services/prom
 > 1. Output **ONLY** the raw GF code.
 > 2. **NO** Markdown code blocks (```).
 > 3. **NO** conversational filler ('Here is the code...').
-> 4. Implement the 'AbstractWiki' interface exactly.
+> 4. Implement the 'SemantikArchitect' interface exactly.
 > 5. Use standard RGL modules: `Syntax`, `Paradigms`."
 > 
 > 

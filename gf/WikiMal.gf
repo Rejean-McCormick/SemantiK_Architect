@@ -1,4 +1,4 @@
-concrete WikiMal of AbstractWiki = open SyntaxMal, ParadigmsMal in {
+concrete WikiMal of SemantikArchitect = open SyntaxMal, ParadigmsMal in {
   lincat
     Fact = S ;
     Entity = NP ;

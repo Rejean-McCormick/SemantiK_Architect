@@ -16,7 +16,7 @@ This module provides:
 
 The goal is to keep event participant role handling consistent across:
 
-    * raw AbstractWiki / Wikidata style input,
+    * raw Semantik Architect / Wikidata style input,
     * internal `Event.participants` dictionaries,
     * higher-level frame families (e.g. biography, conflict, election).
 """

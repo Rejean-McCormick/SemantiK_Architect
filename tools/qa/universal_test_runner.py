@@ -316,7 +316,7 @@ class _Renderer:
                 f"Diagnostics: {json.dumps(diag, ensure_ascii=False)}\n"
                 "Fix checklist:\n"
                 "- Ensure the 'pgf' Python bindings are installed in the tool runner environment.\n"
-                "- Ensure AbstractWiki.pgf exists at the configured PGF path.\n"
+                "- Ensure semantik_architect.pgf exists at the configured PGF path.\n"
                 "- Ensure the PGF contains the target language (e.g., WikiEng / WikiIta etc.)."
             )
 
@@ -495,7 +495,7 @@ def run_universal_tests(
         if not renderer.available():
             logger.error("Grammar Engine not available.")
             logger.info(f"Diagnostics: {json.dumps(renderer.diagnostics(), ensure_ascii=False)}")
-            logger.info("Hint: Check if AbstractWiki.pgf exists in 'gf/' and 'pgf' library is installed.")
+            logger.info("Hint: Check if semantik_architect.pgf exists in 'gf/' and 'pgf' library is installed.")
             return 2
 
         lexicon = _LexiconResolver()
@@ -790,9 +790,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         raw = str(args.pgf).strip()
         if raw:
             p = Path(raw).expanduser()
-            # If a directory is provided, assume AbstractWiki.pgf inside it.
+            # If a directory is provided, assume semantik_architect.pgf inside it.
             if p.exists() and p.is_dir():
-                p = p / "AbstractWiki.pgf"
+                p = p / "semantik_architect.pgf"
             os.environ["PGF_PATH"] = str(p)
 
     dataset_dir = _resolve_dataset_dir(args.dataset_dir)

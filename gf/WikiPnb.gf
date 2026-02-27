@@ -1,1 +1,1 @@
-concrete WikiPnb of AbstractWiki = WikiI with (Syntax = SyntaxPnb) ** open SyntaxPnb, ParadigmsPnb in { flags coding=utf8 ; };
+concrete WikiPnb of SemantikArchitect = WikiI with (Syntax = SyntaxPnb) ** open SyntaxPnb, ParadigmsPnb in { flags coding=utf8 ; };

@@ -1,1 +1,1 @@
-concrete WikiFin of AbstractWiki = WikiI with (Syntax = SyntaxFin) ** open SyntaxFin, ParadigmsFin in { flags coding=utf8 ; };
+concrete WikiFin of SemantikArchitect = WikiI with (Syntax = SyntaxFin) ** open SyntaxFin, ParadigmsFin in { flags coding=utf8 ; };

@@ -6,7 +6,7 @@ import pgf
 
 # --- Configuration ---
 # Allow override via env var, default to the standard build path
-PGF_PATH = os.environ.get("AW_PGF_PATH", os.path.join("gf", "AbstractWiki.pgf"))
+PGF_PATH = os.environ.get("AW_PGF_PATH", os.path.join("gf", "semantik_architect.pgf"))
 
 # --- AI Integration Setup ---
 try:

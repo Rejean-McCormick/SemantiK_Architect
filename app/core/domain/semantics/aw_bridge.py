@@ -2,7 +2,7 @@
 # semantics\aw_bridge.py
 # semantics/aw_bridge.py
 """
-Bridging layer between external AbstractWiki-style JSON payloads and the
+Bridging layer between external Semantik Architect-style JSON payloads and the
 internal semantic frame dataclasses defined in :mod:`semantics.types`
 and the family-specific modules.
 
@@ -26,7 +26,7 @@ The high-level API exposed here is:
     - ``frame_from_aw``: convert a single JSON payload into a Frame.
     - ``frames_from_aw``: convert a sequence of payloads into Frames.
 
-The external JSON is assumed to be *AbstractWiki-like*:
+The external JSON is assumed to be *Semantik Architect-like*:
 
     - It may contain a ``"frame_type"`` field with canonical strings like
       ``"bio"`` or ``"entity.organization"``.
@@ -332,7 +332,7 @@ def _normalize_by_family(
 
 def frame_from_aw(payload: AWFramePayload) -> Frame:
     """
-    Convert a single AbstractWiki-style JSON payload into a semantic Frame.
+    Convert a single Semantik Architect-style JSON payload into a semantic Frame.
 
     This function is pure and side-effect-free: it never mutates the
     incoming payload and never reaches out to external systems.

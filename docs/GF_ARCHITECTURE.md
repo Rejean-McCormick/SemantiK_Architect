@@ -17,7 +17,7 @@ The critical challenge is the **type mismatch**. Python sees `"Marie Curie"` as 
 
 | Layer | File/Component | Responsibility |
 | --- | --- | --- |
-| **Abstract** | `gf/AbstractWiki.gf` | Defines the API contract (schema). |
+| **Abstract** | `gf/semantik_architect.gf` | Defines the API contract (schema). |
 | **Concrete (App Grammars)** | `gf/Wiki{WikiCode}.gf` | Implements the schema using the RGL (one per language). |
 | **Bridge (Syntax Instances)** | `generated/src/Syntax{RglCode}.gf` | Provides `Syntax{RglCode}` instances used by app grammars. |
 | **Library** | GF Resource Grammar Library (RGL) | Linguistic primitives (`mkS`, `mkCl`, etc.). |
@@ -55,10 +55,10 @@ On Windows-mounted filesystems (`/mnt/c/...`), symlinks can be unreliable. The c
 
 ### ✅ Allowed / Canonical
 
-- `gf/AbstractWiki.gf` — abstract syntax
+- `gf/semantik_architect.gf` — abstract syntax
 - `gf/Wiki{WikiCode}.gf` — app concrete grammars (e.g., `gf/WikiEng.gf`, `gf/WikiFre.gf`)
 - `generated/src/Syntax{RglCode}.gf` — bridge “Syntax instances” (e.g., `generated/src/SyntaxEng.gf`)
-- `gf/AbstractWiki.pgf` — compiled binary (usually git-ignored)
+- `gf/semantik_architect.pgf` — compiled binary (usually git-ignored)
 - `data/config/iso_to_wiki.json` — authoritative mapping (ISO → WikiCode)
 
 ### ⚠️ Allowed but Legacy (should be unified)
@@ -163,13 +163,13 @@ The Python wrapper (`gf_wrapper.py`) must construct ASTs using grammar bridge fu
 # Wrong: raw strings passed directly
 # pgf.Expr("mkBio", ["Marie", "Physicist"])
 
-# Right: wrap strings using bridge constructors that exist in AbstractWiki.gf
+# Right: wrap strings using bridge constructors that exist in semantik_architect.gf
 subj = pgf.Expr("mkLiteral", [pgf.readExpr('"Marie"')])
 prop = pgf.Expr("mkStrProperty", [pgf.readExpr('"Physicist"')])
 expr = pgf.Expr("mkBio", [subj, prop])
 ```
 
-**Rule:** the adapter must match the exact function names + arities in `gf/AbstractWiki.gf`.
+**Rule:** the adapter must match the exact function names + arities in `gf/semantik_architect.gf`.
 
 ---
 

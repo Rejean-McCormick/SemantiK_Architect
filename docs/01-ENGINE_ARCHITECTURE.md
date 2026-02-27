@@ -93,7 +93,7 @@ Once all languages are verified:
 
 1. **Aggregate:** The orchestrator collects the file paths of all successful Phase 1 candidates.
 2. **Link:** It executes a **single** `gf -make` command containing the Abstract Grammar and *all* valid Concrete Grammars.
-3. **Result:** A single `AbstractWiki.pgf` binary containing 50+ languages.
+3. **Result:** A single `semantik_architect.pgf` binary containing 50+ languages.
 
 ---
 
@@ -199,4 +199,4 @@ The v2.0 architecture integrates AI Agents to handle "Human-in-the-Loop" tasks a
 | **`data/tests/gold_standard.json`** | **QA Data** | The "Ground Truth" dataset (migrated from Udiron). |
 | **`gf-rgl/`** | **Tier 1 Source** | External submodule containing expert grammars. |
 | **`generated/src/`** | **Tier 3 Source** | Folder for auto-generated "Factory" grammars. |
-| **`gf/AbstractWiki.pgf`** | **The Artifact** | The final compiled binary used by the API. |
+| **`gf/semantik_architect.pgf`** | **The Artifact** | The final compiled binary used by the API. |

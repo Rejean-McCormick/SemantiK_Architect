@@ -1,1 +1,1 @@
-concrete WikiHun of AbstractWiki = WikiI with (Syntax = SyntaxHun) ** open SyntaxHun, ParadigmsHun in { flags coding=utf8 ; };
+concrete WikiHun of SemantikArchitect = WikiI with (Syntax = SyntaxHun) ** open SyntaxHun, ParadigmsHun in { flags coding=utf8 ; };

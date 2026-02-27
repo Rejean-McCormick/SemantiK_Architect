@@ -98,7 +98,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=app_name,
         version="2.1.0",
-        description="Abstract Wiki Core Engine (Hexagonal Architecture)",
+        description="Semantik Architect Core Engine (Hexagonal Architecture)",
         lifespan=lifespan,
         root_path=root_path,
         docs_url="/docs" if is_dev else None,

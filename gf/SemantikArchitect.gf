@@ -1,4 +1,4 @@
-abstract AbstractWiki = {
+abstract SemantikArchitect = {
 
   flags startcat = Statement ;
 

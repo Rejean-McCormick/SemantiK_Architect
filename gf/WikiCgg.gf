@@ -1,4 +1,4 @@
-concrete WikiCgg of AbstractWiki = open SyntaxCgg, ParadigmsCgg in {
+concrete WikiCgg of SemantikArchitect = open SyntaxCgg, ParadigmsCgg in {
   lincat
     Fact = S ;
     Entity = NP ;

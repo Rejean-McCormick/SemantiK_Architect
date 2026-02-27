@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: '%s | Semantik Architect',
   },
   description:
-    'Semantic frame editor and NLG playground for Abstract Wiki (entities, events, narratives, and more).',
+    'Semantic frame editor and NLG playground for Semantik Architect (entities, events, narratives, and more).',
 };
 
 export default function RootLayout({

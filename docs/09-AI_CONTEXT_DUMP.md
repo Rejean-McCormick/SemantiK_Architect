@@ -25,12 +25,12 @@
 
 # 2. FILE SYSTEM & PATHS (Hybrid WSL)
 # ------------------------------------------------------------------------------
-# ROOT (Windows): C:\MyCode\AbstractWiki\abstract-wiki-architect
-# ROOT (Linux):   /mnt/c/MyCode/AbstractWiki/abstract-wiki-architect
+# ROOT (Windows): C:\MyCode\SemantiK_Architect\Semantik_architect
+# ROOT (Linux):   /mnt/c/MyCode/SemantiK_Architect/Semantik_architect
 # DOCKER MOUNT:   /app
 
 # KEY DIRECTORIES:
-#   gf/                     -> Build artifacts (AbstractWiki.pgf) & Orchestrator.
+#   gf/                     -> Build artifacts (semantik_architect.pgf) & Orchestrator.
 #   gf-rgl/src/             -> Tier 1 Source (External submodule).
 #   generated/src/          -> Tier 3 Source (AI/Factory generated).
 #   data/indices/           -> "Everything Matrix" (System Registry).

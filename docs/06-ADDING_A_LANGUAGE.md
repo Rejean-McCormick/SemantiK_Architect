@@ -154,12 +154,12 @@ python -m builder.orchestrator --strategy AUTO --langs ha
 What happens:
 
 * **AUTO** uses `data/indices/everything_matrix.json` verdicts to choose `"HIGH_ROAD"` vs `"SAFE_MODE"` per language.
-* Build is **two-phase**: compile individual `.gf` → link into `gf/AbstractWiki.pgf`.
+* Build is **two-phase**: compile individual `.gf` → link into `gf/semantik_architect.pgf`.
 
 ### Step 3: Verify the binary contains the language
 
 ```bash
-python3 -c "import os, pgf; p=os.getenv('PGF_PATH','gf/AbstractWiki.pgf'); g=pgf.readPGF(p); print(sorted(g.languages.keys()))"
+python3 -c "import os, pgf; p=os.getenv('PGF_PATH','gf/semantik_architect.pgf'); g=pgf.readPGF(p); print(sorted(g.languages.keys()))"
 ```
 
 Expected: an entry like `WikiHa` (or `WikiPor`, `WikiGer`, etc. depending on `iso_to_wiki.json`).

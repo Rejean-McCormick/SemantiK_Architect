@@ -33,7 +33,7 @@ This document defines the specialized terminology used across the project. It br
 
 ### **Abstract Syntax**
 * **Definition:** The logical "skeleton" of a grammar. It defines *what* can be said (e.g., "A Sentence consists of a Subject and a Predicate") without defining *how*.
-* **Context:** Defined in `gf/AbstractWiki.gf`. It is the language-independent interface.
+* **Context:** Defined in `gf/semantik_architect.gf`. It is the language-independent interface.
 
 ### **Concrete Syntax**
 * **Definition:** The language-specific implementation of the Abstract Syntax. It defines *how* to say it (e.g., "In French, the adjective comes after the noun").
@@ -50,7 +50,7 @@ This document defines the specialized terminology used across the project. It br
 
 ### **PGF (Portable Grammar Format)**
 * **Definition:** The compiled binary format of a GF grammar. It is to GF what `.class` is to Java.
-* **Context:** The file `gf/AbstractWiki.pgf` is the final artifact loaded by the API.
+* **Context:** The file `gf/semantik_architect.pgf` is the final artifact loaded by the API.
 
 ### **RGL (Resource Grammar Library)**
 * **Definition:** The standard open-source library for GF that implements the morphology and syntax of ~40 languages.

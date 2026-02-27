@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame: Development / evolution narrative",
+  "title": "Semantik Architect  Frame: Development / evolution narrative",
   "description": "Schema for the DevelopmentEvolutionFrame aggregate narrative, representing how an entity develops or evolves over time.",
   "type": "object",
   "additionalProperties": false,

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame Schema: Election / Referendum Event",
+  "title": "Semantik Architect  Frame Schema: Election / Referendum Event",
   "description": "JSON schema for the ElectionReferendumEventFrame semantic structure used for elections and referendums.",
   "type": "object",
   "additionalProperties": false,

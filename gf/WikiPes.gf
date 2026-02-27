@@ -1,1 +1,1 @@
-concrete WikiPes of AbstractWiki = WikiI with (Syntax = SyntaxPes) ** open SyntaxPes, ParadigmsPes in { flags coding=utf8 ; };
+concrete WikiPes of SemantikArchitect = WikiI with (Syntax = SyntaxPes) ** open SyntaxPes, ParadigmsPes in { flags coding=utf8 ; };

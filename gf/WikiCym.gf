@@ -1,4 +1,4 @@
-concrete WikiCym of AbstractWiki = open SyntaxCym, ParadigmsCym in {
+concrete WikiCym of SemantikArchitect = open SyntaxCym, ParadigmsCym in {
   lincat
     Fact = S ;
     Entity = NP ;

@@ -115,7 +115,7 @@ def build_registry() -> Dict[str, ToolSpec]:
             "compile_pgf",
             "builder.orchestrator",
             "builder/orchestrator/__main__.py",
-            "Two-phase GF build orchestrator to produce AbstractWiki.pgf.",
+            "Two-phase GF build orchestrator to produce semantik_architect.pgf.",
             timeout_sec=1800,
             allow_args=True,
             allowed_flags=(

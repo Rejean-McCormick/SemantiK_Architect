@@ -1,1 +1,1 @@
-concrete WikiDan of AbstractWiki = WikiI with (Syntax = SyntaxDan) ** open SyntaxDan, ParadigmsDan in { flags coding=utf8 ; };
+concrete WikiDan of SemantikArchitect = WikiI with (Syntax = SyntaxDan) ** open SyntaxDan, ParadigmsDan in { flags coding=utf8 ; };

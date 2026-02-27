@@ -27,13 +27,13 @@ Ensure you have:
 
 To avoid path issues, keep the repo on your Windows drive so both Windows and WSL can access it.
 
-* **Windows Path:** `C:\MyCode\AbstractWiki\`
-* **WSL Path:** `/mnt/c/MyCode/AbstractWiki/`
+* **Windows Path:** `C:\MyCode\SemantiK_Architect\`
+* **WSL Path:** `/mnt/c/MyCode/SemantiK_Architect/`
 
 **Recommended Layout:**
 
 ```text
-/mnt/c/MyCode/AbstractWiki/
+/mnt/c/MyCode/SemantiK_Architect/
 ├── abstract-wiki-architect/      <-- [REPO ROOT]
 │   ├── .env                      <-- Env variables (WSL-side)
 │   ├── config/                   <-- Preferred config location (if present)
@@ -46,7 +46,7 @@ To avoid path issues, keep the repo on your Windows drive so both Windows and WS
 │   │       ├── fr/
 │   │       └── ...
 │   ├── gf/
-│   │   └── AbstractWiki.pgf      <-- Generated binary
+│   │   └── semantik_architect.pgf      <-- Generated binary
 │   └── ...
 └── gf-rgl/                       <-- [EXTERNAL] GF Resource Grammar Library
     └── src/
@@ -61,7 +61,7 @@ To avoid path issues, keep the repo on your Windows drive so both Windows and WS
 Open **Ubuntu/WSL Terminal** (not PowerShell) and go to the repo root:
 
 ```bash
-cd /mnt/c/MyCode/AbstractWiki/abstract-wiki-architect
+cd /mnt/c/MyCode/SemantiK_Architect/Semantik_architect
 ```
 
 ### Step A: Install C-Library Dependencies
@@ -122,11 +122,11 @@ LOG_FORMAT=console
 
 # --- Persistence ---
 # Repo root used by the Tools Router to confine execution to this directory
-FILESYSTEM_REPO_PATH=/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect
+FILESYSTEM_REPO_PATH=/mnt/c/MyCode/SemantiK_Architect/Semantik_architect
 
 # --- Grammar Engine ---
-GF_LIB_PATH=/mnt/c/MyCode/AbstractWiki/gf-rgl
-PGF_PATH=/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/gf/AbstractWiki.pgf
+GF_LIB_PATH=/mnt/c/MyCode/SemantiK_Architect/gf-rgl
+PGF_PATH=/mnt/c/MyCode/SemantiK_Architect/Semantik_architect/gf/semantik_architect.pgf
 
 # --- Messaging & State (Redis) ---
 REDIS_URL=redis://localhost:6379/0

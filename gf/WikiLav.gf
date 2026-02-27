@@ -1,1 +1,1 @@
-concrete WikiLav of AbstractWiki = WikiI with (Syntax = SyntaxLav) ** open SyntaxLav, ParadigmsLav in { flags coding=utf8 ; };
+concrete WikiLav of SemantikArchitect = WikiI with (Syntax = SyntaxLav) ** open SyntaxLav, ParadigmsLav in { flags coding=utf8 ; };

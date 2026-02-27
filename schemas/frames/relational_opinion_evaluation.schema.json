@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://abstract-wiki.org/schemas/frames/relational_opinion_evaluation.schema.json",
-  "title": "Abstract Wiki Frame: Relational opinion / evaluation",
+  "title": "Semantik Architect  Frame: Relational opinion / evaluation",
   "description": "Schema for OpinionFrame: evaluative statements about a subject, optionally with a scalar rating and provenance.",
   "type": "object",
   "additionalProperties": false,

@@ -119,7 +119,7 @@ class Settings(BaseSettings):
     # Prefer PGF_PATH; accept AW_PGF_PATH as deprecated alias.
     PGF_PATH: Optional[str] = Field(
         default=None,
-        description="Path to AbstractWiki.pgf. Prefer PGF_PATH; AW_PGF_PATH is deprecated.",
+        description="Path to semantik_architect.pgf. Prefer PGF_PATH; AW_PGF_PATH is deprecated.",
     )
     AW_PGF_PATH: Optional[str] = Field(
         default=None,
@@ -147,7 +147,7 @@ class Settings(BaseSettings):
 
         # If user provides a directory (or anything not ending with .pgf), append filename.
         if value.endswith(("/", "\\")) or not value.lower().endswith(".pgf"):
-            return os.path.join(value, "AbstractWiki.pgf")
+            return os.path.join(value, "semantik_architect.pgf")
 
         return value
 
@@ -238,7 +238,7 @@ class Settings(BaseSettings):
 
         # 3) Compute from repo path
         base = (self.FILESYSTEM_REPO_PATH or "").rstrip("/\\")
-        filename = "AbstractWiki.pgf"
+        filename = "semantik_architect.pgf"
 
         if base.endswith(("gf", "gf-rgl")):
             self.PGF_PATH = os.path.join(base, filename)

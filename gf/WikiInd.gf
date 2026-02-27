@@ -1,4 +1,4 @@
-concrete WikiInd of AbstractWiki = open SyntaxInd, ParadigmsInd in {
+concrete WikiInd of SemantikArchitect = open SyntaxInd, ParadigmsInd in {
   lincat
     Fact = S ;
     Entity = NP ;

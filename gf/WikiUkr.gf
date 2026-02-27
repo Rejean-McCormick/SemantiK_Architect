@@ -1,1 +1,1 @@
-concrete WikiUkr of AbstractWiki = WikiI with (Syntax = SyntaxUkr) ** open SyntaxUkr, ParadigmsUkr in { flags coding = utf8 ; };
+concrete WikiUkr of SemantikArchitect = WikiI with (Syntax = SyntaxUkr) ** open SyntaxUkr, ParadigmsUkr in { flags coding = utf8 ; };

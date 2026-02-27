@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame Schema: Place",
+  "title": "Semantik Architect  Frame Schema: Place",
   "description": "JSON schema for the PlaceFrame semantic structure used for geographic / place entities.",
   "type": "object",
   "additionalProperties": false,

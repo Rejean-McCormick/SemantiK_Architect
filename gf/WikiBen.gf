@@ -1,4 +1,4 @@
-concrete WikiBen of AbstractWiki = open SyntaxBen, ParadigmsBen in {
+concrete WikiBen of SemantikArchitect = open SyntaxBen, ParadigmsBen in {
   lincat
     Fact = S ;
     Entity = NP ;

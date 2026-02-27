@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame Schema: Religion / Belief System / Ideology",
+  "title": "Semantik Architect  Frame Schema: Religion / Belief System / Ideology",
   "description": "JSON schema for the ReligionIdeologyFrame semantic structure used for religions, belief systems, denominations, and ideologies.",
   "type": "object",
   "additionalProperties": false,

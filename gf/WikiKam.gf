@@ -1,4 +1,4 @@
-concrete WikiKam of AbstractWiki = open SyntaxKam, ParadigmsKam in {
+concrete WikiKam of SemantikArchitect = open SyntaxKam, ParadigmsKam in {
   lincat
     Fact = S ;
     Entity = NP ;

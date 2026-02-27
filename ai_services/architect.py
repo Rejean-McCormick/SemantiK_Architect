@@ -99,7 +99,7 @@ class ArchitectAgent:
             Write the concrete grammar file '{module_name}.gf' for Language: {lang_name} (ISO: {lang_code}).
 
             # Use this Skeleton EXACTLY:
-            concrete {module_name} of AbstractWiki = open Syntax{rgl_code}, Paradigms{rgl_code} in {{
+            concrete {module_name} of SemantikArchitect = open Syntax{rgl_code}, Paradigms{rgl_code} in {{
               lincat
                 Fact = S ;
                 Entity = NP ;
@@ -112,7 +112,7 @@ class ArchitectAgent:
             # Constraints
             1. Output ONLY the code.
             2. Do NOT inherit from 'WikiI' or 'Wiki'. Use the 'open' syntax above.
-            3. The abstract syntax 'AbstractWiki' defines:
+            3. The abstract syntax 'SemantikArchitect' defines:
                cat Fact; Entity; Predicate;
                fun mkFact : Entity -> Predicate -> Fact;
             """
@@ -189,7 +189,7 @@ class ArchitectAgent:
                 if match:
                     clean = clean[match.start() :]
 
-        clean = re.sub(r"\bof\s+Wiki\b", "of AbstractWiki", clean)
+        clean = re.sub(r"\bof\s+Wiki\b", "of SemantikArchitect", clean)
 
         if "= WikiI" in clean or "= Wiki" in clean:
             clean = re.sub(r"=\s*WikiI?\s*(with\s*\([^)]+\))?\s*(\*\*)?", "=", clean)

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AbstractWiki Architect Frame Schema: Relational – Definition / classification",
+  "title": "Semantik Architect Frame Schema: Relational – Definition / classification",
   "description": "Schema for the rel.definition-classification frame: definitional and classification relations of the form 'X is a Y' or 'X is a type of Y'.",
   "type": "object",
   "additionalProperties": false,
@@ -61,7 +61,7 @@
     },
     "extra": {
       "type": "object",
-      "description": "Free-form metadata / provenance bag passed through unchanged (e.g. original AbstractWiki blobs, Wikidata statements).",
+      "description": "Free-form metadata / provenance bag passed through unchanged (e.g. original Semantik Architect blobs, Wikidata statements).",
       "additionalProperties": true
     }
   },
@@ -108,3 +108,4 @@
     }
   }
 }
+

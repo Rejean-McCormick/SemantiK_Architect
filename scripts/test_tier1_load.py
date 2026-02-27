@@ -1,5 +1,5 @@
 # ========== FILE: test_tier1_load.py ==========
-# Path: C:\MyCode\AbstractWiki\abstract-wiki-architect\scripts\test_tier1_load.py
+# Path: C:\MyCode\SemantiK_Architect\Semantik_architect\scripts\test_tier1_load.py
 
 import json
 import pgf
@@ -15,7 +15,7 @@ def wiki_lang_from_iso(iso: str) -> str:
 
 try:
     print("🔄 Loading PGF...")
-    grammar = pgf.readPGF("gf/AbstractWiki.pgf")
+    grammar = pgf.readPGF("gf/semantik_architect.pgf")
     print("✅ PGF Loaded Successfully!")
 
     langs = grammar.languages.keys()

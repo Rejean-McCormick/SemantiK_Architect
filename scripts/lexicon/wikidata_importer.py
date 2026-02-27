@@ -56,7 +56,7 @@ WIKIDATA_SPARQL_URL = "https://query.wikidata.org/sparql"
 
 DEFAULT_USER_AGENT = os.getenv(
     "WIKIDATA_USER_AGENT",
-    "AbstractWikiArchitect/2.2 (https://abstractwiki.org; contact: admin@abstractwiki.org)",
+    "SemantikArchitect/2.2 (https://abstractwiki.org; contact: admin@abstractwiki.org)",
 )
 
 DEFAULT_BATCH_SIZE = 25
@@ -645,3 +645,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

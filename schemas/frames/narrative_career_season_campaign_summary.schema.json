@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame: Career / season / campaign summary",
+  "title": "Semantik Architect  Frame: Career / season / campaign summary",
   "description": "Aggregate / narrative frame summarising a subject's career, sports season, or political campaign as a sequence of phases with headline metrics.",
   "type": "object",
   "additionalProperties": false,

@@ -45,7 +45,7 @@ class GFGrammarEngine:
             os.getenv("PGF_PATH")
             or getattr(settings, "PGF_PATH", None)
             or os.getenv("AW_PGF_PATH")
-            or getattr(settings, "AW_PGF_PATH", "gf/AbstractWiki.pgf")
+            or getattr(settings, "AW_PGF_PATH", "gf/semantik_architect.pgf")
         )
         self.pgf_path: str = str(self._resolve_path(configured))
 
@@ -80,7 +80,7 @@ class GFGrammarEngine:
         path = Path(p)
 
         if path.exists() and path.is_dir():
-            path = path / "AbstractWiki.pgf"
+            path = path / "semantik_architect.pgf"
 
         if path.is_absolute():
             return path
@@ -309,7 +309,7 @@ class GFGrammarEngine:
 
             path = Path(self.pgf_path)
             if path.exists() and path.is_dir():
-                path = path / "AbstractWiki.pgf"
+                path = path / "semantik_architect.pgf"
 
             if not path.exists():
                 self._grammar = None

@@ -1,4 +1,4 @@
-# C:\MyCode\AbstractWiki\abstract-wiki-architect\tools\language_health\reporting.py
+# C:\MyCode\SemantiK_Architect\Semantik_architect\tools\language_health\reporting.py
 """
 Compatibility + convenience re-exports for the language_health tool.
 

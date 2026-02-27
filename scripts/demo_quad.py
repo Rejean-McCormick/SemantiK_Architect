@@ -1,7 +1,7 @@
 import json
 import pgf
 
-PGF_PATH = "gf/AbstractWiki.pgf"
+PGF_PATH = "gf/semantik_architect.pgf"
 
 def wiki_lang_from_iso(iso: str) -> str:
     with open("data/config/iso_to_wiki.json", "r", encoding="utf-8") as f:

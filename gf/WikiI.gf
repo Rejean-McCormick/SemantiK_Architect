@@ -1,4 +1,4 @@
-incomplete concrete WikiI of AbstractWiki = open Prelude in {
+incomplete concrete WikiI of SemantikArchitect = open Prelude in {
 
   lincat
     Statement    = SS ;

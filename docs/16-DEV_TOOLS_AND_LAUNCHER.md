@@ -88,7 +88,7 @@ A GUI wrapper for backend maintenance scripts, allowing operational tasks to be 
 | Tool ID           | Action Taken                                                        |
 | ----------------- | ------------------------------------------------------------------- |
 | `language_health` | Language health/diagnostics utility (compile/API checks).           |
-| `compile_pgf`     | Triggers the build orchestrator to compile/link `AbstractWiki.pgf`. |
+| `compile_pgf`     | Triggers the build orchestrator to compile/link `semantik_architect.pgf`. |
 | `harvest_lexicon` | Runs the lexicon harvester (subcommands: `wordnet` or `wikidata`).  |
 | `run_judge`       | Executes golden-standard regression checks (AI Judge integration).  |
 

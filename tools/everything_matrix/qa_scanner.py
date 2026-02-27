@@ -240,7 +240,7 @@ def scan_all_artifacts(
         )
 
     # 2) PGF presence / binary scoring
-    pgf_path = gf_root / "AbstractWiki.pgf"
+    pgf_path = gf_root / "semantik_architect.pgf"
     grammar = load_grammar_once(pgf_path)
     bin_by_iso2: Dict[str, float] = {k: 0.0 for k in iso2s}
 

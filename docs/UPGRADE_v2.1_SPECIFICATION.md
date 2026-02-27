@@ -81,7 +81,7 @@ The "Brain" of the system has been rewired to hold the massive lexicon in memory
 
 We have established the **"Triangle of Doom"** alignment between the Schema (Abstract) and the Vocabulary (Concrete).
 
-### A. The Schema (`gf/AbstractWiki.gf`)
+### A. The Schema (`gf/semantik_architect.gf`)
 
 Defines the strict API contract. To handle real-world data variance, we use **Overloading**:
 
@@ -106,7 +106,7 @@ fun
 The Concrete Grammar must now **open** the external WordNet module to access the 380k identifiers.
 
 ```haskell
-concrete WikiEng of AbstractWiki = open SyntaxEng, ParadigmsEng, WordNetEng in {
+concrete WikiEng of SemantikArchitect = open SyntaxEng, ParadigmsEng, WordNetEng in {
   -- 'open WordNetEng' allows us to use 'physicist_N' directly
   lin
     mkBioFull s p n = mkS (mkCl s (mkVP n p)) ; -- "He is an American physicist"
@@ -129,7 +129,7 @@ To deploy v2.1, execute the following sequence in **WSL**.
 ```bash
 # 1. Harvest local WordNet data (The "Rosetta Stone")
 python3 tools/harvest_lexicon.py wordnet \
-  --root "/mnt/c/MyCode/AbstractWiki/gf-wordnet" \
+  --root "/mnt/c/MyCode/SemantiK_Architect/gf-wordnet" \
   --langs eng,rus,bul,swe
 
 # 2. Update the Everything Matrix
@@ -141,14 +141,14 @@ python3 tools/everything_matrix/build_index.py
 
 ```bash
 # 1. Define the Schema (with Overloading)
-echo 'abstract AbstractWiki = { flags startcat = Statement ; cat Statement ; Entity ; Profession ; Nationality ; fun mkEntity : PN -> Entity ; mkBioFull : Entity -> Profession -> Nationality -> Statement ; mkBioProf : Entity -> Profession -> Statement ; lexProf : N -> Profession ; lexNat : N -> Nationality ; }' > gf/AbstractWiki.gf
+echo 'abstract SemantikArchitect = { flags startcat = Statement ; cat Statement ; Entity ; Profession ; Nationality ; fun mkEntity : PN -> Entity ; mkBioFull : Entity -> Profession -> Nationality -> Statement ; mkBioProf : Entity -> Profession -> Statement ; lexProf : N -> Profession ; lexNat : N -> Nationality ; }' > gf/semantik_architect.gf
 
 # 2. Define the Concrete (linking WordNet)
-echo 'concrete WikiEng of AbstractWiki = open SyntaxEng, ParadigmsEng, WordNetEng in { lincat Statement = S ; Entity = NP ; Profession = CN ; Nationality = AP ; lin mkEntity pn = mkNP pn ; mkBioFull s p n = mkS (mkCl s (mkVP n p)) ; mkBioProf s p = mkS (mkCl s (mkVP p)) ; lexProf n = mkCN n ; lexNat n = mkAP (mkA n) ; }' > gf/WikiEng.gf
+echo 'concrete WikiEng of SemantikArchitect = open SyntaxEng, ParadigmsEng, WordNetEng in { lincat Statement = S ; Entity = NP ; Profession = CN ; Nationality = AP ; lin mkEntity pn = mkNP pn ; mkBioFull s p n = mkS (mkCl s (mkVP n p)) ; mkBioProf s p = mkS (mkCl s (mkVP p)) ; lexProf n = mkCN n ; lexNat n = mkAP (mkA n) ; }' > gf/WikiEng.gf
 
 # 3. Build the PGF (This links everything together)
 # Note: Use -path to point to the WordNet repo
-gf -make -output-format=pgf -path ".:/mnt/c/MyCode/AbstractWiki/gf-wordnet/gf" gf/WikiEng.gf
+gf -make -output-format=pgf -path ".:/mnt/c/MyCode/SemantiK_Architect/gf-wordnet/gf" gf/WikiEng.gf
 
 ```
 

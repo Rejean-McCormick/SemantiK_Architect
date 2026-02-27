@@ -32,7 +32,7 @@ The build system (`build_300.py`) will resolve a language code (e.g., `zul`) by 
 The project structure is reorganized to separate **Source** (Official), **Manual** (Community), and **Generated** (Factory) assets.
 
 ```text
-C:\MyCode\AbstractWiki\abstract-wiki-architect\
+C:\MyCode\SemantiK_Architect\Semantik_architect\
 │
 ├── architect_http_api\
 │   └── gf\

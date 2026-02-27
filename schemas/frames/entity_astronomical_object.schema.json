@@ -102,7 +102,7 @@
   "definitions": {
     "EntityRef": {
       "type": "object",
-      "description": "Lightweight reference to an entity in the Abstract Wiki knowledge graph or an external source. At least one identifier (`id`, `qid`, or `name`) SHOULD be provided.",
+      "description": "Lightweight reference to an entity in the Semantik Architect knowledge graph or an external source. At least one identifier (`id`, `qid`, or `name`) SHOULD be provided.",
       "properties": {
         "id": {
           "type": [

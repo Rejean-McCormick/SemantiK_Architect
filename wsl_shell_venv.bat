@@ -5,7 +5,7 @@ TITLE Semantik Architect (WSL + venv)
 REM Prefer "repo = folder where this BAT lives" if manage.py is present; otherwise fallback.
 set "WIN_REPO=%~dp0"
 if not exist "%WIN_REPO%manage.py" (
-  set "WIN_REPO=C:\MyCode\AbstractWiki\abstract-wiki-architect"
+  set "WIN_REPO=C:\MyCode\SemantiK_Architect\Semantik_architect"
 )
 
 REM Normalize to a full path

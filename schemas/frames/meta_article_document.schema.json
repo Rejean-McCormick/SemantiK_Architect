@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Frame: Article / document meta frame",
+  "title": "Semantik Architect  Frame: Article / document meta frame",
   "type": "object",
   "additionalProperties": false,
   "properties": {

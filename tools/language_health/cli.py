@@ -62,7 +62,7 @@ def _check_pgf_staleness(stream: Any) -> None:
     """Warns the user if .gfo object caches are newer than the main .pgf binary."""
     from .paths import REPO_ROOT
     
-    pgf_path = REPO_ROOT / "gf" / "AbstractWiki.pgf"
+    pgf_path = REPO_ROOT / "gf" / "semantik_architect.pgf"
     gfo_dir = REPO_ROOT / "gf"
     
     if not pgf_path.exists():
@@ -79,7 +79,7 @@ def _check_pgf_staleness(stream: Any) -> None:
 
     if newest_gfo_time > pgf_mtime:
         print("\n⚠️  [WARNING] STALE BINARY DETECTED!", file=stream)
-        print("⚠️  You have compiled .gfo files that are NEWER than your AbstractWiki.pgf.", file=stream)
+        print("⚠️  You have compiled .gfo files that are NEWER than your semantik_architect.pgf.", file=stream)
         print("⚠️  Runtime tests will not reflect your latest changes. Please run 'compile_pgf' first.\n", file=stream)
 
 

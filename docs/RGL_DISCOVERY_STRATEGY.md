@@ -9,7 +9,7 @@ Integrating the **GF Resource Grammar Library (RGL)** requires bridging three di
 
 | Layer | Identifier | Example (French) | Example (German) | Example (Chinese) |
 |---|---|---|---|---|
-| **Abstract Wiki (System Keys)** | **ISO-639-1 (iso2, lowercase)** | `fr` | `de` | `zh` |
+| **Semantik Architect (System Keys)** | **ISO-639-1 (iso2, lowercase)** | `fr` | `de` | `zh` |
 | **GF RGL (Module Suffix)** | Legacy 2–3-letter suffix | `Fre` | `Ger` | `Chi` |
 | **File System** | Folder name | `french` | `german` | `chinese` |
 
@@ -110,7 +110,7 @@ Example:
 
 ```haskell
 -- Generated: WikiFre.gf (suffix derived from inventory)
-concrete WikiFre of AbstractWiki = WikiI ** open SyntaxFre, ParadigmsFre in {
+concrete WikiFre of SemantikArchitect = WikiI ** open SyntaxFre, ParadigmsFre in {
   -- Empty body guarantees compilation success.
   -- Vocabulary is injected at runtime.
 }

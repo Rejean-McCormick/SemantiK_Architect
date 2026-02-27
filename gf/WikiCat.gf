@@ -1,1 +1,1 @@
-concrete WikiCat of AbstractWiki = WikiI with (Syntax = SyntaxCat) ** open SyntaxCat, ParadigmsCat in { flags coding=utf8 ; };
+concrete WikiCat of SemantikArchitect = WikiI with (Syntax = SyntaxCat) ** open SyntaxCat, ParadigmsCat in { flags coding=utf8 ; };

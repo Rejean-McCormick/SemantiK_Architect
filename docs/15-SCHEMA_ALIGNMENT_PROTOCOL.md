@@ -15,7 +15,7 @@ In the v2.1 architecture, a runtime error (`400 Bad Request` or `Function not fo
 We call this the **Triangle of Doom**:
 
 1. **The API Contract (Input):** What the user sends (JSON). Defined in `schemas/*.json` and `app/adapters/ninai.py`.
-2. **The Abstract Grammar (Interface):** What the engine accepts (GF). Defined in `gf/AbstractWiki.gf`.
+2. **The Abstract Grammar (Interface):** What the engine accepts (GF). Defined in `gf/semantik_architect.gf`.
 3. **The Factory Logic (Generator):** What the builder produces (Python). Defined in `utils/grammar_factory.py`.
 
 ### The Symptom
@@ -31,7 +31,7 @@ Until a "Schema-to-Grammar" compiler is built, we explicitly adopt a **Manual Pr
 
 ### Step 1: Update the Interface (Abstract Grammar)
 
-**File:** `gf/AbstractWiki.gf`
+**File:** `gf/semantik_architect.gf`
 
 Define the function signature. **v2.1 Mandate:** Use **Overloading** to handle missing data (e.g., when a user provides a Profession but no Nationality).
 
@@ -80,7 +80,7 @@ def generate_safe_mode_grammar(lang_code):
 For High-Resource languages, you must link the **Abstract** functions to the **Concrete** RGL logic and the **WordNet** lexicon.
 
 ```haskell
-concrete WikiEng of AbstractWiki = open SyntaxEng, ParadigmsEng, WordNetEng in {
+concrete WikiEng of SemantikArchitect = open SyntaxEng, ParadigmsEng, WordNetEng in {
   lincat 
     Statement = S ; 
     Profession = CN ; 
@@ -122,4 +122,4 @@ We choose **Explicit Semantic Mapping** with **Overloading** over **Generic Trip
 
 ### Future Roadmap
 
-To automate this, we will eventually implement an **Abstract Generator** script that reads `schemas/frames/*.json` and auto-generates `AbstractWiki.gf` during the build pre-flight check.
+To automate this, we will eventually implement an **Abstract Generator** script that reads `schemas/frames/*.json` and auto-generates `semantik_architect.gf` during the build pre-flight check.

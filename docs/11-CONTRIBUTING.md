@@ -94,7 +94,7 @@ We follow the **Conventional Commits** specification:
 
 ## 7. Hot-Reloading Note
 
-The `aw_worker` service watches the `AbstractWiki.pgf` file. If you run a build, wait ~5 seconds for the logs to show:
+The `aw_worker` service watches the `semantik_architect.pgf` file. If you run a build, wait ~5 seconds for the logs to show:
 
 > `runtime_detected_file_change ... runtime_reloading_triggered`
 

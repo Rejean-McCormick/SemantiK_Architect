@@ -2,7 +2,7 @@
 """
 REST API Adapter.
 
-This package acts as the HTTP entry point for the Abstract Wiki.
+This package acts as the HTTP entry point for the Semantik Architect.
 It is built on FastAPI and follows the Hexagonal Architecture principles:
 - It depends on `app.core` (Use Cases & Models).
 - It wires the `app.shared.container` to inject dependencies.

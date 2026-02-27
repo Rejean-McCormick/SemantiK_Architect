@@ -10,13 +10,13 @@ echo 'Disabling gf/WikiBel.gf (File GrammarBel.gf does not exist.)'
 if [ -f gf/WikiBel.gf ]; then mv gf/WikiBel.gf gf/WikiBel.gf.SKIP; fi
 echo 'Disabling gf/WikiBul.gf (Timeout after 90s)'
 if [ -f gf/WikiBul.gf ]; then mv gf/WikiBul.gf gf/WikiBul.gf.SKIP; fi
-echo 'Disabling gf/WikiBen.gf (/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/generated/src/SyntaxBen.gf:1:0: Syntax error:)'
+echo 'Disabling gf/WikiBen.gf (/mnt/c/MyCode/SemantiK_Architect/Semantik_architect/generated/src/SyntaxBen.gf:1:0: Syntax error:)'
 if [ -f gf/WikiBen.gf ]; then mv gf/WikiBen.gf gf/WikiBen.gf.SKIP; fi
 echo 'Disabling gf/WikiCat.gf (Timeout after 90s)'
 if [ -f gf/WikiCat.gf ]; then mv gf/WikiCat.gf gf/WikiCat.gf.SKIP; fi
 echo 'Disabling gf/WikiCze.gf (File GrammarCze.gf does not exist.)'
 if [ -f gf/WikiCze.gf ]; then mv gf/WikiCze.gf gf/WikiCze.gf.SKIP; fi
-echo 'Disabling gf/WikiCym.gf (/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/generated/src/SyntaxCym.gf:1:0: Syntax error:)'
+echo 'Disabling gf/WikiCym.gf (/mnt/c/MyCode/SemantiK_Architect/Semantik_architect/generated/src/SyntaxCym.gf:1:0: Syntax error:)'
 if [ -f gf/WikiCym.gf ]; then mv gf/WikiCym.gf gf/WikiCym.gf.SKIP; fi
 echo 'Disabling gf/WikiGre.gf (Timeout after 90s)'
 if [ -f gf/WikiGre.gf ]; then mv gf/WikiGre.gf gf/WikiGre.gf.SKIP; fi
@@ -38,9 +38,9 @@ echo 'Disabling gf/WikiHun.gf ([34m)'
 if [ -f gf/WikiHun.gf ]; then mv gf/WikiHun.gf gf/WikiHun.gf.SKIP; fi
 echo 'Disabling gf/WikiHye.gf (File GrammarHye.gf does not exist.)'
 if [ -f gf/WikiHye.gf ]; then mv gf/WikiHye.gf gf/WikiHye.gf.SKIP; fi
-echo 'Disabling gf/WikiInd.gf (/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/generated/src/SyntaxInd.gf:1:0: Syntax error:)'
+echo 'Disabling gf/WikiInd.gf (/mnt/c/MyCode/SemantiK_Architect/Semantik_architect/generated/src/SyntaxInd.gf:1:0: Syntax error:)'
 if [ -f gf/WikiInd.gf ]; then mv gf/WikiInd.gf gf/WikiInd.gf.SKIP; fi
-echo 'Disabling gf/WikiInu.gf (/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/generated/src/SyntaxInu.gf:1:0: Syntax error:)'
+echo 'Disabling gf/WikiInu.gf (/mnt/c/MyCode/SemantiK_Architect/Semantik_architect/generated/src/SyntaxInu.gf:1:0: Syntax error:)'
 if [ -f gf/WikiInu.gf ]; then mv gf/WikiInu.gf gf/WikiInu.gf.SKIP; fi
 echo 'Disabling gf/WikiKaz.gf (File GrammarKaz.gf does not exist.)'
 if [ -f gf/WikiKaz.gf ]; then mv gf/WikiKaz.gf gf/WikiKaz.gf.SKIP; fi
@@ -52,7 +52,7 @@ echo 'Disabling gf/WikiLav.gf (Timeout after 90s)'
 if [ -f gf/WikiLav.gf ]; then mv gf/WikiLav.gf gf/WikiLav.gf.SKIP; fi
 echo 'Disabling gf/WikiMkd.gf (File GrammarMkd.gf does not exist.)'
 if [ -f gf/WikiMkd.gf ]; then mv gf/WikiMkd.gf gf/WikiMkd.gf.SKIP; fi
-echo 'Disabling gf/WikiMal.gf (/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/generated/src/SyntaxMal.gf:1:0: Syntax error:)'
+echo 'Disabling gf/WikiMal.gf (/mnt/c/MyCode/SemantiK_Architect/Semantik_architect/generated/src/SyntaxMal.gf:1:0: Syntax error:)'
 if [ -f gf/WikiMal.gf ]; then mv gf/WikiMal.gf gf/WikiMal.gf.SKIP; fi
 echo 'Disabling gf/WikiMay.gf (File GrammarMay.gf does not exist.)'
 if [ -f gf/WikiMay.gf ]; then mv gf/WikiMay.gf gf/WikiMay.gf.SKIP; fi
@@ -74,13 +74,13 @@ echo 'Disabling gf/WikiTam.gf (File GrammarTam.gf does not exist.)'
 if [ -f gf/WikiTam.gf ]; then mv gf/WikiTam.gf gf/WikiTam.gf.SKIP; fi
 echo 'Disabling gf/WikiTel.gf ([34m)'
 if [ -f gf/WikiTel.gf ]; then mv gf/WikiTel.gf gf/WikiTel.gf.SKIP; fi
-echo 'Disabling gf/WikiTgl.gf (/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/generated/src/SyntaxTgl.gf:1:0: Syntax error:)'
+echo 'Disabling gf/WikiTgl.gf (/mnt/c/MyCode/SemantiK_Architect/Semantik_architect/generated/src/SyntaxTgl.gf:1:0: Syntax error:)'
 if [ -f gf/WikiTgl.gf ]; then mv gf/WikiTgl.gf gf/WikiTgl.gf.SKIP; fi
 echo 'Disabling gf/WikiTur.gf ([34m)'
 if [ -f gf/WikiTur.gf ]; then mv gf/WikiTur.gf gf/WikiTur.gf.SKIP; fi
 echo 'Disabling gf/WikiUkr.gf (File GrammarUkr.gf does not exist.)'
 if [ -f gf/WikiUkr.gf ]; then mv gf/WikiUkr.gf gf/WikiUkr.gf.SKIP; fi
-echo 'Disabling gf/WikiVie.gf (/mnt/c/MyCode/AbstractWiki/abstract-wiki-architect/generated/src/SyntaxVie.gf:1:0: Syntax error:)'
+echo 'Disabling gf/WikiVie.gf (/mnt/c/MyCode/SemantiK_Architect/Semantik_architect/generated/src/SyntaxVie.gf:1:0: Syntax error:)'
 if [ -f gf/WikiVie.gf ]; then mv gf/WikiVie.gf gf/WikiVie.gf.SKIP; fi
 echo 'Disabling gf/WikiZul.gf (File GrammarZul.gf does not exist.)'
 if [ -f gf/WikiZul.gf ]; then mv gf/WikiZul.gf gf/WikiZul.gf.SKIP; fi

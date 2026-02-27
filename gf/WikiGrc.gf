@@ -1,4 +1,4 @@
-concrete WikiGrc of AbstractWiki = open SyntaxGrc, ParadigmsGrc in {
+concrete WikiGrc of SemantikArchitect = open SyntaxGrc, ParadigmsGrc in {
   lincat
     Fact = S ;
     Entity = NP ;

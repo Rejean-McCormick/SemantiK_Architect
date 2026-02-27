@@ -142,8 +142,8 @@ If Phase 1 fails for a language:
 
 Once the list of valid languages is finalized, the orchestrator runs **one single command** to link them all together.
 
-* **Command:** `gf -batch -make -path ... AbstractWiki.gf WikiEng.gf WikiFre.gf ...`
-* **Purpose:** This produces the multi-lingual `AbstractWiki.pgf`.
+* **Command:** `gf -batch -make -path ... semantik_architect.gf WikiEng.gf WikiFre.gf ...`
+* **Purpose:** This produces the multi-lingual `semantik_architect.pgf`.
 * **Why:** GF cannot merge PGF files later. All languages must be present in the final Link command to be included in the binary.
 
 ---
@@ -173,7 +173,7 @@ python builder/orchestrator.py
 
 ```
 
-* **Output:** `gf/AbstractWiki.pgf`
+* **Output:** `gf/semantik_architect.pgf`
 * *Note:* Ensure `GOOGLE_API_KEY` is set in `.env` if you want the Architect Agent to fix errors.
 
 ### Step 3: Verify the Binary
@@ -182,7 +182,7 @@ Check which languages actually made it into the binary.
 
 ```bash
 # Quick Python one-liner
-python3 -c "import pgf; print(pgf.readPGF('AbstractWiki.pgf').languages.keys())"
+python3 -c "import pgf; print(pgf.readPGF('semantik_architect.pgf').languages.keys())"
 
 ```
 

@@ -1,4 +1,4 @@
-concrete WikiInu of AbstractWiki = open SyntaxInu, ParadigmsInu in {
+concrete WikiInu of SemantikArchitect = open SyntaxInu, ParadigmsInu in {
   lincat
     Fact = S ;
     Entity = NP ;

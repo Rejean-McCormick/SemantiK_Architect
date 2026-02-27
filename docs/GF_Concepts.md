@@ -6,7 +6,7 @@ When we run the command `gf -make`, we are transforming human-readable source co
 
 ### The Source (Inputs)
 We start with three distinct types of `.gf` source files:
-* **The Logic (`AbstractWiki.gf`):** The "Blueprint". It defines *what* can be said (semantics), such as `mkBio` taking an Entity and a Profession. It contains no language-specific words, only mathematical structure.
+* **The Logic (`semantik_architect.gf`):** The "Blueprint". It defines *what* can be said (semantics), such as `mkBio` taking an Entity and a Profession. It contains no language-specific words, only mathematical structure.
 * **The Rules (`WikiEng.gf`):** The "Translator". It implements the blueprint for a specific language (English), defining word order, agreement, and syntax.
 * **The Vocabulary (`WikiLexiconEng.gf`):** The "Dictionary". It provides the raw words (strings) that plug into the grammar.
 

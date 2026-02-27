@@ -1,1 +1,1 @@
-concrete WikiIta of AbstractWiki = WikiI with (Syntax = SyntaxIta) ** open SyntaxIta, ParadigmsIta in { flags coding=utf8 ; };
+concrete WikiIta of SemantikArchitect = WikiI with (Syntax = SyntaxIta) ** open SyntaxIta, ParadigmsIta in { flags coding=utf8 ; };

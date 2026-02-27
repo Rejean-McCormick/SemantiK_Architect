@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AbstractWiki Architect Frame Schema: Relational – Membership / affiliation",
+  "title": "Semantik Architect Frame Schema: Relational – Membership / affiliation",
   "description": "Schema for the rel.membership-affiliation frame: group membership and affiliation relations (member–group).",
   "type": "object",
   "additionalProperties": false,
@@ -163,3 +163,4 @@
     }
   }
 }
+

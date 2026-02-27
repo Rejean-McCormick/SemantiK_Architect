@@ -30,7 +30,7 @@ except ImportError:
     except ImportError:
         # Fallback for standalone usage
         class MockSettings:
-            PGF_PATH = os.path.join(root_dir, "gf", "AbstractWiki.pgf")
+            PGF_PATH = os.path.join(root_dir, "gf", "semantik_architect.pgf")
         settings = MockSettings()
 
 # [FIX] Import GFGrammarEngine explicitly

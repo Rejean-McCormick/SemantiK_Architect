@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AbstractWiki Architect Frame Schema: Entity – Sports team / club",
+  "title": "Semantik Architect Frame Schema: Entity – Sports team / club",
   "description": "Schema for the entity.sports_team frame: semantic representation of sports teams and clubs.",
   "type": "object",
   "additionalProperties": false,
@@ -285,3 +285,4 @@
     }
   }
 }
+

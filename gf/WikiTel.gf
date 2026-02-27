@@ -1,1 +1,1 @@
-concrete WikiTel of AbstractWiki = WikiI with (Syntax = SyntaxTel) ** open SyntaxTel, ParadigmsTel in { flags coding=utf8 ; };
+concrete WikiTel of SemantikArchitect = WikiI with (Syntax = SyntaxTel) ** open SyntaxTel, ParadigmsTel in { flags coding=utf8 ; };

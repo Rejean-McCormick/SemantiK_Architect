@@ -4,7 +4,7 @@
 #
 # Purpose
 # -------
-# Perform a "Big Pull" from a compiled PGF (AbstractWiki.pgf / Wiki.pgf) into the
+# Perform a "Big Pull" from a compiled PGF (semantik_architect.pgf / Wiki.pgf) into the
 # on-disk lexicon shards under: data/lexicon/{iso_code}/{domain}.json
 #
 # What it does
@@ -30,7 +30,7 @@
 # Usage
 # -----
 #   python scripts/lexicon/sync_rgl.py
-#   python scripts/lexicon/sync_rgl.py --pgf gf/AbstractWiki.pgf --domain rgl_sync
+#   python scripts/lexicon/sync_rgl.py --pgf gf/semantik_architect.pgf --domain rgl_sync
 #   python scripts/lexicon/sync_rgl.py --langs en,fr,de --max-funs 2000 --dry-run
 # ============================================================================
 
@@ -70,10 +70,10 @@ def _find_project_root(start: Path) -> Path:
 
 def _default_pgf_path(project_root: Path) -> Optional[Path]:
     candidates = [
-        project_root / "gf" / "AbstractWiki.pgf",
+        project_root / "gf" / "semantik_architect.pgf",
         project_root / "gf" / "Wiki.pgf",
         project_root / "Wiki.pgf",
-        project_root / "AbstractWiki.pgf",
+        project_root / "semantik_architect.pgf",
     ]
     for p in candidates:
         if p.exists():
@@ -227,7 +227,7 @@ def _validate_with_schema(lang: str, data: Dict[str, Any]) -> Tuple[int, int, Li
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Sync GF PGF lexical functions into data/lexicon shards.")
-    p.add_argument("--pgf", dest="pgf_path", default=None, help="Path to compiled PGF (defaults to gf/AbstractWiki.pgf if present).")
+    p.add_argument("--pgf", dest="pgf_path", default=None, help="Path to compiled PGF (defaults to gf/semantik_architect.pgf if present).")
     p.add_argument("--out-dir", dest="out_dir", default="data/lexicon", help="Output base dir (default: data/lexicon).")
     p.add_argument("--domain", default="rgl_sync", help="Domain shard filename (default: rgl_sync -> rgl_sync.json).")
     p.add_argument("--suffixes", default=",".join(DEFAULT_SUFFIXES), help="Comma-separated suffix filters for lexical functions.")
@@ -250,7 +250,7 @@ def sync_lexicon(argv: Optional[List[str]] = None) -> int:
 
     pgf_path = Path(args.pgf_path) if args.pgf_path else _default_pgf_path(project_root)
     if not pgf_path or not pgf_path.exists():
-        print("ERROR: No PGF file found. Use --pgf <path> (expected gf/AbstractWiki.pgf or gf/Wiki.pgf).")
+        print("ERROR: No PGF file found. Use --pgf <path> (expected gf/semantik_architect.pgf or gf/Wiki.pgf).")
         return 2
 
     out_base = (project_root / args.out_dir).resolve()

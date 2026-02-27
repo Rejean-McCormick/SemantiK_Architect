@@ -99,7 +99,7 @@ Read-Host 'Press Enter to close this window' | Out-Null
 # -----------------------------
 # 0) Resolve repo paths
 # -----------------------------
-$DefaultWinRepo = "C:\MyCode\AbstractWiki\abstract-wiki-architect"
+$DefaultWinRepo = "C:\MyCode\SemantiK_Architect\Semantik_architect"
 
 $WinRepo =
     if ($WinRepoOverride) { $WinRepoOverride }
@@ -241,7 +241,7 @@ python3 --version 2>/dev/null || true
 
 echo ""
 echo "PGF check:"
-ls -l gf/AbstractWiki.pgf 2>/dev/null || echo "MISSING_PGF"
+ls -l gf/semantik_architect.pgf 2>/dev/null || echo "MISSING_PGF"
 
 PORT="${1:-8000}"
 

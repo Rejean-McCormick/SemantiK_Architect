@@ -1,1 +1,1 @@
-concrete WikiTha of AbstractWiki = WikiI with (Syntax = SyntaxTha) ** open SyntaxTha, ParadigmsTha in { flags coding=utf8 ; };
+concrete WikiTha of SemantikArchitect = WikiI with (Syntax = SyntaxTha) ** open SyntaxTha, ParadigmsTha in { flags coding=utf8 ; };

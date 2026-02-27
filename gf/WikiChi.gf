@@ -1,1 +1,1 @@
-concrete WikiChi of AbstractWiki = WikiI with (Syntax = SyntaxChi) ** open SyntaxChi, ParadigmsChi in { flags coding=utf8 ; };
+concrete WikiChi of SemantikArchitect = WikiI with (Syntax = SyntaxChi) ** open SyntaxChi, ParadigmsChi in { flags coding=utf8 ; };

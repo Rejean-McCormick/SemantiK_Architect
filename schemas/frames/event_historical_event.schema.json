@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AbstractWiki Architect Frame Schema: Event – Historical / political event",
+  "title": "Semantik Architect Frame Schema: Event – Historical / political event",
   "description": "Schema for the event.historical frame: semantic representation of historical and political events (revolutions, coups, reforms, transitions of power).",
   "type": "object",
   "additionalProperties": false,
@@ -68,7 +68,7 @@
     },
     "extra": {
       "type": "object",
-      "description": "Free-form metadata / provenance bag used for round-tripping to upstream schemas (e.g. raw AbstractWiki blobs, Wikidata IDs).",
+      "description": "Free-form metadata / provenance bag used for round-tripping to upstream schemas (e.g. raw Semantik Architect blobs, Wikidata IDs).",
       "additionalProperties": true
     }
   },
@@ -246,3 +246,4 @@
     }
   }
 }
+

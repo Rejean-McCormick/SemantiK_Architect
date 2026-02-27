@@ -136,7 +136,7 @@ def clean_artifacts() -> None:
     _ensure_dirs()
     logger.info("🧹 Cleaning build artifacts...")
 
-    pgf = config.GF_DIR / "AbstractWiki.pgf"
+    pgf = config.GF_DIR / "semantik_architect.pgf"
     if pgf.exists():
         try:
             pgf.unlink()
@@ -489,7 +489,7 @@ class LinkedLang:
 
 
 def phase_2_link(valid_langs: List[LinkedLang]) -> Path:
-    """Phase 2: Link all valid languages into a single AbstractWiki.pgf binary."""
+    """Phase 2: Link all valid languages into a single semantik_architect.pgf binary."""
     start_time = time.time()
     logger.info("\n=== PHASE 2: LINKING PGF ===")
 
@@ -504,25 +504,25 @@ def phase_2_link(valid_langs: List[LinkedLang]) -> Path:
         "-path",
         gf_path.gf_path_args(),
         "-name",
-        "AbstractWiki",
-        "AbstractWiki.gf",
+        "SemantikArchitect",
+        "SemantikArchitect.gf",
         *targets,
     ]
 
     logger.info(f"🔗 Linking {len(targets)} languages...")
-    logger.info(f"   [CMD] {config.GF_BIN} -make -path <...> -name AbstractWiki AbstractWiki.gf ... ({len(targets)} files)")
+    logger.info(f"   [CMD] {config.GF_BIN} -make -path <...> -name semantik_architect SemantikArchitect.gf ... ({len(targets)} files)")
 
     proc = _run(cmd, cwd=config.GF_DIR)
     duration = time.time() - start_time
 
-    pgf_path = config.GF_DIR / "AbstractWiki.pgf"
+    pgf_path = config.GF_DIR / "semantik_architect.pgf"
     if proc.returncode == 0:
-        logger.info(f"✅ BUILD SUCCESS: AbstractWiki.pgf created in {duration:.2f}s")
+        logger.info(f"✅ BUILD SUCCESS: semantik_architect.pgf created in {duration:.2f}s")
         if pgf_path.exists():
             size_mb = pgf_path.stat().st_size / (1024 * 1024)
             logger.info(f"   [ARTIFACT] {pgf_path} ({size_mb:.2f} MB)")
         else:
-            logger.warning("⚠️ Build reported success but AbstractWiki.pgf not found.")
+            logger.warning("⚠️ Build reported success but semantik_architect.pgf not found.")
         return pgf_path
 
     logger.error(f"❌ LINK FAILED in {duration:.2f}s")
@@ -545,7 +545,7 @@ def build_pgf(
 ) -> Path:
     """
     Programmatic entrypoint (usable by API/worker without spawning another process).
-    Returns path to AbstractWiki.pgf.
+    Returns path to semantik_architect.pgf.
     """
     _ensure_dirs()
 

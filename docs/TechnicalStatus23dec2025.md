@@ -40,7 +40,7 @@ The engine runs, the pipes connects, and the "Brain" (Matrix) sees everything. B
 
 **2. Cold Start Latency**
 
-* **The Issue:** The PGF binary is massive. Loading `AbstractWiki.pgf` into RAM takes significant time (10-60s) and consumes 500MB+ per worker.
+* **The Issue:** The PGF binary is massive. Loading `semantik_architect.pgf` into RAM takes significant time (10-60s) and consumes 500MB+ per worker.
 
 
 * **The Symptom:** The first request after a deploy hangs. Scaling workers is memory-expensive.

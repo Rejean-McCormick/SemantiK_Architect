@@ -10,7 +10,7 @@ from .build import build_pgf
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Two-phase GF build orchestrator to produce AbstractWiki.pgf."
+        description="Two-phase GF build orchestrator to produce semantik_architect.pgf."
     )
     p.add_argument(
         "--strategy",

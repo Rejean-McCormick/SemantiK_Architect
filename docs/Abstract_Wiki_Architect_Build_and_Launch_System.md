@@ -49,7 +49,7 @@ These scripts run sequentially under the `build` command. They are refactored fo
 1. **Weighted Topology (Pre-Flight):** Calls `grammar_factory.py` to generate "Safe Mode" grammars for Tier 3 languages (e.g., Zulu, Hausa) using `topology_weights.json`.
 2. **Parallel Verification:** Spawns a process pool (e.g., 8 workers) to compile `.gfo` files for all languages simultaneously.
 3. **Atomic Writes:** Compiles to a `_temp` directory first. Only valid builds are moved to the final folder, permanently eliminating "Zombie" files.
-4. **Single-Shot Link:** Collects *all* valid languages and executes **one single** `gf -make` command to produce the final `AbstractWiki.pgf` binary.
+4. **Single-Shot Link:** Collects *all* valid languages and executes **one single** `gf -make` command to produce the final `semantik_architect.pgf` binary.
 
 
 
@@ -100,7 +100,7 @@ Once Level 2 finishes successfully, Level 1 spawns these persistent processes in
 * **Script:** `app/workers/worker.py`
 * **Framework:** ARQ (Redis)
 * **Optimization:** **OS-Native Hot Reload**.
-* **Logic:** Uses `watchfiles` (instead of polling) to reload the `AbstractWiki.pgf` binary into memory the *instant* the builder updates it.
+* **Logic:** Uses `watchfiles` (instead of polling) to reload the `semantik_architect.pgf` binary into memory the *instant* the builder updates it.
 
 ---
 

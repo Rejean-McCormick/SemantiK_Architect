@@ -50,7 +50,7 @@ def _normalize_pgf_path(value: str) -> str:
     if not value:
         return value
     if value.endswith(("/", "\\")) or not value.lower().endswith(".pgf"):
-        return os.path.join(value, "AbstractWiki.pgf")
+        return os.path.join(value, "semantik_architect.pgf")
     return value
 
 

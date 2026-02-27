@@ -1,1 +1,1 @@
-concrete WikiTam of AbstractWiki = WikiI with (Syntax = SyntaxTam) ** open SyntaxTam, ParadigmsTam in { flags coding = utf8 ; };
+concrete WikiTam of SemantikArchitect = WikiI with (Syntax = SyntaxTam) ** open SyntaxTam, ParadigmsTam in { flags coding = utf8 ; };

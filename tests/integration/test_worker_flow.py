@@ -23,7 +23,7 @@ class TestWorkerFlow:
         lang_code = event.payload["lang_code"]
 
         base_dir = "/repo"
-        pgf_path = f"{base_dir}/gf/AbstractWiki.pgf"
+        pgf_path = f"{base_dir}/gf/semantik_architect.pgf"
 
         with (
             patch.dict(os.environ, {"AW_PGF_PATH": pgf_path}, clear=False),
@@ -52,7 +52,7 @@ class TestWorkerFlow:
 
     async def test_pgf_artifact_missing_raises_runtimeerror(self):
         base_dir = "/repo"
-        pgf_path = f"{base_dir}/gf/AbstractWiki.pgf"
+        pgf_path = f"{base_dir}/gf/semantik_architect.pgf"
 
         with (
             patch.dict(os.environ, {"AW_PGF_PATH": pgf_path}, clear=False),
@@ -73,7 +73,7 @@ class TestWorkerFlow:
 
     async def test_orchestrator_failure_propagates(self):
         base_dir = "/repo"
-        pgf_path = f"{base_dir}/gf/AbstractWiki.pgf"
+        pgf_path = f"{base_dir}/gf/semantik_architect.pgf"
 
         with (
             patch.dict(os.environ, {"AW_PGF_PATH": pgf_path}, clear=False),

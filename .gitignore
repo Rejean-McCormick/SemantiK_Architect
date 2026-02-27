@@ -109,7 +109,7 @@ alembic/__pycache__/
 # ---------------------------------
 # Grammatical Framework (GF)
 # ---------------------------------
-# Generated binaries (Catch root files like AbstractWiki.gfo)
+# Generated binaries (Catch root files like semantik_architect.gfo)
 *.gfo
 *.pgf
 *.o

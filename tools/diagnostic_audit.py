@@ -200,7 +200,7 @@ def run_audit(verbose: bool = False, json_output: bool = False) -> int:
     return 0
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Diagnostic Audit for Abstract Wiki")
+    parser = argparse.ArgumentParser(description="Diagnostic Audit for Semantik Architect
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
     args = parser.parse_args()

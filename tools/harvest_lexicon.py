@@ -189,8 +189,8 @@ def auto_detect_gf_root() -> Optional[Path]:
         BASE_DIR / "gf-wordnet",
         BASE_DIR / "lib" / "gf-wordnet",
         BASE_DIR / "gf",
-        Path("/mnt/c/MyCode/AbstractWiki/gf-wordnet"),
-        Path("/mnt/c/MyCode/AbstractWiki/gf-wordnet/gf"),
+        Path("/mnt/c/MyCode/SemantiK_Architect/gf-wordnet"),
+        Path("/mnt/c/MyCode/SemantiK_Architect/gf-wordnet/gf"),
     ]
 
     for c in candidates:

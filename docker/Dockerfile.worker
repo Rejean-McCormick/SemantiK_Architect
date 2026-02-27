@@ -15,10 +15,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GF_LIB_PATH=/app/gf-rgl \
     \
     # Canonical path (v2): services should set/override PGF_PATH, not AW_PGF_PATH
-    PGF_PATH=/app/gf/AbstractWiki.pgf \
+    PGF_PATH=/app/gf/semantik_architect.pgf \
     \
     # Legacy compatibility (remove once app/shared/config.py stops reading AW_PGF_PATH)
-    AW_PGF_PATH=/app/gf/AbstractWiki.pgf \
+    AW_PGF_PATH=/app/gf/semantik_architect.pgf \
     \
     # Add local bin to path
     PATH="/root/.local/bin:$PATH"

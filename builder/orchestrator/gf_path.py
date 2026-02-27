@@ -90,7 +90,7 @@ def gf_path_args() -> str:
       - gf-rgl/src + gf-rgl/src/api
       - all first-level language dirs under gf-rgl/src (Prelude/SyntaxXXX/etc)
       - gf/contrib/{lang}/ (ADR 006)
-      - gf/ (local modules like AbstractWiki.gf and Wiki*.gf)
+      - gf/ (local modules like SemantikArchitect.gf and Wiki*.gf)
       - generated/src dirs (SAFE_MODE + both legacy locations)
       - repo root (last resort)
     """

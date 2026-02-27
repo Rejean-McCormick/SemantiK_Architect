@@ -78,9 +78,9 @@ def run():
             cwd=config.GF_DIR, env=sandbox_env, check=True, 
             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
         )
-        print("✔ Abstract Wiki.gf compiled successfully.")
+        print("✔ SemantikArchitect.gf compiled successfully.")
     except subprocess.CalledProcessError as e:
-        print("❌ CRITICAL: Abstract Wiki.gf failed.")
+        print("❌ CRITICAL: SemantikArchitect.gf failed.")
         print(e.stderr.decode("utf-8"))
         return False
 

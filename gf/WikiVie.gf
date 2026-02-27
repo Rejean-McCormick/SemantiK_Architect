@@ -1,4 +1,4 @@
-concrete WikiVie of AbstractWiki = open SyntaxVie, ParadigmsVie in {
+concrete WikiVie of SemantikArchitect = open SyntaxVie, ParadigmsVie in {
   lincat
     Fact = S ;
     Entity = NP ;

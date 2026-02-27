@@ -1,1 +1,1 @@
-concrete WikiGer of AbstractWiki = WikiI with (Syntax = SyntaxGer) ** open SyntaxGer, ParadigmsGer in { flags coding=utf8 ; };
+concrete WikiGer of SemantikArchitect = WikiI with (Syntax = SyntaxGer) ** open SyntaxGer, ParadigmsGer in { flags coding=utf8 ; };

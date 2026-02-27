@@ -1,1 +1,1 @@
-concrete WikiAra of AbstractWiki = WikiI with (Syntax = SyntaxAra) ** open SyntaxAra, ParadigmsAra in { flags coding=utf8 ; };
+concrete WikiAra of SemantikArchitect = WikiI with (Syntax = SyntaxAra) ** open SyntaxAra, ParadigmsAra in { flags coding=utf8 ; };

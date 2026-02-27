@@ -1,4 +1,4 @@
-concrete WikiTgl of AbstractWiki = open SyntaxTgl, ParadigmsTgl in {
+concrete WikiTgl of SemantikArchitect = open SyntaxTgl, ParadigmsTgl in {
   lincat
     Fact = S ;
     Entity = NP ;

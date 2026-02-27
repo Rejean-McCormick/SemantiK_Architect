@@ -1,1 +1,1 @@
-concrete WikiEus of AbstractWiki = WikiI with (Syntax = SyntaxEus) ** open SyntaxEus, ParadigmsEus in { flags coding=utf8 ; };
+concrete WikiEus of SemantikArchitect = WikiI with (Syntax = SyntaxEus) ** open SyntaxEus, ParadigmsEus in { flags coding=utf8 ; };

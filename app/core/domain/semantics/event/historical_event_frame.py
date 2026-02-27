@@ -110,7 +110,7 @@ class HistoricalEventFrame:
 
     extra:
         Arbitrary metadata, typically used for provenance or round-tripping
-        to upstream schemas (e.g. raw AbstractWiki blobs, Wikidata IDs).
+        to upstream schemas (e.g. raw Semantik Architect blobs, Wikidata IDs).
         This should not affect semantics directly.
 
     frame_type:

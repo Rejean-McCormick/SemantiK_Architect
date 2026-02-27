@@ -144,11 +144,11 @@ export const BACKEND_TOOL_REGISTRY = {
       { flag: "--ast", description: "Explicit GF AST to visualize", example: '--ast "PredVP (UsePN John_PN) (UseV run_V)"' },
       { flag: "--sentence", description: "Natural language sentence to parse", example: '--sentence "The cat eats the fish"' },
       { flag: "--lang", description: "Language code of the sentence", example: "--lang en" },
-      { flag: "--pgf", description: "Override PGF path", example: "--pgf gf/AbstractWiki.pgf" }
+      { flag: "--pgf", description: "Override PGF path", example: "--pgf gf/semantik_architect.pgf" }
     ),
     commonFailureModes: [
       "Missing required inputs: must provide either --ast OR (--sentence AND --lang).",
-      "PGF not found or cannot be loaded (check gf/AbstractWiki.pgf).",
+      "PGF not found or cannot be loaded (check gf/semantik_architect.pgf).",
     ],
     supportsVerbose: false,
     supportsJson: true,
@@ -233,7 +233,7 @@ export const BACKEND_TOOL_REGISTRY = {
     category: "Build System",
     group: "GF Build",
     risk: "heavy",
-    longDescription: "Orchestrates the full compilation of the AbstractWiki grammar into a PGF binary.",
+    longDescription: "Orchestrates the full compilation of the SemantikArchitect grammar into a PGF binary.",
     parameterDocs: withParams(
       { flag: "--strategy", description: "Build strategy (implementation-defined)", example: "--strategy incremental" },
       { flag: "--langs", description: "Limit build to specific languages", example: "--langs en fr" },
