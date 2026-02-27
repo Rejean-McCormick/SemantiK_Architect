@@ -203,11 +203,11 @@ npm run dev
 
 UI:
 
-* `http://localhost:3000/abstract_wiki_architect`
+* `http://localhost:3000/semantik_architect`
   Developer Console:
-* `http://localhost:3000/abstract_wiki_architect/dev`
+* `http://localhost:3000/semantik_architect/dev`
   Tools Dashboard:
-* `http://localhost:3000/abstract_wiki_architect/tools`
+* `http://localhost:3000/semantik_architect/tools`
 
 ---
 
@@ -219,7 +219,7 @@ Key differences:
 
 * **Pathing:** compose mounts the repo into the backend container.
 * **Networking:** services use hostnames (`redis`, `backend`, `frontend`), not `localhost`.
-* **Base path:** UI served under `/abstract_wiki_architect`; API under `/abstract_wiki_architect/api/v1`.
+* **Base path:** UI served under `/semantik_architect`; API under `/semantik_architect/api/v1`.
 
 ### Build and run
 

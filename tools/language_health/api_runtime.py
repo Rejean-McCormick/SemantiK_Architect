@@ -89,8 +89,8 @@ class ArchitectApiRuntimeChecker:
         Return candidate API roots to probe.
 
         Real-world layouts we handle:
-          - http://host:8000                  -> try /api/v1/... and /abstract_wiki_architect/api/v1/...
-          - http://host:8000/abstract_wiki_architect -> try /api/v1/...
+          - http://host:8000                  -> try /api/v1/... and /semantik_architect/api/v1/...
+          - http://host:8000/semantik_architect -> try /api/v1/...
           - http://host:8000/.../api/v1      -> treat as already-versioned root
         """
         base = (self.api_url or "").rstrip("/")
@@ -104,10 +104,10 @@ class ArchitectApiRuntimeChecker:
             cands.append(base[: -len("/api/v1")].rstrip("/"))
 
         # If not already mounted, also try the known mount prefix.
-        # This project’s Swagger UI shows routes under /abstract_wiki_architect/...
+        # This project’s Swagger UI shows routes under /semantik_architect/...
         for b in list(cands):
-            if "/abstract_wiki_architect" not in b:
-                cands.append(b.rstrip("/") + "/abstract_wiki_architect")
+            if "/semantik_architect" not in b:
+                cands.append(b.rstrip("/") + "/semantik_architect")
 
         return self._dedupe([c.rstrip("/") for c in cands if c])
 

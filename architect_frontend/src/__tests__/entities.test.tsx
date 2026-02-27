@@ -100,7 +100,7 @@ describe("EntityList (Smart Component)", () => {
     const targetRow = screen.getByRole("row", { name: /Douglas Adams/i });
     await user.click(targetRow);
 
-    expect(mockPush).toHaveBeenCalledWith("/abstract_wiki_architect/entities/42");
+    expect(mockPush).toHaveBeenCalledWith("/semantik_architect/entities/42");
   });
 });
 

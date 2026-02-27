@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 =============================================================================
-🚀 ABSTRACT WIKI ARCHITECT - UNIFIED COMMANDER (v2.5)
+🚀 SEMANTIK ARCHITECT - UNIFIED COMMANDER (v2.5)
 =============================================================================
 Single entry point for developer operations.
 
@@ -653,7 +653,7 @@ def doctor() -> None:
 # --- MAIN ---
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Abstract Wiki Architect Commander")
+    parser = argparse.ArgumentParser(description="Semantik Architect Commander")
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     subparsers.add_parser("start", help="Full Launch: Check, Align, Build, Run")

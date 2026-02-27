@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-TITLE Abstract Wiki Architect (WSL - plain)
+TITLE Semantik Architect (WSL - plain)
 
 REM Windows path of the repo (edit only this)
 set "WIN_REPO=C:\MyCode\AbstractWiki\abstract-wiki-architect"

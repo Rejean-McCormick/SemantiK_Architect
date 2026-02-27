@@ -3,13 +3,13 @@
 
 **SemantiK Architect v2.0**
 
-This document defines how the **SemantiK Architect (AWA)** aligns with, diverges from, and integrates with the official technical standards of the **Abstract Wikipedia** project (Wikifunctions, Ninai, and Universal Dependencies).
+This document defines how the **SemantiK Architect (SKA)** aligns with, diverges from, and integrates with the official technical standards of the **Abstract Wikipedia** project (Wikifunctions, Ninai, and Universal Dependencies).
 
 ---
 
 ## 1. The Core Divergence: Hybrid Linearization (GF + UD)
 
-The original Abstract Wikipedia architecture often relies heavily on **Universal Dependencies (UD)** for linguistic modeling (as seen in the `Udiron` project). AWA v1.0 was purely **Grammatical Framework (GF)** based.
+The original Abstract Wikipedia architecture often relies heavily on **Universal Dependencies (UD)** for linguistic modeling (as seen in the `Udiron` project). SKA v1.0 was purely **Grammatical Framework (GF)** based.
 
 In **v2.0**, we have bridged this gap by adopting a **Hybrid Linearization Strategy**.
 
@@ -26,15 +26,15 @@ For under-resourced languages (Zulu, Hausa), we have integrated the **Weighted T
 
 * **Why:** Writing full generative grammars for 300 languages is too slow.
 * **Mechanism:** We use `data/config/topology_weights.json` to define relative weights for dependency roles (e.g., `subj=-10`, `obj=-5`, `root=0` for SOV).
-* **Alignment:** This aligns AWA's "Factory" tier directly with the community's preferred method for rapid language expansion.
+* **Alignment:** This aligns SKA's "Factory" tier directly with the community's preferred method for rapid language expansion.
 
 ### 1.3 Evaluation: Universal Dependencies Export
 
 We acknowledge UD as the gold standard for *evaluation*.
 
-* **Feature:** AWA v2.0 supports `Accept: text/x-conllu`.
+* **Feature:** SKA v2.0 supports `Accept: text/x-conllu`.
 * **Logic:** We implement **"Construction-Time Tagging."** Since we generate the sentence, we know exactly which word is the Subject. We map our internal RGL functions (`mkCl`) to UD tags (`nsubj`, `root`) using the **Frozen Ledger** mapping.
-* **Result:** AWA output can be validated against standard UD treebanks.
+* **Result:** SKA output can be validated against standard UD treebanks.
 
 ---
 
@@ -47,33 +47,33 @@ We acknowledge UD as the gold standard for *evaluation*.
 
 ### 2.1 The Bridge (`NinaiAdapter`)
 
-AWA is designed to be a native **Renderer Implementation** for Ninai.
+SKA is designed to be a native **Renderer Implementation** for Ninai.
 
 * **Input:** We accept the recursive JSON structure natively.
-* **Mapping:** The `app/adapters/ninai.py` module recursively walks the Ninai tree and flattens it into AWA's internal `BioFrame` or `EventFrame`.
+* **Mapping:** The `app/adapters/ninai.py` module recursively walks the Ninai tree and flattens it into SKA's internal `BioFrame` or `EventFrame`.
 
 ### 2.2 Constructor Mapping
 
-We map Ninai constructors to AWA logic:
+We map Ninai constructors to SKA logic:
 
-| Ninai Constructor | AWA Component |
+| Ninai Constructor | SKA Component |
 | --- | --- |
 | `ninai.constructors.Statement` | `BioFrame` (Root Intent) |
 | `ninai.constructors.List` | Recursive Flattening Logic |
 | `ninai.constructors.Entity` | `DiscourseEntity` (QID Lookup) |
 | `ninai.types.Bio` | `frame_type="bio"` |
 
-We view Ninai as the *wire format* (Z7) and AWA as the *execution engine* (Z1).
+We view Ninai as the *wire format* (Z7) and SKA as the *execution engine* (Z1).
 
 ---
 
 ## 3. Z-Object Integration (Wikifunctions)
 
-In the Wikifunctions ecosystem, functions and types are assigned **Z-IDs**. AWA's architecture is "Z-Ready" by design.
+In the Wikifunctions ecosystem, functions and types are assigned **Z-IDs**. SKA's architecture is "Z-Ready" by design.
 
 ### 3.1 Component Mapping
 
-| AWA Component | Wikifunctions Concept | Integration Strategy |
+| SKA Component | Wikifunctions Concept | Integration Strategy |
 | --- | --- | --- |
 | **Family Engine** (`RomanceEngine`) | **Z-Implementation** | Python code wrapped as a Z-Function. |
 | **Lexicon Entry** (`people.json`) | **Z-Object (Type)** | Mapped to `Z_Physicist` or Wikidata QIDs. |
@@ -88,14 +88,14 @@ We utilize **Wikidata QIDs** (e.g., `Q42`) as the source of truth. The `NinaiAda
 
 ## 4. Discourse & Coherence
 
-Abstract Wikipedia aims to generate **Articles**, not just sentences. AWA v2.0 addresses this via the **Discourse Planner**.
+Abstract Wikipedia aims to generate **Articles**, not just sentences. SKA v2.0 addresses this via the **Discourse Planner**.
 
 ### 4.1 Centering Theory
 
 We implement a simplified version of Centering Theory to handle **Pronominalization**.
 
 * **Standard:** If an entity is the "Backward-Looking Center" () of the previous utterance, it should be pronominalized.
-* **Implementation:** The `SessionContext` in Redis tracks the current focus. If the incoming Ninai frame references the same QID, AWA renders "She/He" instead of the name.
+* **Implementation:** The `SessionContext` in Redis tracks the current focus. If the incoming Ninai frame references the same QID, SKA renders "She/He" instead of the name.
 
 ---
 

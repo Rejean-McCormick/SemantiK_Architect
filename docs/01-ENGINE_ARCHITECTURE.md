@@ -156,7 +156,7 @@ The v2.0 architecture integrates AI Agents to handle "Human-in-the-Loop" tasks a
 
 * **Role:** The QA Engineer.
 * **Trigger:** Daily scheduled task or "Whistleblower" mode.
-* **Action:** Compares AWA output against the **Gold Standard** (`data/tests/gold_standard.json`).
+* **Action:** Compares SKA output against the **Gold Standard** (`data/tests/gold_standard.json`).
 * **Output:** If quality is low, it automatically opens a GitHub Issue via the API.
 
 ---

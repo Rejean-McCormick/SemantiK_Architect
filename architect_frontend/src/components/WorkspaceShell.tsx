@@ -43,16 +43,16 @@ export default function WorkspaceShell({
   const hasRightPane = Boolean(rightPane);
 
   return (
-    <div className="awa-workspace">
-      <header className="awa-workspace__header">
-        <div className="awa-workspace__header-main">
-          <span className="awa-workspace__family-badge">
+    <div className="ska-workspace">
+      <header className="ska-workspace__header">
+        <div className="ska-workspace__header-main">
+          <span className="ska-workspace__family-badge">
             {context.family.toUpperCase()}
           </span>
-          <h1 className="awa-workspace__title">{context.title}</h1>
+          <h1 className="ska-workspace__title">{context.title}</h1>
         </div>
         {context.description && (
-          <p className="awa-workspace__description">
+          <p className="ska-workspace__description">
             {context.description}
           </p>
         )}
@@ -61,17 +61,17 @@ export default function WorkspaceShell({
       <div
         className={
           hasRightPane
-            ? "awa-workspace__body awa-workspace__body--two-column"
-            : "awa-workspace__body awa-workspace__body--single-column"
+            ? "ska-workspace__body ska-workspace__body--two-column"
+            : "ska-workspace__body ska-workspace__body--single-column"
         }
       >
-        <section className="awa-workspace__main">{children}</section>
+        <section className="ska-workspace__main">{children}</section>
         {hasRightPane && (
-          <aside className="awa-workspace__side">{rightPane}</aside>
+          <aside className="ska-workspace__side">{rightPane}</aside>
         )}
       </div>
 
-      {footer && <footer className="awa-workspace__footer">{footer}</footer>}
+      {footer && <footer className="ska-workspace__footer">{footer}</footer>}
     </div>
   );
 }

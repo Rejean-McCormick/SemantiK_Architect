@@ -52,7 +52,7 @@ export default function AbstractWikiArchitectHomePage() {
         <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="space-y-3">
             <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-slate-400">
-              Abstract Wiki Architect
+              Semantik Architect
             </p>
             <h1 className="text-3xl font-semibold tracking-tight">
               Start a new workspace

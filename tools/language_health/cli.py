@@ -43,11 +43,11 @@ def _resolve_api_key() -> tuple[Optional[str], str]:
     """
     Priority:
       1) env ARCHITECT_API_KEY
-      2) env AWA_API_KEY
+      2) env SKA_API_KEY
       3) env API_SECRET
       4) env API_KEY
     """
-    for name in ("ARCHITECT_API_KEY", "AWA_API_KEY", "API_SECRET", "API_KEY"):
+    for name in ("ARCHITECT_API_KEY", "SKA_API_KEY", "API_SECRET", "API_KEY"):
         v = os.environ.get(name)
         if v and v.strip():
             return v.strip(), f"env:{name}"

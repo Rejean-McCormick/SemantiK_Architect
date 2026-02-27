@@ -21,7 +21,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🏗️</span>
-          <span className="aw-navbar-title">Abstract Wiki Architect</span>
+          <span className="aw-navbar-title">Semantik Architect</span>
         </div>
 
         <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">

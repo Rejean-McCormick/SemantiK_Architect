@@ -12,7 +12,7 @@ export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
-  title: "Everything Matrix | Abstract Wiki Architect",
+  title: "Everything Matrix | Semantik Architect",
   description:
     "Universal Language Maturity Index across RGL, Lexicon, Application, and QA layers.",
 };

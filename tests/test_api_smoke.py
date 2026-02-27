@@ -250,7 +250,7 @@ def _detect_frontend_base_path(repo: Path) -> str:
             text = cfg.read_text(encoding="utf-8", errors="ignore")
         except Exception:
             continue
-        # e.g., basePath: "/abstract_wiki_architect"
+        # e.g., basePath: "/semantik_architect"
         m = re.search(r"basePath\s*:\s*['\"](/[^'\"]*)['\"]", text)
         if m:
             bp = m.group(1).strip()
@@ -358,7 +358,7 @@ def test_dynamic_test_bench_request_catalog_points_to_real_routes():
 
     It also (best-effort) enforces Next.js basePath if detectable, so we catch:
       '/api/v1/...'  (WRONG under basePath)
-      '/abstract_wiki_architect/api/v1/...' (RIGHT)
+      '/semantik_architect/api/v1/...' (RIGHT)
     """
     repo = _repo_root()
     req_dir = _frontend_requests_dir(repo)

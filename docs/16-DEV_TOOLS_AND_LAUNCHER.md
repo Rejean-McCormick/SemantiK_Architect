@@ -35,7 +35,7 @@ Right-click the file and select **"Run with PowerShell"**, or run from the termi
 
 A dedicated dashboard for immediate system health verification and smoke testing.
 
-**URL:** `http://localhost:3000/abstract_wiki_architect/dev`
+**URL:** `http://localhost:3000/semantik_architect/dev`
 
 ### Features
 
@@ -53,7 +53,7 @@ A dedicated dashboard for immediate system health verification and smoke testing
 
 A GUI wrapper for backend maintenance scripts, allowing operational tasks to be performed without a WSL terminal.
 
-**URL:** `http://localhost:3000/abstract_wiki_architect/tools`
+**URL:** `http://localhost:3000/semantik_architect/tools`
 
 ### How it works (authoritative)
 

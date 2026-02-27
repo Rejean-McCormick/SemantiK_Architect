@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Architect Frame Schema: Astronomical Object",
-  "description": "JSON schema for `entity.astronomical_object` frames used by the Abstract Wiki Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `AstronomicalObjectFrame`.",
+  "title": "Semantik Architect Frame Schema: Astronomical Object",
+  "description": "JSON schema for `entity.astronomical_object` frames used by the Semantik Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `AstronomicalObjectFrame`.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

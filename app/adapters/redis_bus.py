@@ -35,7 +35,7 @@ class RedisBus:
         if not self._redis:
             await self.connect()
 
-        key = f"awa:session:{session_id}"
+        key = f"ska:session:{session_id}"
         data = await self._redis.get(key)
         
         if data:
@@ -56,7 +56,7 @@ class RedisBus:
         if not self._redis:
             await self.connect()
 
-        key = f"awa:session:{context.session_id}"
+        key = f"ska:session:{context.session_id}"
         
         # Serialize to JSON string
         payload = context.model_dump_json()

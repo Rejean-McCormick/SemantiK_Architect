@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Architect – Relational: ownership / control frame",
-  "description": "Canonical semantic frame for ownership and control relations between two entities (e.g. company–subsidiary, state–enterprise, operator–facility) used by Abstract Wiki Architect.",
+  "title": "Semantik Architect – Relational: ownership / control frame",
+  "description": "Canonical semantic frame for ownership and control relations between two entities (e.g. company–subsidiary, state–enterprise, operator–facility) used by Semantik Architect.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

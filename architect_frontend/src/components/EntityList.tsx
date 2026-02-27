@@ -71,7 +71,7 @@ export default function EntityList() {
         frame_payload: {}, // Start empty
       });
       // Navigate immediately to the new entity editor
-      router.push(`/abstract_wiki_architect/entities/${created.id}`);
+      router.push(`/semantik_architect/entities/${created.id}`);
     } catch (err) {
       alert("Failed to create entity.");
       setIsSubmitting(false);
@@ -218,7 +218,7 @@ export default function EntityList() {
                     key={entity.id}
                     className="group cursor-pointer hover:bg-slate-50"
                     // Row click navigates, but specific buttons stopPropagation
-                    onClick={() => router.push(`/abstract_wiki_architect/entities/${entity.id}`)}
+                    onClick={() => router.push(`/semantik_architect/entities/${entity.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-slate-900">
                       <div className="truncate max-w-[200px] sm:max-w-xs">{entity.name}</div>

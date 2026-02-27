@@ -162,7 +162,7 @@ The JSON payload sent by the Judge Agent to the GitHub API.
 * Strategy: {strategy} (Tier 1/3)
 * Session ID: {session_id}
 
-*Reported by AWA Judge Agent*
+*Reported by SKA Judge Agent*
 
 ```
 

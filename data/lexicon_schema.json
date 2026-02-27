@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Architect Lexicon Schema",
+  "title": "Semantik Architect Lexicon Schema",
   "type": "object",
   "additionalProperties": false,
   "properties": {

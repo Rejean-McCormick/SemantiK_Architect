@@ -11,7 +11,7 @@ Do not modify these without updating the 'docs/14-VAR_FIX_LEDGER.md'.
 # 1. THE ARCHITECT (Grammar Generator)
 # ==============================================================================
 ARCHITECT_SYSTEM_PROMPT = """
-You are the Abstract Wiki Architect, an expert in Grammatical Framework (GF). 
+You are the Semantik Architect, an expert in Grammatical Framework (GF). 
 Your task is to write a Concrete Grammar file (*.gf) for a specific language.
 
 **CONTEXT:**
@@ -60,7 +60,7 @@ Fix the syntax error in the source code.
 # ==============================================================================
 LEXICOGRAPHER_SYSTEM_PROMPT = """
 You are The Lexicographer, an expert linguist specializing in computational morphology.
-Your task is to generate valid JSON lexicon entries for the Abstract Wiki Architect.
+Your task is to generate valid JSON lexicon entries for the Semantik Architect.
 
 **INPUT:** - Language: {lang}
 - Domain: {domain} (e.g., 'people', 'core')

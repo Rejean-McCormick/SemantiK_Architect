@@ -3,7 +3,7 @@
 
 Status: draft  
 Owner: (TBD)  
-Scope: integrate selected parts of **Grammatical Framework (GF)** into **SemantiK Architect (AWA)** without changing AWA’s core architecture.
+Scope: integrate selected parts of **Grammatical Framework (GF)** into **SemantiK Architect (SKA)** without changing SKA’s core architecture.
 
 ---
 
@@ -12,10 +12,10 @@ Scope: integrate selected parts of **Grammatical Framework (GF)** into **Semanti
 ### 1.1 Goals
 
 1. **Leverage GF’s linguistic work** without adopting GF as the core platform:
-   - Reuse GF’s **morphology paradigms** (RGL) to strengthen AWA’s morphology configs.
+   - Reuse GF’s **morphology paradigms** (RGL) to strengthen SKA’s morphology configs.
    - Borrow **syntactic patterns** and **test cases** to improve constructions and QA.
 
-2. **Keep AWA’s architecture intact**:
+2. **Keep SKA’s architecture intact**:
    - Still use **family engines + JSON configs + lexicon subsystem + frames**.
    - No dependency on GF in the runtime generation pipeline.
 
@@ -30,8 +30,8 @@ Scope: integrate selected parts of **Grammatical Framework (GF)** into **Semanti
 ### 1.2 Non-Goals
 
 - Do **not**:
-  - Port GF’s compiler or AST model into AWA.
-  - Make AWA dependent on GF for runtime generation.
+  - Port GF’s compiler or AST model into SKA.
+  - Make SKA dependent on GF for runtime generation.
   - Implement parsing or reversible grammars.
   - Port full GF concrete syntaxes per language.
 
@@ -46,17 +46,17 @@ Scope: integrate selected parts of **Grammatical Framework (GF)** into **Semanti
 The integration is split into three phases (loosely independent):
 
 1. **Phase 1 – Morphology integration (high priority)**  
-   Toolchain to import GF’s noun/adj/verb paradigms into AWA’s JSON morphology configs and/or language cards.
+   Toolchain to import GF’s noun/adj/verb paradigms into SKA’s JSON morphology configs and/or language cards.
 
 2. **Phase 2 – Syntax pattern harvesting (medium priority)**  
-   Human-guided extraction of word order and construction patterns from RGL; ported into AWA constructions and family engines.
+   Human-guided extraction of word order and construction patterns from RGL; ported into SKA constructions and family engines.
 
 3. **Phase 3 – Test case integration (medium priority)**  
-   Use GF grammars to generate contrastive test pairs for morphology and syntax; import them as CSV rows into AWA’s QA suites.
+   Use GF grammars to generate contrastive test pairs for morphology and syntax; import them as CSV rows into SKA’s QA suites.
 
 ---
 
-## 3. Current AWA Architecture (Short Recap)
+## 3. Current SKA Architecture (Short Recap)
 
 Core elements relevant for integration:
 
@@ -77,7 +77,7 @@ Core elements relevant for integration:
 
 - QA pipeline:
   - `qa_tools/test_suite_generator.py` → CSV templates.
-  - `qa/test_runner.py` → AWA generation vs expected outputs.
+  - `qa/test_runner.py` → SKA generation vs expected outputs.
   - `qa_tools/lexicon_coverage_report.py` → lexicon coverage.
 
 GF integration will feed into:
@@ -115,14 +115,14 @@ We will treat GF as an **offline tool** installed locally (or in CI) for generat
      - paradigm tables (lemma → forms),
      - sample sentences for constructions.
 
-2. **Conversion Layer (`gf_integration/`)** (new in AWA)
+2. **Conversion Layer (`gf_integration/`)** (new in SKA)
    - Python utilities to transform GF exports into:
-     - AWA morphology JSON (grammar matrix + language cards),
-     - AWA QA CSV rows,
+     - SKA morphology JSON (grammar matrix + language cards),
+     - SKA QA CSV rows,
      - optional helper JSON/YAML for syntactic patterns.
 
-3. **Consumption Layer** (existing AWA code)
-   - AWA family engines and morphology modules continue to read:
+3. **Consumption Layer** (existing SKA code)
+   - SKA family engines and morphology modules continue to read:
      - `data/morphology_configs/*`,
      - `data/<family>/*.json`,
      - `qa_tools/generated_datasets/*.csv`.
@@ -239,20 +239,20 @@ The exact structure can be adapted, but we need:
 * transformation rules,
 * at least one exemplar per paradigm.
 
-This file is produced by GF export scripts (outside AWA Python).
+This file is produced by GF export scripts (outside SKA Python).
 
-### 6.4 Conversion to AWA grammar matrices
+### 6.4 Conversion to SKA grammar matrices
 
 Create `gf_integration/convert_morphology.py`:
 
 Responsibilities:
 
 1. **Read intermediate export** (`gf_morph_export.json`).
-2. **Map GF categories and slots to AWA categories and features**:
+2. **Map GF categories and slots to SKA categories and features**:
 
-   * e.g. `category="N"` → AWA `pos="NOUN"`.
+   * e.g. `category="N"` → SKA `pos="NOUN"`.
    * `slot="Masc_Sg"` → `{"gender": "masc", "number": "sg"}`.
-3. **Inject/merge into AWA family matrix**:
+3. **Inject/merge into SKA family matrix**:
 
    * open `data/morphology_configs/romance_grammar_matrix.json`,
    * update or extend:
@@ -270,7 +270,7 @@ Responsibilities:
 Create a static mapping in `gf_integration/mappings.py`:
 
 ```python
-GF_POS_TO_AWA = {
+GF_POS_TO_SKA = {
     "N": "NOUN",
     "A": "ADJ",
     "V": "VERB",
@@ -353,7 +353,7 @@ This phase is more manual and conceptual than Phase 1.
 
 ### 7.1 Objective
 
-Use GF’s syntactic design to refine AWA’s:
+Use GF’s syntactic design to refine SKA’s:
 
 * constructions (word order, phrase structure),
 * family engine logic (clitics, argument order, topicalisation).
@@ -361,11 +361,11 @@ Use GF’s syntactic design to refine AWA’s:
 We **do not** import GF syntax code directly. Instead, we:
 
 * inspect GF modules (RGL `Syntax`, `Paradigms`, `Sentence`),
-* translate key patterns into AWA constructions.
+* translate key patterns into SKA constructions.
 
 ### 7.2 Workflow
 
-1. **Identify focus constructions** in AWA:
+1. **Identify focus constructions** in SKA:
 
    * simple copula (`copula_equative_simple`, `copula_equative_classification`),
    * basic clauses (`intransitive_event`, `transitive_event`),
@@ -381,7 +381,7 @@ We **do not** import GF syntax code directly. Instead, we:
      * adjective position (pre/post),
      * negation particles, clitics.
 
-3. Amend AWA constructions:
+3. Amend SKA constructions:
 
    * add configuration hooks in `constructions/base.py` for:
 
@@ -415,7 +415,7 @@ Use GF’s grammars as a **test oracle** to generate:
 * contrastive examples for morphology (correct vs wrong forms),
 * syntactic minimal pairs (e.g. clitic placement, agreement).
 
-These become rows in AWA’s CSV test suites.
+These become rows in SKA’s CSV test suites.
 
 ### 8.2 Data Flow
 
@@ -438,7 +438,7 @@ it,adj_agreement,"Adj=grande,N=ragazzo", "il grande ragazzo","il grande ragazza"
 
 `convert_tests.py` then:
 
-* maps each row to one or more AWA test rows:
+* maps each row to one or more SKA test rows:
 
   * build the corresponding `BioFrame` or other frame,
   * place `good` as `EXPECTED_OUTPUT`,
@@ -526,7 +526,7 @@ Repeat Milestone 1–2 pattern per family.
 
 ## 11. Risks and Mitigations
 
-### 11.1 Risk: mismatch between GF and AWA feature sets
+### 11.1 Risk: mismatch between GF and SKA feature sets
 
 * GF may have richer morphological categories or slightly different category splits.
 * Mitigation:
@@ -588,7 +588,7 @@ Example meta snippet:
 
 * Runtime remains:
 
-  * frames → discourse → constructions → family engines → AWA morphology + lexicon.
+  * frames → discourse → constructions → family engines → SKA morphology + lexicon.
 
 GF becomes an **offline knowledge provider** for richer paradigms and tests, under clear versioning and provenance.
 

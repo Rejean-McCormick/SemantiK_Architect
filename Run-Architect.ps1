@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Abstract Wiki Architect Launcher (Windows orchestrator).
+    Semantik Architect Launcher (Windows orchestrator).
     - Verbose output is ON by default (use -NoVerbose to silence)
     - Optionally kills project-related node.exe (or all node.exe with -KillAllNode)
     - Starts API in WSL (uvicorn) and Worker in WSL (arq)
@@ -25,7 +25,7 @@ param(
     [string]$WinRepoOverride = "",
     [int]$BackendPort = 8000,
     [int]$BrowserDelaySeconds = 5,
-    [string]$LaunchUrl = "http://localhost:3000/abstract_wiki_architect/tools"
+    [string]$LaunchUrl = "http://localhost:3000/semantik_architect/tools"
 )
 
 Set-StrictMode -Version Latest
@@ -66,7 +66,7 @@ function Start-WslPwshWindow {
     )
 
     $psHost = Get-PreferredPsHostExe
-    $helperPath = Join-Path $env:TEMP ("awa_" + [Guid]::NewGuid().ToString("N") + ".ps1")
+    $helperPath = Join-Path $env:TEMP ("ska_" + [Guid]::NewGuid().ToString("N") + ".ps1")
 
     # Use single-quoted here-string so PS does not expand $ or $(...)
     $helperContent = @"
@@ -131,7 +131,7 @@ $WslRepo = Convert-ToWslPath $WinRepo
 # 1) Header
 # -----------------------------
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "   ABSTRACT WIKI ARCHITECT - LAUNCHER" -ForegroundColor Cyan
+Write-Host "   SEMANTIK ARCHITECT - LAUNCHER" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "Windows repo: $WinRepo" -ForegroundColor Gray
 Write-Host "WSL repo:     $WslRepo" -ForegroundColor Gray
@@ -308,7 +308,7 @@ Write-Host "`n[2/3] Starting services..." -ForegroundColor Yellow
 
 if (-not $SkipApi) {
     Start-WslPwshWindow `
-        -Title "AWA API (WSL)" `
+        -Title "SKA API (WSL)" `
         -WslRepo $WslRepo `
         -BashCmd "chmod +x ./logs/start_api.sh 2>/dev/null || true; ./logs/start_api.sh $BackendPort" `
         -LogHint "$LogsDirWin\api_*.log"
@@ -319,7 +319,7 @@ if (-not $SkipApi) {
 
 if (-not $SkipWorker) {
     Start-WslPwshWindow `
-        -Title "AWA WORKER (WSL)" `
+        -Title "SKA WORKER (WSL)" `
         -WslRepo $WslRepo `
         -BashCmd "chmod +x ./logs/start_worker.sh 2>/dev/null || true; ./logs/start_worker.sh" `
         -LogHint "$LogsDirWin\worker_*.log"

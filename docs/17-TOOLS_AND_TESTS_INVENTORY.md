@@ -60,7 +60,7 @@ System intelligence layer that scans repo state and language readiness.
 Tools used to keep the repo sane and the system healthy.
 
 > **Note (GUI Tools):** The Tools Dashboard runs via a strict backend allowlist. The “Key Arguments” below reflect the allowlisted argv flags for GUI execution.
-> **Security:** Do **not** pass secrets via argv. Tool args can be echoed into logs/telemetry/UI/debug bundles. For API-mode checks, provide the API key via environment/secret injection (recommended: `ARCHITECT_API_KEY`; fallbacks: `AWA_API_KEY`, `API_SECRET`, `API_KEY`).
+> **Security:** Do **not** pass secrets via argv. Tool args can be echoed into logs/telemetry/UI/debug bundles. For API-mode checks, provide the API key via environment/secret injection (recommended: `ARCHITECT_API_KEY`; fallbacks: `SKA_API_KEY`, `API_SECRET`, `API_KEY`).
 
 | Tool                 | Location                    | Purpose                                                                    | Key Arguments                                                                                                                    |
 | -------------------- | --------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -160,6 +160,6 @@ The GUI runs tools through a strict **backend allowlist registry** (no arbitrary
 
 **Dry-run note:** Prefer using `dry_run=true` at the API layer. Avoid relying on per-tool argv conventions for “dry run” flags.
 
-**Secret handling:** Do **not** pass API keys/tokens/passwords in `args`. Args may be echoed into response envelopes and UI debug bundles. Provide secrets via environment variables / secret injection (recommended: `ARCHITECT_API_KEY`; fallbacks: `AWA_API_KEY`, `API_SECRET`, `API_KEY`).
+**Secret handling:** Do **not** pass API keys/tokens/passwords in `args`. Args may be echoed into response envelopes and UI debug bundles. Provide secrets via environment variables / secret injection (recommended: `ARCHITECT_API_KEY`; fallbacks: `SKA_API_KEY`, `API_SECRET`, `API_KEY`).
 
 **Execution constraints:** repo-root fixed by `FILESYSTEM_REPO_PATH`; output truncation by `ARCHITECT_TOOLS_MAX_OUTPUT_CHARS`; default timeout by `ARCHITECT_TOOLS_DEFAULT_TIMEOUT_SEC`; AI gating by `ARCHITECT_ENABLE_AI_TOOLS`.

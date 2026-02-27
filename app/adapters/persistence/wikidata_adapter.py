@@ -27,7 +27,7 @@ class WikidataAdapter:
         self.circuit_breaker = get_circuit_breaker("wikidata")
         # Headers are important for Wikidata to not block the request
         self.headers = {
-            "User-Agent": f"{settings.APP_NAME}/2.0 (Abstract Wiki Architect Bot)"
+            "User-Agent": f"{settings.APP_NAME}/2.0 (Semantik Architect Bot)"
         }
 
     async def get_lexemes_by_concept(self, qid: str, lang_code: str) -> List[LexiconEntry]:

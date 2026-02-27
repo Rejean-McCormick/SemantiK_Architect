@@ -381,7 +381,7 @@ DEFAULT_DATASET_DIR_CANDIDATES = [
 def _resolve_dataset_dir(explicit: Optional[str]) -> Path:
     if explicit:
         return Path(explicit).expanduser().resolve()
-    env = os.getenv("AWA_TEST_DATASET_DIR", "").strip()
+    env = os.getenv("SKA_TEST_DATASET_DIR", "").strip()
     if env:
         return Path(env).expanduser().resolve()
     for c in DEFAULT_DATASET_DIR_CANDIDATES:
@@ -483,7 +483,7 @@ def run_universal_tests(
 
         if not dataset_dir.exists():
             logger.error(f"Test directory not found: {dataset_dir}")
-            logger.info("Hint: Run tools/qa/test_suite_generator.py first, or set AWA_TEST_DATASET_DIR.")
+            logger.info("Hint: Run tools/qa/test_suite_generator.py first, or set SKA_TEST_DATASET_DIR.")
             return 2
 
         csv_files = _iter_csv_files(dataset_dir, pattern)

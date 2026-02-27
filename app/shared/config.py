@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     """
 
     # --- Application Meta ---
-    APP_NAME: str = "Abstract Wiki Architect"
+    APP_NAME: str = "Semantik Architect"
 
     # Alias 'ENV' to 'APP_ENV' so older code finding settings.ENV works
     APP_ENV: AppEnv = AppEnv.DEVELOPMENT
@@ -40,9 +40,9 @@ class Settings(BaseSettings):
 
     # --- HTTP Routing / Deployment Topology ---
     # Public UI base path when deployed behind nginx (Next.js basePath).
-    # Keep as /abstract_wiki_architect by convention, but allow override via env.
+    # Keep as /semantik_architect by convention, but allow override via env.
     ARCHITECT_BASE_PATH: str = Field(
-        default="/abstract_wiki_architect",
+        default="/semantik_architect",
         description="Public UI base path (Next.js basePath).",
     )
 
@@ -181,7 +181,7 @@ class Settings(BaseSettings):
         Public-facing /api/v1 path as seen by clients (may include ARCHITECT_API_ROOT_PATH).
         Example:
           - local dev:                 /api/v1
-          - behind nginx base path:    /abstract_wiki_architect/api/v1
+          - behind nginx base path:    /semantik_architect/api/v1
         """
         return self._join_url_paths(self.ARCHITECT_API_ROOT_PATH, self.API_V1_PREFIX)
 
@@ -212,7 +212,7 @@ class Settings(BaseSettings):
         # Normalize basePath/root_path/prefix so downstream string ops are stable.
         self.ARCHITECT_BASE_PATH = self._normalize_url_path(
             self.ARCHITECT_BASE_PATH, allow_empty=False
-        ) or "/abstract_wiki_architect"
+        ) or "/semantik_architect"
 
         # root_path is allowed to be empty for local dev.
         self.ARCHITECT_API_ROOT_PATH = self._normalize_url_path(

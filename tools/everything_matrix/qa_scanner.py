@@ -56,13 +56,13 @@ def _resolve_repo_root_from_gf(gf_root: Path) -> Path:
     return gf_root.parent
 
 def _resolve_iso_map_path(repo_root: Path) -> Path:
-    env_override = os.getenv("AWA_ISO_TO_WIKI", "").strip()
+    env_override = os.getenv("SKA_ISO_TO_WIKI", "").strip()
     if env_override:
         return Path(env_override)
     return repo_root / "data" / "config" / "iso_to_wiki.json"
 
 def _resolve_junit_path(repo_root: Path) -> Path:
-    env_override = os.getenv("AWA_JUNIT_XML", "").strip()
+    env_override = os.getenv("SKA_JUNIT_XML", "").strip()
     if env_override:
         return Path(env_override)
     return repo_root / "data" / "tests" / "reports" / "junit.xml"

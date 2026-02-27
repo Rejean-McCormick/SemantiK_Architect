@@ -9,8 +9,8 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: {
-    default: 'Abstract Wiki Architect',
-    template: '%s | Abstract Wiki Architect',
+    default: 'Semantik Architect',
+    template: '%s | Semantik Architect',
   },
   description:
     'Semantic frame editor and NLG playground for Abstract Wiki (entities, events, narratives, and more).',

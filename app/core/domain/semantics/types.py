@@ -4,7 +4,7 @@
 semantics/types.py
 ------------------
 
-Core semantic data structures for Abstract Wiki Architect.
+Core semantic data structures for Semantik Architect.
 
 This module defines small, typed Python data classes that represent
 the *meaning-level* inputs to the NLG system, independently of any

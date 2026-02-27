@@ -101,7 +101,7 @@ The client requires the following `env` variables (configured in `app/shared/con
 
 1. **Trigger:** The `test_quality.py` script runs a regression test.
 2. **Reference:** It loads the **Gold Standard** dataset from `data/tests/gold_standard.json` (migrated from Udiron).
-3. **Comparison:** It compares the AWA generation against the ground truth.
+3. **Comparison:** It compares the SKA generation against the ground truth.
 4. **Action:**
 * **Pass:** `similarity > 0.8`.
 * **Fail:** `similarity < 0.8`.

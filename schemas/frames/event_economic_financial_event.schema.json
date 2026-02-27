@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "schemas/frames/event_economic_financial_event.schema.json",
-  "title": "Abstract Wiki Architect – Economic / Financial Event Frame",
+  "title": "Semantik Architect – Economic / Financial Event Frame",
   "description": "JSON schema for the economic / financial event frame (`event.economic`), representing crises, bubbles, crashes, mergers, IPOs, bailouts, and sanctions episodes with economic- and finance-specific structure.",
   "type": "object",
   "additionalProperties": false,

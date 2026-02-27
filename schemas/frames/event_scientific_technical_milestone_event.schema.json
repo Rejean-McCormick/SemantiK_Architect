@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Architect Frame Schema: Scientific / Technical Milestone Event",
-  "description": "JSON schema for `event.scientific_milestone` frames used by the Abstract Wiki Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `ScientificTechnicalMilestoneEventFrame`.",
+  "title": "Semantik Architect Frame Schema: Scientific / Technical Milestone Event",
+  "description": "JSON schema for `event.scientific_milestone` frames used by the Semantik Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `ScientificTechnicalMilestoneEventFrame`.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

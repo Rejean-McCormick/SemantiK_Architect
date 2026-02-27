@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "schemas/frames/entity_vehicle.schema.json",
-  "title": "Abstract Wiki Architect – Vehicle Entity Frame",
+  "title": "Semantik Architect – Vehicle Entity Frame",
   "description": "JSON schema for the VehicleFrame semantic type used to describe individual vehicles and craft (ships, aircraft, locomotives, spacecraft, etc.).",
   "type": "object",
   "additionalProperties": false,

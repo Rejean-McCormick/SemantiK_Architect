@@ -54,7 +54,7 @@ Unlike the v1.0 regex approach, v2.0 uses a **Recursive Object Walker**. It trea
 
 The adapter traverses the JSON tree and applies specific transformation rules based on the `function` key:
 
-| Ninai Constructor Key | Target AWA Field | Logic |
+| Ninai Constructor Key | Target SKA Field | Logic |
 | --- | --- | --- |
 | `ninai.types.Bio` | `frame_type` | Static mapping  `"bio"`. |
 | `ninai.types.Event` | `frame_type` | Static mapping  `"event"`. |
@@ -185,7 +185,7 @@ We ingest the **Udiron Test Suite** as ground truth.
 * **Source:** `data/tests/gold_standard.json` (Migrated from Udiron).
 * **Logic:** The Judge Agent runs a daily regression test:
 * *Input:* `tests.json` Intent.
-* *Output:* AWA Generation.
+* *Output:* SKA Generation.
 * *Metric:* Levenshtein Distance & Semantic Similarity.
 
 

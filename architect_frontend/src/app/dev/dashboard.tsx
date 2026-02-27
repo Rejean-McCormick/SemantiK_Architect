@@ -48,7 +48,7 @@ interface DevDashboardProps {
 const ENV_API_BASE = process.env.NEXT_PUBLIC_ARCHITECT_API_BASE_URL || "";
 const DEFAULT_BACKEND_ORIGIN = "http://localhost:8000";
 
-const COMMON_API_BASE_PATHS = ["/api/v1", "/abstract_wiki_architect/api/v1"] as const;
+const COMMON_API_BASE_PATHS = ["/api/v1", "/semantik_architect/api/v1"] as const;
 
 function stripTrailingSlash(s: string) {
   return (s || "").replace(/\/+$/, "");
@@ -112,9 +112,9 @@ function buildUrl(apiBase: string, endpoint: string) {
       if (raw === prefix || raw.startsWith(`${prefix}/`)) {
         if (base.endsWith(prefix)) {
           // Example:
-          // base:  http://host/abstract_wiki_architect/api/v1
+          // base:  http://host/semantik_architect/api/v1
           // raw:   /api/v1/health/ready
-          // =>     http://host/abstract_wiki_architect/api/v1/health/ready
+          // =>     http://host/semantik_architect/api/v1/health/ready
           return `${base}${raw.slice(prefix.length)}`;
         }
       }
@@ -154,7 +154,7 @@ async function resolveApiBase(envBaseRaw: string): Promise<string | null> {
   const cands = buildCandidateApiBases(envBaseRaw);
   for (const c of cands) {
     // Only accept bases that actually respond on /health/ready.
-    // (This auto-fixes "/abstract_wiki_architect/api/v1" vs "/api/v1" mismatches.)
+    // (This auto-fixes "/semantik_architect/api/v1" vs "/api/v1" mismatches.)
     // eslint-disable-next-line no-await-in-loop
     if (await probeReady(c)) return c;
   }

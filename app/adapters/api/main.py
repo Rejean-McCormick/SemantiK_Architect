@@ -85,12 +85,12 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     """Factory function to create the FastAPI application."""
     is_dev = getattr(settings, "APP_ENV", "development") == "development"
-    app_name = getattr(settings, "APP_NAME", "Abstract Wiki Architect")
+    app_name = getattr(settings, "APP_NAME", "Semantik Architect")
 
     # NOTE:
     # - The backend is canonically served at /api/v1/...
     # - If you run behind a reverse proxy that *mounts* the app under a prefix
-    #   (e.g. /abstract_wiki_architect) AND rewrites/strips that prefix before
+    #   (e.g. /semantik_architect) AND rewrites/strips that prefix before
     #   forwarding to the backend, set ARCHITECT_API_ROOT_PATH to that prefix
     #   so Swagger/OpenAPI generate correct URLs.
     root_path = _normalize_root_path(os.getenv("ARCHITECT_API_ROOT_PATH"))

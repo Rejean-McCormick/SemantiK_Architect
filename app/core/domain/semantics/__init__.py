@@ -7,7 +7,7 @@ semantics
 =========
 
 Convenience facade for the semantic data structures and helpers used by
-Abstract Wiki Architect.
+Semantik Architect.
 
 Typical usage:
 

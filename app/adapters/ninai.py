@@ -20,7 +20,7 @@ TYPE_EVENT = "ninai.types.Event"
 class NinaiAdapter:
     """
     The Bridge between the external Ninai Protocol (Recursive JSON Objects)
-    and the internal Abstract Wiki Architect Domain (Flat Pydantic Frames).
+    and the internal Semantik Architect Domain (Flat Pydantic Frames).
     v2.0 Upgrade: Integrates LexiconStore for Entity Grounding.
     """
 

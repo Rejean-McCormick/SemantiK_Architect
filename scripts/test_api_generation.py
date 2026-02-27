@@ -7,18 +7,18 @@ from typing import Any, Dict, Optional, Tuple
 
 # Base URL per docs: http://localhost:8000/api/v1
 # You can override:
-#   Windows (PowerShell):  $env:AWA_BASE_URL="http://localhost:8000/api/v1"
-#   macOS/Linux:          export AWA_BASE_URL="http://localhost:8000/api/v1"
-BASE_URL = os.getenv("AWA_BASE_URL", "http://localhost:8000/api/v1").rstrip("/")
+#   Windows (PowerShell):  $env:SKA_BASE_URL="http://localhost:8000/api/v1"
+#   macOS/Linux:          export SKA_BASE_URL="http://localhost:8000/api/v1"
+BASE_URL = os.getenv("SKA_BASE_URL", "http://localhost:8000/api/v1").rstrip("/")
 
-# Optional (production): set AWA_API_KEY to send X-API-Key
-API_KEY = os.getenv("AWA_API_KEY")
+# Optional (production): set SKA_API_KEY to send X-API-Key
+API_KEY = os.getenv("SKA_API_KEY")
 
 # Optional: set to reuse discourse context for pronouns across calls
 # If not set, a fresh session is generated each run.
-SESSION_ID = os.getenv("AWA_SESSION_ID")  # e.g., "2a0a3f22-...."
+SESSION_ID = os.getenv("SKA_SESSION_ID")  # e.g., "2a0a3f22-...."
 
-DEFAULT_TIMEOUT_SEC = float(os.getenv("AWA_TIMEOUT_SEC", "30"))
+DEFAULT_TIMEOUT_SEC = float(os.getenv("SKA_TIMEOUT_SEC", "30"))
 
 
 def _headers(session_id: Optional[str]) -> Dict[str, str]:

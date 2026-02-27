@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Architect Frame Schema — Entity: Artifact",
+  "title": "Semantik Architect Frame Schema — Entity: Artifact",
   "description": "JSON shape for the entity-level ArtifactFrame (physical object / artifact), as described in docs/FRAMES_ENTITY.md and implemented in semantics/entity/artifact_frame.py. This frame models individual artifacts such as buildings, monuments, artworks, tools, vehicles-as-objects, etc., for use in encyclopedic lead sentences and short summaries.",
   "type": "object",
   "additionalProperties": false,

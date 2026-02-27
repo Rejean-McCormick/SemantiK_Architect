@@ -1,14 +1,14 @@
 /** @type {import('next').NextConfig} */
 
 const ARCHITECT_BASE_PATH =
-  process.env.NEXT_PUBLIC_ARCHITECT_BASE_PATH || "/abstract_wiki_architect";
+  process.env.NEXT_PUBLIC_ARCHITECT_BASE_PATH || "/semantik_architect";
 
 // Lets you override host/port without rewriting paths.
 const ARCHITECT_API_ORIGIN =
   process.env.NEXT_PUBLIC_ARCHITECT_API_ORIGIN || "http://localhost:8000";
 
 const origin = (ARCHITECT_API_ORIGIN || "").replace(/\/+$/, "");
-const basePath = (ARCHITECT_BASE_PATH || "/abstract_wiki_architect").startsWith("/")
+const basePath = (ARCHITECT_BASE_PATH || "/semantik_architect").startsWith("/")
   ? ARCHITECT_BASE_PATH
   : `/${ARCHITECT_BASE_PATH}`;
 
@@ -18,7 +18,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
 
-  // Abstract Wiki Architect lives under this path on the main site
+  // Semantik Architect lives under this path on the main site
   // (matches Nginx + docs/hosting.md).
   basePath,
 

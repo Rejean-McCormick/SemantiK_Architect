@@ -40,7 +40,7 @@ We built the **Ninai Bridge (`app/adapters/ninai.py`)** to transform recursive N
 
 **Why we chose this**
 
-* **Standardization:** Allows AWA to function as a compliant renderer for the Abstract Wikipedia ecosystem.
+* **Standardization:** Allows SKA to function as a compliant renderer for the Abstract Wikipedia ecosystem.
 * **Stability:** Keeps our internal domain logic simple (flat) while supporting complex external inputs (trees).
 
 ---

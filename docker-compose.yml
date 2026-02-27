@@ -79,7 +79,7 @@ services:
     container_name: aw_frontend
     env_file: .env
     environment:
-      - NEXT_PUBLIC_ARCHITECT_API_BASE_URL=/abstract_wiki_architect/api/v1
+      - NEXT_PUBLIC_ARCHITECT_API_BASE_URL=/semantik_architect/api/v1
     depends_on:
       - backend
     ports:
@@ -87,7 +87,7 @@ services:
     restart: unless-stopped
 
   # 5. REVERSE PROXY (Primary Entrypoint)
-  # ACCESS: http://localhost:4000/abstract_wiki_architect/
+  # ACCESS: http://localhost:4000/semantik_architect/
   nginx:
     image: nginx:alpine
     container_name: aw_nginx

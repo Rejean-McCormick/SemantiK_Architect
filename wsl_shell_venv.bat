@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-TITLE Abstract Wiki Architect (WSL + venv)
+TITLE Semantik Architect (WSL + venv)
 
 REM Prefer "repo = folder where this BAT lives" if manage.py is present; otherwise fallback.
 set "WIN_REPO=%~dp0"
@@ -22,7 +22,7 @@ if not defined WSL_REPO (
 )
 
 echo ==================================================
-echo AWA WSL SHELL (venv)
+echo SKA WSL SHELL (venv)
 echo Windows repo: %WIN_REPO%
 echo WSL repo:     %WSL_REPO%
 echo ==================================================

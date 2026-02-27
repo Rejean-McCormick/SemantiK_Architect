@@ -1,10 +1,10 @@
 
 
-# Abstract Wiki Architect (V2)
+# Semantik Architect (V2)
 
 **Industrial-grade NLG system for Abstract Wikipedia and Wikifunctions.**
 
-Abstract Wiki Architect is a family-based, data-driven Natural Language Generation (NLG) toolkit. Instead of writing one renderer per language (“300 scripts for 300 languages”), this project builds:
+Semantik Architect is a family-based, data-driven Natural Language Generation (NLG) toolkit. Instead of writing one renderer per language (“300 scripts for 300 languages”), this project builds:
 
 * **Shared Family Engines:** ~15 universal engines (Romance, Slavic, Bantu, etc.) implemented as Adapters.
 * **Configuration Cards:** Hundreds of per-language JSON configurations (grammar matrices).
@@ -45,7 +45,7 @@ app/
 Think of each sentence as a game you want to play.
 
 * **Old way:** Build one console per game (one monolithic renderer per language).
-* **Abstract Wiki Architect:**
+* **Semantik Architect:**
 1. **The Console (Core/Engine):** Universal logic (Romance, Slavic, etc.).
 2. **The Cartridge (Config/Lexicon):** Per-language JSON files loaded dynamically.
 3. **The Router (API/Use Case):** Plugs the right cartridge into the console based on the request.
@@ -116,7 +116,7 @@ docker-compose up --build
 
 ```
 
-* **Unified UI:** `http://localhost:4000/abstract_wiki_architect/`
+* **Unified UI:** `http://localhost:4000/semantik_architect/`
 * **API Docs:** `http://localhost:8000/docs`
 * **Redis:** `localhost:6379`
 
@@ -234,7 +234,7 @@ python -m app.utils.config_extractor it
 
 ## 🌐 Related Projects & Ecosystem
 
-Abstract Wiki Architect is designed to work in concert with a suite of tools for information deconstruction and secure exchange.
+Semantik Architect is designed to work in concert with a suite of tools for information deconstruction and secure exchange.
 
 * **SenTient:** A powerful integration of Falcon 2.0, OpenTapioca, and OpenRefine. It deconstructs information to improve system circulation and acts as the intelligence layer alongside Architect.
 * **Orgo:** A closed-loop, secure application for resilience. Architect and SenTient operate within Orgo to ensure robust internal operations. (Note: Orgo is an independent project with distinct organizational affiliations outside the scope of the Wikimedia Foundation).

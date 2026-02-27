@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Architect – Event: cultural event frame",
-  "description": "Canonical semantic frame for cultural events (festivals, exhibitions, premieres, ceremonies, etc.) used by Abstract Wiki Architect.",
+  "title": "Semantik Architect – Event: cultural event frame",
+  "description": "Canonical semantic frame for cultural events (festivals, exhibitions, premieres, ceremonies, etc.) used by Semantik Architect.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

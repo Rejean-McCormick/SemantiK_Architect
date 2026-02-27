@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Architect Frame Schema: Relational – Comparative / Ranking",
-  "description": "JSON schema for `relational.comparative_ranking` frames used by the Abstract Wiki Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `ComparativeFrame` (comparative / superlative / ranking facts).",
+  "title": "Semantik Architect Frame Schema: Relational – Comparative / Ranking",
+  "description": "JSON schema for `relational.comparative_ranking` frames used by the Semantik Architect CLI and AW bridge.\n\nThe schema describes the normalized payload that will be converted into an internal `ComparativeFrame` (comparative / superlative / ranking facts).",
   "type": "object",
   "additionalProperties": false,
   "properties": {

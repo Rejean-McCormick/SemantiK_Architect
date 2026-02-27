@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Abstract Wiki Architect – Entity: project / program / initiative frame",
-  "description": "Canonical semantic frame for projects, programmes, and initiatives used by Abstract Wiki Architect.",
+  "title": "Semantik Architect – Entity: project / program / initiative frame",
+  "description": "Canonical semantic frame for projects, programmes, and initiatives used by Semantik Architect.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

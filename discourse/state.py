@@ -3,7 +3,7 @@
 discourse/state.py
 ------------------
 
-Lightweight discourse state tracking for Abstract Wiki Architect.
+Lightweight discourse state tracking for Semantik Architect.
 
 This module keeps track of:
 
