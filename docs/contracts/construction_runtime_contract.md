@@ -1,38 +1,41 @@
 # Construction Runtime Contract
 
-Status: proposed  
-Owner: SKA runtime / architecture  
-Last updated: 2026-03-10
+Status: normative  
+Owner: Architecture / Runtime  
+Last updated: 2026-03-16
 
 ---
 
 ## 1. Purpose
 
-This document defines the authoritative runtime contract between:
+This document defines the authoritative **internal runtime contract** for single-sentence generation in SemantiK Architect.
+
+It governs the canonical handoff between:
 
 1. frame normalization,
 2. construction selection,
-3. discourse / sentence planning,
+3. sentence-level planning,
 4. construction-plan building,
 5. lexical resolution,
-6. realization backends,
+6. renderer realization,
 7. API response mapping.
 
 It exists to prevent architectural drift.
 
-The contract is intentionally construction-centric, not bio-centric.
+This contract is intentionally **construction-centric**, not biography-centric.
 
-This means:
+That means:
 
 - biography lead generation is one consumer of this contract,
 - locatives, equatives, existentials, possession, topic-comment, eventive clauses, relative clauses, and future constructions must use the same runtime shape,
-- no backend is allowed to invent a competing sentence contract.
+- no backend is allowed to invent a competing planner-facing sentence contract,
+- no renderer is allowed to become the hidden owner of construction semantics.
 
 ---
 
 ## 2. Scope
 
-This contract governs all single-sentence runtime generation paths that start from normalized semantic input and end in a canonical surface result.
+This contract governs all **single-sentence runtime generation paths** that start from normalized semantic input and end in a canonical `SurfaceResult`.
 
 It applies to:
 
@@ -40,27 +43,50 @@ It applies to:
 - construction-plan output,
 - lexical resolution input/output,
 - renderer input,
-- debug metadata,
+- renderer output,
+- structured debug metadata,
 - backend selection,
 - fallback semantics,
-- API response mapping.
+- the internal boundary before public API response mapping.
 
-It does not define:
+It does **not** define:
 
-- the full external API schema for every frame family,
+- the full external request schema for every frame family,
 - GF abstract or concrete grammar internals,
-- family-specific morphology implementation details,
-- multi-sentence discourse policy beyond per-sentence metadata.
+- family-specific morphology internals,
+- multi-sentence discourse policy beyond sentence-level metadata,
+- the public HTTP success envelope,
+- the public HTTP error envelope.
 
-### Migration note
-
-At the renderer boundary, the canonical result object is `SurfaceResult`.
-
-During migration, existing code may still use a `Sentence` domain type as a compatibility wrapper or adapter for the same logical result. That compatibility type MUST NOT become a competing contract.
+The public HTTP success envelope is defined separately in `public_generation_response_contract.md`.
 
 ---
 
-## 3. Core architectural rule
+## 3. Source-of-truth rule
+
+This document is the authoritative contract for the **internal runtime boundary**.
+
+Boundary ownership is as follows:
+
+- this document governs the internal runtime objects and flow,
+- `slot_map_contract.md` governs slot naming and slot payload rules,
+- `lexical_resolution_contract.md` governs lexicalization semantics,
+- `construction_renderer_contract.md` governs renderer-facing behavior,
+- `debug_info_contract.md` governs structured runtime trace keys,
+- `public_generation_response_contract.md` governs the public HTTP success envelope.
+
+Conflict rule:
+
+- if the issue is about planner/runtime object shape, this document wins,
+- if the issue is about slot naming, the slot-map contract wins,
+- if the issue is about renderer-facing behavior, the renderer contract wins,
+- if the issue is about HTTP serialization, the public generation response contract wins.
+
+Any disagreement must be corrected immediately.
+
+---
+
+## 4. Core architectural rule
 
 The canonical runtime flow is:
 
@@ -74,6 +100,7 @@ normalized frame(s)
   -> lexical resolution
   -> renderer backend
   -> surface result
+  -> API response mapping
 ````
 
 No component may bypass this contract and become a second source of truth for sentence structure.
@@ -89,51 +116,55 @@ In particular:
 
 ---
 
-## 4. Design goals
+## 5. Design goals
 
-This contract must satisfy all of the following:
+This contract must satisfy all of the following.
 
-1. **Generic across constructions**
+### 5.1 Generic across constructions
 
-   * Must support more than biography.
+It must support more than biography.
 
-2. **Backend-agnostic**
+### 5.2 Backend-agnostic
 
-   * Must work for GF, family engines, and safe-mode fallback.
+It must work for GF, family engines, and safe-mode fallback.
 
-3. **Language-scalable**
+### 5.3 Language-scalable
 
-   * Must support family-level and language-level specialization without duplicating planning logic.
+It must support family-level and language-level specialization without duplicating planning logic.
 
-4. **Debuggable**
+### 5.4 Debuggable
 
-   * Every runtime decision must be traceable.
+Every material runtime decision must be traceable.
 
-5. **Backward-compatible**
+### 5.5 Backward-compatible at the boundary
 
-   * Existing API payloads may remain tolerated, but must normalize into this contract.
+Existing API payloads may remain tolerated, but must normalize into this contract.
 
-6. **Deterministic**
+### 5.6 Deterministic
 
-   * The same normalized construction plan should produce stable output under the same backend/configuration.
+The same validated `ConstructionPlan` under the same backend and configuration should produce stable output.
+
+### 5.7 Explicit about migration
+
+Compatibility shims may exist temporarily, but must not become the authoritative architecture.
 
 ---
 
-## 5. Normative keywords
+## 6. Normative keywords
 
 The words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are used normatively in this document.
 
 ---
 
-## 6. Canonical runtime objects
+## 7. Canonical runtime objects
 
-### 6.1 `PlannedSentence`
+## 7.1 `PlannedSentence`
 
 `PlannedSentence` is the canonical planner output.
 
 It represents one sentence-level planning decision before renderer-facing realization packaging is finalized.
 
-Required fields:
+### Required fields
 
 * `construction_id: str`
 * `lang_code: str`
@@ -142,33 +173,36 @@ Required fields:
 * `discourse_mode: str | None`
 * `generation_options: dict[str, Any]`
 
-Optional fields:
+### Optional fields
 
 * `metadata: dict[str, Any]`
 * `source_frame_ids: list[str] | None`
 * `priority: int | None`
 
-Rules:
+### Rules
 
 * `construction_id` MUST identify a registered construction.
 * `lang_code` MUST be normalized before renderer selection.
 * `generation_options` MUST contain planner-approved realization options.
 * `metadata` MAY carry planner diagnostics and provenance, but MUST NOT be the only place where required renderer behavior is encoded.
+* planner-local notes MUST NOT become a hidden renderer contract.
 
-### 6.2 `ConstructionPlan`
+---
+
+## 7.2 `ConstructionPlan`
 
 `ConstructionPlan` is the canonical renderer-facing handoff.
 
 It represents one validated construction ready for lexical resolution and realization.
 
-Required fields:
+### Required fields
 
 * `construction_id: str`
 * `lang_code: str`
 * `slot_map: SlotMap`
 * `generation_options: dict[str, Any]`
 
-Optional fields:
+### Optional fields
 
 * `topic_entity_id: str | None`
 * `focus_role: str | None`
@@ -177,52 +211,60 @@ Optional fields:
 * `metadata: dict[str, Any]`
 * `provenance: dict[str, Any] | None`
 
-Rules:
+### Rules
 
 * `construction_id` MUST identify a registered construction.
-* `slot_map` MUST be the only semantic-role container consumed by renderers.
+* `slot_map` MUST be the only semantic-role payload consumed by renderers.
 * `generation_options` is the canonical renderer-safe options object.
-* `metadata` MAY exist for planner diagnostics, migration notes, or provenance, but renderers MUST NOT depend on undocumented keys hidden inside `metadata`.
+* `metadata` MAY exist for planner diagnostics or provenance, but renderers MUST NOT depend on undocumented keys hidden inside `metadata`.
 * `lexical_bindings` MAY be attached before or after lexical resolution, but if present they are authoritative for lexical identity.
+* plan-level fields MUST stay at plan level and MUST NOT be duplicated into `slot_map`.
 
-### 6.3 `SlotMap`
+---
+
+## 7.3 `SlotMap`
 
 `SlotMap` is the canonical role/value payload for one construction.
 
-Shape:
+### Shape
 
 ```python
 SlotMap = dict[str, Any]
 ```
 
-Rules:
+### Rules
 
 * keys MUST be semantic or constructional roles, not backend-specific names,
-* values MUST be normalized objects or scalars accepted by the role contract,
-* renderers MUST read from `slot_map` rather than raw frames.
+* values MUST be normalized objects or scalars accepted by the slot contract,
+* renderers MUST read from `slot_map` rather than raw frames,
+* plan-level fields such as `construction_id`, `lang_code`, `generation_options`, `topic_entity_id`, `focus_role`, and `lexical_bindings` MUST NOT be treated as slot keys.
 
-Examples of role names:
+### Examples of shared semantic slot names
 
 * `subject`
 * `predicate`
 * `predicate_nominal`
 * `predicate_adjective`
 * `object`
-* `location`
+* `agent`
+* `patient`
+* `recipient`
 * `theme`
-* `possessor`
-* `possessed`
-* `event`
+* `location`
 * `time`
-* `manner`
-* `comparison`
+* `quantity`
 * `topic`
+* `comment`
+* `profession`
+* `nationality`
 
-### 6.4 `EntityRef`
+---
+
+## 7.4 `EntityRef`
 
 `EntityRef` is the canonical entity reference object.
 
-Minimum shape:
+### Minimum shape
 
 ```python
 {
@@ -233,11 +275,11 @@ Minimum shape:
 }
 ```
 
-Required fields:
+### Required fields
 
 * `label: str`
 
-Optional fields:
+### Optional fields
 
 * `entity_id: str | None`
 * `qid: str | None`
@@ -248,18 +290,20 @@ Optional fields:
 * `surface_hint: str | None`
 * `features: dict[str, Any]`
 
-Rules:
+### Rules
 
 * `label` MUST be human-readable.
 * `entity_id` SHOULD be stable when available.
 * `qid` MAY be used as an external identity reference.
-* `features` MAY carry renderer-relevant information, but must remain semantic or lexical rather than backend-internal.
+* `features` MAY carry renderer-relevant information, but MUST remain semantic or lexical rather than backend-internal.
 
-### 6.5 `LexemeRef`
+---
+
+## 7.5 `LexemeRef`
 
 `LexemeRef` is the canonical lexical reference object.
 
-Minimum shape:
+### Minimum shape
 
 ```python
 {
@@ -271,11 +315,11 @@ Minimum shape:
 }
 ```
 
-Required fields:
+### Required fields
 
 * `lemma: str`
 
-Optional fields:
+### Optional fields
 
 * `lexeme_id: str | None`
 * `qid: str | None`
@@ -285,17 +329,20 @@ Optional fields:
 * `confidence: float`
 * `features: dict[str, Any]`
 
-Rules:
+### Rules
 
 * `lemma` MUST be backend-agnostic.
-* `source` SHOULD identify where the lexical reference came from, for example `raw`, `local_lexicon`, `wikidata`, `bridge`.
+* `source` SHOULD identify lexical provenance such as `raw`, `local_lexicon`, `wikidata`, `bridge`, or `resolver`.
 * `confidence` SHOULD be in `[0.0, 1.0]`.
+* lexical references MUST preserve semantic intent and MUST NOT silently change construction meaning.
 
-### 6.6 `SurfaceResult`
+---
+
+## 7.6 `SurfaceResult`
 
 `SurfaceResult` is the canonical renderer result before API serialization.
 
-Minimum shape:
+### Minimum shape
 
 ```python
 {
@@ -307,7 +354,7 @@ Minimum shape:
 }
 ```
 
-Required fields:
+### Required fields
 
 * `text: str`
 * `lang_code: str`
@@ -315,26 +362,34 @@ Required fields:
 * `renderer_backend: str`
 * `debug_info: dict[str, Any]`
 
-Optional fields:
+### Optional fields
 
-* `fallback_used: bool`
 * `tokens: list[str] | None`
 * `warnings: list[str] | None`
-* `timing_ms: float | None`
+* `fallback_used: bool`
+* `confidence: float | None`
 
-Rules:
+### Rules
 
 * `text` MUST be non-empty on successful realization.
+* `lang_code` MUST equal the normalized input language code for the realized sentence.
+* `construction_id` MUST equal the validated input construction.
+* `renderer_backend` MUST identify the backend actually used.
 * `debug_info` MUST be machine-readable.
 * `fallback_used` MAY appear top-level and SHOULD also be reflected in `debug_info`.
+* `SurfaceResult` is an internal runtime object; transport-specific fields such as `generation_time_ms` belong to the public response mapping layer, not to this contract.
+
+### Compatibility note
+
+Older code may still use a broader `Sentence` domain object. At the renderer/runtime boundary, the canonical output shape is `SurfaceResult`.
 
 ---
 
-## 7. Canonical variable names
+## 8. Canonical variable names
 
 The following names are mandatory across new runtime code and documentation.
 
-### 7.1 Required names
+### 8.1 Required names
 
 * `lang_code`
 * `planned_sentence`
@@ -347,8 +402,9 @@ The following names are mandatory across new runtime code and documentation.
 * `renderer_backend`
 * `surface_result`
 * `debug_info`
+* `fallback_used`
 
-### 7.2 Preferred names
+### 8.2 Preferred names
 
 * `normalized_frame`
 * `topic_entity_id`
@@ -357,14 +413,14 @@ The following names are mandatory across new runtime code and documentation.
 * `lexical_bindings`
 * `provenance`
 
-### 7.3 Compatibility names
+### 8.3 Compatibility names
 
 The following names MAY remain as compatibility terms during migration, but must not define competing contracts:
 
 * `sentence` as a compatibility wrapper for `SurfaceResult`
 * `metadata` as a general diagnostics or provenance bag
 
-### 7.4 Disallowed drift names
+### 8.4 Disallowed drift names
 
 The following MUST NOT become top-level canonical runtime names:
 
@@ -373,7 +429,7 @@ The following MUST NOT become top-level canonical runtime names:
 * `engine_payload`
 * `template_payload`
 * `render_input`
-* `surface_text` as the canonical output field name
+* `surface_text` as the canonical runtime output field name
 * `metadata` as the only renderer-facing options bag
 * `sentence_spec` as a generic replacement for `construction_plan`
 
@@ -381,7 +437,7 @@ These names may exist locally, but not as the authoritative shared contract.
 
 ---
 
-## 8. Construction registry contract
+## 9. Construction registry contract
 
 Every runtime construction MUST declare:
 
@@ -395,7 +451,7 @@ Every runtime construction MUST declare:
 * renderer capability expectations
 * fallback behavior if applicable
 
-Minimum registry entry:
+### Minimum registry entry
 
 ```python
 {
@@ -408,7 +464,7 @@ Minimum registry entry:
 }
 ```
 
-Rules:
+### Rules
 
 * planner output MUST reference only registered constructions,
 * renderers MUST reject unknown `construction_id` values explicitly,
@@ -416,7 +472,7 @@ Rules:
 
 ### Construction ID rule
 
-Canonical `construction_id` values MUST use snake_case identifiers, for example:
+Canonical `construction_id` values MUST use snake_case runtime identifiers, for example:
 
 * `copula_equative_simple`
 * `copula_equative_classification`
@@ -424,13 +480,13 @@ Canonical `construction_id` values MUST use snake_case identifiers, for example:
 * `possession_have`
 * `topic_comment_eventive`
 
-Legacy dotted forms MAY be tolerated as migration aliases in normalization or documentation, but MUST NOT become the new canonical runtime IDs.
+Legacy dotted or backend-local forms MAY be tolerated as migration aliases in normalization, but MUST NOT become the canonical runtime IDs.
 
 ---
 
-## 9. Planner contract
+## 10. Planner contract
 
-### 9.1 Planner responsibilities
+## 10.1 Planner responsibilities
 
 The planner MUST decide:
 
@@ -450,7 +506,7 @@ The planner MUST NOT decide:
 * backend-specific formatting,
 * backend dispatch.
 
-### 9.2 Planner output requirements
+## 10.2 Planner output requirements
 
 For every sentence plan, the planner MUST emit a `PlannedSentence` containing at least:
 
@@ -468,17 +524,17 @@ The planner MAY emit:
 * `sentence_kind`
 * `source_frame_ids`
 
-### 9.3 Construction-plan builder responsibilities
+## 10.3 Construction-plan builder responsibilities
 
 The construction-plan builder, bridge, or equivalent runtime step MUST:
 
 * convert `PlannedSentence` into `ConstructionPlan`,
 * produce a valid canonical `slot_map`,
-* normalize slot values into `EntityRef`, `LexemeRef`, literals, or structured slot objects as required,
+* normalize slot values into `EntityRef`, `LexemeRef`, literals, or other contract-approved slot objects,
 * attach realization-relevant metadata,
 * validate construction completeness before realization.
 
-### 9.4 Generic planner entrypoint
+## 10.4 Generic planner entrypoint
 
 The authoritative planner entrypoint SHOULD follow this signature:
 
@@ -492,7 +548,7 @@ def plan_text(
     ...
 ```
 
-### 9.5 Construction-plan builder entrypoint
+## 10.5 Construction-plan builder entrypoint
 
 The authoritative renderer-facing bridge SHOULD follow this signature:
 
@@ -507,13 +563,13 @@ def build_construction_plan(
 
 ---
 
-## 10. Lexical resolution contract
+## 11. Lexical resolution contract
 
-### 10.1 Purpose
+## 11.1 Purpose
 
 Lexical resolution converts semantic slot values into stable lexical references usable by renderers.
 
-### 10.2 Lexical resolver responsibilities
+## 11.2 Lexical resolver responsibilities
 
 The lexical resolver MUST:
 
@@ -531,7 +587,7 @@ The lexical resolver MUST NOT:
 * silently drop required semantic content,
 * silently replace one construction with another.
 
-### 10.3 Canonical lexical resolver interface
+## 11.3 Canonical lexical resolver interface
 
 Preferred interface:
 
@@ -546,30 +602,40 @@ class LexicalResolverPort(Protocol):
         ...
 ```
 
-Allowed internal helper interface:
+Allowed helper interface:
 
 ```python
-class LexicalResolverPort(Protocol):
-    def resolve_slot_map(
+class LexicalResolverHelpers(Protocol):
+    def resolve_entity(
         self,
-        slot_map: dict[str, Any],
+        value: object,
         *,
         lang_code: str,
-    ) -> dict[str, Any]:
+    ) -> EntityRef:
+        ...
+
+    def resolve_lexeme(
+        self,
+        value: object,
+        *,
+        lang_code: str,
+        pos: str | None = None,
+    ) -> LexemeRef:
         ...
 ```
 
-Rules:
+### Rules
 
-* the canonical runtime effect is lexicalized construction-plan output,
-* helper methods MAY work at slot-map level,
-* renderers MUST NOT become the hidden lexical resolver.
+* the canonical runtime effect is lexicalized `ConstructionPlan` output,
+* helper methods MAY work at entity or lexeme level,
+* renderers MUST NOT become the hidden lexical resolver,
+* no renderer should have to guess whether a raw input is an entity, profession, adjective, or event label.
 
 ---
 
-## 11. Renderer contract
+## 12. Renderer contract
 
-### 11.1 Renderer responsibilities
+## 12.1 Renderer responsibilities
 
 A renderer backend MUST:
 
@@ -584,9 +650,10 @@ A renderer backend MUST NOT:
 * redefine construction semantics,
 * bypass slot validation,
 * rewrite planner meaning silently,
-* change `construction_id`.
+* change `construction_id`,
+* silently hide fallback behavior.
 
-### 11.2 Canonical renderer interface
+## 12.2 Canonical renderer interface
 
 Preferred interface:
 
@@ -599,17 +666,48 @@ class RealizerPort(Protocol):
         ...
 ```
 
-### 11.3 Renderer backend names
+## 12.3 Backend adapter constraints
 
-Allowed canonical values:
+### GF adapter
+
+Additional responsibilities:
+
+* map `construction_id` and `slot_map` to backend-specific ASTs,
+* report backend concrete selection in `debug_info["resolved_language"]`,
+* report AST when available in `debug_info["ast"]`.
+
+GF is a backend. GF-specific data MAY appear in debug output but may not be required by the planner contract.
+
+### Family-engine adapter
+
+Additional responsibilities:
+
+* use family config and language-card data,
+* apply morphology through the registered family engine,
+* remain construction-driven rather than frame-driven.
+
+Family backends MUST NOT expose `render_bio(...)`-style interfaces as their public runtime surface.
+
+### Safe-mode adapter
+
+Additional responsibilities:
+
+* produce deterministic fallback output,
+* remain contract-faithful even when realization depth is low.
+
+Safe-mode output must still honor `construction_id` and the shared slot contract.
+
+## 12.4 Renderer backend names
+
+Canonical steady-state values are:
 
 * `gf`
 * `family`
 * `safe_mode`
 
-Additional values MAY be added later, but all runtime debug and test artifacts MUST use the same string consistently.
+A migration-only wrapper MAY surface `compat` in debug traces or temporary compatibility layers, but it MUST NOT become the canonical steady-state backend identity for renderer contracts.
 
-### 11.4 Backend selection
+## 12.5 Backend selection
 
 Backend selection policy MUST be explicit.
 
@@ -622,13 +720,42 @@ Selection MAY consider:
 * forced backend override,
 * degraded mode.
 
-Selection result MUST be recorded in `renderer_backend` and `debug_info`.
+Selection result MUST be reflected in `renderer_backend` and `debug_info`.
 
 ---
 
-## 12. API contract boundary
+## 13. Runtime orchestrator contract
 
-### 12.1 Router behavior
+The preferred end-to-end runtime orchestration surface is:
+
+```python
+class TextRuntimePort(Protocol):
+    async def generate(
+        self,
+        frames: Sequence[object],
+        *,
+        lang_code: str,
+        domain: str = "auto",
+    ) -> list[SurfaceResult]:
+        ...
+```
+
+The runtime orchestrator MUST:
+
+1. normalize and validate frames,
+2. invoke the planner,
+3. build construction plans,
+4. resolve lexical items,
+5. select realization backend(s),
+6. return final `SurfaceResult` values.
+
+This is the preferred successor to direct `GenerateText -> engine.generate(frame)` for construction-based generation.
+
+---
+
+## 14. API boundary rule
+
+## 14.1 Router behavior
 
 Routers MAY accept legacy or ergonomic payloads.
 
@@ -636,85 +763,97 @@ Routers MUST normalize them into internal frames and then hand off to planner-ce
 
 Routers MUST NOT directly encode sentence wording.
 
-### 12.2 Response mapping
+## 14.2 Runtime vs public response mapping
 
-The final API response MAY remain:
+The canonical internal renderer/runtime output is `SurfaceResult`.
 
-```json
-{
-  "text": "...",
-  "lang_code": "en",
-  "debug_info": {}
-}
-```
+The canonical public HTTP success envelope is defined separately and MUST be derived from `SurfaceResult`.
 
-But internally it MUST originate from `SurfaceResult`.
+This means:
 
-### 12.3 Backward compatibility
+* runtime code returns `SurfaceResult`,
+* API mappers serialize public fields such as `text`, `lang_code`, `construction_id`, `renderer_backend`, `fallback_used`, `tokens`, and `debug_info`,
+* transport-specific response details belong in the public response contract, not in this runtime contract.
+
+## 14.3 Backward compatibility
 
 The runtime MAY continue to support current `bio`-style payloads during migration.
 
 However:
 
-* legacy input shape compatibility MUST terminate at normalization,
+* legacy input-shape compatibility MUST terminate at normalization,
 * downstream runtime logic MUST consume `PlannedSentence` and `ConstructionPlan`, not raw payload quirks.
 
 ---
 
-## 13. Debug info contract
+## 15. Debug info contract
 
 `debug_info` is required for all runtime surfaces.
 
-Minimum fields:
+### Required shared keys
 
 * `construction_id`
 * `renderer_backend`
-
-Recommended fields:
-
 * `lang_code`
-* `resolved_language`
-* `planner`
-* `lexical_resolution`
+* `slot_keys`
 * `fallback_used`
+
+### Recommended shared keys
+
 * `selected_backend`
 * `attempted_backends`
-* `capability_tier`
 * `backend_trace`
-* `ast` for GF only
-* `template_id` for family or safe-mode only when relevant
+* `lexical_resolution`
+* `warnings`
+* `fallback_reason`
+* `timings_ms`
 
-Rules:
+### Backend-specific keys MAY include
 
-* `debug_info` MUST be machine-readable,
-* backend-specific fields MAY exist,
-* shared keys SHOULD remain stable across backends,
-* fallback behavior MUST be explicit.
+* GF:
 
-Example:
+  * `resolved_language`
+  * `concrete_name`
+  * `ast`
+* family:
+
+  * `family`
+  * `template_id`
+* safe mode:
+
+  * `safe_mode_strategy`
+
+### Rules
+
+* `debug_info` MUST be machine-readable.
+* Shared keys SHOULD remain stable across backends.
+* Backend-specific keys MAY be added, but MUST NOT replace shared keys.
+* Fallback reasons MUST be explicit when fallback occurs.
+* `debug_info` is separate from `slot_map`; it is derived from the plan, slot state, lexical-resolution metadata, backend selection, and fallback behavior.
+
+### Example
 
 ```json
 {
-  "construction_id": "copula_equative_classification",
-  "renderer_backend": "gf",
-  "lang_code": "en",
-  "resolved_language": "WikiEng",
-  "selected_backend": "gf",
-  "attempted_backends": ["gf"],
-  "lexical_resolution": {
-    "subject": "entity_ref",
-    "predicate_nominal": "lexeme_ref"
-  },
+  "construction_id": "copula_equative_simple",
+  "renderer_backend": "family",
+  "lang_code": "fr",
+  "slot_keys": ["subject", "predicate_nominal"],
   "fallback_used": false,
-  "ast": "mkCopulaEquative ..."
+  "family": "romance",
+  "backend_trace": [
+    "validated slots",
+    "resolved predicate lexical bindings",
+    "assembled equative clause"
+  ]
 }
 ```
 
 ---
 
-## 14. Validation rules
+## 16. Validation rules
 
-### 14.1 Construction validation
+## 16.1 Construction validation
 
 Before realization, the runtime MUST validate:
 
@@ -725,7 +864,7 @@ Before realization, the runtime MUST validate:
 * `lang_code` is normalized,
 * renderer can attempt this construction.
 
-### 14.2 Failure behavior
+## 16.2 Failure behavior
 
 Validation failures MUST be explicit.
 
@@ -742,11 +881,11 @@ These MUST be distinguishable in logs and SHOULD be distinguishable in tests.
 
 ---
 
-## 15. Fallback policy
+## 17. Fallback policy
 
 Fallback must be explicit, not silent.
 
-### 15.1 Allowed fallback sequence
+## 17.1 Allowed fallback sequence
 
 Preferred order:
 
@@ -755,7 +894,7 @@ Preferred order:
 3. safe-mode backend
 4. explicit failure
 
-### 15.2 Fallback invariants
+## 17.2 Fallback invariants
 
 Fallback MUST preserve:
 
@@ -766,13 +905,15 @@ Fallback MUST preserve:
 Fallback MUST annotate:
 
 * `fallback_used`
-* original backend
+* original backend or requested backend where available
 * final backend
 * reason
 
+Fallback MUST NOT silently reinterpret the construction into a different construction.
+
 ---
 
-## 16. Capability tier integration
+## 18. Capability tier integration
 
 The runtime contract is compatible with tiered language support.
 
@@ -783,12 +924,11 @@ Recommended interpretation:
 * **Tier 3** — safe-mode deterministic fallback
 * **Tier 4** — unsupported / fail closed
 
-Capability tier MUST NOT change planner semantics.
-It only changes realization strategy.
+Capability tier MUST NOT change planner semantics. It only changes realization strategy.
 
 ---
 
-## 17. Migration rule
+## 19. Migration rule
 
 During migration, existing direct runtime paths MAY remain temporarily.
 
@@ -801,9 +941,13 @@ Target end state:
 * direct frame-to-renderer generation is removed or reduced to an internal adapter,
 * `Sentence` remains at most a compatibility wrapper around `SurfaceResult`.
 
+### Current-state rule
+
+If the live system still uses a compatibility path for some requests, that is a current-state deviation, not a new contract. Current-state deviations MUST be documented separately in `CURRENT_RUNTIME_STATUS.md` and MUST NOT redefine the contract specified here.
+
 ---
 
-## 18. Initial construction coverage
+## 20. Initial construction coverage
 
 The following construction families are expected to conform to this contract:
 
@@ -831,7 +975,7 @@ This document does not require all of them to migrate at once, but it defines th
 
 ---
 
-## 19. Non-goals
+## 21. Non-goals
 
 This contract does not attempt to:
 
@@ -843,7 +987,7 @@ This contract does not attempt to:
 
 ---
 
-## 20. Acceptance criteria
+## 22. Acceptance criteria
 
 The runtime contract is successfully implemented when:
 
@@ -851,26 +995,29 @@ The runtime contract is successfully implemented when:
 2. renderer-facing handoff is represented as `ConstructionPlan`,
 3. all new generation code consumes `slot_map`,
 4. `generation_options` is the canonical renderer-safe options object,
-5. renderers expose `renderer_backend` and `debug_info`,
-6. lexical resolution is explicit and testable,
-7. the API runtime no longer treats one construction family as architecturally special,
-8. at least two backends can realize the same construction plan,
-9. direct payload quirks no longer leak below normalization.
+5. renderers expose `renderer_backend`, `fallback_used`, and structured `debug_info`,
+6. `debug_info` contains the required shared keys, including `slot_keys`,
+7. lexical resolution is explicit and testable,
+8. the API runtime no longer treats one construction family as architecturally special,
+9. at least two backends can realize the same construction plan,
+10. direct payload quirks no longer leak below normalization,
+11. API response mapping happens only after `SurfaceResult`.
 
 ---
 
-## 21. Summary
+## 23. Final rule
 
 The system’s runtime source of truth is:
 
 * construction-centered,
 * planner-first,
 * bridge-to-plan explicit,
-* backend-agnostic,
-* family-scalable,
+* slot-map based,
 * lexicon-aware,
+* backend-agnostic,
 * debuggable.
 
 Everything else must align to that.
 
+If two backends require different planner-facing inputs, the contract is broken.
 

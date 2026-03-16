@@ -1,159 +1,245 @@
-
 # 🔌 API Reference & Semantic Frames
 
 **SemantiK Architect v2.1**
 
 ## 1. Overview
 
-The SemantiK Architect exposes a **Hybrid Natural Language Generation (NLG) Engine** via a RESTful API.
-It supports two primary input modes:
+SemantiK Architect exposes its text-generation runtime through a REST API.
 
-1. **Strict Path (BioFrame):** Simple, flat JSON objects validated against a rigid Pydantic schema.
-2. **Prototype Path (Ninai/UniversalNode):** Recursive JSON Object Trees for experimental grammar functions.
+The canonical backend API is served under:
 
-The engine is **deterministic**: the same input + configuration will always produce the same output, unless "Micro-Planning" (Style Injection) is enabled.
+- **Base path:** `/api/v1`
+- **Local dev default:** `http://localhost:8000/api/v1`
+- **Encoding:** UTF-8
+- **Transport:** JSON over HTTP
 
-* **Base URL:** `http://localhost:8000/api/v1`
-* **Encoding:** UTF-8
+This reference describes the **current public HTTP contract** for generation and related utility endpoints.
+
+### Current generation model
+
+The primary generation route is:
+
+**`POST /api/v1/generate/{lang_code}`**
+
+This route accepts a JSON object, normalizes it into an internal frame/domain object, and returns a structured JSON success response.
+
+### Important current-state notes
+
+- The backend is canonically mounted at `/api/v1/...`.
+- Health is intentionally available at both:
+  - `/health/live`, `/health/ready`
+  - `/api/v1/health/live`, `/api/v1/health/ready`
+- Older docs or clients expecting only `surface_text` / `meta` are not aligned with the current public response shape.
+- The live runtime may still use compatibility shims and, depending on configuration, may pass through a legacy direct-frame path before full planner-first convergence.
 
 ---
 
 ## 2. Authentication
 
-By default, the API is open for local development (`APP_ENV=development`).
+This reference documents the API surface and payload/response contracts only.
 
-In production, if `API_SECRET` is set in the environment variables, you must include it in the headers.
-
-| Header | Value | Required |
-| --- | --- | --- |
-| `X-API-Key` | `<Your-API-Secret>` | Yes (Production only) |
+Authentication and authorization may be deployment-specific (for example, enforced at a reverse proxy, gateway, or on protected admin/tooling routes). Do not assume that generation requires a built-in `X-API-Key` unless your deployment explicitly adds that requirement.
 
 ---
 
-## 3. Endpoints
+## 3. Primary Endpoint
 
-### Generate Text
+## Generate Text
 
 **`POST /api/v1/generate/{lang_code}`**
 
-Generates a natural language sentence from a semantic frame.
+Generate natural-language text from a semantic payload.
 
-**Path Parameters**
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `lang_code` | `string` | **Yes** | The **ISO 639-1 (2-letter)** code (e.g., `en`, `fr`, `zu`). **Do NOT use `eng`.** |
-
-**Query Parameters**
+### Path Parameters
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `style` | `string` | No | `simple` (default) or `formal`. Triggers Micro-Planning. |
+| `lang_code` | `string` | Yes | Authoritative language code for the request. The router normalizes common variants. |
 
-**Headers**
+### Request Headers
 
-| Header | Value | Description |
-| --- | --- | --- |
-| `Content-Type` | `application/json` | Required for all requests. |
-| `Accept` | `text/plain` | **Default.** Returns a flat string. |
-| `Accept` | `text/x-conllu` | **UD Export.** Returns CoNLL-U dependency tags. |
-| `X-Session-ID` | `<UUID>` | **Context.** Enables multi-sentence pronominalization. |
+| Header | Value | Required | Description |
+| --- | --- | --- | --- |
+| `Content-Type` | `application/json` | Yes | Request body must be a JSON object. |
+| `Accept` | `application/json` | Recommended | Current public contract is JSON. |
+
+### Request Body
+
+The request body must be a **single JSON object**.
+
+Rules enforced by the request mapper:
+
+- If `lang_code` is present in the path, it is authoritative.
+- If both URL language and payload language are provided, they must match after normalization.
+- If no path language is provided, the payload must include one of:
+  - `lang`
+  - `language`
+  - `lang_code`
+  - `inputs.language`
+  - `inputs.lang`
+  - `inputs.lang_code`
+- Transport-level language fields are stripped before frame parsing.
 
 ---
 
-## 4. Input Mode A: Semantic Frames (Strict Path)
+## 4. Supported Input Modes
 
-The body must be a **single flat JSON object**. Nested structures (like wrapping the frame in an `intent` object) are deprecated for this endpoint.
+The current request mapper supports two broad input styles:
 
-### A. Bio Frame (`bio`)
+1. **Bio/person payloads** with legacy compatibility aliases
+2. **Generic / Ninai / frame payloads** parsed into domain objects
 
-Used for introductory biographical sentences.
+### A. Bio/person-compatible payloads
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `frame_type` | `str` | **Yes** | Must be `"bio"`. |
-| `name` | `str` | **Yes** | The subject's proper name (e.g., "Alan Turing"). |
-| `profession` | `str` | **Yes** | Lookup key in `people.json` (e.g., "computer_scientist"). |
-| `nationality` | `str` | No | Lookup key in `geography.json` (e.g., "british"). |
-| `gender` | `str` | No | `"m"`, `"f"`, or `null`. Critical for inflection. |
+The following frame types are treated as bio-like and normalized through the same compatibility path:
 
-**Example:**
+- `bio`
+- `biography`
+- `entity.person`
+- `entity_person`
+- `person`
+- `entity.person.v1`
+- `entity.person.v2`
+
+### Canonical bio example
 
 ```json
 {
   "frame_type": "bio",
-  "name": "Shaka",
-  "profession": "warrior",
-  "nationality": "zulu",
+  "name": "Alan Turing",
+  "profession": "mathematician",
+  "nationality": "British",
   "gender": "m"
 }
+````
 
+### Compatibility example
+
+```json
+{
+  "frame_type": "entity.person.v2",
+  "subject": {
+    "name": "Alan Turing",
+    "profession": "mathematician",
+    "nationality": "British"
+  }
+}
 ```
 
-### B. Event Frame (`event`)
+### Common bio fields
 
-Used for temporal events.
+| Field         | Type             | Required     | Notes                                                   |
+| ------------- | ---------------- | ------------ | ------------------------------------------------------- |
+| `frame_type`  | `string`         | Yes          | Prefer `bio` for new clients.                           |
+| `name`        | `string`         | Usually yes  | Common top-level compatibility field.                   |
+| `profession`  | `string`         | Commonly yes | May be resolved through lexical normalization/fallback. |
+| `nationality` | `string`         | No           | Optional.                                               |
+| `gender`      | `string \| null` | No           | Optional compatibility field.                           |
+| `subject`     | `object`         | Sometimes    | Used by some newer/compat person payloads.              |
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `frame_type` | `str` | **Yes** | Must be `"event"`. |
-| `event_type` | `str` | **Yes** | `"birth"`, `"death"`, `"award"`, `"discovery"`. |
-| `subject` | `str` | **Yes** | The entity experiencing the event. |
-| `date` | `str` | No | Year or ISO date string. |
+### B. Generic frame payloads
 
----
+Non-bio semantic payloads are also accepted and parsed into internal frame/domain objects when they match supported internal semantics.
 
-## 5. Input Mode B: Ninai Protocol (Prototype Path)
+Example:
 
-The API natively supports the **Ninai JSON Object Model** (or `UniversalNode`) used by Abstract Wikipedia. The recursive structure is automatically flattened by the `NinaiAdapter`.
+```json
+{
+  "frame_type": "event",
+  "subject": "Marie Curie",
+  "event_type": "award",
+  "date": "1903"
+}
+```
 
-**Schema:**
-The root object must define a `function` key matching the Ninai constructor registry or a valid GF function.
+### C. Ninai / function-style payloads
 
-**Example Request:**
+The mapper also supports Ninai-style or function-oriented payload parsing through the Ninai adapter.
+
+Example:
 
 ```json
 {
   "function": "ninai.constructors.Statement",
   "args": [
     { "function": "ninai.types.Bio" },
-    { 
-      "function": "ninai.constructors.List", 
-      "args": ["physicist", "chemist"] 
-    },
-    { "function": "ninai.constructors.Entity", "args": ["Q42"] }
+    { "function": "ninai.constructors.List", "args": ["physicist"] },
+    { "function": "ninai.constructors.Entity", "args": ["Q7186"] }
   ]
 }
-
 ```
+
+This path is supported as an adapter/parsing concern, but the stable public generation contract remains the same: **JSON in, structured JSON out**.
 
 ---
 
-## 6. System & Utility Endpoints
+## 5. Success Response
 
-### Onboard Language
+The current public success response is a JSON object centered on the following fields:
 
-**`POST /api/v1/languages`**
+| Field                | Type             | Required | Description                                               |
+| -------------------- | ---------------- | -------- | --------------------------------------------------------- |
+| `text`               | `string`         | Yes      | Final generated surface text.                             |
+| `lang_code`          | `string`         | Yes      | Language code of the returned text.                       |
+| `construction_id`    | `string \| null` | Yes      | Runtime construction identifier, when available.          |
+| `renderer_backend`   | `string \| null` | Yes      | Backend that produced the final text.                     |
+| `fallback_used`      | `boolean`        | Yes      | Whether fallback was used in producing the result.        |
+| `tokens`             | `string[]`       | Yes      | Tokenized representation of the returned text.            |
+| `debug_info`         | `object`         | Yes      | Structured diagnostics.                                   |
+| `generation_time_ms` | `number`         | Optional | Present when propagated by the underlying runtime result. |
 
-Scaffolds a new language in the system (Saga Pattern).
-
-**Request Body:**
+### Example success response
 
 ```json
 {
-  "iso_code": "it",
-  "english_name": "Italian"
+  "text": "Alan Turing is a British mathematician",
+  "lang_code": "en",
+  "construction_id": null,
+  "renderer_backend": null,
+  "fallback_used": false,
+  "tokens": [],
+  "debug_info": {
+    "runtime_path": "legacy_direct_frame",
+    "fallback_used": false,
+    "fallback_reason": null,
+    "legacy_engine": "GFGrammarEngine",
+    "planner_runtime_configured": false,
+    "renderer_backend": "gf",
+    "compatibility_shim": true,
+    "ast": "mkBioFull (mkEntityStr \"Alan Turing\") (strProf \"mathematician\") (strNat \"British\")",
+    "resolved_language": "WikiEng"
+  },
+  "generation_time_ms": 0.0
 }
-
 ```
 
-### System Health
+### Response notes
 
+* `text` is the authoritative public text field.
+* Clients should no longer depend on `surface_text` as the primary public response field.
+* `debug_info` is structured and intended for observability and QA.
+* `tokens` may be provided directly by the runtime or derived from the final text.
+* Some compatibility paths may still return `construction_id` or `renderer_backend` as `null` even though the target-state contract expects them to be explicit.
+
+---
+
+## 6. Health Endpoints
+
+### Live
+
+**`GET /health/live`**
+**`GET /api/v1/health/live`**
+
+Used for basic liveness checks.
+
+### Ready
+
+**`GET /health/ready`**
 **`GET /api/v1/health/ready`**
 
-Returns the status of the Lexicon Store (Zone B) and Grammar Engine (Zone C).
+Used for readiness checks.
 
-**Response:**
+Typical readiness response:
 
 ```json
 {
@@ -161,52 +247,44 @@ Returns the status of the Lexicon Store (Zone B) and Grammar Engine (Zone C).
   "storage": "up",
   "engine": "up"
 }
-
 ```
 
 ---
 
-## 7. Output Formats
+## 7. Other Mounted Public Endpoints
 
-### Standard Text (`Accept: text/plain`)
+The app currently mounts additional public API areas under `/api/v1`, including:
 
-```json
-{
-  "surface_text": "Shaka est un guerrier zoulou.",
-  "meta": {
-    "engine": "WikiFre",
-    "strategy": "HighRoad",
-    "latency_ms": 12
-  }
-}
+* `/api/v1/languages`
+* `/api/v1/entities`
+* `/api/v1/frames`
+* `/api/v1/generate/{lang_code}`
 
-```
+It also mounts protected/admin or developer-oriented areas, including:
 
-### Universal Dependencies (`Accept: text/x-conllu`)
+* management endpoints under `/api/v1/...`
+* tools under `/api/v1/tools/...`
 
-Returns the CoNLL-U representation for evaluation against treebanks.
-
-```json
-{
-  "surface_text": "# text = Shaka est un guerrier zoulou.\n1 Shaka _ PROPN _ _ 3 nsubj _ _\n...",
-  "meta": {
-    "exporter": "UDMapping"
-  }
-}
-
-```
+This document focuses on the generation contract.
 
 ---
 
 ## 8. Error Handling
 
-| Status | Error Type | Cause |
-| --- | --- | --- |
-| **400** | `Bad Request` | Malformed JSON or Schema Validation failed. |
-| **404** | `Not Found` | The requested `lang_code` is not in the PGF binary. |
-| **422** | `Unprocessable` | A specific word is missing from the Lexicon (`people.json`). |
-| **424** | `Failed Dependency` | UD Exporter failed to map a function (check `UD_MAP`). |
-| **500** | `Server Error` | Internal engine failure (e.g., C-Runtime crash). |
+The generation route expects a JSON object and may reject invalid requests before generation starts.
+
+### Common error situations
+
+| Status        | Condition                                                                 |
+| ------------- | ------------------------------------------------------------------------- |
+| `400` / `422` | Invalid JSON object, invalid payload shape, or validation/parsing failure |
+| `400`         | URL language and payload language do not match after normalization        |
+| `400`         | Missing language when no path language is provided                        |
+| `5xx`         | Internal runtime, realization, or infrastructure failure                  |
+
+### Important note
+
+Older error tables that describe specialized transport formats or exporter-specific HTTP semantics should not be treated as the authoritative current contract for `POST /api/v1/generate/{lang_code}` unless they are explicitly reintroduced and implemented on this route.
 
 ---
 
@@ -214,34 +292,75 @@ Returns the CoNLL-U representation for evaluation against treebanks.
 
 ```python
 import requests
-import uuid
 
-# Note the /api/v1 prefix
-API_URL = "http://localhost:8000/api/v1/generate"
-SESSION_ID = str(uuid.uuid4())
+API_BASE = "http://localhost:8000/api/v1"
 
-def generate_sentence(frame: dict, lang_code: str = "en") -> str:
-    """
-    Generates text with context awareness.
-    """
-    headers = {
-        "Content-Type": "application/json",
-        "X-Session-ID": SESSION_ID  # Enables 'He/She' logic
-    }
-    
-    # Use Path Parameter for Language
-    url = f"{API_URL}/{lang_code}"
-    
+def generate_text(frame: dict, lang_code: str = "en") -> dict:
+    url = f"{API_BASE}/generate/{lang_code}"
     response = requests.post(
-        url, 
-        json=frame, # Flat Dictionary
-        headers=headers
+        url,
+        json=frame,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        timeout=30,
     )
     response.raise_for_status()
-    return response.json()["surface_text"]
+    return response.json()
 
+result = generate_text(
+    {
+        "frame_type": "bio",
+        "name": "Alan Turing",
+        "profession": "mathematician",
+        "nationality": "British"
+    },
+    lang_code="en",
+)
+
+print(result["text"])
 ```
 
-```
+---
 
-```
+## 10. Migration / Compatibility Notes
+
+Current runtime behavior is mixed:
+
+* the target architecture is planner-centered,
+* the public generation route is stable,
+* compatibility shims still normalize legacy bio/person payloads,
+* and live generation may still run through a legacy direct-frame path depending on runtime configuration.
+
+For API consumers, the practical rule is:
+
+* send a JSON object,
+* prefer `frame_type: "bio"` for new bio requests,
+* treat the returned JSON envelope documented above as the public success contract.
+
+---
+
+## 11. Deprecated assumptions
+
+The following should be considered outdated for the current public generation route unless reintroduced explicitly:
+
+* response body centered only on `surface_text` / `meta`
+* `Accept: text/plain` as the primary documented contract
+* `Accept: text/x-conllu` as the documented contract for this route
+* `style` query parameter as part of the current stable generation API
+* `X-Session-ID` as part of the current stable generation API contract
+
+---
+
+## 12. Summary
+
+For the current SemantiK Architect API, the authoritative generation contract is:
+
+* **Route:** `POST /api/v1/generate/{lang_code}`
+* **Input:** one JSON object
+* **Output:** one JSON object centered on `text` and structured runtime metadata
+* **Bio compatibility:** legacy person/bio aliases still supported
+* **Runtime status:** stable public route, mixed internal generation paths
+
+

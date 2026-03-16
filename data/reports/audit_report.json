@@ -1,15 +1,279 @@
 {
-  "generated_at": 1773416824.9837499,
+  "generated_at": 1773691789.8127396,
   "repo_root": "/mnt/c/mycode/SemantiK_Architect/SemantiK_Architect",
   "summary": {
-    "compile_valid_or_skipped": 2,
-    "compile_broken": 0,
-    "runtime_pass": 2,
+    "compile_valid_or_skipped": 34,
+    "compile_broken": 35,
+    "runtime_pass": 68,
     "runtime_fail": 0,
-    "overall_ok": 2,
-    "overall_fail": 0
+    "overall_ok": 34,
+    "overall_fail": 35
   },
   "results": [
+    {
+      "gf_lang": "Afr",
+      "api_lang": "af",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Afr",
+        "filename": "gf/WikiAfr.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 1.9718327522277832,
+        "file_hash": "c2b17075190ba149d60ade637bfee83322548893a3de5cf0a960fc7d79401049",
+        "iso2": "af"
+      },
+      "runtime": {
+        "api_lang": "af",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 254.92382049560547,
+        "error": null,
+        "sample_text": "<Language 'af' not found>"
+      }
+    },
+    {
+      "gf_lang": "Amh",
+      "api_lang": "am",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Amh",
+        "filename": "gf/WikiAmh.gf",
+        "status": "BROKEN",
+        "error": "constant not found: IdRP",
+        "duration_s": 2.2210097312927246,
+        "file_hash": "2b17a621c9b7093e2b29e6ad021e146f2ca0a08937da076720088aaf2e84daac",
+        "iso2": "am"
+      },
+      "runtime": {
+        "api_lang": "am",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 262.6948356628418,
+        "error": null,
+        "sample_text": "<Language 'am' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ara",
+      "api_lang": "ar",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Ara",
+        "filename": "gf/WikiAra.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 16.341935873031616,
+        "file_hash": "dd749d654540b8e651d97ef3273f46df844e3bf6e54f8d7cbd89676ca6810066",
+        "iso2": "ar"
+      },
+      "runtime": {
+        "api_lang": "ar",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 271.6972827911377,
+        "error": null,
+        "sample_text": "<Language 'ar' not found>"
+      }
+    },
+    {
+      "gf_lang": "Bel",
+      "api_lang": "be",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Bel",
+        "filename": "gf/WikiBel.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxBel.gf does not exist.",
+        "duration_s": 0.8412563800811768,
+        "file_hash": "d45726cfb1bae9ade6c350c91f4648126858e13acd6f2f340ecb2d5de68adad5",
+        "iso2": "be"
+      },
+      "runtime": {
+        "api_lang": "be",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 273.3159065246582,
+        "error": null,
+        "sample_text": "<Language 'be' not found>"
+      }
+    },
+    {
+      "gf_lang": "Bul",
+      "api_lang": "bg",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Bul",
+        "filename": "gf/WikiBul.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 6.329058408737183,
+        "file_hash": "e65446d6080a0c1c2d7627d6cca19db988a1a529ae8bf2d0dd6d3791d205176d",
+        "iso2": "bg"
+      },
+      "runtime": {
+        "api_lang": "bg",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 263.3049488067627,
+        "error": null,
+        "sample_text": "<Language 'bg' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ben",
+      "api_lang": "bn",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Ben",
+        "filename": "gf/WikiBen.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxBen.gf does not exist.",
+        "duration_s": 0.4379415512084961,
+        "file_hash": "e398a5b91820f6d5e64a2caace2507f0be0bc3e03e568a637d17901a91b99e24",
+        "iso2": "bn"
+      },
+      "runtime": {
+        "api_lang": "bn",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 276.7822742462158,
+        "error": null,
+        "sample_text": "<Language 'bn' not found>"
+      }
+    },
+    {
+      "gf_lang": "Cat",
+      "api_lang": "ca",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Cat",
+        "filename": "gf/WikiCat.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 5.245074272155762,
+        "file_hash": "d7114f0eecd5fd30f48c4795290440c77e8daec8255b22ab0d0d3ebb7b081625",
+        "iso2": "ca"
+      },
+      "runtime": {
+        "api_lang": "ca",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 274.07002449035645,
+        "error": null,
+        "sample_text": "<Language 'ca' not found>"
+      }
+    },
+    {
+      "gf_lang": "Cze",
+      "api_lang": "cs",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Cze",
+        "filename": "gf/WikiCze.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxCze.gf does not exist.",
+        "duration_s": 0.8378055095672607,
+        "file_hash": "a0bf80faea864340c4080201ff3c7bff7cc407a1225be79361d2e57632fe42ac",
+        "iso2": "cs"
+      },
+      "runtime": {
+        "api_lang": "cs",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 267.9429054260254,
+        "error": null,
+        "sample_text": "<Language 'cs' not found>"
+      }
+    },
+    {
+      "gf_lang": "Cym",
+      "api_lang": "cy",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Cym",
+        "filename": "gf/WikiCym.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxCym.gf does not exist.",
+        "duration_s": 0.4367103576660156,
+        "file_hash": "cea8a965ac9ebf4735dc70b11e258ba249741e33989d719b0d1f5d0c9f545f8d",
+        "iso2": "cy"
+      },
+      "runtime": {
+        "api_lang": "cy",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 286.8070602416992,
+        "error": null,
+        "sample_text": "<Language 'cy' not found>"
+      }
+    },
+    {
+      "gf_lang": "Dan",
+      "api_lang": "da",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Dan",
+        "filename": "gf/WikiDan.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 5.040659666061401,
+        "file_hash": "9f0852d09baf457fce1b058615ead54f48aeafba12e2460a4397a5eba87c48cd",
+        "iso2": "da"
+      },
+      "runtime": {
+        "api_lang": "da",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 287.79006004333496,
+        "error": null,
+        "sample_text": "<Language 'da' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ger",
+      "api_lang": "de",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Ger",
+        "filename": "gf/WikiGer.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 10.815385341644287,
+        "file_hash": "823eea591e8cecfaec60d590addad9a3285bb8c04f540f8b8cbe5873f9bda73f",
+        "iso2": "de"
+      },
+      "runtime": {
+        "api_lang": "de",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 277.0872116088867,
+        "error": null,
+        "sample_text": "<Language 'de' not found>"
+      }
+    },
+    {
+      "gf_lang": "Gre",
+      "api_lang": "el",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Gre",
+        "filename": "gf/WikiGre.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 11.02220630645752,
+        "file_hash": "9e970eb503eb5802e0f48e073a12a2b1224da8bccd262e8ddabf6b527deff8ca",
+        "iso2": "el"
+      },
+      "runtime": {
+        "api_lang": "el",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 284.74998474121094,
+        "error": null,
+        "sample_text": "<Language 'el' not found>"
+      }
+    },
     {
       "gf_lang": "Eng",
       "api_lang": "en",
@@ -19,7 +283,7 @@
         "filename": "gf/WikiEng.gf",
         "status": "VALID",
         "error": null,
-        "duration_s": 1.3149991035461426,
+        "duration_s": 2.941953420639038,
         "file_hash": "b9791a41c2a56d47bc2df6f162aee619fe3aab861d425dd084f238817d5b9881",
         "iso2": "en"
       },
@@ -27,9 +291,141 @@
         "api_lang": "en",
         "status": "PASS",
         "http_status": 200,
-        "duration_ms": 10.645151138305664,
+        "duration_ms": 290.637731552124,
         "error": null,
-        "sample_text": "Shaka is a warrior ( zulu )"
+        "sample_text": "Shaka is a zulu warrior"
+      }
+    },
+    {
+      "gf_lang": "Spa",
+      "api_lang": "es",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Spa",
+        "filename": "gf/WikiSpa.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 7.1033642292022705,
+        "file_hash": "bd704307a8c65396b9f24d35d13304fa7e8b46b7b87d84e806c57fbd32fb7015",
+        "iso2": "es"
+      },
+      "runtime": {
+        "api_lang": "es",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 299.1478443145752,
+        "error": null,
+        "sample_text": "<Language 'es' not found>"
+      }
+    },
+    {
+      "gf_lang": "Est",
+      "api_lang": "et",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Est",
+        "filename": "gf/WikiEst.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 7.499848127365112,
+        "file_hash": "423cd9fd9a2dc71a979d98056d40575cc3c8751abcd5296cd979b32fe7ad75d4",
+        "iso2": "et"
+      },
+      "runtime": {
+        "api_lang": "et",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 293.1227684020996,
+        "error": null,
+        "sample_text": "<Language 'et' not found>"
+      }
+    },
+    {
+      "gf_lang": "Eus",
+      "api_lang": "eu",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Eus",
+        "filename": "gf/WikiEus.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 15.137478828430176,
+        "file_hash": "b981ce4269a8ccfd1cec6babd1605aae0bd558e3ab1d741fd283b77d0724275f",
+        "iso2": "eu"
+      },
+      "runtime": {
+        "api_lang": "eu",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 289.57343101501465,
+        "error": null,
+        "sample_text": "<Language 'eu' not found>"
+      }
+    },
+    {
+      "gf_lang": "Pes",
+      "api_lang": "fa",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Pes",
+        "filename": "gf/WikiPes.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 3.009944438934326,
+        "file_hash": "0e60e73fa4d3aebe828687b58724506f77ab3d55df78cba4a1cf518b5aa3b400",
+        "iso2": "fa"
+      },
+      "runtime": {
+        "api_lang": "fa",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 38.314104080200195,
+        "error": null,
+        "sample_text": "<Language 'fa' not found>"
+      }
+    },
+    {
+      "gf_lang": "Fin",
+      "api_lang": "fi",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Fin",
+        "filename": "gf/WikiFin.gf",
+        "status": "BROKEN",
+        "error": "Timeout after 90s",
+        "duration_s": 0.0,
+        "file_hash": "6cb2f20b8e16c21641f075e41905f824d25fca369f2b93636493b28ba96143cb",
+        "iso2": "fi"
+      },
+      "runtime": {
+        "api_lang": "fi",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 40.91382026672363,
+        "error": null,
+        "sample_text": "<Language 'fi' not found>"
+      }
+    },
+    {
+      "gf_lang": "Fao",
+      "api_lang": "fo",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Fao",
+        "filename": "gf/WikiFao.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxFao.gf does not exist.",
+        "duration_s": 0.7472519874572754,
+        "file_hash": "4fb2ac52974f5da6c0264be077ad248248a50dbef6768e39a1976b88d6cea56a",
+        "iso2": "fo"
+      },
+      "runtime": {
+        "api_lang": "fo",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 43.04099082946777,
+        "error": null,
+        "sample_text": "<Language 'fo' not found>"
       }
     },
     {
@@ -41,7 +437,7 @@
         "filename": "gf/WikiFre.gf",
         "status": "VALID",
         "error": null,
-        "duration_s": 3.6589112281799316,
+        "duration_s": 9.212145566940308,
         "file_hash": "528f078fa6fa5db4e582877c8ade684f2e3ac9a7e9b00d20fc00f31da834d4c0",
         "iso2": "fr"
       },
@@ -49,9 +445,1080 @@
         "api_lang": "fr",
         "status": "PASS",
         "http_status": 200,
-        "duration_ms": 9.933710098266602,
+        "duration_ms": 38.07353973388672,
         "error": null,
-        "sample_text": "Shaka is a warrior ( zulu )"
+        "sample_text": "Shaka is a zulu warrior"
+      }
+    },
+    {
+      "gf_lang": "Gla",
+      "api_lang": "gd",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Gla",
+        "filename": "gf/WikiGla.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxGla.gf does not exist.",
+        "duration_s": 0.9573814868927002,
+        "file_hash": "f31e5f7976406b3115b38712fab8eda7958731e81c814b39c6a507056d4f49f1",
+        "iso2": "gd"
+      },
+      "runtime": {
+        "api_lang": "gd",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 34.13701057434082,
+        "error": null,
+        "sample_text": "<Language 'gd' not found>"
+      }
+    },
+    {
+      "gf_lang": "Heb",
+      "api_lang": "he",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Heb",
+        "filename": "gf/WikiHeb.gf",
+        "status": "BROKEN",
+        "error": "constant not found: IdRP",
+        "duration_s": 4.222694635391235,
+        "file_hash": "13b75bbbfb95e71f7d8b07999db9bab030d3a060fbb3ea6d216cdc41f15b6fb3",
+        "iso2": "he"
+      },
+      "runtime": {
+        "api_lang": "he",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 37.38713264465332,
+        "error": null,
+        "sample_text": "<Language 'he' not found>"
+      }
+    },
+    {
+      "gf_lang": "Hin",
+      "api_lang": "hi",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Hin",
+        "filename": "gf/WikiHin.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 5.411785364151001,
+        "file_hash": "3b569428bbec3498d496779d9fe5958cbb212493264b478700373e7c369fcef3",
+        "iso2": "hi"
+      },
+      "runtime": {
+        "api_lang": "hi",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 40.8937931060791,
+        "error": null,
+        "sample_text": "<Language 'hi' not found>"
+      }
+    },
+    {
+      "gf_lang": "Hrv",
+      "api_lang": "hr",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Hrv",
+        "filename": "gf/WikiHrv.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxHrv.gf does not exist.",
+        "duration_s": 1.1384861469268799,
+        "file_hash": "25399436e21d61e6ee7ec1b5b541f81d22a3a4402f4b4354435d9dc4a7706953",
+        "iso2": "hr"
+      },
+      "runtime": {
+        "api_lang": "hr",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 40.16447067260742,
+        "error": null,
+        "sample_text": "<Language 'hr' not found>"
+      }
+    },
+    {
+      "gf_lang": "Hun",
+      "api_lang": "hu",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Hun",
+        "filename": "gf/WikiHun.gf",
+        "status": "BROKEN",
+        "error": "constant not found: IdRP",
+        "duration_s": 5.972912073135376,
+        "file_hash": "211077b0062926bab45f1b116abe93699adcdec8a07799fbf3976c335e6e5e38",
+        "iso2": "hu"
+      },
+      "runtime": {
+        "api_lang": "hu",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 33.37526321411133,
+        "error": null,
+        "sample_text": "<Language 'hu' not found>"
+      }
+    },
+    {
+      "gf_lang": "Hye",
+      "api_lang": "hy",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Hye",
+        "filename": "gf/WikiHye.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxHye.gf does not exist.",
+        "duration_s": 1.191951036453247,
+        "file_hash": "e64889788299edebe59d47f5c77ae7dc4874e08a181c47ae618dd85c7fe9a48e",
+        "iso2": "hy"
+      },
+      "runtime": {
+        "api_lang": "hy",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 41.658878326416016,
+        "error": null,
+        "sample_text": "<Language 'hy' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ina",
+      "api_lang": "ia",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Ina",
+        "filename": "gf/WikiIna.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 3.839993715286255,
+        "file_hash": "e33ab55511b69d41b4377f85e16d217a78c64b2a10df9ac2c20ddcad2515a005",
+        "iso2": "ia"
+      },
+      "runtime": {
+        "api_lang": "ia",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 44.46244239807129,
+        "error": null,
+        "sample_text": "<Language 'ia' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ind",
+      "api_lang": "id",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Ind",
+        "filename": "gf/WikiInd.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxInd.gf does not exist.",
+        "duration_s": 0.9582028388977051,
+        "file_hash": "708bacea30561f029b6aeb79f5a91f78de2e04b0e4d11fa5085668ed5a658a9b",
+        "iso2": "id"
+      },
+      "runtime": {
+        "api_lang": "id",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 37.92262077331543,
+        "error": null,
+        "sample_text": "<Language 'id' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ice",
+      "api_lang": "is",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Ice",
+        "filename": "gf/WikiIce.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 4.59677791595459,
+        "file_hash": "109a0a5fccd571cc070555bafd41487bc3f7726205f1e713eedf6eeecf562ae8",
+        "iso2": "is"
+      },
+      "runtime": {
+        "api_lang": "is",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 41.124820709228516,
+        "error": null,
+        "sample_text": "<Language 'is' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ita",
+      "api_lang": "it",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Ita",
+        "filename": "gf/WikiIta.gf",
+        "status": "BROKEN",
+        "error": "Timeout after 90s",
+        "duration_s": 0.0,
+        "file_hash": "ad84c1de7286a5f948886df73a8bb3d2f35e29e5ca504673c2eb1d495d90074f",
+        "iso2": "it"
+      },
+      "runtime": {
+        "api_lang": "it",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 30.69281578063965,
+        "error": null,
+        "sample_text": "<Language 'it' not found>"
+      }
+    },
+    {
+      "gf_lang": "Inu",
+      "api_lang": "iu",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Inu",
+        "filename": "gf/WikiInu.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxInu.gf does not exist.",
+        "duration_s": 0.8116021156311035,
+        "file_hash": "198f77adc0bf3a8f11f194f4000c5517ae8f1d509fba5335b45446ff11a486b3",
+        "iso2": "iu"
+      },
+      "runtime": {
+        "api_lang": "iu",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 33.890724182128906,
+        "error": null,
+        "sample_text": "<Language 'iu' not found>"
+      }
+    },
+    {
+      "gf_lang": "Jpn",
+      "api_lang": "ja",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Jpn",
+        "filename": "gf/WikiJpn.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 3.3656485080718994,
+        "file_hash": "a4ef42580349db9401d3c77fbc3144b3c7a55cb352889267b8d020ea1047a415",
+        "iso2": "ja"
+      },
+      "runtime": {
+        "api_lang": "ja",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 26.690244674682617,
+        "error": null,
+        "sample_text": "<Language 'ja' not found>"
+      }
+    },
+    {
+      "gf_lang": "Kaz",
+      "api_lang": "kk",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Kaz",
+        "filename": "gf/WikiKaz.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxKaz.gf does not exist.",
+        "duration_s": 1.133911371231079,
+        "file_hash": "0a1af03fcdf392e7aa6b111906ac908259f0a5a56e44a03c7a8280d8d99274b7",
+        "iso2": "kk"
+      },
+      "runtime": {
+        "api_lang": "kk",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 35.43686866760254,
+        "error": null,
+        "sample_text": "<Language 'kk' not found>"
+      }
+    },
+    {
+      "gf_lang": "Kor",
+      "api_lang": "ko",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Kor",
+        "filename": "gf/WikiKor.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxKor.gf does not exist.",
+        "duration_s": 1.1237494945526123,
+        "file_hash": "3c689fa91f8a618fd35f8e5b79b0dd92b1034d7cf70cc35e56b0a83bfdcb563c",
+        "iso2": "ko"
+      },
+      "runtime": {
+        "api_lang": "ko",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 40.62008857727051,
+        "error": null,
+        "sample_text": "<Language 'ko' not found>"
+      }
+    },
+    {
+      "gf_lang": "Lat",
+      "api_lang": "la",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Lat",
+        "filename": "gf/WikiLat.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 3.3657965660095215,
+        "file_hash": "d608389f166fedde4482ce9eccfe8ed430f6e3d27d9aeb019b337b47171804c2",
+        "iso2": "la"
+      },
+      "runtime": {
+        "api_lang": "la",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 40.64631462097168,
+        "error": null,
+        "sample_text": "<Language 'la' not found>"
+      }
+    },
+    {
+      "gf_lang": "Lit",
+      "api_lang": "lt",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Lit",
+        "filename": "gf/WikiLit.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxLit.gf does not exist.",
+        "duration_s": 0.9294459819793701,
+        "file_hash": "068b351b4197ea2ee7ba1c22a74ee635b1c4a27ec43f199d2929df8535789f19",
+        "iso2": "lt"
+      },
+      "runtime": {
+        "api_lang": "lt",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 33.2484245300293,
+        "error": null,
+        "sample_text": "<Language 'lt' not found>"
+      }
+    },
+    {
+      "gf_lang": "Lav",
+      "api_lang": "lv",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Lav",
+        "filename": "gf/WikiLav.gf",
+        "status": "BROKEN",
+        "error": "Timeout after 90s",
+        "duration_s": 0.0,
+        "file_hash": "456998428df56ce60bc4cf114c3a1fbdeae64dbc23bf3153582982a0b40ddc05",
+        "iso2": "lv"
+      },
+      "runtime": {
+        "api_lang": "lv",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 35.216569900512695,
+        "error": null,
+        "sample_text": "<Language 'lv' not found>"
+      }
+    },
+    {
+      "gf_lang": "Mkd",
+      "api_lang": "mk",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Mkd",
+        "filename": "gf/WikiMkd.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxMkd.gf does not exist.",
+        "duration_s": 1.181028127670288,
+        "file_hash": "52e2c7addf739a09a64697d8f21934d0466c549e552ba93011a711fb0b51e341",
+        "iso2": "mk"
+      },
+      "runtime": {
+        "api_lang": "mk",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 36.24248504638672,
+        "error": null,
+        "sample_text": "<Language 'mk' not found>"
+      }
+    },
+    {
+      "gf_lang": "Mal",
+      "api_lang": "ml",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Mal",
+        "filename": "gf/WikiMal.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxMal.gf does not exist.",
+        "duration_s": 0.6790080070495605,
+        "file_hash": "9db25571a90e32de00e3bd82f250f73d2c72c273ce8162a91082e052fcef95f3",
+        "iso2": "ml"
+      },
+      "runtime": {
+        "api_lang": "ml",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 34.21473503112793,
+        "error": null,
+        "sample_text": "<Language 'ml' not found>"
+      }
+    },
+    {
+      "gf_lang": "Mon",
+      "api_lang": "mn",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Mon",
+        "filename": "gf/WikiMon.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 4.069586515426636,
+        "file_hash": "31d5941b84a8d6bb5b71a25bb876b1fda34ae671c38a190144b2d83e2294db55",
+        "iso2": "mn"
+      },
+      "runtime": {
+        "api_lang": "mn",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 31.600475311279297,
+        "error": null,
+        "sample_text": "<Language 'mn' not found>"
+      }
+    },
+    {
+      "gf_lang": "May",
+      "api_lang": "ms",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "May",
+        "filename": "gf/WikiMay.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxMay.gf does not exist.",
+        "duration_s": 1.1022934913635254,
+        "file_hash": "6095ed11e373be6f67a7f72bcdac2084e723bc00b97b50fcba29b0df1a36c239",
+        "iso2": "ms"
+      },
+      "runtime": {
+        "api_lang": "ms",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 37.41741180419922,
+        "error": null,
+        "sample_text": "<Language 'ms' not found>"
+      }
+    },
+    {
+      "gf_lang": "Mlt",
+      "api_lang": "mt",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Mlt",
+        "filename": "gf/WikiMlt.gf",
+        "status": "BROKEN",
+        "error": "Timeout after 90s",
+        "duration_s": 0.0,
+        "file_hash": "b8cd4f2163656241e5dd5c08e0a41c7bb7db79fe4e29a23d7456c1d021e16ef2",
+        "iso2": "mt"
+      },
+      "runtime": {
+        "api_lang": "mt",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 30.00473976135254,
+        "error": null,
+        "sample_text": "<Language 'mt' not found>"
+      }
+    },
+    {
+      "gf_lang": "Nor",
+      "api_lang": "nb",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Nor",
+        "filename": "gf/WikiNor.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 5.974311351776123,
+        "file_hash": "1ff7495a0ad4af53fdfe4508450cb2b52f7ebd64c8d6e4c44d4741794ff4b0a4",
+        "iso2": "nb"
+      },
+      "runtime": {
+        "api_lang": "nb",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 27.577638626098633,
+        "error": null,
+        "sample_text": "<Language 'nb' not found>"
+      }
+    },
+    {
+      "gf_lang": "Nep",
+      "api_lang": "ne",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Nep",
+        "filename": "gf/WikiNep.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 3.558194637298584,
+        "file_hash": "3ec18877a336716332f1dfdffef916925073909389d511e25802da98c6edfa62",
+        "iso2": "ne"
+      },
+      "runtime": {
+        "api_lang": "ne",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 27.898311614990234,
+        "error": null,
+        "sample_text": "<Language 'ne' not found>"
+      }
+    },
+    {
+      "gf_lang": "Dut",
+      "api_lang": "nl",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Dut",
+        "filename": "gf/WikiDut.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 2.932816505432129,
+        "file_hash": "88c1dcd992685c8461ed11bdfcf45214785971b58bed4cc38326ac437f02ed21",
+        "iso2": "nl"
+      },
+      "runtime": {
+        "api_lang": "nl",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 23.51999282836914,
+        "error": null,
+        "sample_text": "<Language 'nl' not found>"
+      }
+    },
+    {
+      "gf_lang": "Nno",
+      "api_lang": "nn",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Nno",
+        "filename": "gf/WikiNno.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 5.965274095535278,
+        "file_hash": "09d42ee267478bcaab85d3686da575435c3a57b7028209cad3b3606aa6a7cc44",
+        "iso2": "nn"
+      },
+      "runtime": {
+        "api_lang": "nn",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 34.07573699951172,
+        "error": null,
+        "sample_text": "<Language 'nn' not found>"
+      }
+    },
+    {
+      "gf_lang": "Nor",
+      "api_lang": "no",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Nor",
+        "filename": "gf/WikiNor.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 5.613687038421631,
+        "file_hash": "1ff7495a0ad4af53fdfe4508450cb2b52f7ebd64c8d6e4c44d4741794ff4b0a4",
+        "iso2": "no"
+      },
+      "runtime": null
+    },
+    {
+      "gf_lang": "Pnb",
+      "api_lang": "pa",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Pnb",
+        "filename": "gf/WikiPnb.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 4.133686542510986,
+        "file_hash": "5e8481ebb95c89922cfd7378932734e35a79ff86eb7505ffdc0ca423dbd4e6b3",
+        "iso2": "pa"
+      },
+      "runtime": {
+        "api_lang": "pa",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 32.40251541137695,
+        "error": null,
+        "sample_text": "<Language 'pa' not found>"
+      }
+    },
+    {
+      "gf_lang": "Pol",
+      "api_lang": "pl",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Pol",
+        "filename": "gf/WikiPol.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 4.4698522090911865,
+        "file_hash": "37ff1f8ed7919936a2763372d5f1708860fd0d916642a1893df6ee23d3393ccd",
+        "iso2": "pl"
+      },
+      "runtime": {
+        "api_lang": "pl",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 37.08314895629883,
+        "error": null,
+        "sample_text": "<Language 'pl' not found>"
+      }
+    },
+    {
+      "gf_lang": "Por",
+      "api_lang": "pt",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Por",
+        "filename": "gf/WikiPor.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 7.271881103515625,
+        "file_hash": "0510974793acaf80507155fdffca5ca3eb1c12706c8a06d3e577230d4fa31115",
+        "iso2": "pt"
+      },
+      "runtime": {
+        "api_lang": "pt",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 31.000375747680664,
+        "error": null,
+        "sample_text": "<Language 'pt' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ron",
+      "api_lang": "ro",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Ron",
+        "filename": "gf/WikiRon.gf",
+        "status": "BROKEN",
+        "error": "Timeout after 90s",
+        "duration_s": 0.0,
+        "file_hash": "3ac33839c0831271c478b84fba73daefa7627d9dc67ca6da62c2997a269b34db",
+        "iso2": "ro"
+      },
+      "runtime": {
+        "api_lang": "ro",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 29.05869483947754,
+        "error": null,
+        "sample_text": "<Language 'ro' not found>"
+      }
+    },
+    {
+      "gf_lang": "Rus",
+      "api_lang": "ru",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Rus",
+        "filename": "gf/WikiRus.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 4.051751613616943,
+        "file_hash": "14eb560ae821441d4a2130a5030bc2e2db881c34918e2e71cca6ad0250fde79f",
+        "iso2": "ru"
+      },
+      "runtime": {
+        "api_lang": "ru",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 24.263858795166016,
+        "error": null,
+        "sample_text": "<Language 'ru' not found>"
+      }
+    },
+    {
+      "gf_lang": "Snd",
+      "api_lang": "sd",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Snd",
+        "filename": "gf/WikiSnd.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 3.9333090782165527,
+        "file_hash": "aca8403787811c2f93682d2a3cd0c99768110e7ccba169d5cf1c6b011e8567ec",
+        "iso2": "sd"
+      },
+      "runtime": {
+        "api_lang": "sd",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 20.668506622314453,
+        "error": null,
+        "sample_text": "<Language 'sd' not found>"
+      }
+    },
+    {
+      "gf_lang": "Slo",
+      "api_lang": "sk",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Slo",
+        "filename": "gf/WikiSlo.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxSlo.gf does not exist.",
+        "duration_s": 1.1895172595977783,
+        "file_hash": "679fc9bf520343e415c83fc1a92a85e0369d45b54c46741e646e1be617051d84",
+        "iso2": "sk"
+      },
+      "runtime": {
+        "api_lang": "sk",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 26.242733001708984,
+        "error": null,
+        "sample_text": "<Language 'sk' not found>"
+      }
+    },
+    {
+      "gf_lang": "Slv",
+      "api_lang": "sl",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Slv",
+        "filename": "gf/WikiSlv.gf",
+        "status": "BROKEN",
+        "error": "constant not found: IdRP",
+        "duration_s": 3.8333966732025146,
+        "file_hash": "34cebd2945473a21d0e9fbb1e90b3e06f1a8b33f1e687c5960390b47ffe8e15d",
+        "iso2": "sl"
+      },
+      "runtime": {
+        "api_lang": "sl",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 25.964736938476562,
+        "error": null,
+        "sample_text": "<Language 'sl' not found>"
+      }
+    },
+    {
+      "gf_lang": "Som",
+      "api_lang": "so",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Som",
+        "filename": "gf/WikiSom.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 3.8855252265930176,
+        "file_hash": "59e57a74f204a91588f3287d1c00e3552044b5db6c272a677ceea13ac0dfe984",
+        "iso2": "so"
+      },
+      "runtime": {
+        "api_lang": "so",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 25.04110336303711,
+        "error": null,
+        "sample_text": "<Language 'so' not found>"
+      }
+    },
+    {
+      "gf_lang": "Sqi",
+      "api_lang": "sq",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Sqi",
+        "filename": "gf/WikiSqi.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxSqi.gf does not exist.",
+        "duration_s": 1.0098764896392822,
+        "file_hash": "806260514d9aca839774e90b40a59edc9c399ce3ce0a5100f30a5f668b0da478",
+        "iso2": "sq"
+      },
+      "runtime": {
+        "api_lang": "sq",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 24.36208724975586,
+        "error": null,
+        "sample_text": "<Language 'sq' not found>"
+      }
+    },
+    {
+      "gf_lang": "Swe",
+      "api_lang": "sv",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Swe",
+        "filename": "gf/WikiSwe.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 5.256691932678223,
+        "file_hash": "1217f9741fb52abda13aabc000af303cc8de6d31c56d33a4d52bcb164847005a",
+        "iso2": "sv"
+      },
+      "runtime": {
+        "api_lang": "sv",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 19.77062225341797,
+        "error": null,
+        "sample_text": "<Language 'sv' not found>"
+      }
+    },
+    {
+      "gf_lang": "Swa",
+      "api_lang": "sw",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Swa",
+        "filename": "gf/WikiSwa.gf",
+        "status": "BROKEN",
+        "error": "constant not found: IdRP",
+        "duration_s": 3.856837749481201,
+        "file_hash": "e44b4a6ded987bac3edfcd6be55fef40c50fb1133f4292af7b231c379d28ede6",
+        "iso2": "sw"
+      },
+      "runtime": {
+        "api_lang": "sw",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 25.200366973876953,
+        "error": null,
+        "sample_text": "<Language 'sw' not found>"
+      }
+    },
+    {
+      "gf_lang": "Tam",
+      "api_lang": "ta",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Tam",
+        "filename": "gf/WikiTam.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxTam.gf does not exist.",
+        "duration_s": 0.9892396926879883,
+        "file_hash": "9bbb25152789a279c0b8c4979333efc713ae3acfcfed94fd956c8f3289e37280",
+        "iso2": "ta"
+      },
+      "runtime": {
+        "api_lang": "ta",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 23.952007293701172,
+        "error": null,
+        "sample_text": "<Language 'ta' not found>"
+      }
+    },
+    {
+      "gf_lang": "Tel",
+      "api_lang": "te",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Tel",
+        "filename": "gf/WikiTel.gf",
+        "status": "BROKEN",
+        "error": "constant not found: IdRP",
+        "duration_s": 2.5449917316436768,
+        "file_hash": "5e5478644cfd84689dc35c8a22ba287b9f5d218c21f78095b38d5ccdf1d2ace5",
+        "iso2": "te"
+      },
+      "runtime": {
+        "api_lang": "te",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 23.488283157348633,
+        "error": null,
+        "sample_text": "<Language 'te' not found>"
+      }
+    },
+    {
+      "gf_lang": "Tha",
+      "api_lang": "th",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Tha",
+        "filename": "gf/WikiTha.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 3.4214589595794678,
+        "file_hash": "301e09b2aa0d8dc8c17deb5570684c20058ffce36c8b87ac95e4c54e048b6e1e",
+        "iso2": "th"
+      },
+      "runtime": {
+        "api_lang": "th",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 21.402597427368164,
+        "error": null,
+        "sample_text": "<Language 'th' not found>"
+      }
+    },
+    {
+      "gf_lang": "Tgl",
+      "api_lang": "tl",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Tgl",
+        "filename": "gf/WikiTgl.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxTgl.gf does not exist.",
+        "duration_s": 0.5381166934967041,
+        "file_hash": "ddd2cd9248c419f7b26074d2bffbe3ae021e5d71a6b061dd61d350fd60462bb5",
+        "iso2": "tl"
+      },
+      "runtime": {
+        "api_lang": "tl",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 24.344921112060547,
+        "error": null,
+        "sample_text": "<Language 'tl' not found>"
+      }
+    },
+    {
+      "gf_lang": "Tur",
+      "api_lang": "tr",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Tur",
+        "filename": "gf/WikiTur.gf",
+        "status": "BROKEN",
+        "error": "constant not found: IdRP",
+        "duration_s": 3.6757190227508545,
+        "file_hash": "71a9f36c8024166ae72386e677e4ab7b3260bcb800f557b2bd65eaf8828adf70",
+        "iso2": "tr"
+      },
+      "runtime": {
+        "api_lang": "tr",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 22.98283576965332,
+        "error": null,
+        "sample_text": "<Language 'tr' not found>"
+      }
+    },
+    {
+      "gf_lang": "Ukr",
+      "api_lang": "uk",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Ukr",
+        "filename": "gf/WikiUkr.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxUkr.gf does not exist.",
+        "duration_s": 0.9893183708190918,
+        "file_hash": "177e328492c178ca16109b2fc78450826c594564e0a03b1c56f7b1099840c879",
+        "iso2": "uk"
+      },
+      "runtime": {
+        "api_lang": "uk",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 14.957189559936523,
+        "error": null,
+        "sample_text": "<Language 'uk' not found>"
+      }
+    },
+    {
+      "gf_lang": "Urd",
+      "api_lang": "ur",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Urd",
+        "filename": "gf/WikiUrd.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 4.207292318344116,
+        "file_hash": "2d4b2198a2bf5e34ec77ec0314d6bd4294f4204435a9acc0610585452da39bf0",
+        "iso2": "ur"
+      },
+      "runtime": {
+        "api_lang": "ur",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 20.12014389038086,
+        "error": null,
+        "sample_text": "<Language 'ur' not found>"
+      }
+    },
+    {
+      "gf_lang": "Vie",
+      "api_lang": "vi",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Vie",
+        "filename": "gf/WikiVie.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxVie.gf does not exist.",
+        "duration_s": 0.5682656764984131,
+        "file_hash": "7e3f0bc8c1b3c1d039e061d4b02fc1e0c919a5f01aaaf099bcd6f01f7e4d9634",
+        "iso2": "vi"
+      },
+      "runtime": {
+        "api_lang": "vi",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 19.146203994750977,
+        "error": null,
+        "sample_text": "<Language 'vi' not found>"
+      }
+    },
+    {
+      "gf_lang": "Chi",
+      "api_lang": "zh",
+      "overall": "OK",
+      "compile": {
+        "gf_lang": "Chi",
+        "filename": "gf/WikiChi.gf",
+        "status": "VALID",
+        "error": null,
+        "duration_s": 2.183162212371826,
+        "file_hash": "912f024593f8bcb17c075704e7927ab1db902fc5211f8e86e66b65ae1505d7b0",
+        "iso2": "zh"
+      },
+      "runtime": {
+        "api_lang": "zh",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 19.829988479614258,
+        "error": null,
+        "sample_text": "<Language 'zh' not found>"
+      }
+    },
+    {
+      "gf_lang": "Zul",
+      "api_lang": "zu",
+      "overall": "FAIL",
+      "compile": {
+        "gf_lang": "Zul",
+        "filename": "gf/WikiZul.gf",
+        "status": "BROKEN",
+        "error": "File SyntaxZul.gf does not exist.",
+        "duration_s": 1.0188608169555664,
+        "file_hash": "7171ccc9e22a70df01609a81ee6cff5f42a641216e136b9ed6eb067592752e00",
+        "iso2": "zu"
+      },
+      "runtime": {
+        "api_lang": "zu",
+        "status": "PASS",
+        "http_status": 200,
+        "duration_ms": 18.183469772338867,
+        "error": null,
+        "sample_text": "<Language 'zu' not found>"
       }
     }
   ]

@@ -4,199 +4,490 @@
 
 ## 1. High-Level System Overview
 
-The SemantiK Architect is a **Hybrid Natural Language Generation (NLG) Engine**. It combines the determinism of Rule-Based Systems (Grammatical Framework) with the flexibility of modern AI Agents and the interoperability of Semantic Web standards.
+SemantiK Architect is a **planner-centered multilingual NLG system** for generating structured, traceable text from semantic inputs.
 
-It is designed to solve the **"Long Tail" Problem**: ensuring verifiable, high-quality encyclopedic text generation for 300+ languages, from high-resource languages like English (Tier 1) to under-resourced languages like Zulu or Quechua (Tier 3).
+Its architectural center is **not** any one renderer, grammar formalism, or language-specific engine. The stable center is the shared runtime pipeline:
 
-### The Four-Layer Architecture
+```text
+API/request
+  -> frame normalization
+  -> frame-to-plan bridge
+  -> planner
+  -> PlannedSentence
+  -> ConstructionPlan
+  -> lexical resolution
+  -> renderer backend
+  -> SurfaceResult
+  -> API response mapping
+````
 
-The architecture separates the system into four distinct layers to ensure modularity, scalability, and state management:
+This design allows SemantiK Architect to combine:
 
-#### Layer A: The Lexicon (Data)
+* **semantic frames** as structured input,
+* **construction planning** as the source of sentence truth,
+* **lexical resolution** as a shared multilingual layer,
+* **multiple realization backends** such as GF/PGF, family renderers, and safe-mode fallback.
 
-* **Role:** The vocabulary. Stores words and their inherent properties (gender, stems).
-* **Strategy:** **Usage-Based Sharding**. Data is organized by domain (`core`, `people`, `science`) rather than monolithic dictionary files.
-* **Alignment:** Mapped to **Wikidata QIDs** (e.g., `Q42` -> `Alan Turing`) to ensure grounding in the Semantic Web.
-* **Standard:** Strictly uses **ISO 639-1 (2-letter)** directory names (e.g., `data/lexicon/en/`).
-
-#### Layer B: The Grammar Matrix (Logic)
-
-* **Role:** The rules. Defines morphology (inflection) and syntax (word order).
-* **Mechanism:** Uses the **Grammatical Framework (GF)** to define abstract syntax trees that are linearized into concrete strings.
-* **Hybrid Approach:** Combines expert-written grammars (RGL) with **Weighted Topology Grammars** (Factory) to guarantee 100% coverage.
-
-#### Layer C: The Renderer (Presentation)
-
-* **Role:** The assembly. Takes an abstract intent and transforms it into text.
-* **Input Ports (Dual-Path):**
-* **Strict Path:** Internal `BioFrame` (Flat JSON) for production stability.
-* **Prototype Path:** `UniversalNode` (Recursive Ninai JSON) for experimental flexibility.
-
-
-* **Output Port:** Natural Language Text or **CoNLL-U** (Universal Dependencies).
-
-#### Layer D: The Context (State) [NEW in v2.0]
-
-* **Role:** The memory. Manages session state to handle **Discourse Planning**.
-* **Mechanism:** Uses **Redis** to store entities mentioned in previous sentences.
-* **Function:** Enables **Pronominalization** (e.g., swapping "Marie Curie" for "She" in the second sentence).
+The system is built for **deterministic, inspectable multilingual generation**, with explicit support for broad language coverage and backend diversity.
 
 ---
 
-## 2. The Hybrid Factory Architecture
+## 2. Architectural Principles
 
-To scale from ~40 academic languages to the 300+ required by Wikipedia, we employ a **Three-Tiered Hybrid System**:
+### 2.1 One source of runtime truth
 
-### Tier 1: The "High Road" (RGL)
+The planner and shared construction runtime define **what is being said**.
 
-* **Source:** The official **GF Resource Grammar Library**.
-* **Quality:** Expert-written, linguistically perfect. Handles complex morphology (case declension, verb conjugation).
-* **Examples:** English (`en`), French (`fr`), Russian (`ru`), Hindi (`hi`).
-* **Internal Mapping:** The engine automatically maps the outer 2-letter code (`en`) to the inner 3-letter RGL module (`WikiEng`) at runtime.
-* **Build Strategy:** `HIGH_ROAD`.
+Renderers define only **how that plan is realized** in a particular backend or language.
 
-### Tier 2: Manual Contrib (Overrides)
+No renderer, engine, or router should be an independent source of sentence-planning truth.
 
-* **Source:** `gf/contrib/{lang}/`.
-* **Quality:** Community-contributed grammars that are not yet in the official RGL but are better than machine-generated stubs.
-* **Role:** Overrides both Tier 1 and Tier 3 if present.
+### 2.2 Construction-first, not bio-first
 
-### Tier 3: The "Weighted Factory" (Automated) [UPDATED]
+Biography is an important early domain and migration target, but it is **not** the architecture.
 
-* **Source:** `generated/src/{lang}/`.
-* **Logic:** **Weighted Topology Sorting** (adapted from Udiron).
-* **Mechanism:** Instead of hardcoded SVO templates, the factory uses a configuration file (`topology_weights.json`) to define the relative position of Subject, Verb, and Object.
-* *Example:* For Japanese (SOV), `obj` has a lower weight than `verb`, ensuring correct linearization automatically.
+The runtime is intended to support multiple construction families, including:
 
+* equative / classification
+* attributive copular
+* locative
+* existential
+* possession
+* eventive
+* relative-clause
+* topic-comment
+* comparative / superlative
+* coordination
 
-* **Role:** Ensures the API never returns a 404. Supports SVO, SOV, VSO, VOS, OVS, OSV word orders dynamically.
-* **Build Strategy:** `SAFE_MODE`.
+### 2.3 Backend independence
 
----
+The same semantic intent should be able to flow through different realization technologies:
 
-## 3. The "Two-Phase" Build Pipeline
+* **GF / PGF**
+* **family renderers**
+* **safe-mode fallback**
 
-We identified a critical issue in the standard GF build process where sequential compilation overwrites the binary (the "Last Man Standing" bug). The new **Build Orchestrator** (`builder/orchestrator.py`) implements a strict two-phase process to resolve this.
+GF is a renderer backend and tooling source, **not the architecture itself**.
 
-### Phase 1: Isolated Verification
+### 2.4 Shared semantics, thin language specialization
 
-The orchestrator iterates through the **Everything Matrix** inventory:
+The architecture scales by sharing:
 
-1. **Resolve Path:** Determines if the language is Tier 1, 2, or 3.
-2. **Compile:** Runs `gf -batch -c path/to/Wiki{Lang}.gf`.
-3. **Output:** Generates a temporary `.gfo` (object file).
-4. **Verdict:** If compilation fails, the **Architect Agent** is triggered to attempt a repair (see Section 6).
+* frame normalization,
+* planning,
+* construction IDs,
+* slot semantics,
+* lexical binding structure,
+* renderer contracts.
 
-### Phase 2: Global Linking
+Language-specific logic should be limited to:
 
-Once all languages are verified:
-
-1. **Aggregate:** The orchestrator collects the file paths of all successful Phase 1 candidates.
-2. **Link:** It executes a **single** `gf -make` command containing the Abstract Grammar and *all* valid Concrete Grammars.
-3. **Result:** A single `semantik_architect.pgf` binary containing 50+ languages.
-
----
-
-## 4. The "Everything Matrix" (The Brain)
-
-The system is no longer driven by static config files. It uses a **Dynamic Registry** called the **Everything Matrix** (`data/indices/everything_matrix.json`).
-
-### The Scanning Suite (`tools/everything_matrix/`)
-
-Before any build, the system runs a deep-tissue audit:
-
-* **`rgl_auditor.py`**: Scans `gf-rgl/src` to detect which modules (`Cat`, `Noun`, `Paradigms`) exist on disk. It assigns a **Maturity Score (0-10)**.
-* **`lexicon_scanner.py`**: Audits `data/lexicon/{iso_2}/` to count vocabulary size.
-* **`build_index.py`**: The master script. It runs the sub-scanners and updates the JSON matrix using strictly **2-letter ISO codes**.
-
-### Decision Logic
-
-The Build Orchestrator reads the Matrix to decide how to treat a language:
-
-* **Score > 7:** Build as **Tier 1** (High Road).
-* **Score < 7:** Downgrade to **Tier 3** (Factory) to prevent build failures.
+* lexical forms,
+* morphology,
+* local syntax / word order,
+* idiomatic overrides,
+* construction-specific realization details where required.
 
 ---
 
-## 5. Hexagonal Architecture (The Code)
+## 3. Runtime Layers
 
-The backend follows **Ports and Adapters** (Hexagonal) architecture to keep the core domain logic isolated from external tools.
+### Layer A: Semantic Inputs & Frame Normalization
 
-### The Core (`app/core/`)
+**Role:** Convert external inputs into stable internal generation commands.
 
-* **Domain:** Pure Python classes (`BioFrame`, `Sentence`, `DiscourseEntity`). No external dependencies.
-* **Logic:** `GrammarEngine` (rendering) and `DiscoursePlanner` (state).
+This layer accepts API payloads and normalizes them into domain objects.
 
-### The Adapters (`app/adapters/`)
+Current input families include:
 
-* **Input Port (API):** `ninai.py` (Recursive JSON Parser) and `api.py` (FastAPI).
-* **Output Port (Exporters):** `ud_mapping.py` (CoNLL-U conversion).
-* **Persistence:** File-system adapters reading the `gf/` directory.
-* **State:** `redis_bus.py` for Session Context storage.
+* flat frame payloads such as biography/person-style requests,
+* compatibility aliases for person/bio payloads,
+* Ninai-shaped payloads where supported.
 
-### The Application (`app/shared/`)
+Key responsibilities:
 
-* **Config:** `config.py` (Pydantic settings) is the single source of truth.
-* **Container:** Dependency Injection wiring.
+* resolve the authoritative language code,
+* normalize payload variants,
+* reject malformed or contradictory requests,
+* strip transport-only fields from the domain payload.
 
----
-
-## 6. AI Services & Automation [NEW]
-
-The v2.0 architecture integrates AI Agents to handle "Human-in-the-Loop" tasks automatically.
-
-### The Architect Agent
-
-* **Role:** The Builder.
-* **Trigger:** Build failure or missing language in the Matrix.
-* **Action:** Generates raw GF code using the **Frozen System Prompt** to create a Tier 3 grammar from scratch.
-* **Loop:** Writes Code → Compiles → Reads Error Log → Rewrites Code.
-
-### The Judge Agent
-
-* **Role:** The QA Engineer.
-* **Trigger:** Daily scheduled task or "Whistleblower" mode.
-* **Action:** Compares SKA output against the **Gold Standard** (`data/tests/gold_standard.json`).
-* **Output:** If quality is low, it automatically opens a GitHub Issue via the API.
+This layer is where input compatibility is handled. It is **not** where sentence planning should live.
 
 ---
 
-## 7. Data Flow: The Request Lifecycle
+### Layer B: Planning & Construction Runtime
 
-1. **Ingest:** User POSTs a JSON object to `/api/v1/generate/{lang_code}` (e.g., `en`).
-2. **Adapt (Dual-Path):**
-* **Path A (Strict):** If `frame_type="bio"`, validated as `BioFrame`.
-* **Path B (Prototype):** If `function="..."`, parsed as `UniversalNode` by the **Ninai Adapter**.
+**Role:** Decide the sentence structure to be realized.
 
+This is the architectural core.
 
-3. **Context:**
-* **Discourse Planner** checks Redis for `X-Session-ID`.
-* If the Subject matches the Session Focus, it applies **Pronominalization** ("She" instead of "Marie").
+The planner-centered runtime is responsible for producing a shared representation of sentence intent, including:
 
+* `PlannedSentence`
+* `construction_id`
+* topic/focus metadata
+* slot layout
+* realization options
+* construction-level semantics
 
-4. **Render:**
-* The engine maps the 2-letter code (`en`) to the internal grammar (`WikiEng`).
-* It looks up vocabulary in the **Lexicon**.
-* It applies **Weighted Topology** rules (if Tier 3) or RGL rules (if Tier 1).
+This layer is the authoritative center for:
 
+* sentence type,
+* information packaging,
+* construction choice,
+* discourse-aware decisions.
 
-5. **Export:**
-* If `Accept: text/plain`, returns the string.
-* If `Accept: text/x-conllu`, the **UD Exporter** maps the tree to dependency tags.
+The target runtime contract is:
 
-
+```text
+frame normalization
+  -> frame-to-plan bridge
+  -> planner
+  -> PlannedSentence
+  -> ConstructionPlan
+```
 
 ---
 
-## 8. Directory Map & Key Files
+### Layer C: Lexicon & Lexical Resolution
 
-| Path | Component | Description |
-| --- | --- | --- |
-| **`builder/orchestrator.py`** | **The Builder** | The script that runs the Two-Phase compilation & Architect Agent loop. |
-| **`app/adapters/ninai.py`** | **Input Port** | The recursive parser for Ninai JSON objects. |
-| **`app/core/exporters/`** | **Output Port** | Contains `ud_mapping.py` for CoNLL-U export. |
-| **`data/config/topology_weights.json`** | **Configuration** | Defines SVO/SOV/VSO weights for the Factory. |
-| **`data/tests/gold_standard.json`** | **QA Data** | The "Ground Truth" dataset (migrated from Udiron). |
-| **`gf-rgl/`** | **Tier 1 Source** | External submodule containing expert grammars. |
-| **`generated/src/`** | **Tier 3 Source** | Folder for auto-generated "Factory" grammars. |
-| **`gf/semantik_architect.pgf`** | **The Artifact** | The final compiled binary used by the API. |
+**Role:** Bind planned slots to language-appropriate lexical material.
+
+Lexical resolution is a distinct layer between planning and realization. It is not just preprocessing.
+
+This layer handles:
+
+* entity references,
+* lexical bindings,
+* lemma selection,
+* morphology-relevant lexical metadata,
+* provenance such as Wikidata QIDs or source-specific IDs where available.
+
+The lexicon remains a separate subsystem and a shared concern across backends.
+
+This separation is important because the same construction plan may be realized by different backends, but they must operate over the same lexicalized intent.
+
+---
+
+### Layer D: Renderer Backends & Surface Realization
+
+**Role:** Realize a shared construction-level plan into surface output.
+
+Renderer backends are interchangeable surface technologies operating over the same runtime contract.
+
+Supported backend classes include:
+
+* **GF / PGF renderer**
+* **family-oriented renderer**
+* **safe-mode fallback renderer**
+
+The renderer produces a `SurfaceResult`, which is then mapped to the public API response.
+
+Possible output forms include:
+
+* natural-language text,
+* debug traces / runtime metadata,
+* backend-specific diagnostics,
+* structured exports where supported.
+
+A backend may be strong for some `(lang_code, construction_id)` pairs and unavailable for others. Capability is therefore backend-specific, language-specific, and construction-specific.
+
+---
+
+### Cross-Cutting Concern: Context & Discourse State
+
+**Role:** Support discourse-aware generation beyond isolated single sentences.
+
+The repository includes discourse planning and stateful components for things such as:
+
+* topic tracking,
+* focus management,
+* referring expressions,
+* pronominalization,
+* session continuity.
+
+This is a **cross-cutting runtime concern**, not a separate renderer.
+
+When enabled, context should influence planning and reference choice through the planner/runtime layer, not by ad hoc string rewriting after realization.
+
+---
+
+## 4. Current Runtime Status vs Target Runtime
+
+### Target architecture
+
+The intended authoritative runtime is:
+
+```text
+API payload
+  -> frame normalization
+  -> frame-to-plan bridge
+  -> planner
+  -> PlannedSentence
+  -> ConstructionPlan
+  -> lexical resolution
+  -> renderer backend
+  -> SurfaceResult
+  -> API response mapping
+```
+
+### Current live behavior
+
+The repository still documents and supports a **compatibility path** in which single-sentence generation may bypass the full planner-centered path and call a realization engine more directly after frame normalization.
+
+That compatibility path is operational and useful during migration, but it is **not** the final architectural center.
+
+So the correct reading is:
+
+* **planner-centered construction runtime** = target source of truth
+* **direct frame-to-engine generation** = compatibility shim during migration
+
+This distinction matters because “it generates text” is not the same as “it is fully aligned with the final runtime contract.”
+
+---
+
+## 5. Realization Strategy & Language Coverage
+
+SemantiK Architect supports a hybrid realization strategy to balance quality, scale, and graceful degradation.
+
+### Tier 1: GF / expert-grade realization
+
+Used where strong concrete grammars and runtime support exist.
+
+Strengths:
+
+* richer morphology,
+* stronger syntax control,
+* higher-quality realization for supported constructions.
+
+### Tier 2: Curated / override layers
+
+Used where manual or project-maintained overrides improve quality beyond generic defaults.
+
+This layer can refine language-specific behavior without redefining the architecture.
+
+### Tier 3: Safe-mode / fallback realization
+
+Used to preserve runtime continuity when stronger renderers are unavailable for a given language/construction pair.
+
+This layer exists for coverage and fault tolerance, not as the architectural ideal.
+
+### Important rule
+
+A language being routable to a backend is **not** the same thing as that language being fully validated for production-grade realization.
+
+Validation must be tracked separately at the level of:
+
+* language,
+* construction family,
+* backend,
+* test coverage,
+* gold-example quality.
+
+---
+
+## 6. GF in the Architecture
+
+GF is an important part of the system, but its role must be understood correctly.
+
+### GF is:
+
+* a realization backend for selected runtime plans,
+* an offline source of grammar knowledge and QA examples,
+* a valuable resource for high-quality multilingual realization.
+
+### GF is not:
+
+* the core architecture,
+* the planner,
+* the public API contract,
+* the authoritative semantic representation,
+* the only supported realization technology.
+
+SemantiK Architect may compile and use GF assets such as:
+
+* abstract grammar definitions,
+* concrete `Wiki*` modules,
+* PGF artifacts,
+* language-specific GF-backed realization paths.
+
+But runtime authority remains with the shared planner/construction contract.
+
+---
+
+## 7. Build, Artifacts, and Validation
+
+The build/tooling layer exists to assemble, validate, and audit multilingual realization assets.
+
+Important concerns include:
+
+* language inventory / matrix generation,
+* grammar-path discovery,
+* compile audits,
+* runtime health checks,
+* capability tracking,
+* language-level validation.
+
+The key artifact for GF-backed runtime use is the compiled PGF/grammar set, but architecture correctness cannot be inferred from build success alone.
+
+A language is only meaningfully integrated when the system can demonstrate:
+
+* successful build or capability discovery,
+* successful runtime generation,
+* correct construction-level behavior,
+* acceptable surface quality,
+* regression-safe validation.
+
+---
+
+## 8. Hexagonal Architecture
+
+The backend follows **ports and adapters** so that domain logic stays isolated from infrastructure.
+
+### Core domain / application responsibilities
+
+The core is responsible for:
+
+* frame/domain models,
+* planning logic,
+* construction-level abstractions,
+* shared runtime contracts,
+* use-case orchestration.
+
+### Adapters
+
+Adapters connect the core to external systems, including:
+
+* the HTTP API,
+* persistence and filesystem access,
+* GF runtime wrappers,
+* Redis or messaging infrastructure,
+* exporter layers,
+* tooling and operational services.
+
+Dependencies point inward: adapters depend on core/application code, not the reverse.
+
+This structure keeps the architectural center stable even as external technologies change.
+
+---
+
+## 9. Automation, QA, and Operational Tooling
+
+The repository contains optional tooling and agent-oriented components for authoring, repair, QA, and maintenance.
+
+These may include builder, judge, or repair-oriented workflows.
+
+They should be understood as **operational tooling**, not as part of the deterministic core runtime contract.
+
+Core generation should remain understandable without assuming any AI service is active.
+
+The right separation is:
+
+* **core runtime** = deterministic generation architecture
+* **automation/tooling** = assistance for build, QA, repair, or maintenance
+
+---
+
+## 10. Request Lifecycle
+
+### 1. Ingest
+
+A client sends a request to the generation API.
+
+Typical route shape:
+
+```text
+POST /api/v1/generate/{lang_code}
+```
+
+### 2. Normalize
+
+The API layer:
+
+* resolves the authoritative language code,
+* validates payload shape,
+* normalizes compatible frame variants,
+* maps the request into domain form.
+
+### 3. Plan
+
+The target path converts the normalized frame into a plan-oriented representation and produces:
+
+* `PlannedSentence`
+* `ConstructionPlan`
+* runtime metadata such as `construction_id`
+
+### 4. Resolve Lexicon
+
+The system binds planned slots to lexical material needed for realization.
+
+### 5. Realize
+
+A selected backend realizes the construction plan:
+
+* GF / PGF if available and appropriate,
+* family renderer if selected,
+* safe mode if needed.
+
+### 6. Map to Public Response
+
+The internal surface result is converted into the public API response.
+
+The public response should remain clearly distinguished from internal runtime objects.
+
+---
+
+## 11. Public API Response vs Internal Runtime Objects
+
+It is important not to confuse internal and external contracts.
+
+### Internal runtime objects
+
+Examples include:
+
+* `PlannedSentence`
+* `ConstructionPlan`
+* lexical bindings
+* `SurfaceResult`
+
+These are runtime contracts inside the system.
+
+### Public API response
+
+The API exposes a user-facing response envelope, including surface text and runtime/debug metadata intended for clients.
+
+The public API response is a mapped external view of internal runtime results. It should not be documented as if it were the runtime contract itself.
+
+---
+
+## 12. Directory Map & Key Files
+
+| Path                                                       | Component              | Role                                                                            |
+| ---------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------- |
+| `app/adapters/api/contracts/generation_request_mapper.py`  | Request normalization  | Resolves language, normalizes payload variants, maps HTTP input to domain input |
+| `app/adapters/api/contracts/generation_response_mapper.py` | Response mapping       | Maps internal generation results to the public API contract                     |
+| `app/adapters/api/routers/generation.py`                   | API route              | HTTP entry point for generation                                                 |
+| `app/adapters/engines/`                                    | Renderer backends      | GF, family, and safe-mode realization adapters                                  |
+| `app/adapters/persistence/lexicon/`                        | Lexical infrastructure | Lexicon access, caching, indexing, and entity/lexeme resolution                 |
+| `discourse/`                                               | Context and discourse  | State, referring expressions, discourse planning                                |
+| `gf/`                                                      | GF grammars            | Abstract and concrete GF modules used by GF-backed realization                  |
+| `schemas/contracts/`                                       | Runtime contracts      | Shared schemas for construction/runtime structures                              |
+| `schemas/frames/`                                          | Frame schemas          | Structured semantic input families                                              |
+| `tools/language_health/`                                   | Validation tooling     | Compile audits, runtime checks, reporting                                       |
+| `tools/everything_matrix/`                                 | Inventory/tooling      | Language/resource scanning and matrix generation                                |
+| `builder/orchestrator/`                                    | Build orchestration    | Build and assembly workflows for grammar/runtime assets                         |
+
+---
+
+## 13. What This System Is Not
+
+SemantiK Architect is **not**:
+
+* a pure template engine,
+* a GF-only architecture,
+* a biography-only system,
+* a renderer-first design,
+* an LLM-only generation stack,
+* a system where build success alone proves language readiness.
+
+It is best understood as a **planner-first, construction-centered, backend-flexible multilingual NLG platform**.
