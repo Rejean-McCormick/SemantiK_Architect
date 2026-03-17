@@ -37,7 +37,7 @@ class TestGenerateText:
         planner.plan = AsyncMock(
             return_value={
                 "construction_id": "copula_equative_classification",
-                "lang_code": "eng",
+                "lang_code": "en",
                 "slot_map": {"subject": "Alan Turing"},
             }
         )
@@ -46,7 +46,7 @@ class TestGenerateText:
         lexical_resolver.resolve = AsyncMock(
             return_value={
                 "construction_id": "copula_equative_classification",
-                "lang_code": "eng",
+                "lang_code": "en",
                 "slot_map": {"subject": "Alan Turing"},
                 "lexical_bindings": {
                     "profession": {"lemma": "mathematician"},
@@ -59,7 +59,7 @@ class TestGenerateText:
         realizer.realize = AsyncMock(
             return_value=SimpleNamespace(
                 text="Alan Turing is a British mathematician.",
-                lang_code="eng",
+                lang_code="en",
                 construction_id="copula_equative_classification",
                 renderer_backend="family",
                 fallback_used=False,
@@ -84,21 +84,32 @@ class TestGenerateText:
             realizer=realizer,
         )
 
-        result = await use_case.execute("eng", frame)
+        result = await use_case.execute("en", frame)
 
         assert isinstance(result, Sentence)
         assert result.text == "Alan Turing is a British mathematician."
-        assert result.lang_code == "eng"
+        assert result.lang_code == "en"
         assert result.generation_time_ms == 12.5
 
         assert result.debug_info["runtime_path"] == "planner_first"
         assert result.debug_info["fallback_used"] is False
+        assert result.debug_info["lang_code"] == "en"
         assert result.debug_info["construction_id"] == "copula_equative_classification"
         assert result.debug_info["renderer_backend"] == "family"
         assert result.debug_info["selected_backend"] == "family"
         assert result.debug_info["planner"] == planner.__class__.__name__
         assert result.debug_info["lexical_resolver"] == lexical_resolver.__class__.__name__
         assert result.debug_info["realizer"] == realizer.__class__.__name__
+        assert result.debug_info["slot_keys"] == ["subject"]
+        assert result.debug_info["tokens"] == [
+            "Alan",
+            "Turing",
+            "is",
+            "a",
+            "British",
+            "mathematician.",
+        ]
+        assert result.debug_info["generation_time_ms"] == 12.5
 
         planner.plan.assert_awaited_once()
         lexical_resolver.resolve.assert_awaited_once()
@@ -121,7 +132,7 @@ class TestGenerateText:
         legacy_engine.generate = AsyncMock(
             return_value=Sentence(
                 text="Alan Turing is a Mathematician.",
-                lang_code="eng",
+                lang_code="en",
             )
         )
 
@@ -133,18 +144,22 @@ class TestGenerateText:
             allow_legacy_engine_fallback=True,
         )
 
-        result = await use_case.execute("eng", frame)
+        result = await use_case.execute("en", frame)
 
         assert result.text == "Alan Turing is a Mathematician."
-        assert result.lang_code == "eng"
+        assert result.lang_code == "en"
         assert result.debug_info["runtime_path"] == "legacy_engine_fallback"
         assert result.debug_info["fallback_used"] is True
         assert "planner exploded" in result.debug_info["fallback_reason"]
         assert result.debug_info["planner_runtime_configured"] is True
         assert result.debug_info["legacy_engine"] == legacy_engine.__class__.__name__
+        assert result.debug_info["renderer_backend"] == "gf"
+        assert result.debug_info["selected_backend"] == "gf"
+        assert result.debug_info["attempted_backends"] == ["gf"]
+        assert result.debug_info["lang_code"] == "en"
 
         planner.plan.assert_awaited_once()
-        legacy_engine.generate.assert_awaited_once_with("eng", frame)
+        legacy_engine.generate.assert_awaited_once_with("en", frame)
         lexical_resolver.resolve.assert_not_called()
         realizer.realize.assert_not_called()
 
@@ -168,35 +183,41 @@ class TestGenerateText:
         )
 
         with pytest.raises(DomainError) as excinfo:
-            await use_case.execute("eng", frame)
+            await use_case.execute("en", frame)
 
         assert "Unexpected generation failure: planner exploded" in str(excinfo.value)
         planner.plan.assert_awaited_once()
         legacy_engine.generate.assert_not_called()
 
-    async def test_execute_uses_legacy_engine_when_planner_runtime_is_not_configured(self):
+    async def test_execute_uses_explicit_legacy_fallback_when_planner_runtime_is_not_configured(
+        self,
+    ):
         frame = _sample_frame()
 
         legacy_engine = MagicMock()
         legacy_engine.generate = AsyncMock(
             return_value=Sentence(
                 text="Alan Turing is a Mathematician.",
-                lang_code="eng",
+                lang_code="en",
                 debug_info={"legacy_note": "compatibility"},
             )
         )
 
         use_case = GenerateText(engine=legacy_engine)
 
-        result = await use_case.execute("eng", frame)
+        result = await use_case.execute("en", frame)
 
         assert result.text == "Alan Turing is a Mathematician."
-        assert result.lang_code == "eng"
-        assert result.debug_info["runtime_path"] == "legacy_engine"
-        assert result.debug_info["fallback_used"] is False
+        assert result.lang_code == "en"
+        assert result.debug_info["runtime_path"] == "legacy_engine_fallback"
+        assert result.debug_info["fallback_used"] is True
+        assert result.debug_info["fallback_reason"] == "planner_runtime_unavailable"
         assert result.debug_info["legacy_note"] == "compatibility"
+        assert result.debug_info["renderer_backend"] == "gf"
+        assert result.debug_info["selected_backend"] == "gf"
+        assert result.debug_info["attempted_backends"] == ["gf"]
 
-        legacy_engine.generate.assert_awaited_once_with("eng", frame)
+        legacy_engine.generate.assert_awaited_once_with("en", frame)
 
     async def test_execute_rejects_invalid_frame_immediately(self):
         use_case = GenerateText(engine=MagicMock(generate=AsyncMock()))
@@ -204,7 +225,7 @@ class TestGenerateText:
         invalid_frame = SimpleNamespace(frame_type="", subject={})
 
         with pytest.raises(InvalidFrameError, match="frame_type"):
-            await use_case.execute("eng", invalid_frame)
+            await use_case.execute("en", invalid_frame)
 
     async def test_execute_rejects_bio_frame_without_subject_name(self):
         use_case = GenerateText(engine=MagicMock(generate=AsyncMock()))
@@ -216,7 +237,7 @@ class TestGenerateText:
         )
 
         with pytest.raises(InvalidFrameError, match="subject"):
-            await use_case.execute("eng", invalid_frame)
+            await use_case.execute("en", invalid_frame)
 
     async def test_execute_rejects_empty_lang_code(self):
         use_case = GenerateText(engine=MagicMock(generate=AsyncMock()))
@@ -230,21 +251,60 @@ class TestGenerateText:
         use_case = GenerateText()
 
         with pytest.raises(DomainError) as excinfo:
-            await use_case.execute("eng", _sample_frame())
+            await use_case.execute("en", _sample_frame())
 
         assert (
-            "GenerateText is not configured with either a planner-first runtime "
-            "or a legacy grammar engine." in str(excinfo.value)
+            "Planner-first runtime is required but not configured, "
+            "and legacy fallback is disabled." in str(excinfo.value)
         )
 
-    async def test_execute_wraps_unmappable_realizer_output_in_domain_error(self):
+    async def test_execute_rejects_planner_first_result_missing_required_runtime_metadata(
+        self,
+    ):
         frame = _sample_frame()
 
         planner = MagicMock()
         planner.plan = AsyncMock(
             return_value={
                 "construction_id": "copula_equative_classification",
-                "lang_code": "eng",
+                "lang_code": "en",
+                "slot_map": {"subject": "Alan Turing"},
+            }
+        )
+
+        realizer = MagicMock()
+        realizer.realize = AsyncMock(
+            return_value=SimpleNamespace(
+                text="Alan Turing is a British mathematician.",
+                lang_code="en",
+                construction_id="copula_equative_classification",
+                renderer_backend=None,
+                fallback_used=False,
+                tokens=["Alan", "Turing", "is", "a", "British", "mathematician."],
+                debug_info={"construction_id": "copula_equative_classification"},
+                generation_time_ms=5.0,
+            )
+        )
+
+        use_case = GenerateText(
+            planner=planner,
+            realizer=realizer,
+            allow_legacy_engine_fallback=False,
+        )
+
+        with pytest.raises(DomainError) as excinfo:
+            await use_case.execute("en", frame)
+
+        assert "missing renderer_backend" in str(excinfo.value)
+
+    async def test_execute_fails_cleanly_when_realizer_output_is_unmappable(self):
+        frame = _sample_frame()
+
+        planner = MagicMock()
+        planner.plan = AsyncMock(
+            return_value={
+                "construction_id": "copula_equative_classification",
+                "lang_code": "en",
                 "slot_map": {"subject": "Alan Turing"},
             }
         )
@@ -259,9 +319,8 @@ class TestGenerateText:
         )
 
         with pytest.raises(DomainError) as excinfo:
-            await use_case.execute("eng", frame)
+            await use_case.execute("en", frame)
 
-        assert "Unexpected generation failure" in str(excinfo.value)
         assert "missing 'text'" in str(excinfo.value)
 
     async def test_execute_planner_first_result_is_deterministic_across_repeated_calls(self):
@@ -271,7 +330,7 @@ class TestGenerateText:
         planner.plan = AsyncMock(
             return_value={
                 "construction_id": "copula_equative_classification",
-                "lang_code": "eng",
+                "lang_code": "en",
                 "slot_map": {"subject": "Alan Turing"},
             }
         )
@@ -280,7 +339,7 @@ class TestGenerateText:
         realizer.realize = AsyncMock(
             return_value=SimpleNamespace(
                 text="Alan Turing is a British mathematician.",
-                lang_code="eng",
+                lang_code="en",
                 construction_id="copula_equative_classification",
                 renderer_backend="family",
                 fallback_used=False,
@@ -292,13 +351,15 @@ class TestGenerateText:
 
         use_case = GenerateText(planner=planner, realizer=realizer)
 
-        first = await use_case.execute("eng", frame)
-        second = await use_case.execute("eng", frame)
+        first = await use_case.execute("en", frame)
+        second = await use_case.execute("en", frame)
 
         assert first.text == second.text
-        assert first.lang_code == second.lang_code
+        assert first.lang_code == second.lang_code == "en"
         assert first.debug_info["runtime_path"] == "planner_first"
         assert second.debug_info["runtime_path"] == "planner_first"
+        assert first.debug_info["construction_id"] == second.debug_info["construction_id"]
+        assert first.debug_info["renderer_backend"] == second.debug_info["renderer_backend"]
 
 
 @pytest.mark.asyncio
@@ -364,3 +425,4 @@ class TestBuildLanguage:
         assert "redis unavailable" in str(excinfo.value)
         mock_broker.publish.assert_awaited_once()
         mock_task_queue.enqueue_language_build.assert_awaited_once()
+

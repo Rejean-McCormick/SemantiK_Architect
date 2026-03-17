@@ -13,8 +13,10 @@ incomplete concrete WikiI of SemantikArchitect = open Prelude in {
     strNat s      = s ;
     strEvent s    = s ;
 
-    mkBioProf e p   = ss (e.s ++ "is a" ++ p.s) ;
-    mkBioNat  e n   = ss (e.s ++ "is" ++ n.s) ;
-    mkBioFull e p n = ss (e.s ++ "is a" ++ n.s ++ p.s) ;
-    mkEvent e ev    = ss (e.s ++ "participated in" ++ ev.s) ;
+  -- Language-specific surface realization must NOT live here.
+  -- Each concrete language module (e.g. WikiEng, WikiFre) must define:
+  --   mkBioProf
+  --   mkBioNat
+  --   mkBioFull
+  --   mkEvent
 }

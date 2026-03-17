@@ -1,18 +1,35 @@
 # utils/eval_bios.py
 """
-Evaluate biography rendering on a sample of Wikidata humans.
+Evaluate biography generation against the live SemantiK Architect API.
 
-This script is intentionally lightweight and offline-friendly:
+This version is aligned with the current public generation contract:
+
+- primary target: POST /api/v1/generate/{lang}
+- success envelope centered on:
+    * text
+    * lang_code
+    * construction_id
+    * renderer_backend
+    * fallback_used
+    * tokens
+    * debug_info
+    * generation_time_ms
+
+The evaluator is intentionally lightweight and offline-friendly:
 
 - It can:
     * read a preprocessed local JSON / JSONL / CSV file of people, OR
-    * (optionally) query Wikidata SPARQL directly if `requests` is installed.
+    * optionally query Wikidata SPARQL directly if `requests` is installed.
 
 - For each person, it:
-    * builds a minimal BioFrame payload (name, gender, profession, nationality),
-    * renders bios via the v2.1 GFGrammarEngine,
+    * builds a bio-compatible payload,
+    * calls the local SemantiK API,
+    * validates the public response contract,
     * records whether a non-empty sentence was produced,
-    * optionally compares against gold reference bios if present in the input.
+    * records runtime metadata (resolved language, runtime path, fallback),
+    * flags obvious language-surface mismatches
+      (e.g. lang=fr, resolved_language=WikiFre, but English surface),
+    * optionally compares against gold bios if present in the input.
 
 Input schema (LOCAL MODE, recommended)
 --------------------------------------
@@ -20,43 +37,27 @@ Input schema (LOCAL MODE, recommended)
 Each record should contain at least:
 
     {
-        "id": "Q7186",                        # Wikidata QID (or any stable id)
-        "label": "Marie Curie",             # Display name
-        "gender": "female",                 # 'male' / 'female' / 'other'
+        "id": "Q7186",
+        "label": "Marie Curie",
+        "gender": "female",
         "profession_lemmas": ["physicist"],
         "nationality_lemmas": ["polish"],
 
-        # Optional: gold reference bios, keyed by language code
         "gold_bios": {
             "en": "Marie Curie was a Polish-French physicist and chemist.",
-            "fr": "Marie Curie est une physicienne et chimiste polonaise-française."
+            "fr": "Marie Curie était une physicienne et chimiste polonaise-française."
         }
     }
 
 You can store these as:
 
-- JSON array: [ {record1}, {record2}, ... ]
-- JSONL / NDJSON: one JSON object per line
-- CSV: with columns
+- JSON array
+- JSONL / NDJSON
+- CSV with columns:
     * id, label, gender,
     * profession_lemmas (comma-separated),
     * nationality_lemmas (comma-separated),
     * gold_bios (optional JSON string)
-
-Wikidata live mode
-------------------
-
-If you pass `--source wikidata`, the script will:
-
-- query the public Wikidata SPARQL endpoint,
-- fetch a small sample of humans with:
-    * label (EN),
-    * gender,
-    * up to a few occupations and nationalities,
-- derive `profession_lemmas` and `nationality_lemmas` from English labels.
-
-This is only meant as a quick demo; for serious experiments, use a local
-preprocessed dump with a stable schema.
 
 Usage
 -----
@@ -66,23 +67,30 @@ From project root:
     python utils/eval_bios.py \
         --source local \
         --input data/samples/wikidata_people_sample.jsonl \
-        --langs fr it es \
-        --limit 200 \
+        --langs en fr \
+        --limit 100 \
         --print-samples 5
 
 or:
 
     python utils/eval_bios.py \
         --source wikidata \
-        --limit 100 \
-        --langs en fr it
+        --langs en fr \
+        --limit 50
 
-Output
-------
+You can also point to a non-default API:
 
-- Summary coverage per language (how many bios were rendered).
-- Optional CSV with per-person, per-language outputs if `--output-csv` is set.
-- Optional printed samples for manual inspection.
+    python utils/eval_bios.py \
+        --api-base http://localhost:8000/api/v1 \
+        --source local \
+        --input data/samples/wikidata_people_sample.jsonl \
+        --langs en fr
+
+Exit code
+---------
+
+- 0: no contract/language failures detected
+- 1: one or more contract/language failures detected
 """
 
 from __future__ import annotations
@@ -93,10 +101,11 @@ import json
 import os
 import random
 import sys
-import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
+from urllib import error as urlerror
+from urllib import request as urlrequest
 
 # ---------------------------------------------------------------------------
 # Project bootstrap (run reliably from anywhere)
@@ -104,7 +113,6 @@ from typing import Any, Dict, Iterable, List, Optional
 
 
 def _find_project_root(start: Path) -> Optional[Path]:
-    """Walk up until we find a plausible repo root."""
     for p in [start, *start.parents]:
         if (p / "manage.py").exists() and (p / "app").exists():
             return p
@@ -119,7 +127,6 @@ PROJECT_ROOT = _find_project_root(THIS_DIR) or _find_project_root(Path.cwd())
 if PROJECT_ROOT and str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-# Keep relative paths consistent (optional, but helps when launched by GUI/tool runners)
 if PROJECT_ROOT:
     try:
         os.chdir(str(PROJECT_ROOT))
@@ -127,15 +134,40 @@ if PROJECT_ROOT:
         pass
 
 # ---------------------------------------------------------------------------
-# Imports that need the project root on sys.path
+# Optional project logger
 # ---------------------------------------------------------------------------
 
-from app.adapters.engines.gf_wrapper import GFGrammarEngine  # noqa: E402
-from app.core.domain.frame import BioFrame  # noqa: E402
+try:
+    from utils.tool_logger import ToolLogger  # type: ignore
 
-from utils.tool_logger import ToolLogger  # noqa: E402
+    log = ToolLogger("eval_bios")
+except Exception:
+    class _FallbackLog:
+        def info(self, msg: str) -> None:
+            print(msg)
 
-log = ToolLogger("eval_bios")
+        def warning(self, msg: str) -> None:
+            print(f"[WARN] {msg}")
+
+        def error(self, msg: str, fatal: bool = False) -> None:
+            print(f"[ERROR] {msg}")
+            if fatal:
+                raise SystemExit(1)
+
+        def stage(self, title: str, msg: str) -> None:
+            print(f"\n[{title}] {msg}")
+
+        def header(self, data: Dict[str, Any]) -> None:
+            print("=== eval_bios ===")
+            for k, v in data.items():
+                print(f"{k}: {v}")
+
+        def summary(self, data: Dict[str, Any]) -> None:
+            print("\n=== summary ===")
+            for k, v in data.items():
+                print(f"{k}: {v}")
+
+    log = _FallbackLog()
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -144,8 +176,6 @@ log = ToolLogger("eval_bios")
 
 @dataclass
 class PersonRecord:
-    """Minimal person representation for bio rendering."""
-
     id: str
     label: str
     gender: str = "unknown"
@@ -156,14 +186,28 @@ class PersonRecord:
 
 @dataclass
 class EvalResult:
-    """Per (person, language) evaluation outcome."""
-
     person_id: str
     lang: str
     rendered: bool
     output: str
     has_gold: bool
     exact_match: bool
+
+    contract_ok: bool
+    contract_errors: List[str] = field(default_factory=list)
+
+    response_lang_code: str = ""
+    construction_id: str = ""
+    renderer_backend: str = ""
+    runtime_path: str = ""
+    resolved_language: str = ""
+    fallback_used: bool = False
+    generation_time_ms: float = 0.0
+
+    language_surface_ok: bool = True
+    language_surface_reason: str = ""
+
+    raw_response: Dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -172,10 +216,6 @@ class EvalResult:
 
 
 def _normalize_gender(raw: Any) -> str:
-    """
-    Normalize gender into the engine-friendly compact codes:
-    - "m" / "f" / "" (unknown)
-    """
     if raw is None:
         return ""
     s = str(raw).strip().lower()
@@ -184,6 +224,10 @@ def _normalize_gender(raw: Any) -> str:
     if s in {"female", "f", "woman", "feminine", "q6581072"}:
         return "f"
     return ""
+
+
+def _normalize_lang(raw: Any) -> str:
+    return str(raw or "").strip().lower()
 
 
 def _ensure_list(value: Any) -> List[str]:
@@ -225,7 +269,6 @@ def _load_csv_records(path: Path) -> List[Dict[str, Any]]:
 
 
 def load_local_persons(path: Path) -> List[PersonRecord]:
-    """Load person records from JSON / JSONL / CSV into PersonRecord objects."""
     suffix = path.suffix.lower()
     if suffix in {".json", ".jsonl", ".ndjson"}:
         raw_records = _load_json_records(path)
@@ -267,7 +310,7 @@ def load_local_persons(path: Path) -> List[PersonRecord]:
                     log.warning(f"Could not parse gold_bios JSON for id={pid}: {gold_bios_raw}")
             elif isinstance(gold_bios_raw, dict):
                 gold_bios = {
-                    str(k): str(v).strip()
+                    _normalize_lang(k): str(v).strip()
                     for k, v in gold_bios_raw.items()
                     if str(v).strip()
                 }
@@ -282,7 +325,7 @@ def load_local_persons(path: Path) -> List[PersonRecord]:
                     gold_bios=gold_bios,
                 )
             )
-        except Exception as exc:  # defensive
+        except Exception as exc:
             log.error(f"Error processing record {rec}: {exc}")
 
     log.info(f"Loaded {len(persons)} person records from {path}")
@@ -295,11 +338,6 @@ def load_local_persons(path: Path) -> List[PersonRecord]:
 
 
 def fetch_wikidata_persons(limit: int) -> List[PersonRecord]:
-    """
-    Fetch a small sample of humans from Wikidata via SPARQL.
-
-    Requires `requests`. If not installed, raises RuntimeError.
-    """
     try:
         import requests  # type: ignore
     except ImportError as exc:
@@ -325,7 +363,7 @@ def fetch_wikidata_persons(limit: int) -> List[PersonRecord]:
 
     headers = {
         "Accept": "application/sparql-results+json",
-        "User-Agent": "semantik-architect-eval-bios/0.1 (tooling)",
+        "User-Agent": "semantik-architect-eval-bios/0.2 (tooling)",
     }
 
     resp = requests.get(endpoint, params={"query": sparql}, headers=headers, timeout=60)
@@ -365,11 +403,8 @@ def fetch_wikidata_persons(limit: int) -> List[PersonRecord]:
         if nat_label:
             rec["nationalities"].add(nat_label)
 
-        if len(agg) >= limit:
-            continue
-
     persons: List[PersonRecord] = []
-    for pid, rec in agg.items():
+    for pid, rec in list(agg.items())[:limit]:
         label = rec.get("label") or pid
         gender = rec.get("gender") or ""
         prof_lemmas = [p.lower() for p in sorted(rec.get("professions") or [])]
@@ -389,58 +424,43 @@ def fetch_wikidata_persons(limit: int) -> List[PersonRecord]:
 
 
 # ---------------------------------------------------------------------------
-# Core evaluation
+# HTTP API adapter
 # ---------------------------------------------------------------------------
 
-_engine: Optional[GFGrammarEngine] = None
-_engine_ready: Optional[bool] = None
+
+def _api_post_json(url: str, payload: Dict[str, Any], timeout: int) -> Dict[str, Any]:
+    data = json.dumps(payload).encode("utf-8")
+    req = urlrequest.Request(
+        url,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlrequest.urlopen(req, timeout=timeout) as resp:
+            body = resp.read().decode("utf-8")
+            return json.loads(body) if body.strip() else {}
+    except urlerror.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {exc.code} from generation API: {body}") from exc
+    except urlerror.URLError as exc:
+        raise RuntimeError(f"Could not reach generation API: {exc}") from exc
 
 
-def _get_engine() -> Optional[GFGrammarEngine]:
-    """Lazy-init GF engine and force-load grammar once via health_check()."""
-    global _engine, _engine_ready
-
-    if _engine is None:
-        try:
-            _engine = GFGrammarEngine()
-        except Exception as e:
-            log.error(f"Failed to initialize GFGrammarEngine: {e}")
-            return None
-
-    if _engine_ready is None:
-        try:
-            ok = asyncio.run(_engine.health_check())
-        except Exception as e:
-            log.error(f"GFGrammarEngine health_check() failed: {e}")
-            ok = False
-        _engine_ready = bool(ok)
-
-        if not _engine_ready:
-            log.error("GFGrammarEngine is not healthy (grammar not loaded / missing Wiki.pgf).")
-            return None
-
-    return _engine
-
-
-def _render_bio_adapter(
+def _build_bio_payload(
     *,
     person_id: str,
     name: str,
     gender_raw: str,
     profession_lemma: str,
     nationality_lemma: str,
-    lang_code: str,
-) -> str:
-    """
-    Adapter that builds a BioFrame and renders it using GFGrammarEngine (v2.1).
-    """
-    engine = _get_engine()
-    if engine is None:
-        return ""
-
+) -> Dict[str, Any]:
     gender = _normalize_gender(gender_raw)
 
-    # Put profession/nationality in BOTH subject + properties for max back-compat.
     subject = {
         "qid": person_id,
         "name": name,
@@ -448,30 +468,174 @@ def _render_bio_adapter(
         "profession": profession_lemma,
         "nationality": nationality_lemma,
     }
-    props = {"profession": profession_lemma, "nationality": nationality_lemma}
 
-    try:
-        frame = BioFrame(frame_type="bio", subject=subject, properties=props)
-    except Exception as e:
-        log.warning(f"Could not build BioFrame for {person_id}: {e}")
-        return ""
+    properties = {
+        "profession": profession_lemma,
+        "nationality": nationality_lemma,
+    }
 
-    try:
-        sentence = asyncio.run(engine.generate(lang_code, frame))
-        # sentence is typically a domain object with .text, but be defensive
-        text = getattr(sentence, "text", sentence)
-        return (text or "").strip()
-    except Exception as e:
-        log.warning(f"Rendering failed for {name} ({lang_code}): {e}")
-        return ""
+    payload = {
+        "frame_type": "bio",
+        "name": name,
+        "profession": profession_lemma,
+        "nationality": nationality_lemma,
+        "gender": gender,
+        "subject": subject,
+        "properties": properties,
+    }
+
+    return payload
+
+
+def _validate_public_response_contract(response: Dict[str, Any], requested_lang: str) -> List[str]:
+    errors: List[str] = []
+
+    if not isinstance(response, dict):
+        return ["response is not a JSON object"]
+
+    if not isinstance(response.get("text"), str):
+        errors.append("missing or invalid top-level 'text'")
+
+    if not isinstance(response.get("lang_code"), str):
+        errors.append("missing or invalid top-level 'lang_code'")
+    else:
+        if _normalize_lang(response.get("lang_code")) != _normalize_lang(requested_lang):
+            errors.append(
+                f"top-level lang_code mismatch: expected {requested_lang}, got {response.get('lang_code')}"
+            )
+
+    if "construction_id" not in response:
+        errors.append("missing top-level 'construction_id'")
+
+    if "renderer_backend" not in response:
+        errors.append("missing top-level 'renderer_backend'")
+
+    if not isinstance(response.get("fallback_used"), bool):
+        errors.append("missing or invalid top-level 'fallback_used'")
+
+    tokens = response.get("tokens")
+    if not isinstance(tokens, list) or any(not isinstance(t, str) for t in tokens):
+        errors.append("missing or invalid top-level 'tokens'")
+
+    debug_info = response.get("debug_info")
+    if not isinstance(debug_info, dict):
+        errors.append("missing or invalid top-level 'debug_info'")
+    else:
+        for key in ("runtime_path", "fallback_used", "lang_code"):
+            if key not in debug_info:
+                errors.append(f"debug_info missing '{key}'")
+
+        if "fallback_used" in debug_info and response.get("fallback_used") != debug_info.get("fallback_used"):
+            errors.append("top-level fallback_used does not match debug_info.fallback_used")
+
+        if "lang_code" in debug_info and _normalize_lang(debug_info.get("lang_code")) != _normalize_lang(requested_lang):
+            errors.append(
+                f"debug_info.lang_code mismatch: expected {requested_lang}, got {debug_info.get('lang_code')}"
+            )
+
+    if "generation_time_ms" in response and not isinstance(response.get("generation_time_ms"), (int, float)):
+        errors.append("invalid top-level 'generation_time_ms'")
+
+    return errors
+
+
+def _looks_obviously_english(text: str) -> bool:
+    s = f" {text.strip().lower()} "
+    markers = [
+        " is ",
+        " is a ",
+        " participated in ",
+        " was ",
+        " were ",
+        " british ",
+        " mathematician ",
+        " physicist ",
+        " chemist ",
+    ]
+    return any(m in s for m in markers)
+
+
+def _looks_obviously_french(text: str) -> bool:
+    s = f" {text.strip().lower()} "
+    markers = [
+        " est ",
+        " était ",
+        " participe à ",
+        " français ",
+        " française ",
+        " britannique ",
+        " mathématicien ",
+        " mathématicienne ",
+        " physicien ",
+        " physicienne ",
+    ]
+    return any(m in s for m in markers)
+
+
+def _check_language_surface(
+    *,
+    requested_lang: str,
+    resolved_language: str,
+    output: str,
+) -> tuple[bool, str]:
+    if not output.strip():
+        return False, "empty_output"
+
+    lang = _normalize_lang(requested_lang)
+    resolved = str(resolved_language or "").strip()
+
+    if lang == "fr":
+        if resolved == "WikiFre" and _looks_obviously_english(output):
+            return False, "resolved_wikifre_but_surface_looks_english"
+        if _looks_obviously_english(output) and not _looks_obviously_french(output):
+            return False, "requested_fr_but_surface_looks_english"
+
+    if lang == "en":
+        if resolved == "WikiEng" and _looks_obviously_french(output):
+            return False, "resolved_wikieng_but_surface_looks_french"
+
+    return True, ""
+
+
+def _normalize_text_for_match(text: str) -> str:
+    return " ".join(str(text or "").strip().split()).casefold()
+
+
+def _render_bio_via_api(
+    *,
+    api_base: str,
+    timeout: int,
+    person_id: str,
+    name: str,
+    gender_raw: str,
+    profession_lemma: str,
+    nationality_lemma: str,
+    lang_code: str,
+) -> Dict[str, Any]:
+    payload = _build_bio_payload(
+        person_id=person_id,
+        name=name,
+        gender_raw=gender_raw,
+        profession_lemma=profession_lemma,
+        nationality_lemma=nationality_lemma,
+    )
+    url = f"{api_base.rstrip('/')}/generate/{_normalize_lang(lang_code)}"
+    return _api_post_json(url, payload, timeout=timeout)
+
+
+# ---------------------------------------------------------------------------
+# Core evaluation
+# ---------------------------------------------------------------------------
 
 
 def evaluate_persons(
     persons: Iterable[PersonRecord],
     langs: List[str],
+    *,
+    api_base: str,
+    timeout: int,
     max_items: Optional[int] = None,
 ) -> List[EvalResult]:
-    """For each person and language, render and collect results."""
     results: List[EvalResult] = []
     count = 0
 
@@ -484,29 +648,83 @@ def evaluate_persons(
             prof_lemma = person.profession_lemmas[0] if person.profession_lemmas else ""
             nat_lemma = person.nationality_lemmas[0] if person.nationality_lemmas else ""
 
-            output = _render_bio_adapter(
-                person_id=person.id,
-                name=person.label,
-                gender_raw=person.gender,
-                profession_lemma=prof_lemma,
-                nationality_lemma=nat_lemma,
-                lang_code=lang,
-            )
+            try:
+                response = _render_bio_via_api(
+                    api_base=api_base,
+                    timeout=timeout,
+                    person_id=person.id,
+                    name=person.label,
+                    gender_raw=person.gender,
+                    profession_lemma=prof_lemma,
+                    nationality_lemma=nat_lemma,
+                    lang_code=lang,
+                )
+            except Exception as exc:
+                response = {
+                    "text": "",
+                    "lang_code": _normalize_lang(lang),
+                    "fallback_used": False,
+                    "tokens": [],
+                    "debug_info": {
+                        "runtime_path": "evaluation_error",
+                        "lang_code": _normalize_lang(lang),
+                        "fallback_used": False,
+                        "error": str(exc),
+                    },
+                    "generation_time_ms": 0.0,
+                }
 
+            contract_errors = _validate_public_response_contract(response, lang)
+            contract_ok = not contract_errors
+
+            output = str(response.get("text") or "").strip()
             rendered = bool(output)
 
-            gold = person.gold_bios.get(lang)
-            has_gold = bool(gold and gold.strip())
-            exact_match = bool(has_gold and gold.strip() == output)
+            debug_info = response.get("debug_info") if isinstance(response.get("debug_info"), dict) else {}
+            resolved_language = str(debug_info.get("resolved_language") or "")
+            runtime_path = str(debug_info.get("runtime_path") or "")
+            fallback_used = bool(response.get("fallback_used", False))
+            response_lang_code = _normalize_lang(response.get("lang_code"))
+            construction_id = str(response.get("construction_id") or "")
+            renderer_backend = str(
+                response.get("renderer_backend")
+                or debug_info.get("renderer_backend")
+                or ""
+            )
+            generation_time_ms = float(response.get("generation_time_ms") or 0.0)
+
+            language_surface_ok, language_surface_reason = _check_language_surface(
+                requested_lang=lang,
+                resolved_language=resolved_language,
+                output=output,
+            )
+
+            gold = person.gold_bios.get(_normalize_lang(lang), "")
+            has_gold = bool(gold.strip())
+            exact_match = bool(
+                has_gold and _normalize_text_for_match(gold) == _normalize_text_for_match(output)
+            )
 
             results.append(
                 EvalResult(
                     person_id=person.id,
-                    lang=lang,
+                    lang=_normalize_lang(lang),
                     rendered=rendered,
                     output=output,
                     has_gold=has_gold,
                     exact_match=exact_match,
+                    contract_ok=contract_ok,
+                    contract_errors=contract_errors,
+                    response_lang_code=response_lang_code,
+                    construction_id=construction_id,
+                    renderer_backend=renderer_backend,
+                    runtime_path=runtime_path,
+                    resolved_language=resolved_language,
+                    fallback_used=fallback_used,
+                    generation_time_ms=generation_time_ms,
+                    language_surface_ok=language_surface_ok,
+                    language_surface_reason=language_surface_reason,
+                    raw_response=response,
                 )
             )
 
@@ -514,7 +732,6 @@ def evaluate_persons(
 
 
 def summarize_results(results: List[EvalResult]) -> None:
-    """Print a compact textual summary to stdout."""
     if not results:
         print("No evaluation results.")
         return
@@ -528,7 +745,7 @@ def summarize_results(results: List[EvalResult]) -> None:
 
     header = (
         f"{'Lang':<6} {'Pairs':>8} {'Rendered':>10} {'Coverage%':>10} "
-        f"{'HasGold':>8} {'ExactMatch':>11}"
+        f"{'HasGold':>8} {'Exact':>8} {'ContractOK':>11} {'LangOK':>8}"
     )
     print(header)
     print("-" * len(header))
@@ -538,26 +755,67 @@ def summarize_results(results: List[EvalResult]) -> None:
         rendered = sum(1 for r in rs if r.rendered)
         has_gold = sum(1 for r in rs if r.has_gold)
         exact = sum(1 for r in rs if r.exact_match)
+        contract_ok = sum(1 for r in rs if r.contract_ok)
+        lang_ok = sum(1 for r in rs if r.language_surface_ok)
         coverage = 100.0 * rendered / total if total else 0.0
-        exact_rate = 100.0 * exact / has_gold if has_gold else 0.0
 
         print(
             f"{lang:<6} {total:>8} {rendered:>10} {coverage:>9.1f}% "
-            f"{has_gold:>8} {exact:>6} ({exact_rate:4.1f}%)"
+            f"{has_gold:>8} {exact:>8} {contract_ok:>11} {lang_ok:>8}"
         )
 
     print()
 
 
 def dump_results_csv(results: List[EvalResult], path: Path) -> None:
-    """Save detailed results to a CSV file for later analysis."""
     log.info(f"Writing detailed results CSV to {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
+
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["person_id", "lang", "rendered", "has_gold", "exact_match", "output"])
+        writer.writerow(
+            [
+                "person_id",
+                "lang",
+                "rendered",
+                "has_gold",
+                "exact_match",
+                "contract_ok",
+                "contract_errors",
+                "response_lang_code",
+                "construction_id",
+                "renderer_backend",
+                "runtime_path",
+                "resolved_language",
+                "fallback_used",
+                "generation_time_ms",
+                "language_surface_ok",
+                "language_surface_reason",
+                "output",
+            ]
+        )
         for r in results:
-            writer.writerow([r.person_id, r.lang, int(r.rendered), int(r.has_gold), int(r.exact_match), r.output])
+            writer.writerow(
+                [
+                    r.person_id,
+                    r.lang,
+                    int(r.rendered),
+                    int(r.has_gold),
+                    int(r.exact_match),
+                    int(r.contract_ok),
+                    "; ".join(r.contract_errors),
+                    r.response_lang_code,
+                    r.construction_id,
+                    r.renderer_backend,
+                    r.runtime_path,
+                    r.resolved_language,
+                    int(r.fallback_used),
+                    r.generation_time_ms,
+                    int(r.language_surface_ok),
+                    r.language_surface_reason,
+                    r.output,
+                ]
+            )
 
 
 def print_sample_outputs(
@@ -566,7 +824,6 @@ def print_sample_outputs(
     langs: List[str],
     n_samples: int,
 ) -> None:
-    """Print a few rendered bios per language for manual inspection."""
     if n_samples <= 0:
         return
 
@@ -580,7 +837,7 @@ def print_sample_outputs(
     print("\n=== Sample outputs ===\n")
 
     for lang in langs:
-        lang_rs = by_lang.get(lang, [])
+        lang_rs = by_lang.get(_normalize_lang(lang), [])
         if not lang_rs:
             print(f"[{lang}] No rendered outputs.")
             continue
@@ -590,8 +847,24 @@ def print_sample_outputs(
         for r in sample:
             person = persons_by_id.get(r.person_id)
             name = person.label if person else r.person_id
-            print(f"- {name}: {r.output}")
+            suffix = []
+            if not r.contract_ok:
+                suffix.append("CONTRACT_FAIL")
+            if not r.language_surface_ok:
+                suffix.append(r.language_surface_reason or "LANG_FAIL")
+            tag = f" [{' | '.join(suffix)}]" if suffix else ""
+            print(f"- {name}: {r.output}{tag}")
         print()
+
+
+def compute_failure_count(results: List[EvalResult]) -> int:
+    count = 0
+    for r in results:
+        if not r.contract_ok:
+            count += 1
+        elif not r.language_surface_ok:
+            count += 1
+    return count
 
 
 # ---------------------------------------------------------------------------
@@ -600,7 +873,9 @@ def print_sample_outputs(
 
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate bio rendering against Wikidata-derived people.")
+    parser = argparse.ArgumentParser(
+        description="Evaluate bio generation against the live SemantiK Architect API."
+    )
 
     parser.add_argument(
         "--source",
@@ -617,12 +892,29 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         "--langs",
         nargs="+",
         default=["en"],
-        help="Language codes (space-separated and/or comma-separated), e.g. --langs en fr it OR --langs en,fr,it",
+        help="Language codes, e.g. --langs en fr OR --langs en,fr",
     )
     parser.add_argument("--limit", type=int, default=100, help="Maximum number of persons to evaluate.")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for sampling / sample selection.")
     parser.add_argument("--output-csv", type=str, help="Write detailed person-language results to this CSV path.")
     parser.add_argument("--print-samples", type=int, default=0, help="Print up to N rendered samples per language.")
+    parser.add_argument(
+        "--api-base",
+        type=str,
+        default=os.getenv("SEMANTIK_API_BASE", "http://localhost:8000/api/v1"),
+        help="Base URL for the SemantiK API.",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="HTTP timeout in seconds for generation calls.",
+    )
+    parser.add_argument(
+        "--no-fail-on-issues",
+        action="store_true",
+        help="Always exit 0 even if contract or language-surface failures are found.",
+    )
 
     return parser.parse_args(argv)
 
@@ -631,16 +923,16 @@ def _parse_langs(raw_parts: List[str]) -> List[str]:
     langs: List[str] = []
     for part in raw_parts:
         for tok in str(part).split(","):
-            tok = tok.strip()
+            tok = _normalize_lang(tok)
             if tok:
                 langs.append(tok)
-    # de-dup preserving order
+
     seen = set()
     out: List[str] = []
-    for l in langs:
-        if l not in seen:
-            seen.add(l)
-            out.append(l)
+    for lang in langs:
+        if lang not in seen:
+            seen.add(lang)
+            out.append(lang)
     return out
 
 
@@ -648,16 +940,23 @@ def main(argv: Optional[List[str]] = None) -> None:
     args = parse_args(argv)
 
     langs = _parse_langs(args.langs)
-    log.header({"Source": args.source, "Langs": ",".join(langs), "Limit": args.limit})
-
     random.seed(args.seed)
+
+    log.header(
+        {
+            "Source": args.source,
+            "Langs": ",".join(langs),
+            "Limit": args.limit,
+            "API": args.api_base,
+        }
+    )
 
     if not langs:
         log.error("No languages specified via --langs.", fatal=True)
 
     if args.source == "local":
         if not args.input:
-            log.error("--input is required when --source local (JSON/JSONL/CSV of people).", fatal=True)
+            log.error("--input is required when --source local.", fatal=True)
 
         input_path = Path(args.input)
         if not input_path.exists():
@@ -677,7 +976,13 @@ def main(argv: Optional[List[str]] = None) -> None:
         persons = random.sample(persons, args.limit)
 
     log.stage("Evaluate", f"Rendering bios for {len(persons)} persons in {len(langs)} languages...")
-    results = evaluate_persons(persons, langs, max_items=args.limit)
+    results = evaluate_persons(
+        persons,
+        langs,
+        api_base=args.api_base,
+        timeout=args.timeout,
+        max_items=args.limit,
+    )
 
     summarize_results(results)
 
@@ -688,7 +993,21 @@ def main(argv: Optional[List[str]] = None) -> None:
     if args.print_samples > 0:
         print_sample_outputs(persons, results, langs, args.print_samples)
 
-    log.summary({"Total Pairs": len(results)})
+    failure_count = compute_failure_count(results)
+    contract_failures = sum(1 for r in results if not r.contract_ok)
+    language_failures = sum(1 for r in results if not r.language_surface_ok)
+
+    log.summary(
+        {
+            "Total Pairs": len(results),
+            "Contract Failures": contract_failures,
+            "Language Failures": language_failures,
+            "Exit Code": 0 if args.no_fail_on_issues or failure_count == 0 else 1,
+        }
+    )
+
+    if not args.no_fail_on_issues and failure_count > 0:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

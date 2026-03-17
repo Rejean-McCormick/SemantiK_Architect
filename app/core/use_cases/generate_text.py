@@ -16,24 +16,30 @@ from app.shared.observability import get_tracer
 logger = structlog.get_logger()
 tracer = get_tracer(__name__)
 
+PLANNER_FIRST_RUNTIME_PATH = "planner_first"
+LEGACY_ENGINE_FALLBACK_RUNTIME_PATH = "legacy_engine_fallback"
+LEGACY_FALLBACK_REASON_PLANNER_UNAVAILABLE = "planner_runtime_unavailable"
+LEGACY_FALLBACK_REASON_PLANNER_FAILED = "planner_runtime_failed"
+LEGACY_RENDERER_BACKEND = "gf"
+
 
 class GenerateText:
     """
     Public application use case for single-sentence generation.
 
-    Migration behavior:
-    - Preferred path: planner-first runtime
+    Runtime policy:
+    - Nominal path: planner-first runtime
         frame -> planner -> lexical resolution -> realizer -> Sentence
-    - Compatibility path: legacy grammar engine
+    - Legacy path: compatibility fallback only
         frame -> engine.generate(...) -> Sentence
 
-    Notes:
-    - The planner-first path is attempted only when the required runtime
-      components are injected.
-    - Legacy direct-engine generation is retained as an explicit fallback
-      during migration and is always recorded in debug_info when used.
-    - This class intentionally remains tolerant of evolving planner/realizer
-      contracts so it can bridge the migration safely.
+    Important invariants:
+    - The legacy engine is never the nominal/default runtime path.
+    - If legacy is used, it is always explicit and visible in debug_info.
+    - Planner-first results must carry enough runtime metadata to support
+      the public response contract and downstream observability.
+    - This use case remains tolerant of evolving planner/lexical/realizer
+      call signatures during migration.
     """
 
     def __init__(
@@ -52,7 +58,7 @@ class GenerateText:
         # Optional post-processing dependency (not used by default)
         self.llm = llm
 
-        # New runtime dependencies
+        # Planner-first runtime dependencies
         self.planner = planner
         self.lexical_resolver = lexical_resolver
         self.realizer = realizer
@@ -84,32 +90,30 @@ class GenerateText:
 
         with tracer.start_as_current_span("use_case.generate_text") as span:
             frame_type = str(getattr(frame, "frame_type", "unknown") or "unknown")
+            normalized_lang_code = self._normalize_lang_code(lang_code)
 
-            span.set_attribute("app.lang_code", lang_code or "")
+            span.set_attribute("app.lang_code", normalized_lang_code)
             span.set_attribute("app.frame_type", frame_type)
 
             logger.info(
                 "generation_started",
-                lang=lang_code,
+                lang=normalized_lang_code,
                 frame_type=frame_type,
                 planner_runtime_configured=self._planner_runtime_available(),
                 legacy_engine_configured=self.engine is not None,
             )
 
             try:
-                self._validate_lang_code(lang_code)
+                self._validate_lang_code(normalized_lang_code)
                 self._validate_frame(frame)
-
-                sentence: Sentence
-                runtime_path: str
 
                 if self._planner_runtime_available():
                     try:
                         sentence = await self._generate_via_planner_runtime(
-                            lang_code=lang_code,
+                            lang_code=normalized_lang_code,
                             frame=frame,
                         )
-                        runtime_path = "planner_first"
+                        runtime_path = PLANNER_FIRST_RUNTIME_PATH
                     except InvalidFrameError:
                         raise
                     except Exception as planner_exc:
@@ -118,7 +122,7 @@ class GenerateText:
 
                         logger.warning(
                             "planner_runtime_failed_falling_back",
-                            lang=lang_code,
+                            lang=normalized_lang_code,
                             frame_type=frame_type,
                             error=str(planner_exc),
                             planner=self._component_name(self.planner),
@@ -127,41 +131,49 @@ class GenerateText:
                         )
 
                         sentence = await self._generate_via_legacy_engine(
-                            lang_code=lang_code,
+                            lang_code=normalized_lang_code,
                             frame=frame,
-                            fallback_reason=str(planner_exc),
+                            fallback_reason=f"{LEGACY_FALLBACK_REASON_PLANNER_FAILED}: {planner_exc}",
                         )
-                        runtime_path = "legacy_engine_fallback"
+                        runtime_path = LEGACY_ENGINE_FALLBACK_RUNTIME_PATH
                 else:
-                    if self.engine is None:
+                    if not self._can_fallback_to_legacy_engine():
                         raise DomainError(
-                            "GenerateText is not configured with either "
-                            "a planner-first runtime or a legacy grammar engine."
+                            "Planner-first runtime is required but not configured, "
+                            "and legacy fallback is disabled."
                         )
 
-                    sentence = await self._generate_via_legacy_engine(
-                        lang_code=lang_code,
-                        frame=frame,
-                        fallback_reason=None,
+                    logger.warning(
+                        "planner_runtime_unavailable_using_explicit_legacy_fallback",
+                        lang=normalized_lang_code,
+                        frame_type=frame_type,
+                        planner=self._component_name(self.planner),
+                        lexical_resolver=self._component_name(self.lexical_resolver),
+                        realizer=self._component_name(self.realizer),
+                        legacy_engine=self._component_name(self.engine),
                     )
-                    runtime_path = "legacy_engine"
+
+                    sentence = await self._generate_via_legacy_engine(
+                        lang_code=normalized_lang_code,
+                        frame=frame,
+                        fallback_reason=LEGACY_FALLBACK_REASON_PLANNER_UNAVAILABLE,
+                    )
+                    runtime_path = LEGACY_ENGINE_FALLBACK_RUNTIME_PATH
 
                 sentence = self._finalize_sentence(
                     sentence=sentence,
-                    lang_code=lang_code,
+                    lang_code=normalized_lang_code,
                     elapsed_ms=(time.perf_counter() - started) * 1000.0,
                     runtime_path=runtime_path,
                 )
 
-                span.set_attribute("app.runtime_path", runtime_path)
-                span.set_attribute("app.generated_length", len(sentence.text))
-                span.set_attribute(
-                    "app.fallback_used",
-                    bool((sentence.debug_info or {}).get("fallback_used", False)),
-                )
-
                 construction_id = (sentence.debug_info or {}).get("construction_id")
                 renderer_backend = (sentence.debug_info or {}).get("renderer_backend")
+                fallback_used = bool((sentence.debug_info or {}).get("fallback_used", False))
+
+                span.set_attribute("app.runtime_path", runtime_path)
+                span.set_attribute("app.generated_length", len(sentence.text))
+                span.set_attribute("app.fallback_used", fallback_used)
 
                 if construction_id:
                     span.set_attribute("app.construction_id", str(construction_id))
@@ -175,9 +187,7 @@ class GenerateText:
                     text_preview=sentence.text[:80],
                     construction_id=construction_id,
                     renderer_backend=renderer_backend,
-                    fallback_used=bool(
-                        (sentence.debug_info or {}).get("fallback_used", False)
-                    ),
+                    fallback_used=fallback_used,
                 )
 
                 return sentence
@@ -187,22 +197,30 @@ class GenerateText:
             except Exception as exc:
                 logger.error(
                     "generation_failed",
-                    lang=lang_code,
+                    lang=normalized_lang_code,
                     frame_type=frame_type,
                     error=str(exc),
                     exc_info=True,
                 )
                 raise DomainError(f"Unexpected generation failure: {str(exc)}") from exc
 
-    async def _generate_via_planner_runtime(self, *, lang_code: str, frame: Frame) -> Sentence:
+    async def _generate_via_planner_runtime(
+        self,
+        *,
+        lang_code: str,
+        frame: Frame,
+    ) -> Sentence:
         """
-        Run the preferred planner-first runtime.
+        Run the planner-first runtime.
 
-        This method is intentionally tolerant of evolving intermediate runtime
-        contracts during migration:
+        Migration-tolerant behavior:
         - planner output may be a single object or a sequence,
         - lexical resolver is optional,
         - realizer is authoritative for the final surface result.
+
+        Planner-first is the only nominal runtime path. If its returned
+        metadata is too weak for the public contract, the result is rejected
+        here so the caller can explicitly fall back or fail fast.
         """
         planned = await self._call_planner(lang_code=lang_code, frame=frame)
         runtime_payload = planned
@@ -220,32 +238,40 @@ class GenerateText:
             frame=frame,
         )
 
-        debug_info = {
-            "runtime_path": "planner_first",
+        debug_info: dict[str, Any] = {
+            "runtime_path": PLANNER_FIRST_RUNTIME_PATH,
             "fallback_used": False,
             "planner": self._component_name(self.planner),
             "lexical_resolver": self._component_name(self.lexical_resolver),
             "realizer": self._component_name(self.realizer),
+            "lang_code": self._normalize_lang_code(lang_code),
         }
 
-        return self._coerce_to_sentence(
+        construction_id = self._get_value(runtime_payload, "construction_id")
+        if self._is_non_empty_string(construction_id):
+            debug_info["construction_id"] = str(construction_id)
+
+        slot_map = self._get_value(runtime_payload, "slot_map")
+        if isinstance(slot_map, dict):
+            debug_info["slot_keys"] = sorted(str(k) for k in slot_map.keys())
+
+        sentence = self._coerce_to_sentence(
             value=realized,
             lang_code=lang_code,
             default_debug_info=debug_info,
         )
+
+        return self._enforce_planner_runtime_metadata(sentence)
 
     async def _generate_via_legacy_engine(
         self,
         *,
         lang_code: str,
         frame: Frame,
-        fallback_reason: str | None,
+        fallback_reason: str,
     ) -> Sentence:
         """
-        Run the legacy direct frame-to-engine path.
-
-        This path remains available only as an explicit migration compatibility
-        route and must annotate fallback information in debug_info.
+        Run the legacy direct frame-to-engine path as an explicit fallback only.
         """
         if self.engine is None:
             raise DomainError("Legacy grammar engine fallback is not configured.")
@@ -253,11 +279,15 @@ class GenerateText:
         result = await self.engine.generate(lang_code, frame)
 
         debug_info = {
-            "runtime_path": "legacy_engine_fallback" if fallback_reason else "legacy_engine",
-            "fallback_used": bool(fallback_reason),
+            "runtime_path": LEGACY_ENGINE_FALLBACK_RUNTIME_PATH,
+            "fallback_used": True,
             "fallback_reason": fallback_reason,
             "legacy_engine": self._component_name(self.engine),
             "planner_runtime_configured": self._planner_runtime_available(),
+            "renderer_backend": LEGACY_RENDERER_BACKEND,
+            "selected_backend": LEGACY_RENDERER_BACKEND,
+            "attempted_backends": [LEGACY_RENDERER_BACKEND],
+            "lang_code": self._normalize_lang_code(lang_code),
         }
 
         return self._coerce_to_sentence(
@@ -271,9 +301,9 @@ class GenerateText:
             raise DomainError("Planner runtime is not configured.")
 
         attempts = [
-            (((frame,),), {"lang_code": lang_code}),   # planner may accept a sequence of frames
+            (((frame,),), {"lang_code": lang_code}),
             (((frame,),), {"lang_code": lang_code, "domain": "auto"}),
-            ((frame,), {"lang_code": lang_code}),      # planner may accept a single frame
+            ((frame,), {"lang_code": lang_code}),
             (((frame,),), {}),
             ((frame,), {}),
         ]
@@ -326,9 +356,6 @@ class GenerateText:
     ) -> Any:
         """
         Attempt a method call across a small set of migration-safe signatures.
-
-        This keeps GenerateText stable while the planner/lexical/realizer port
-        contracts are being introduced and adapters are catching up.
         """
         method = getattr(target, method_name, None)
         if method is None:
@@ -355,8 +382,7 @@ class GenerateText:
 
     def _normalize_single_sentence_payload(self, value: Any, *, stage: str) -> Any:
         """
-        Normalize planner-like outputs to the single-sentence runtime payload
-        that GenerateText currently supports.
+        Normalize planner-like outputs to the single-sentence runtime payload.
         """
         if value is None:
             raise DomainError(f"{stage.capitalize()} returned no result.")
@@ -383,8 +409,8 @@ class GenerateText:
         """
         if isinstance(value, Sentence):
             return Sentence(
-                text=value.text,
-                lang_code=value.lang_code or lang_code,
+                text=str(value.text),
+                lang_code=self._normalize_lang_code(value.lang_code or lang_code),
                 debug_info=self._merge_debug_info(value.debug_info, default_debug_info),
                 generation_time_ms=float(getattr(value, "generation_time_ms", 0.0) or 0.0),
             )
@@ -392,20 +418,47 @@ class GenerateText:
         if isinstance(value, str):
             return Sentence(
                 text=value,
-                lang_code=lang_code,
+                lang_code=self._normalize_lang_code(lang_code),
                 debug_info=dict(default_debug_info),
                 generation_time_ms=0.0,
             )
 
         if isinstance(value, dict):
             text = value.get("text")
+            compat_debug: dict[str, Any] = {}
+
+            if text is None and "surface_text" in value:
+                text = value.get("surface_text")
+                compat_debug["legacy_result_key"] = "surface_text"
+
             if text is None:
-                raise DomainError("Generation result dict is missing required field 'text'.")
+                raise DomainError(
+                    "Generation result dict is missing required field 'text'."
+                )
+
+            extra_debug: dict[str, Any] = dict(default_debug_info)
+            for key in (
+                "construction_id",
+                "renderer_backend",
+                "fallback_used",
+                "tokens",
+                "selected_backend",
+                "warnings",
+                "confidence",
+            ):
+                item = value.get(key)
+                if item is not None:
+                    extra_debug.setdefault(key, item)
+
+            if compat_debug:
+                extra_debug.update(compat_debug)
 
             return Sentence(
                 text=str(text),
-                lang_code=str(value.get("lang_code") or lang_code),
-                debug_info=self._merge_debug_info(value.get("debug_info"), default_debug_info),
+                lang_code=self._normalize_lang_code(
+                    str(value.get("lang_code") or value.get("language") or lang_code)
+                ),
+                debug_info=self._merge_debug_info(value.get("debug_info"), extra_debug),
                 generation_time_ms=float(value.get("generation_time_ms") or 0.0),
             )
 
@@ -419,7 +472,6 @@ class GenerateText:
         debug_info = getattr(value, "debug_info", None)
         result_lang = getattr(value, "lang_code", None) or getattr(value, "language", None)
 
-        # SurfaceResult-like objects often expose useful runtime metadata as attributes.
         extra_debug: dict[str, Any] = dict(default_debug_info)
         for key in (
             "construction_id",
@@ -427,6 +479,8 @@ class GenerateText:
             "fallback_used",
             "tokens",
             "selected_backend",
+            "warnings",
+            "confidence",
         ):
             attr = getattr(value, key, None)
             if attr is not None:
@@ -434,11 +488,37 @@ class GenerateText:
 
         return Sentence(
             text=str(text),
-            lang_code=str(result_lang or lang_code),
+            lang_code=self._normalize_lang_code(str(result_lang or lang_code)),
             debug_info=self._merge_debug_info(debug_info, extra_debug),
-            generation_time_ms=float(
-                getattr(value, "generation_time_ms", 0.0) or 0.0
-            ),
+            generation_time_ms=float(getattr(value, "generation_time_ms", 0.0) or 0.0),
+        )
+
+    def _enforce_planner_runtime_metadata(self, sentence: Sentence) -> Sentence:
+        """
+        Planner-first results must provide enough metadata to support the
+        public response contract and observability.
+        """
+        debug_info = dict(sentence.debug_info or {})
+        missing: list[str] = []
+
+        for key in ("construction_id", "renderer_backend"):
+            if not self._is_non_empty_string(debug_info.get(key)):
+                missing.append(key)
+
+        if missing:
+            raise DomainError(
+                "Planner-first generation returned an incomplete runtime result: "
+                f"missing {', '.join(missing)}."
+            )
+
+        if "selected_backend" not in debug_info and debug_info.get("renderer_backend"):
+            debug_info["selected_backend"] = debug_info["renderer_backend"]
+
+        return Sentence(
+            text=sentence.text,
+            lang_code=self._normalize_lang_code(sentence.lang_code),
+            debug_info=debug_info,
+            generation_time_ms=float(sentence.generation_time_ms or 0.0),
         )
 
     def _finalize_sentence(
@@ -453,17 +533,34 @@ class GenerateText:
         Final cleanup to guarantee a stable Sentence shape.
         """
         text = str(sentence.text or "").strip()
+        normalized_lang_code = self._normalize_lang_code(sentence.lang_code or lang_code)
+
         debug_info = dict(sentence.debug_info or {})
-        debug_info.setdefault("runtime_path", runtime_path)
-        debug_info.setdefault("fallback_used", False)
+        debug_info["runtime_path"] = runtime_path
+        debug_info["lang_code"] = normalized_lang_code
+
+        if runtime_path == PLANNER_FIRST_RUNTIME_PATH:
+            debug_info["fallback_used"] = False
+        else:
+            debug_info["fallback_used"] = True
+            debug_info.setdefault("renderer_backend", LEGACY_RENDERER_BACKEND)
+            debug_info.setdefault("selected_backend", LEGACY_RENDERER_BACKEND)
+            attempted_backends = debug_info.get("attempted_backends")
+            if not isinstance(attempted_backends, list) or not attempted_backends:
+                debug_info["attempted_backends"] = [LEGACY_RENDERER_BACKEND]
 
         generation_time_ms = float(sentence.generation_time_ms or 0.0)
         if generation_time_ms <= 0.0:
             generation_time_ms = elapsed_ms
+        debug_info["generation_time_ms"] = generation_time_ms
+
+        tokens = debug_info.get("tokens")
+        if not isinstance(tokens, list) or any(not isinstance(t, str) for t in tokens):
+            debug_info["tokens"] = [part for part in text.split() if part]
 
         return Sentence(
             text=text,
-            lang_code=str(sentence.lang_code or lang_code),
+            lang_code=normalized_lang_code,
             debug_info=debug_info,
             generation_time_ms=generation_time_ms,
         )
@@ -491,7 +588,6 @@ class GenerateText:
 
             subject_name = self._extract_subject_name(subject)
             if not subject_name:
-                # Backward-compatible fallback: some models expose `name` directly.
                 direct_name = getattr(frame, "name", None)
                 if not isinstance(direct_name, str) or not direct_name.strip():
                     raise InvalidFrameError(
@@ -535,7 +631,21 @@ class GenerateText:
 
         return merged
 
+    def _get_value(self, target: Any, key: str, default: Any = None) -> Any:
+        if target is None:
+            return default
+        if isinstance(target, dict):
+            return target.get(key, default)
+        return getattr(target, key, default)
+
+    def _normalize_lang_code(self, lang_code: Any) -> str:
+        return str(lang_code or "").strip().lower()
+
+    def _is_non_empty_string(self, value: Any) -> bool:
+        return isinstance(value, str) and bool(value.strip())
+
     def _component_name(self, component: Any) -> str | None:
         if component is None:
             return None
         return component.__class__.__name__
+
