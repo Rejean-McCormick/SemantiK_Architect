@@ -82,7 +82,7 @@ A successful generation response MUST serialize as a JSON object with the follow
   "text": "Alan Turing is a British mathematician.",
   "lang_code": "en",
   "construction_id": "copula_equative_classification",
-  "renderer_backend": "gf",
+  "renderer_backend": "family",
   "fallback_used": false,
   "tokens": [
     "Alan",
@@ -93,8 +93,9 @@ A successful generation response MUST serialize as a JSON object with the follow
     "mathematician."
   ],
   "debug_info": {
+    "runtime_path": "planner_first",
     "construction_id": "copula_equative_classification",
-    "renderer_backend": "gf",
+    "renderer_backend": "family",
     "lang_code": "en",
     "fallback_used": false,
     "slot_keys": [
@@ -102,8 +103,8 @@ A successful generation response MUST serialize as a JSON object with the follow
       "profession",
       "nationality"
     ],
-    "selected_backend": "gf",
-    "attempted_backends": ["gf"]
+    "selected_backend": "family",
+    "attempted_backends": ["family"]
   },
   "generation_time_ms": 12.5
 }
@@ -119,9 +120,35 @@ The following legacy public shapes are deprecated and non-canonical:
 
 ---
 
-## 5. Top-level fields
+## 5. Core public contract rules
 
-### 5.1 `text`
+The public success contract MUST satisfy all of the following:
+
+* `text` is authoritative;
+* `lang_code` identifies the returned surface language;
+* `construction_id` is explicit;
+* `renderer_backend` is explicit;
+* `fallback_used` is explicit;
+* `tokens` correspond to the final returned text;
+* `generation_time_ms` is top-level and authoritative;
+* `debug_info` MUST NOT contradict top-level fields.
+
+The public contract is language-independent.
+
+Clients MUST NOT have to branch by:
+
+* language,
+* backend,
+* migration stage,
+* or compatibility path
+
+to interpret a successful generation result.
+
+---
+
+## 6. Top-level fields
+
+### 6.1 `text`
 
 Type: `string`
 Required: yes
@@ -137,7 +164,7 @@ Rules:
 
 ---
 
-### 5.2 `lang_code`
+### 6.2 `lang_code`
 
 Type: `string`
 Required: yes
@@ -149,8 +176,8 @@ Rules:
 * MUST identify the language of the returned surface text.
 * MUST use the public API normalization convention: lowercase short language codes such as `en`, `fr`, `pt`.
 * MUST NOT use alternative runtime-internal spellings such as `eng` at the public boundary.
-* MUST remain stable across fallback.
 * MUST match the realized language, not merely the originally requested raw payload spelling.
+* MUST remain stable across backend fallback and runtime-path compatibility behavior.
 
 Notes:
 
@@ -159,7 +186,7 @@ Notes:
 
 ---
 
-### 5.3 `construction_id`
+### 6.3 `construction_id`
 
 Type: `string`
 Required: yes
@@ -186,7 +213,7 @@ Migration note:
 
 ---
 
-### 5.4 `renderer_backend`
+### 6.4 `renderer_backend`
 
 Type: `string`
 Required: yes
@@ -213,7 +240,7 @@ Migration note:
 
 ---
 
-### 5.5 `fallback_used`
+### 6.5 `fallback_used`
 
 Type: `boolean`
 Required: yes
@@ -223,13 +250,18 @@ Whether fallback occurred anywhere on the path that produced the returned text.
 Rules:
 
 * MUST be explicit.
-* MUST be `false` when the primary intended backend produced the result directly.
-* MUST be `true` when the system had to fall back to another backend, raw lexical fallback, or another explicitly defined compatibility fallback path.
+* MUST be `false` when the nominal planner-first path produced the result directly without fallback.
+* MUST be `true` when the system had to fall back to another backend, a raw lexical fallback, or an explicitly defined compatibility path.
 * MUST be machine-readable and MUST NOT rely only on logs or free text.
+
+Clarification:
+
+* Runtime-path compatibility success is still a form of fallback for public observability purposes.
+* A successful compatibility path may still use the canonical public envelope, but it is not the nominal target-state success path.
 
 ---
 
-### 5.6 `tokens`
+### 6.6 `tokens`
 
 Type: `array<string>`
 Required: yes
@@ -255,7 +287,7 @@ Tokenization transport policy:
 
 ---
 
-### 5.7 `debug_info`
+### 6.7 `debug_info`
 
 Type: `object`
 Required: yes
@@ -279,11 +311,18 @@ Debug visibility policy:
 
 Minimum required debug keys:
 
+* `runtime_path`
 * `construction_id`
 * `renderer_backend`
 * `lang_code`
 * `fallback_used`
 * `slot_keys`
+
+`runtime_path` rules:
+
+* MUST be explicit.
+* `planner_first` is the nominal target-state runtime path.
+* Any other successful path is compatibility-only and MUST NOT be interpreted as nominal success.
 
 `slot_keys` rules:
 
@@ -295,7 +334,6 @@ Recommended additional keys:
 
 * `selected_backend`
 * `attempted_backends`
-* `runtime_path`
 * `backend_trace`
 * `dispatch_policy`
 * `lexical_resolution`
@@ -304,12 +342,14 @@ Recommended additional keys:
 * `ast`
 * `warnings`
 * `timings_ms`
+* `compatibility_shim`
+* `fallback_reason`
 
 Backend-specific diagnostics MAY be included under `debug_info`, but these fields are optional and MUST NOT replace the stable required diagnostics.
 
 ---
 
-### 5.8 `generation_time_ms`
+### 6.8 `generation_time_ms`
 
 Type: `number`
 Required: yes
@@ -322,10 +362,13 @@ Rules:
 * SHOULD be serialized as a float-compatible number.
 * MAY be `0.0` when timing is unavailable.
 * MUST refer to the generated response returned to the caller.
+* MUST be top-level and authoritative.
+
+If timing also appears inside `debug_info`, the top-level `generation_time_ms` value wins.
 
 ---
 
-## 6. Explicit exclusions from the public top level
+## 7. Explicit exclusions from the public top level
 
 The following fields are **not** part of the canonical public success envelope and MUST NOT appear as top-level public fields unless this document is versioned and updated explicitly:
 
@@ -347,7 +390,7 @@ Notes:
 
 ---
 
-## 7. Canonical JSON schema shape
+## 8. Canonical JSON schema shape
 
 The public success response MUST conform to the following conceptual schema:
 
@@ -386,6 +429,7 @@ The public success response MUST conform to the following conceptual schema:
     "debug_info": {
       "type": "object",
       "required": [
+        "runtime_path",
         "construction_id",
         "renderer_backend",
         "lang_code",
@@ -393,6 +437,7 @@ The public success response MUST conform to the following conceptual schema:
         "slot_keys"
       ],
       "properties": {
+        "runtime_path": { "type": "string", "minLength": 1 },
         "construction_id": { "type": "string", "minLength": 1 },
         "renderer_backend": { "type": "string", "minLength": 1 },
         "lang_code": { "type": "string", "pattern": "^[a-z]{2,3}$" },
@@ -412,33 +457,35 @@ The public success response MUST conform to the following conceptual schema:
 
 ---
 
-## 8. Invariants
+## 9. Invariants
 
 The following invariants are mandatory.
 
-### 8.1 Surface text invariant
+### 9.1 Surface text invariant
 
 `text` MUST be the final surface text returned to the caller.
 
-### 8.2 Language invariant
+### 9.2 Language invariant
 
 `lang_code` MUST identify the language of `text`.
 
-### 8.3 Construction invariant
+### 9.3 Construction invariant
 
 `construction_id` MUST describe the construction that the runtime claims to have realized.
 
 Fallback MUST NOT silently change construction identity.
 
-### 8.4 Backend invariant
+### 9.4 Backend invariant
 
 `renderer_backend` MUST name the backend that produced the returned text.
 
-### 8.5 Fallback invariant
+### 9.5 Fallback invariant
 
 If fallback happened anywhere relevant to the returned result, `fallback_used` MUST be `true`.
 
-### 8.6 Debug parity invariant
+This includes runtime-path compatibility fallback.
+
+### 9.6 Debug parity invariant
 
 The following top-level fields MUST be reflected consistently in `debug_info`:
 
@@ -447,24 +494,33 @@ The following top-level fields MUST be reflected consistently in `debug_info`:
 * `lang_code`
 * `fallback_used`
 
-### 8.7 Slot visibility invariant
+`runtime_path` MUST also be explicit in `debug_info`.
+
+### 9.7 Time authority invariant
+
+`generation_time_ms` is authoritative at the top level.
+
+If timing metadata also appears inside `debug_info`, it MUST NOT contradict the top-level field.
+
+### 9.8 Slot visibility invariant
 
 `debug_info.slot_keys` MUST be present and MUST describe the slot names materially used by the generation path, or be an empty array when no slots apply.
 
-### 8.8 Token invariant
+### 9.9 Token invariant
 
 `tokens` MUST correspond to the final text returned to the caller.
 
 ---
 
-## 9. Serialization guarantees across runtime paths
+## 10. Serialization guarantees across runtime paths
 
 The public envelope MUST remain stable across:
 
 * planner-first success,
-* legacy direct-frame success,
 * compatibility-shim success,
 * success after backend fallback.
+
+The envelope MAY also be used during temporary legacy compatibility windows, but that does **not** make legacy direct generation the nominal runtime.
 
 Across all successful paths, the following fields MUST always be present and comparable:
 
@@ -479,9 +535,15 @@ Across all successful paths, the following fields MUST always be present and com
 
 Path-specific diagnostic detail MAY vary inside `debug_info`, but the top-level public envelope MUST NOT vary.
 
+Normative rule:
+
+* `planner_first` is the only nominal target runtime.
+* Any other successful runtime path is compatibility-only.
+* Compatibility-only success MUST NOT be treated as acceptance-ready success for EN/FR cutover criteria.
+
 ---
 
-## 10. Example: planner-first success
+## 11. Example: planner-first success
 
 ```json
 {
@@ -499,6 +561,7 @@ Path-specific diagnostic detail MAY vary inside `debug_info`, but the top-level 
     "mathematician."
   ],
   "debug_info": {
+    "runtime_path": "planner_first",
     "construction_id": "copula_equative_classification",
     "renderer_backend": "family",
     "lang_code": "en",
@@ -510,7 +573,6 @@ Path-specific diagnostic detail MAY vary inside `debug_info`, but the top-level 
     ],
     "selected_backend": "family",
     "attempted_backends": ["family"],
-    "runtime_path": "planner_first",
     "backend_trace": [
       "planned construction",
       "resolved lexical bindings",
@@ -523,11 +585,11 @@ Path-specific diagnostic detail MAY vary inside `debug_info`, but the top-level 
 
 ---
 
-## 11. Example: legacy-compatible success
+## 12. Example: compatibility success with valid public semantics
 
 ```json
 {
-  "text": "Marie Curie is a Polish physicist",
+  "text": "Marie Curie est une physicienne polonaise.",
   "lang_code": "fr",
   "construction_id": "copula_equative_classification",
   "renderer_backend": "gf",
@@ -535,12 +597,13 @@ Path-specific diagnostic detail MAY vary inside `debug_info`, but the top-level 
   "tokens": [
     "Marie",
     "Curie",
-    "is",
-    "a",
-    "Polish",
-    "physicist"
+    "est",
+    "une",
+    "physicienne",
+    "polonaise."
   ],
   "debug_info": {
+    "runtime_path": "legacy_direct_frame",
     "construction_id": "copula_equative_classification",
     "renderer_backend": "gf",
     "lang_code": "fr",
@@ -552,20 +615,20 @@ Path-specific diagnostic detail MAY vary inside `debug_info`, but the top-level 
     ],
     "selected_backend": "gf",
     "attempted_backends": ["family", "gf"],
-    "runtime_path": "legacy_direct_frame",
     "fallback_reason": "planner_runtime_unavailable",
     "resolved_language": "WikiFre",
-    "ast": "mkBioFull (mkEntityStr \"Marie Curie\") (strProf \"physicist\") (strNat \"Polish\")"
+    "compatibility_shim": "legacy_generate_path"
   },
   "generation_time_ms": 0.0
 }
 ```
 
-Note: this example demonstrates envelope shape and observability, not linguistic quality.
+Note: this example demonstrates envelope shape and observability.
+It does **not** redefine compatibility paths as nominal success.
 
 ---
 
-## 12. Error boundary
+## 13. Error boundary
 
 This document defines only the **success response**.
 
@@ -579,7 +642,7 @@ Error-contract details belong in `public_generation_error_contract.md`, not here
 
 ---
 
-## 13. Acceptance criteria
+## 14. Acceptance criteria
 
 This contract is considered implemented when:
 
@@ -587,14 +650,15 @@ This contract is considered implemented when:
 2. `text` is always the authoritative public surface field,
 3. `lang_code`, `construction_id`, `renderer_backend`, and `fallback_used` are explicit and non-null,
 4. `debug_info` is always present,
-5. `debug_info` contains the required stable keys, including `slot_keys`,
+5. `debug_info` contains the required stable keys, including `runtime_path` and `slot_keys`,
 6. planner-first and compatibility paths serialize to the same public envelope,
 7. legacy response shapes such as `surface_text` and `meta` are fully deprecated,
-8. clients can compare generation outcomes across backends without inspecting internal runtime objects.
+8. clients can compare generation outcomes across backends without inspecting internal runtime objects,
+9. nominal planner-first results do not depend on the public mapper to invent or repair missing canonical top-level fields.
 
 ---
 
-## 14. Relationship to other docs
+## 15. Relationship to other docs
 
 This document is aligned with:
 
@@ -620,10 +684,12 @@ Any disagreement must be corrected immediately.
 
 ---
 
-## 15. Final rule
+## 16. Final rule
 
 There is exactly one canonical public generation success envelope.
 
 If two generation paths return different public top-level shapes for the same class of success result, the contract is broken.
+
+If a result can appear publicly successful only because the mapper repaired missing nominal planner-first fields that should have been present already, the contract is also broken.
 
 

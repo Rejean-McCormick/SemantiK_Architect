@@ -1,27 +1,30 @@
+Voici la version mise à jour.
+
 # Public vs Runtime vs Frontend Boundaries
 
-Status: normative  
-Owner: API / Runtime / Frontend  
-Scope: boundary rules between internal runtime contracts, the public HTTP generation contract, and the frontend-facing generation API
+Status: normative
+Owner: API / Runtime / Frontend
+Scope: boundary rules between internal runtime contracts, the public HTTP generation contract, and frontend-facing generation APIs and clients
 
 ---
 
 ## 1. Purpose
 
-This document defines the boundary between three different contract layers in SemantiK Architect:
+This document defines the boundary between three distinct contract layers in SemantiK Architect:
 
 1. **internal runtime contracts**
 2. **public HTTP generation contracts**
-3. **frontend-facing generation API contracts**
+3. **frontend-facing generation APIs and client models**
 
 These layers are related, but they are **not the same object model** and they must not drift into each other.
 
-This document exists to prevent the following recurring failure modes:
+This document exists to prevent the following failure modes:
 
-- documenting internal runtime objects as if they were public HTTP payloads,
-- letting frontend convenience models become the canonical API contract,
-- leaking planner or renderer internals across the HTTP boundary,
-- creating incompatible success shapes across API, runtime, and frontend code.
+* documenting internal runtime objects as if they were public HTTP payloads,
+* letting frontend convenience models become the canonical API contract,
+* leaking planner, lexical, or renderer internals across the HTTP boundary,
+* creating incompatible success shapes across runtime, API, frontend, and tests,
+* and allowing the response mapper to become the place where nominal planner-first truth is invented for the first time.
 
 ---
 
@@ -29,35 +32,45 @@ This document exists to prevent the following recurring failure modes:
 
 There are three distinct boundary layers:
 
-- **runtime** = internal generation contracts used inside the planning and realization pipeline
-- **public API** = canonical HTTP transport contract returned by `/api/v1/generate...`
-- **frontend API** = higher-level client/session API used by frontend-oriented callers such as `nlg.api`
+* **runtime** = internal generation contracts used inside the planner-first planning and realization pipeline,
+* **public API** = canonical HTTP transport contract returned by `/api/v1/generate...`,
+* **frontend layer** = frontend/client-facing models, typed clients, and convenience APIs used by browser code, session helpers, or local developer-facing wrappers.
 
 If a field, shape, or responsibility belongs to one layer, it does not automatically belong to the others.
+
+A layer may derive from another layer, but derivation does not erase ownership.
 
 ---
 
 ## 3. Why this distinction exists
 
-The repository already documents and implements a planner-first runtime centered on:
+The final runtime architecture is planner-first and centered on:
 
 ```text
-frame -> PlannedSentence -> ConstructionPlan -> SurfaceResult
-````
+canonical input
+  -> normalized frame/domain shape
+  -> planner
+  -> lexical resolution
+  -> realizer
+  -> SurfaceResult
+```
 
-The repository also maps internal generation results to a stable public API response, and separately exposes frontend-friendly generation helpers that return a different object model.   
+The public API then serializes a stable HTTP success envelope from that runtime result.
+
+Separately, frontend and client-facing code may either:
+
+* consume the canonical public HTTP envelope directly, or
+* map it into local convenience objects for UI/session use.
 
 Therefore:
 
-* `SurfaceResult` is a **runtime object**
-* the `/api/v1/generate...` response is a **public transport object**
-* `nlg.api.GenerationResult` is a **frontend/client convenience object**
-
-They may be derived from one another, but they are not interchangeable.
+* `ConstructionPlan` and `SurfaceResult` are **runtime objects**,
+* the `/api/v1/generate...` success payload is the **public transport object**,
+* frontend/client models may mirror or adapt the public payload, but they are **not automatically the canonical public contract**.
 
 ---
 
-## 4. Layer definitions
+## 4. Boundary model
 
 ## 4.1 Runtime layer
 
@@ -69,21 +82,20 @@ Typical runtime objects include:
 * `ConstructionPlan`
 * `slot_map`
 * `lexical_bindings`
-* `SurfaceResult`
 * runtime `debug_info`
+* `SurfaceResult`
 
 The runtime layer is responsible for:
 
 * interpreting normalized semantic intent,
 * selecting and preserving canonical `construction_id`,
-* carrying `lang_code`,
+* carrying canonical `lang_code`,
 * resolving lexical material,
 * selecting or attempting renderer backends,
-* producing realized surface text plus runtime metadata.
+* producing realized surface text plus runtime metadata,
+* and returning a complete runtime result on the nominal planner-first path.
 
-The runtime layer is **not** the HTTP transport contract.  
-
----
+The runtime layer is **not** the HTTP transport contract.
 
 ## 4.2 Public HTTP API layer
 
@@ -98,23 +110,38 @@ This layer is the stable client-facing envelope.
 
 Its job is to expose a clean mapped view of generation results without leaking the full internal runtime model.
 
-The public API response is an external serialization boundary. It is not the planner contract, not the renderer contract, and not the frontend session object.  
+The public API response is an external serialization boundary. It is not:
 
----
+* the planner contract,
+* the renderer contract,
+* the lexical resolver contract,
+* or a frontend session convenience object.
 
-## 4.3 Frontend-facing generation API layer
+## 4.3 Frontend/client layer
 
-The frontend-facing generation API layer is the higher-level developer/client interface represented by `nlg.api`.
+The frontend/client layer is the developer-facing or UI-facing consumption layer.
 
-Its `GenerationResult` is designed for frontend or client use and includes fields such as:
+It includes two legitimate patterns:
 
-* `text`
-* `sentences`
+1. **thin clients** that consume the canonical public HTTP contract as-is, and
+2. **convenience models** that adapt public results into session/UI-oriented objects.
+
+Examples include:
+
+* browser-side typed clients,
+* UI rendering components,
+* local helper APIs such as `nlg.api`,
+* CLI-style or session-style convenience wrappers.
+
+This layer may expose convenience fields such as:
+
 * `lang`
+* `sentences`
 * `frame`
-* `debug_info`
+* request options
+* UI/session-local debug structures
 
-It is a convenience/session-facing object, not the canonical HTTP transport contract. Debug payload exposure is also conditional there via `debug=True`.  
+These convenience fields do not redefine the public HTTP generation contract.
 
 ---
 
@@ -122,28 +149,28 @@ It is a convenience/session-facing object, not the canonical HTTP transport cont
 
 If two documents or code paths disagree, precedence is:
 
-1. **runtime contract docs** for internal planning/realization ownership
-2. **public generation response contract** for HTTP success serialization
-3. **this document** for layer separation and ownership
-4. **frontend convenience APIs** for frontend/client usage only
+1. **runtime architecture and runtime contract docs** for internal planning/realization ownership,
+2. **public generation response contract** for HTTP success serialization,
+3. **this document** for layer separation and field ownership,
+4. **frontend/client models and helpers** for frontend/client usage only.
 
 More explicitly:
 
-* if the issue is about `ConstructionPlan`, `SurfaceResult`, lexical bindings, or planner/realizer responsibilities, the runtime contracts win;
-* if the issue is about HTTP success payload shape, the public generation response contract wins;
-* if the issue is about whether a field belongs to runtime vs HTTP vs frontend, this document wins;
+* if the issue is about `ConstructionPlan`, `SurfaceResult`, planner responsibilities, lexical resolution, renderer ownership, or runtime metadata ownership, the runtime contract layer wins;
+* if the issue is about the HTTP success envelope, the public generation response contract wins;
+* if the issue is about whether a field belongs to runtime vs public HTTP vs frontend/client, this document wins;
 * if a frontend helper returns a different shape, that does not redefine the public HTTP contract.
 
 ---
 
 ## 6. Canonical flow across boundaries
 
-The intended end-to-end flow is:
+The intended end-to-end public flow is:
 
 ```text
 HTTP request
   -> request normalization
-  -> frame/domain form
+  -> canonical frame/domain form
   -> planning
   -> lexical resolution
   -> realization
@@ -152,26 +179,45 @@ HTTP request
   -> HTTP JSON response
 ```
 
-Separately, a frontend/session caller may use:
+The critical boundary rule is:
+
+> On the nominal planner-first path, runtime truth must already exist before public response mapping.
+
+That means:
+
+* the planner/realizer path must produce a complete runtime result,
+* the response mapper serializes and normalizes public output,
+* the response mapper must not be the place where nominal `construction_id`, `renderer_backend`, or `fallback_used` first become true.
+
+Separately, a frontend/client flow may be:
+
+```text
+public HTTP response
+  -> typed browser/client layer
+  -> optional frontend/session adaptation
+  -> UI/session object
+```
+
+Or, for local convenience APIs:
 
 ```text
 frame
-  -> nlg.api generate(...)
-  -> engine/session adapter
-  -> text/sentences/debug convenience result
+  -> local helper API
+  -> runtime or HTTP adapter
+  -> convenience result
 ```
 
-These are related flows, but they terminate in different object models.  
+These flows are related, but they terminate in different object models.
 
 ---
 
 ## 7. Boundary table
 
-| Layer        | Canonical object(s)                                    | Primary audience                                | Stable purpose                 | Must not be confused with                          |
-| ------------ | ------------------------------------------------------ | ----------------------------------------------- | ------------------------------ | -------------------------------------------------- |
-| Runtime      | `PlannedSentence`, `ConstructionPlan`, `SurfaceResult` | planner, lexical resolver, renderers, use cases | internal generation ownership  | HTTP payloads, frontend helper results             |
-| Public API   | public generation response JSON                        | external clients, integrations, tests           | stable HTTP transport envelope | internal runtime objects, frontend session objects |
-| Frontend API | `nlg.api.GenerationResult`                             | frontend/client code, CLI-style callers         | convenience/session model      | canonical HTTP success envelope                    |
+| Layer           | Canonical object(s)                                           | Primary audience                                  | Stable purpose                 | Must not be confused with                          |
+| --------------- | ------------------------------------------------------------- | ------------------------------------------------- | ------------------------------ | -------------------------------------------------- |
+| Runtime         | `PlannedSentence`, `ConstructionPlan`, `SurfaceResult`        | planner, lexical resolver, renderers, use cases   | internal generation ownership  | HTTP payloads, frontend/client convenience objects |
+| Public API      | public generation response JSON                               | external clients, integrations, API tests         | stable HTTP transport envelope | internal runtime objects, frontend session objects |
+| Frontend/client | typed API clients, UI/session models, `nlg.api`-style helpers | browser code, UI components, local client callers | consumption convenience        | canonical HTTP success envelope, runtime contracts |
 
 ---
 
@@ -184,17 +230,19 @@ The following belong to the runtime layer and are not public top-level HTTP fiel
 * `slot_map`
 * `lexical_bindings`
 * planner-specific metadata
-* renderer-dispatch internals beyond approved debug exposure
-* entity/lexeme references as runtime objects
+* lexical-resolution internals
+* renderer-dispatch internals beyond approved public debug exposure
+* entity or lexeme references as runtime objects
 * backend-specific realizer inputs
+* backend-local intermediate objects
 
-The runtime layer may carry these internally even when the public API only exposes a mapped summary.  
+The runtime layer may carry these internally even when the public API exposes only a mapped summary.
 
 ---
 
 ## 9. What belongs to the public HTTP layer
 
-The public HTTP success contract is centered on a stable mapped envelope, including fields such as:
+The public HTTP success contract is centered on a stable mapped envelope, including:
 
 * `text`
 * `lang_code`
@@ -207,47 +255,51 @@ The public HTTP success contract is centered on a stable mapped envelope, includ
 
 These are transport-facing fields intended for clients and integration tests.
 
-This layer exists precisely so clients do not need to know the full runtime object graph.  
+This layer exists so clients do not need to know the full runtime object graph.
 
 ---
 
-## 10. What belongs to the frontend-facing layer
+## 10. What belongs to the frontend/client layer
 
-The frontend-facing `nlg.api.GenerationResult` contains convenience-oriented fields such as:
+Frontend/client-facing models may contain convenience-oriented fields such as:
 
 * `text`
 * `sentences`
 * `lang`
 * `frame`
-* `debug_info`
+* request options
+* UI/session-local status fields
+* conditionally exposed `debug_info`
 
-This object is appropriate for:
+These objects are appropriate for:
 
-* UI/session code,
+* browser-side state,
+* UI rendering,
+* session wrappers,
 * CLI helpers,
-* higher-level local callers that want sentence splitting fallback and request options attached to debug output.
+* local convenience APIs.
 
-It is not appropriate to document this object as the public HTTP generation response.  
+They are not appropriate to document as the canonical public HTTP generation response unless they exactly mirror that public envelope without adding ownership drift.
 
 ---
 
 ## 11. Field ownership matrix
 
-| Field                | Runtime layer | Public HTTP layer | Frontend layer | Notes                                                                   |
-| -------------------- | ------------- | ----------------- | -------------- | ----------------------------------------------------------------------- |
-| `text`               | yes           | yes               | yes            | shared concept across all layers                                        |
-| `lang_code`          | yes           | yes               | no             | frontend convenience API uses `lang` instead                            |
-| `lang`               | no            | no                | yes            | frontend/client convenience field                                       |
-| `construction_id`    | yes           | yes               | no             | frontend layer does not define it as a stable top-level field           |
-| `renderer_backend`   | yes           | yes               | no             | may be exposed through debug in frontend flows only if carried through  |
-| `fallback_used`      | yes           | yes               | no             | not a canonical top-level frontend field                                |
-| `tokens`             | yes           | yes               | no             | frontend convenience API prefers `sentences`, not tokens                |
-| `sentences`          | no            | no                | yes            | frontend/session convenience field                                      |
-| `frame`              | no            | no                | yes            | convenience echo for frontend/session callers                           |
-| `slot_map`           | yes           | no                | no             | runtime-only                                                            |
-| `lexical_bindings`   | yes           | no                | no             | runtime-only unless summarized in debug                                 |
-| `debug_info`         | yes           | yes               | yes            | but rules differ by layer                                               |
-| `generation_time_ms` | yes           | yes               | no             | frontend convenience API does not define it as a stable top-level field |
+| Field                | Runtime layer | Public HTTP layer | Frontend/client layer | Notes                                                                              |
+| -------------------- | ------------- | ----------------- | --------------------- | ---------------------------------------------------------------------------------- |
+| `text`               | yes           | yes               | yes                   | shared concept across all layers                                                   |
+| `lang_code`          | yes           | yes               | optional              | frontend thin clients may mirror it; convenience layers may adapt it               |
+| `lang`               | no            | no                | yes                   | convenience field, not the public HTTP canonical name                              |
+| `construction_id`    | yes           | yes               | optional              | frontend may carry it only if explicitly mirroring the public contract             |
+| `renderer_backend`   | yes           | yes               | optional              | frontend may carry it only if explicitly mirroring the public contract             |
+| `fallback_used`      | yes           | yes               | optional              | not a required convenience field unless mirroring public transport                 |
+| `tokens`             | yes           | yes               | optional              | frontend may consume them, but must not replace the HTTP contract with `sentences` |
+| `sentences`          | no            | no                | yes                   | convenience/session field                                                          |
+| `frame`              | no            | no                | yes                   | convenience echo for local callers                                                 |
+| `slot_map`           | yes           | no                | no                    | runtime-only                                                                       |
+| `lexical_bindings`   | yes           | no                | no                    | runtime-only unless deliberately summarized                                        |
+| `debug_info`         | yes           | yes               | optional              | rules differ by layer                                                              |
+| `generation_time_ms` | yes           | yes               | optional              | frontend may mirror it, but it is not a frontend-owned convenience concept         |
 
 ---
 
@@ -265,97 +317,145 @@ Runtime `debug_info` may contain rich internal provenance, including:
 * lexical resolution metadata
 * backend-specific details such as AST or resolved GF language
 
-This is an internal diagnostic structure first. 
+This is an internal diagnostic structure first.
 
 ## 12.2 Public API debug
 
 Public API `debug_info` is a mapped client-visible diagnostic object.
 
-It should expose stable keys required by the public response contract while avoiding arbitrary leakage of internal transport-irrelevant structures.
+It must expose stable keys required by the public response contract while avoiding arbitrary leakage of internal structures that do not belong at the transport boundary.
 
-The public boundary may surface selected runtime diagnostics, but only as deliberate mapped output.
+Public `debug_info` must never contradict top-level public fields.
 
-## 12.3 Frontend debug
+## 12.3 Frontend/client debug
 
-In `nlg.api`, `debug_info` is included only when the caller enables `debug=True`.
+Frontend/client debug exposure is a consumption concern.
 
-Therefore, frontend debug visibility is conditional, even if runtime and HTTP layers may always carry debug metadata internally. 
+A frontend/client helper may:
+
+* pass public `debug_info` through,
+* suppress it,
+* conditionally expose it,
+* or augment it with client-local metadata.
+
+That convenience behavior does not redefine runtime ownership or the public contract.
 
 ---
 
-## 13. Language code boundary rules
+## 13. Top-level vs debug parity rules
+
+Where the public contract exposes a field at top level and also echoes it in `debug_info`, the top-level field is authoritative.
+
+At minimum:
+
+* top-level `lang_code` and `debug_info.lang_code` must not conflict,
+* top-level `fallback_used` and `debug_info.fallback_used` must not conflict,
+* top-level `construction_id` and `debug_info.construction_id` must not conflict when both are present,
+* top-level `renderer_backend` and `debug_info.renderer_backend` must not conflict when both are present,
+* top-level `generation_time_ms` is authoritative and must not be displaced by a debug-only value.
+
+This parity rule applies to public serialization, tests, and acceptance validation.
+
+---
+
+## 14. Language code boundary rules
 
 Language code handling differs by layer and must be kept explicit.
 
 ### Runtime
 
-The runtime and some tests may use normalized internal codes such as `eng` or other internal conventions where appropriate. 
+The runtime owns canonical internal language identity for planning and realization and returns canonical runtime `lang_code`.
 
 ### Public API
 
-The public API should expose one stable client-facing `lang_code` convention, such as `en`, `fr`, etc., regardless of internal normalization details. 
+The public API exposes one stable client-facing `lang_code` convention, such as `en`, `fr`, etc.
 
-### Frontend
+Internal routing or GF-specific details do not redefine the public field name or shape.
 
-The frontend-facing generation API uses `lang`, not `lang_code`, because it is a convenience/session-facing interface rather than the public HTTP transport contract. 
+### Frontend/client
+
+Frontend/client convenience layers may expose `lang`, but that is a convenience adaptation, not the public HTTP canonical field name.
+
+Thin clients that mirror the public HTTP envelope may also keep `lang_code` unchanged.
 
 ---
 
-## 14. Request boundary rules
+## 15. Request boundary rules
 
 Boundary separation applies to requests as well as responses.
 
-### 14.1 External HTTP compatibility ends at normalization
+## 15.1 External HTTP compatibility ends at normalization
 
-The request mapper may accept compatibility shapes, aliases, and legacy input forms, including multiple language-field spellings and bio-like frame aliases.
+The request mapper may accept compatibility shapes, aliases, and legacy input forms, including:
+
+* multiple language-field spellings,
+* compatibility wrapper forms,
+* legacy bio-like aliases,
+* transport-specific quirks.
 
 That compatibility is an API-ingest concern.
 
-It ends at normalization. Downstream runtime code must not consume transport quirks as if they were runtime contracts.  
+It ends at normalization.
 
-### 14.2 Frontend inputs do not redefine runtime contracts
+Downstream runtime code must not consume transport quirks as if they were runtime contracts.
 
-A frontend/session caller may pass a `frame` object and a `lang` string into `nlg.api.generate(...)`.
+## 15.2 Frontend/client inputs do not redefine runtime contracts
 
-That convenience signature does not redefine the HTTP request contract or the runtime planner contract. 
+A frontend/session caller may pass a convenience `frame` object and a `lang` string into a helper API.
+
+That convenience signature does not redefine:
+
+* the HTTP request contract,
+* the runtime planner contract,
+* or the canonical normalized internal shape.
 
 ---
 
-## 15. Anti-drift rules
+## 16. Anti-drift rules
 
-The following are prohibited:
+The following are prohibited.
 
-### 15.1 Runtime leakage into HTTP top level
+## 16.1 Runtime leakage into HTTP top level
 
-Do not expose these as top-level public response fields unless a specific public contract is adopted for them:
+Do not expose these as top-level public response fields unless a specific public contract is explicitly adopted for them:
 
 * `slot_map`
 * `lexical_bindings`
 * raw planner structures
-* raw entity/lexeme refs
+* raw entity or lexeme refs
 * backend-local intermediate objects
+* raw realizer inputs
 
-### 15.2 Frontend leakage into HTTP top level
+## 16.2 Frontend leakage into HTTP top level
 
 Do not redefine the public HTTP success envelope around frontend convenience fields such as:
 
 * `sentences`
 * `frame`
 * `lang`
+* UI/session-local request options
 
-### 15.3 HTTP transport leakage into runtime ownership
+## 16.3 HTTP transport leakage into runtime ownership
 
-Do not let public transport concerns dictate runtime object ownership, naming, or planner/realizer boundaries.
+Do not let transport concerns dictate runtime object ownership, planner boundaries, or renderer boundaries.
 
-### 15.4 Compatibility leakage past normalization
+## 16.4 Compatibility leakage past normalization
 
 Legacy payload quirks and wrapper variants must stop at API normalization.
 
+## 16.5 Mapper-created nominal truth
+
+Do not treat the response mapper as the place where nominal planner-first success becomes structurally valid for the first time.
+
+On the nominal path, required public fields must already exist in the runtime result before mapping.
+
+The mapper may normalize and serialize. It must not silently invent missing nominal truth.
+
 ---
 
-## 16. Examples
+## 17. Examples
 
-## 16.1 Internal runtime result
+## 17.1 Internal runtime result
 
 ```python
 SurfaceResult(
@@ -364,19 +464,22 @@ SurfaceResult(
     construction_id="copula_equative_classification",
     renderer_backend="gf",
     fallback_used=False,
+    tokens=["Alan", "Turing", "est", "un", "mathématicien", "britannique."],
     debug_info={
+        "runtime_path": "planner_first",
         "construction_id": "copula_equative_classification",
         "renderer_backend": "gf",
         "lang_code": "fr",
         "fallback_used": False,
         "resolved_language": "WikiFre",
     },
+    generation_time_ms=12.5,
 )
 ```
 
-This is a runtime object, not the HTTP contract. 
+This is a runtime object, not the HTTP contract.
 
-## 16.2 Public HTTP response
+## 17.2 Public HTTP response
 
 ```json
 {
@@ -387,19 +490,19 @@ This is a runtime object, not the HTTP contract.
   "fallback_used": false,
   "tokens": ["Alan", "Turing", "is", "a", "British", "mathematician."],
   "debug_info": {
+    "runtime_path": "planner_first",
     "construction_id": "copula_equative_classification",
     "renderer_backend": "family",
-    "lang_code": "en",
     "fallback_used": false,
-    "slot_keys": ["subject", "predicate_nominal"]
+    "lang_code": "en"
   },
   "generation_time_ms": 12.5
 }
 ```
 
-This is the client-facing transport envelope.  
+This is the client-facing transport envelope.
 
-## 16.3 Frontend-facing generation result
+## 17.3 Frontend/client convenience result
 
 ```python
 GenerationResult(
@@ -411,27 +514,30 @@ GenerationResult(
 )
 ```
 
-This is a frontend/client convenience object, not the public HTTP success shape. 
+This is a frontend/client convenience object, not the canonical HTTP success shape.
 
 ---
 
-## 17. Directory map
+## 18. Directory map
 
-| Path                                                       | Boundary role                                      |
-| ---------------------------------------------------------- | -------------------------------------------------- |
-| `app/adapters/api/contracts/generation_request_mapper.py`  | HTTP ingest normalization boundary                 |
-| `app/adapters/api/contracts/generation_response_mapper.py` | runtime-to-public response mapping boundary        |
-| `app/adapters/api/routers/generation.py`                   | public HTTP entry point                            |
-| `app/adapters/engines/construction_realizer.py`            | runtime realization and `SurfaceResult` production |
-| `docs/contracts/construction_runtime_contract.md`          | runtime contract authority                         |
-| `docs/contracts/public_generation_response_contract.md`    | public HTTP success contract authority             |
-| `nlg/api.py`                                               | frontend/client convenience API                    |
-| `architect_frontend/src/lib/api.ts`                        | browser-side API client/type layer                 |
-| `architect_frontend/src/components/GenerationResult.tsx`   | UI rendering of frontend-side generation data      |
+| Path                                                         | Boundary role                                      |
+| ------------------------------------------------------------ | -------------------------------------------------- |
+| `app/adapters/api/contracts/generation_request_mapper.py`    | HTTP ingest normalization boundary                 |
+| `app/adapters/api/contracts/generation_response_mapper.py`   | runtime-to-public response mapping boundary        |
+| `app/adapters/api/routers/generation.py`                     | public HTTP entry point                            |
+| `app/core/use_cases/generate_text.py`                        | planner-first orchestration boundary               |
+| `app/core/use_cases/realize_text.py`                         | runtime realization boundary                       |
+| `app/adapters/engines/construction_realizer.py`              | runtime realization and `SurfaceResult` production |
+| `docs/contracts/construction_runtime_contract.md`            | runtime contract authority                         |
+| `docs/contracts/public_generation_response_contract.md`      | public HTTP success contract authority             |
+| `docs/contracts/public_vs_runtime_vs_frontend_boundaries.md` | boundary ownership authority                       |
+| `nlg/api.py`                                                 | frontend/client convenience API                    |
+| `architect_frontend/src/lib/api.ts`                          | browser-side API client/type layer                 |
+| `architect_frontend/src/components/GenerationResult.tsx`     | UI rendering of frontend-side generation data      |
 
 ---
 
-## 18. Change policy
+## 19. Change policy
 
 Any change must answer this question first:
 
@@ -439,59 +545,61 @@ Any change must answer this question first:
 
 If the answer is unclear, the change must not proceed until ownership is documented.
 
-### 18.1 If adding a runtime field
+## 19.1 If adding a runtime field
 
 Update runtime contracts and decide whether it:
 
 * stays internal,
-* appears only in `debug_info`,
+* appears only in mapped public `debug_info`,
+* is mirrored by frontend thin clients,
 * or is promoted into the public HTTP contract.
 
-### 18.2 If adding a public HTTP field
+## 19.2 If adding a public HTTP field
 
 Update:
 
 * `public_generation_response_contract.md`
-* API docs
+* API reference docs
 * response mapper
-* tests for the public envelope
+* public HTTP tests
+* acceptance/evaluator checks when relevant
 
-### 18.3 If adding a frontend convenience field
+## 19.3 If adding a frontend/client convenience field
 
 Update:
 
 * frontend/client types
-* `nlg.api` docs
+* `nlg.api` or equivalent helper docs
 * UI consumers
 
 Do not silently add it to the HTTP contract unless explicitly approved.
 
 ---
 
-## 19. Acceptance criteria
+## 20. Acceptance criteria
 
 This document is considered adopted when:
 
 1. the runtime contract is documented as internal,
 2. the public HTTP success envelope is documented separately,
-3. the frontend-facing `GenerationResult` is documented separately,
+3. frontend/client convenience models are documented separately,
 4. no doc presents `SurfaceResult` as the public HTTP response object,
 5. no doc presents frontend convenience fields as canonical HTTP fields,
 6. compatibility payload handling is explicitly limited to normalization,
-7. tests and examples respect the boundary between `lang_code` and `lang`.
+7. the mapper is documented as a serialization boundary rather than the source of nominal planner-first truth,
+8. public top-level fields and `debug_info` parity rules are documented,
+9. tests and examples respect the boundary between `lang_code` and `lang`.
 
 ---
 
-## 20. Summary
+## 21. Summary
 
 SemantiK Architect has three valid but different views of generation output:
 
 * an **internal runtime view**,
 * a **public HTTP transport view**,
-* a **frontend/client convenience view**.
+* a **frontend/client consumption view**.
 
 They must stay aligned in meaning, but they must not collapse into one undifferentiated contract.
 
-That separation is what keeps planner-first runtime architecture, public API stability, and frontend ergonomics all possible at the same time.
-
-
+That separation is what keeps planner-first runtime architecture, public API stability, and frontend ergonomics simultaneously possible.

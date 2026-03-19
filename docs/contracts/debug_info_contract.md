@@ -1,7 +1,7 @@
 # Debug Info Contract
 
-Status: normative for renderer/runtime diagnostics; authoritative for shared `debug_info` semantics across runtime layers; backward-compatible with legacy payloads during migration  
-Applies to: internal `SurfaceResult` objects, public HTTP generation success responses, renderer outputs, legacy `Sentence`-compatible payloads, frontend `nlg.api.GenerationResult` payloads when diagnostics are exposed, test fixtures
+Status: normative for renderer/runtime diagnostics; authoritative for shared `debug_info` semantics across runtime layers and canonical public success responses; compatibility-aware for legacy payload readers during migration  
+Applies to: internal `SurfaceResult` objects, planner-first renderer outputs, public HTTP generation success responses, legacy `Sentence`-compatible payloads during migration, frontend `nlg.api.GenerationResult` payloads when diagnostics are exposed, QA tooling, test fixtures
 
 ---
 
@@ -31,6 +31,7 @@ This document defines:
 
 - the shared meaning of `debug_info`,
 - the required stable keys used across runtime layers,
+- parity rules between top-level result fields and `debug_info`,
 - visibility rules by boundary,
 - compatibility rules for legacy debug payloads,
 - safety and observability constraints.
@@ -52,15 +53,18 @@ This document governs the meaning and minimum structure of `debug_info`.
 Related contract boundaries:
 
 - `construction_runtime_contract.md` governs internal runtime handoff and `SurfaceResult`
-- `construction_renderer_contract.md` governs renderer-facing output expectations
-- `public_generation_response_contract.md` governs the public HTTP success envelope
+- `planner_realizer_interfaces.md` governs planner / lexical-resolution / realizer interface expectations
+- `public_generation_response_contract.md` governs the canonical public HTTP success envelope
+- `public_vs_runtime_vs_frontend_boundaries.md` governs what belongs to runtime, public API, and frontend wrappers
+- `EN_FR_FINAL_PARALLEL_LOCKDOWN.md` governs final branch lock rules and conflict resolution during the EN/FR cutover
 - `nlg/api.py` defines a separate frontend convenience API and is **not** the canonical public HTTP response contract
 
 Conflict rules:
 
 1. if the issue is the public HTTP top-level response shape, `public_generation_response_contract.md` wins;
-2. if the issue is renderer/runtime shared diagnostics, this document and the runtime/renderer contracts must agree;
-3. if the issue is frontend convenience wrappers, they may be stricter or thinner, but they must not redefine the shared meaning of the stable debug keys defined here.
+2. if the issue is runtime/renderer diagnostics semantics, this document must agree with `construction_runtime_contract.md`;
+3. if the issue is planner/realizer ownership or where metadata must first exist, `planner_realizer_interfaces.md` and the final lock document win;
+4. if the issue is frontend convenience wrappers, they may be stricter or thinner, but they must not redefine the shared meaning of the stable debug keys defined here.
 
 Any disagreement must be corrected immediately.
 
@@ -70,15 +74,15 @@ Any disagreement must be corrected immediately.
 
 ### 4.1 Internal runtime / renderer boundary
 
-For the aligned planner-first runtime, `debug_info` is attached to renderer outputs and internal `SurfaceResult`-like results.
+For the aligned planner-first runtime, `debug_info` is attached to renderer outputs and internal `SurfaceResult` results.
 
 This is the most important boundary for this contract.
 
 ### 4.2 Public HTTP generation success responses
 
-For canonical HTTP generation success responses, `debug_info` SHOULD be included as part of the public success envelope and SHOULD preserve the stable shared keys defined here.
+For canonical public HTTP generation success responses, `debug_info` **MUST** be included as part of the public success envelope and **MUST** preserve the stable shared keys defined here when they are available on the runtime result.
 
-Compatibility serializers may temporarily emit thinner payloads during migration, but new public response code must not treat `debug_info` omission as the default design.
+Compatibility serializers may temporarily accept thinner legacy inputs during migration, but new public response code must not treat `debug_info` omission as the default design.
 
 ### 4.3 Frontend `nlg.api.GenerationResult`
 
@@ -96,7 +100,8 @@ During migration, `debug_info` may also appear on:
 - compatibility wrappers,
 - old test fixtures.
 
-Readers must tolerate thinner legacy payloads.
+Readers must tolerate thinner legacy payloads.  
+New canonical producers must not treat those thinner payloads as the target design.
 
 ---
 
@@ -155,11 +160,17 @@ Readers MUST tolerate:
 
 `debug_info` is diagnostics only.
 
-It MUST NOT become a shadow planner contract, a hidden slot map, or the only carrier of data required to interpret the sentence semantically.
+It MUST NOT become a shadow planner contract, a hidden slot map, or the only carrier of data required to interpret the result semantically.
 
-If a renderer or client needs some field to understand the generation result semantically, that field belongs in the real runtime or public response contract, not only in `debug_info`.
+If a renderer, serializer, evaluator, or client needs some field to understand the generation result semantically or contractually, that field belongs in the real runtime or public response contract, not only in `debug_info`.
 
-### 5.7 Safe for logs and UI diagnostics
+### 5.7 Mapper must not invent nominal truth
+
+For canonical planner-first results, `debug_info` MUST already exist on the runtime result before API mapping.
+
+The API mapper MAY normalize, preserve, or thin compatibility payloads where explicitly allowed, but it MUST NOT invent nominal planner-first facts that should already exist on the canonical runtime result.
+
+### 5.8 Safe for logs and UI diagnostics
 
 `debug_info` MUST NOT contain:
 
@@ -180,11 +191,11 @@ If a renderer or client needs some field to understand the generation result sem
 
 ### 6.1 Internal runtime / renderer outputs
 
-For new runtime/renderer producers returning `SurfaceResult`-like outputs, `debug_info` **MUST** be present.
+For new runtime/renderer producers returning canonical `SurfaceResult` outputs, `debug_info` **MUST** be present.
 
 ### 6.2 Public HTTP success responses
 
-For canonical public HTTP generation success responses, `debug_info` **SHOULD** be present and SHOULD preserve the stable shared keys below.
+For canonical public HTTP generation success responses, `debug_info` **MUST** be present.
 
 Public HTTP serializers MUST NOT strip already-available stable debug fields without an explicit contract decision.
 
@@ -206,15 +217,16 @@ New code must not rely on omission as the desired long-term behavior.
 
 These keys have stable shared meaning across runtime and backend layers.
 
-### 7.1 Required shared keys for canonical runtime producers
+### 7.1 Required shared keys for canonical planner-first runtime producers
 
-New runtime/renderer producers MUST provide:
+Canonical planner-first runtime/renderer producers MUST provide:
 
 * `construction_id`
 * `renderer_backend`
 * `lang_code`
 * `slot_keys`
 * `fallback_used`
+* `runtime_path`
 
 ### 7.2 Semantics of required shared keys
 
@@ -223,6 +235,7 @@ New runtime/renderer producers MUST provide:
 * Type: `string`
 * Meaning: the construction the runtime claims to have realized
 * Rule: MUST remain stable across fallback
+* Rule: MUST NOT exist only in `debug_info` on the nominal public success path
 
 #### `renderer_backend`
 
@@ -233,6 +246,7 @@ New runtime/renderer producers MUST provide:
   * `"family"`
   * `"safe_mode"`
 * Meaning: the backend that produced the realized result
+* Rule: MUST match the top-level result backend when both are present
 
 #### `lang_code`
 
@@ -256,21 +270,59 @@ New runtime/renderer producers MUST provide:
 * Type: `boolean`
 * Meaning: whether fallback occurred on the path that produced the returned result
 * Rule: MUST be explicit
+* Rule: MUST match the top-level result fallback flag when both are present
+
+#### `runtime_path`
+
+* Type: `string`
+* Canonical nominal value: `"planner_first"`
+* Meaning: the runtime path that produced the returned result
+* Rule: MUST be explicit for canonical planner-first results
+* Rule: MUST NOT claim `"planner_first"` if required nominal metadata is missing
 
 ### 7.3 Public HTTP note
 
-Public HTTP serializers SHOULD preserve all five shared keys when available.
+Public HTTP serializers MUST preserve the canonical shared keys when they are available on the runtime result.
 
-During migration, older public serializers may temporarily expose only a subset.
+During migration, older compatibility serializers may temporarily expose only a subset.
 That is compatibility debt, not the target contract.
 
 ---
 
-## 8. Recommended additional keys
+## 8. Metadata parity rules
+
+When both top-level result fields and `debug_info` carry the same fact, they MUST agree.
+
+### 8.1 Required parity rules
+
+* top-level `lang_code` and `debug_info.lang_code` MUST match
+* top-level `fallback_used` and `debug_info.fallback_used` MUST match
+* top-level `renderer_backend` and `debug_info.renderer_backend` MUST match when both are present
+* top-level `construction_id` and `debug_info.construction_id` MUST match when both are present
+
+### 8.2 Time authority rule
+
+`generation_time_ms` is a top-level result/public-contract field.
+If timing diagnostics are also present inside `debug_info`, the top-level field remains authoritative.
+
+### 8.3 No debug-only nominal metadata rule
+
+On the canonical nominal planner-first path, required public/runtime facts such as:
+
+* `construction_id`
+* `renderer_backend`
+* `lang_code`
+* `fallback_used`
+
+MUST NOT live only inside `debug_info`.
+
+---
+
+## 9. Recommended additional keys
 
 The following keys are strongly recommended when available.
 
-### 8.1 Backend selection and dispatch
+### 9.1 Backend selection and dispatch
 
 * `selected_backend`
 * `requested_backend`
@@ -279,22 +331,21 @@ The following keys are strongly recommended when available.
 * `capability_tier`
 * `fallback_reason`
 
-### 8.2 Runtime path and provenance
+### 9.2 Runtime path and provenance
 
-* `runtime_path`
 * `producer`
 * `input_kind`
 * `trace_id`
 * `backend_trace`
 
-### 8.3 Lexical-resolution diagnostics
+### 9.3 Lexical-resolution diagnostics
 
 * `lexical_resolution`
 * `lexical_sources`
 * `missing_slots`
 * `unsupported_features`
 
-### 8.4 Renderer-specific diagnostics
+### 9.4 Renderer-specific diagnostics
 
 * `resolved_language`
 * `concrete_name`
@@ -304,7 +355,7 @@ The following keys are strongly recommended when available.
 * `ast`
 * `surface_tokens`
 
-### 8.5 Timing and warning diagnostics
+### 9.5 Timing and warning diagnostics
 
 * `timings_ms`
 * `warnings`
@@ -312,7 +363,7 @@ The following keys are strongly recommended when available.
 
 ---
 
-## 9. Canonical organization
+## 10. Canonical organization
 
 When `debug_info` is rich, new producers SHOULD prefer a structured envelope like this:
 
@@ -323,9 +374,9 @@ When `debug_info` is rich, new producers SHOULD prefer a structured envelope lik
   "lang_code": "fr",
   "slot_keys": ["subject", "profession", "nationality"],
   "fallback_used": false,
+  "runtime_path": "planner_first",
   "selected_backend": "gf",
   "attempted_backends": ["gf"],
-  "runtime_path": "planner_first",
   "dispatch_policy": {
     "allow_fallback": true,
     "forced_backend": null
@@ -351,18 +402,18 @@ When `debug_info` is rich, new producers SHOULD prefer a structured envelope lik
 
 Rules:
 
-* the five required shared keys remain top-level,
+* the required shared keys remain top-level inside `debug_info`,
 * nested sections SHOULD be preferred over unstructured top-level sprawl,
 * backend-specific data MAY be added,
 * public HTTP serializers MUST NOT move shared keys into nested-only form.
 
 ---
 
-## 10. Canonical nested sections
+## 11. Canonical nested sections
 
 To avoid top-level key sprawl, rich payloads SHOULD prefer these nested sections where appropriate.
 
-### 10.1 `planning`
+### 11.1 `planning`
 
 Planning-stage metadata.
 
@@ -381,7 +432,7 @@ Example:
 }
 ```
 
-### 10.2 `lexical_resolution`
+### 11.2 `lexical_resolution`
 
 Lexeme/entity normalization and provenance metadata.
 
@@ -404,7 +455,7 @@ Example:
 }
 ```
 
-### 10.3 `realization`
+### 11.3 `realization`
 
 Renderer-specific realization metadata.
 
@@ -424,7 +475,7 @@ Example:
 }
 ```
 
-### 10.4 `timings_ms`
+### 11.4 `timings_ms`
 
 Timing breakdown in milliseconds.
 
@@ -443,7 +494,7 @@ Example:
 
 ---
 
-## 11. Language-code rules
+## 12. Language-code rules
 
 `lang_code` is the canonical shared debug key for the normalized result language.
 
@@ -470,50 +521,55 @@ Example:
 
 ---
 
-## 12. Relationship to `SurfaceResult`
+## 13. Relationship to `SurfaceResult`
 
 At the runtime/renderer boundary, `debug_info` belongs to `SurfaceResult`.
 
-The shared contract assumes `SurfaceResult`-style results expose:
+The shared contract assumes canonical `SurfaceResult` results expose:
 
 * `text`
 * `lang_code`
 * `construction_id`
 * `renderer_backend`
+* `fallback_used`
+* `tokens`
 * `debug_info`
+* `generation_time_ms`
 
 and may additionally expose:
 
-* `tokens`
 * `warnings`
-* `fallback_used`
 * `confidence`
 
 Rules:
 
 * `debug_info` MUST remain separate from the top-level result fields,
 * top-level result fields MUST NOT be hidden only inside `debug_info`,
-* top-level optional fields such as `warnings` or `confidence` do not disappear just because related diagnostics also exist in `debug_info`.
+* top-level optional fields such as `warnings` or `confidence` do not disappear just because related diagnostics also exist in `debug_info`,
+* `SurfaceResult` is the canonical runtime result object before API mapping,
+* API response mapping happens only after `SurfaceResult` already contains its canonical nominal metadata.
 
-If a public boundary chooses not to expose `warnings` or `confidence` at top level, that choice must be documented by the relevant public contract.
+If a public boundary chooses not to expose some additional top-level field beyond the canonical success envelope, that choice must be documented by the relevant public contract.
 
 ---
 
-## 13. Relationship to public HTTP responses
+## 14. Relationship to public HTTP responses
 
 For canonical public HTTP generation success responses:
 
 * `debug_info` is diagnostics, not the main payload,
-* top-level fields such as `text`, `lang_code`, `construction_id`, `renderer_backend`, and `fallback_used` remain authoritative,
+* top-level fields such as `text`, `lang_code`, `construction_id`, `renderer_backend`, `fallback_used`, `tokens`, and `generation_time_ms` remain authoritative,
 * `debug_info` SHOULD mirror the stable shared keys for observability,
-* public HTTP serializers SHOULD preserve shared keys and SHOULD NOT strip `slot_keys` if they are already available.
+* public HTTP serializers MUST preserve shared keys that already exist on the runtime result,
+* public HTTP serializers MUST NOT invent missing nominal planner-first metadata,
+* public HTTP serializers MUST NOT strip `slot_keys` if they are already available on the runtime result.
 
 This document does not redefine the full public envelope.
 It only defines the diagnostics object inside that envelope.
 
 ---
 
-## 14. Relationship to frontend `nlg.api.GenerationResult`
+## 15. Relationship to frontend `nlg.api.GenerationResult`
 
 `nlg.api.GenerationResult` is a separate frontend convenience wrapper.
 
@@ -529,12 +585,12 @@ Rules:
 
 * it is not the canonical public HTTP response contract,
 * it MAY omit `debug_info` unless `debug=True`,
-* when it exposes `debug_info`, shared keys such as `construction_id`, `renderer_backend`, `lang_code`, `slot_keys`, and `fallback_used` keep the same meaning,
+* when it exposes `debug_info`, shared keys such as `construction_id`, `renderer_backend`, `lang_code`, `slot_keys`, `fallback_used`, and `runtime_path` keep the same meaning,
 * frontend wrappers MUST NOT redefine shared keys with a different meaning.
 
 ---
 
-## 15. Legacy key compatibility
+## 16. Legacy key compatibility
 
 Older parts of the system may emit ad hoc debug fields such as:
 
@@ -547,7 +603,7 @@ Older parts of the system may emit ad hoc debug fields such as:
 
 These remain accepted for backward compatibility.
 
-### 15.1 Reader requirements
+### 16.1 Reader requirements
 
 Readers MUST accept payloads like:
 
@@ -575,7 +631,7 @@ or:
 }
 ```
 
-### 15.2 Normalized interpretation
+### 16.2 Normalized interpretation
 
 When consuming legacy payloads, map them conceptually as follows:
 
@@ -588,15 +644,17 @@ When consuming legacy payloads, map them conceptually as follows:
 | `ast`               | `realization.ast`                                    |
 | `template_used`     | `realization.template_used`                          |
 
-### 15.3 Producer guidance
+### 16.3 Producer guidance
 
 During migration, producers MAY emit both canonical shared keys and legacy extras, but the stable shared keys in this document remain the long-term contract.
 
+New canonical producers MUST NOT omit canonical shared keys merely because legacy extras are also present.
+
 ---
 
-## 16. Backend-specific guidance
+## 17. Backend-specific guidance
 
-### 16.1 GF backend
+### 17.1 GF backend
 
 GF-based producers SHOULD normally include:
 
@@ -605,11 +663,12 @@ GF-based producers SHOULD normally include:
 * `lang_code`
 * `slot_keys`
 * `fallback_used`
+* `runtime_path`
 * `resolved_language`
 * `concrete_name`
 * `ast`
 
-### 16.2 Family renderer backend
+### 17.2 Family renderer backend
 
 Family renderers SHOULD normally include:
 
@@ -618,11 +677,12 @@ Family renderers SHOULD normally include:
 * `lang_code`
 * `slot_keys`
 * `fallback_used`
+* `runtime_path`
 * `family`
 * `template_id` or equivalent
 * `backend_trace`
 
-### 16.3 Safe-mode backend
+### 17.3 Safe-mode backend
 
 Safe-mode producers SHOULD normally include:
 
@@ -631,13 +691,14 @@ Safe-mode producers SHOULD normally include:
 * `lang_code`
 * `slot_keys`
 * `fallback_used`
+* `runtime_path`
 * `template_used`
 * `fallback_reason`
 * `backend_trace`
 
 ---
 
-## 17. Fallback rules
+## 18. Fallback rules
 
 If fallback occurs, `debug_info` MUST make it explicit.
 
@@ -655,21 +716,23 @@ Fallback MUST NOT silently change:
 * intended semantic role structure
 * result language code
 
+Fallback MUST NOT be used to make a nominal planner-first success appear complete when required canonical metadata is missing.
+
 ---
 
-## 18. Warnings, errors, and confidence
+## 19. Warnings, errors, and confidence
 
-### 18.1 `warnings`
+### 19.1 `warnings`
 
 `warnings` MAY appear in `debug_info` as an array of stable warning codes or compact machine-readable messages.
 
-### 18.2 `errors`
+### 19.2 `errors`
 
 `errors` MAY appear in `debug_info` for non-fatal diagnostic issues.
 
 Fatal failures belong in the error response contract, not only in `debug_info`.
 
-### 18.3 `confidence`
+### 19.3 `confidence`
 
 `confidence` MAY appear inside nested diagnostic sections such as `lexical_resolution`.
 
@@ -677,9 +740,9 @@ It MUST NOT be treated as a universally required top-level shared debug key unle
 
 ---
 
-## 19. Size, stability, and determinism
+## 20. Size, stability, and determinism
 
-### 19.1 Size budget
+### 20.1 Size budget
 
 `debug_info` should stay reasonably small for API responses and frontend rendering.
 
@@ -688,11 +751,11 @@ Recommended soft limit:
 * target: under 4 KB
 * hard warning threshold: 16 KB
 
-### 19.2 Stable identifiers over prose
+### 20.2 Stable identifiers over prose
 
 Prefer stable identifiers/codes over descriptive prose.
 
-### 19.3 Deterministic ordering
+### 20.3 Deterministic ordering
 
 When practical, emit keys in a stable order for snapshot testing and log diffing.
 
@@ -703,9 +766,9 @@ Suggested order:
 3. `lang_code`
 4. `slot_keys`
 5. `fallback_used`
-6. `selected_backend`
-7. `attempted_backends`
-8. `runtime_path`
+6. `runtime_path`
+7. `selected_backend`
+8. `attempted_backends`
 9. `dispatch_policy`
 10. `lexical_resolution`
 11. `backend_trace`
@@ -714,7 +777,7 @@ Suggested order:
 
 ---
 
-## 20. Privacy and security
+## 21. Privacy and security
 
 `debug_info` must never contain:
 
@@ -738,7 +801,7 @@ Safe examples include:
 
 ---
 
-## 21. JSON Schema sketch
+## 22. JSON Schema sketch
 
 This is an informal sketch for implementers.
 
@@ -755,6 +818,7 @@ This is an informal sketch for implementers.
       "items": { "type": "string" }
     },
     "fallback_used": { "type": "boolean" },
+    "runtime_path": { "type": ["string", "null"] },
 
     "selected_backend": { "type": ["string", "null"] },
     "requested_backend": { "type": ["string", "null"] },
@@ -762,7 +826,6 @@ This is an informal sketch for implementers.
       "type": "array",
       "items": { "type": "string" }
     },
-    "runtime_path": { "type": ["string", "null"] },
     "producer": { "type": ["string", "null"] },
     "input_kind": { "type": ["string", "null"] },
     "trace_id": { "type": ["string", "null"] },
@@ -796,9 +859,9 @@ This is an informal sketch for implementers.
 
 ---
 
-## 22. Examples
+## 23. Examples
 
-### 22.1 Current-style public HTTP success response
+### 23.1 Canonical public HTTP success response
 
 ```json
 {
@@ -807,19 +870,22 @@ This is an informal sketch for implementers.
   "construction_id": "copula_equative_classification",
   "renderer_backend": "gf",
   "fallback_used": false,
+  "tokens": ["Alan", "Turing", "is", "a", "British", "mathematician."],
   "debug_info": {
     "construction_id": "copula_equative_classification",
     "renderer_backend": "gf",
     "lang_code": "en",
     "slot_keys": ["subject", "profession", "nationality"],
     "fallback_used": false,
+    "runtime_path": "planner_first",
     "selected_backend": "gf",
     "attempted_backends": ["gf"]
-  }
+  },
+  "generation_time_ms": 12.5
 }
 ```
 
-### 22.2 Current-style frontend `nlg.api` response when `debug=True`
+### 23.2 Frontend `nlg.api` response when `debug=True`
 
 ```json
 {
@@ -837,12 +903,13 @@ This is an informal sketch for implementers.
     "renderer_backend": "family",
     "lang_code": "en",
     "slot_keys": ["subject", "profession", "nationality"],
-    "fallback_used": false
+    "fallback_used": false,
+    "runtime_path": "planner_first"
   }
 }
 ```
 
-### 22.3 Canonical rich runtime debug payload
+### 23.3 Canonical rich runtime debug payload
 
 ```json
 {
@@ -851,9 +918,9 @@ This is an informal sketch for implementers.
   "lang_code": "fr",
   "slot_keys": ["subject", "profession", "nationality"],
   "fallback_used": false,
+  "runtime_path": "planner_first",
   "selected_backend": "gf",
   "attempted_backends": ["gf"],
-  "runtime_path": "planner_first",
   "dispatch_policy": {
     "allow_fallback": true,
     "forced_backend": null
@@ -883,22 +950,24 @@ This is an informal sketch for implementers.
 
 ---
 
-## 23. Conformance requirements
+## 24. Conformance requirements
 
 A producer is conformant if:
 
-1. it emits `debug_info` on new internal runtime/renderer results,
+1. it emits `debug_info` on new canonical internal runtime/renderer results,
 2. emitted `debug_info` is always an object,
 3. it never includes secrets,
 4. it uses the stable shared keys with their documented meanings,
-5. it includes at least:
+5. for canonical planner-first runtime results, it includes at least:
 
    * `construction_id`
    * `renderer_backend`
    * `lang_code`
    * `slot_keys`
    * `fallback_used`
-6. backend-specific details do not replace shared keys.
+   * `runtime_path`
+6. backend-specific details do not replace shared keys,
+7. it does not rely on the API mapper to invent nominal planner-first metadata.
 
 A reader is conformant if:
 
@@ -910,7 +979,7 @@ A reader is conformant if:
 
 ---
 
-## 24. Migration policy
+## 25. Migration policy
 
 ### Phase 1
 
@@ -922,7 +991,7 @@ Update frontend, tools, and tests to prefer the stable shared keys.
 
 ### Phase 3
 
-Require the stable shared keys for all new runtime/renderer producers.
+Require the stable shared keys for all new canonical runtime/renderer producers.
 
 ### Phase 4
 
@@ -938,7 +1007,7 @@ Do not remove legacy keys without explicit release-note coverage and regression 
 
 ---
 
-## 25. Final rule
+## 26. Final rule
 
 `debug_info` is the stable diagnostics object for runtime generation.
 
@@ -949,9 +1018,12 @@ It must be:
 * safe,
 * comparable across backends,
 * backward-compatible for legacy readers,
-* aligned with `SurfaceResult`,
+* aligned with canonical `SurfaceResult`,
 * explicit about fallback,
-* centered on stable shared keys.
+* explicit about runtime path,
+* and centered on stable shared keys.
 
 If two active generation paths use the same key names in `debug_info` but with different meanings, the contract is broken.
+
+If a canonical planner-first path appears successful while required nominal metadata exists only in `debug_info` or is first invented by the API mapper, the contract is broken.
 

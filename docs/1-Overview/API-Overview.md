@@ -1,16 +1,28 @@
 # API Overview
 
-SemantiK Architect is exposed through a **versioned HTTP API**. The canonical application-facing prefix is:
+Status: normative overview  
+Owner: API / Runtime  
+Scope: high-level integration reference for the public SemantiK Architect HTTP API
+
+SemantiK Architect is exposed through a **versioned HTTP API**.
+
+The canonical application-facing prefix is:
 
 - **`/api/v1`**
 
-This page is the high-level integration overview. For the canonical success envelope returned by generation endpoints, see:
+This page is the high-level integration overview.
+
+For the canonical public success envelope returned by generation endpoints, see:
 
 - `docs/contracts/public_generation_response_contract.md`
 
+For the boundary between public HTTP responses, internal runtime results, and frontend/helper models, see:
+
+- `docs/contracts/public_vs_runtime_vs_frontend_boundaries.md`
+
 ---
 
-## API prefix and route mounting
+## 1. API prefix and route mounting
 
 The FastAPI application mounts its primary public routes under **`/api/v1`**.
 
@@ -33,20 +45,19 @@ Use the `/api/v1/...` form for client integrations unless you explicitly need pr
 
 ---
 
-## Core generation endpoints
+## 2. Core generation endpoints
 
-## `POST /api/v1/generate/{lang}`
+## `POST /api/v1/generate/{lang_code}`
 
 This is the canonical text-generation endpoint for stable clients.
 
 Rules:
 
-- `lang` is provided as a **path parameter**
+- `lang_code` is provided as a **path parameter**
 - the request body carries the **meaning payload**
 - if a language is also present in the body, it must normalize to the same value
 - the response returns the generated surface text plus structured runtime metadata
-
-The path language is authoritative.
+- the path language is authoritative
 
 ### Canonical request pattern
 
@@ -67,9 +78,11 @@ Example:
 }
 ````
 
+This is the preferred contract for new integrations.
+
 ---
 
-## Compatibility generation endpoint
+## 3. Compatibility generation endpoint
 
 ## `POST /api/v1/generate`
 
@@ -87,13 +100,19 @@ Accepted language aliases include:
 
 Use the path-based endpoint for new integrations unless you specifically need compatibility behavior.
 
+Important note:
+
+* compatibility support exists for migration and adapter tolerance
+* it is **not** the nominal target-state integration contract
+* clients should prefer `POST /api/v1/generate/{lang_code}`
+
 ---
 
-## Accepted request shapes
+## 4. Accepted request shapes
 
 The generation layer accepts multiple request styles during migration.
 
-### 1. Raw semantic payload
+### 4.1 Raw semantic payload
 
 This is the preferred shape for current clients.
 
@@ -105,7 +124,7 @@ Examples include:
 * normalized semantic frame payloads
 * other frame families routed through frame normalization
 
-Bio-like frame types are normalized through the bio compatibility path.
+Bio-like frame types are normalized through the bio/person compatibility path.
 
 Recognized bio-like aliases include forms such as:
 
@@ -117,7 +136,7 @@ Recognized bio-like aliases include forms such as:
 * `entity.person.v1`
 * `entity.person.v2`
 
-### 2. Wrapped compatibility payload
+### 4.2 Wrapped compatibility payload
 
 Some callers wrap the frame instead of posting the raw payload directly.
 
@@ -149,15 +168,15 @@ Example:
 
 This remains supported for compatibility, but direct raw payloads are preferred for new clients.
 
-### 3. Ninai / recursive meaning payload
+### 4.3 Ninai / recursive meaning payload
 
 If the payload contains a top-level `function` field, the request is treated as a Ninai-style recursive meaning payload and routed through the Ninai adapter path.
 
-This path is still compatibility/prototype-oriented and should not be treated as the default production contract.
+This path remains compatibility/prototype-oriented and should not be treated as the default production contract.
 
 ---
 
-## Request normalization rules
+## 5. Request normalization rules
 
 Before generation, the API normalizes requests into a stable internal command.
 
@@ -170,20 +189,30 @@ Key rules:
 * Ninai payloads are parsed through the adapter path
 * invalid or non-object payloads are rejected
 
+At the public boundary, language codes must normalize to the API-facing form such as:
+
+* `en`
+* `fr`
+* `pt`
+
+Internal runtime spellings must not leak into the public HTTP envelope.
+
 ---
 
-## Public success response shape
+## 6. Public success response shape
 
-The stable public success response is centered on these top-level fields:
+The stable public success response uses one canonical top-level envelope.
+
+The required top-level fields are:
 
 * `text` — generated surface text
 * `lang_code` — normalized output language code
-* `construction_id` — realized construction identifier when available
+* `construction_id` — realized construction identifier
 * `renderer_backend` — backend that produced the final text
 * `fallback_used` — whether fallback was used for the returned result
 * `tokens` — tokenized surface output
 * `debug_info` — structured runtime diagnostics and provenance
-* `generation_time_ms` — timing metadata when available on the active path
+* `generation_time_ms` — top-level timing metadata
 
 Example:
 
@@ -196,10 +225,12 @@ Example:
   "fallback_used": false,
   "tokens": ["Alan", "Turing", "is", "a", "British", "mathematician."],
   "debug_info": {
+    "runtime_path": "planner_first",
     "construction_id": "copula_equative_classification",
     "renderer_backend": "family",
     "lang_code": "en",
     "fallback_used": false,
+    "slot_keys": ["subject", "profession", "nationality"],
     "selected_backend": "family",
     "attempted_backends": ["family"]
   },
@@ -210,46 +241,80 @@ Example:
 ### Important response notes
 
 * `text` is the authoritative public surface field
-* clients should not depend on older names such as `surface_text` or `meta`
+* clients must not depend on legacy public names such as `surface_text` or `meta`
+* `construction_id` and `renderer_backend` are part of the canonical top level
+* `generation_time_ms` is top-level and authoritative
 * `debug_info` is observability data, not a substitute for the public top-level fields
-* legacy code may still refer internally to `Sentence`, while planner-runtime code prefers `SurfaceResult`; both converge on the same public HTTP shape
+* the same public envelope applies across supported languages
+* clients must not branch by language or backend to interpret successful generation results
 
----
+### Debug notes
 
-## Runtime status and migration note
+`debug_info` always belongs to the public success envelope.
 
-The architectural target is a **planner-first runtime**:
-
-1. planner builds or selects the construction payload
-2. lexical resolution may enrich the plan
-3. the realizer returns the final surface result
-4. the API serializes that result into the public success envelope
-
-A compatibility path still exists for migration-era flows, including legacy direct frame-based generation.
-
-Because of that, clients may still observe runtime metadata such as:
+Stable debug keys include:
 
 * `runtime_path`
+* `construction_id`
+* `renderer_backend`
+* `lang_code`
+* `fallback_used`
+* `slot_keys`
+
+Additional runtime diagnostics may also appear there, including:
+
 * `selected_backend`
 * `attempted_backends`
 * `dispatch_policy`
 * `backend_trace`
 * `resolved_language`
+* `lexical_resolution`
+* `gf_function`
 * `ast`
+* `warnings`
+* `fallback_reason`
 
-Those belong in `debug_info`.
-
-Clients should rely on the top-level public fields for integration logic.
+Clients should use top-level fields for integration logic and treat `debug_info` as diagnostics.
 
 ---
 
-## Languages discovery
+## 7. Runtime model and migration note
+
+The architectural target is a **planner-first runtime**:
+
+1. canonical input is normalized into one internal frame/domain shape
+2. the planner builds or selects the construction payload
+3. lexical resolution may enrich the plan
+4. the realizer returns the final surface result
+5. the API serializes that result into the public success envelope
+
+The nominal target-state runtime path is:
+
+* **`planner_first`**
+
+A compatibility path may still exist during migration windows, including:
+
+* compatibility shims
+* explicit fallback paths
+* temporary legacy generation flows
+
+Important rules:
+
+* compatibility success still serializes to the same public envelope
+* compatibility success is **not** the nominal target-state success path
+* `fallback_used` must remain explicit
+* path-specific observability belongs in `debug_info`
+* clients should rely on the stable top-level fields, not on path-specific internals
+
+---
+
+## 8. Languages discovery
 
 ## `GET /api/v1/languages`
 
 Used by the UI, smoke tooling, and validation utilities to discover available languages.
 
-Clients in this repo already tolerate multiple response shapes, including:
+Client code in this repo already tolerates multiple response shapes, including:
 
 * `{"supported_languages": ["en", "fr"]}`
 * `{"languages": [{"code": "en"}, {"code": "fr"}]}`
@@ -257,11 +322,13 @@ Clients in this repo already tolerate multiple response shapes, including:
 * `[{"code": "en"}, {"code": "fr"}]`
 * `["en", "fr"]`
 
-Client code should normalize these shapes rather than assuming a single historical payload form.
+Clients should normalize these shapes rather than assuming a single historical payload form.
+
+The existence of a language in this endpoint does not, by itself, imply full language readiness.
 
 ---
 
-## Entity and frame discovery endpoints
+## 9. Entity and frame discovery endpoints
 
 Entity-related browsing endpoints are mounted under:
 
@@ -273,9 +340,11 @@ Frame-related endpoints are mounted under:
 
 These endpoints support schema/entity browsing and editor-style UI flows.
 
+They are not the canonical meaning-to-text generation contract.
+
 ---
 
-## AI helper endpoints
+## 10. AI helper endpoints
 
 AI helper endpoints are mounted under the same API prefix:
 
@@ -283,11 +352,11 @@ AI helper endpoints are mounted under the same API prefix:
 
 These are helper endpoints and are not the canonical generation contract.
 
-Use `/api/v1/generate/{lang}` for stable meaning-to-text integration.
+Use `POST /api/v1/generate/{lang_code}` for stable meaning-to-text integration.
 
 ---
 
-## Session / discourse header
+## 11. Session / discourse header
 
 Some scripts, clients, and discourse-oriented flows use:
 
@@ -299,7 +368,7 @@ Treat it as optional integration metadata, not as part of the semantic payload i
 
 ---
 
-## Tools API
+## 12. Tools API
 
 Developer/system tools are mounted under:
 
@@ -319,7 +388,8 @@ The tools router is the canonical owner of:
 * allowlist enforcement
 * argument policy checks
 * lifecycle envelope generation
-* timeout / truncation behavior
+* timeout behavior
+* truncation behavior
 
 ### Security note
 
@@ -335,7 +405,7 @@ Tool arguments may be:
 
 ---
 
-## Health endpoints
+## 13. Health endpoints
 
 Health endpoints are available at both:
 
@@ -345,19 +415,21 @@ Health endpoints are available at both:
 * **`/api/v1/health/ready`**
 
 Use the `/api/v1/health/...` form when you want the canonical API namespace.
+
 Use the root-mounted `/health/...` form for deployment probes if your environment expects that layout.
 
 ---
 
-## Practical guidance for new clients
+## 14. Practical guidance for new clients
 
 For new integrations:
 
 1. call `GET /api/v1/languages`
-2. choose a supported language code
-3. call `POST /api/v1/generate/{lang}` with a raw semantic payload
+2. choose a supported public language code
+3. call `POST /api/v1/generate/{lang_code}` with a raw semantic payload
 4. read `text` as the final output
-5. treat `debug_info` as diagnostics only
+5. use `lang_code`, `construction_id`, `renderer_backend`, `fallback_used`, and `generation_time_ms` as the stable public metadata
+6. treat `debug_info` as diagnostics only
 
 Prefer:
 
@@ -365,4 +437,23 @@ Prefer:
 * path language over body language
 * raw semantic payloads over wrapped compatibility payloads
 * planner-compatible stable fields over backend-specific internals
+* the canonical public success envelope over any helper-library or frontend-local result shape
+
+Do not build new integrations around:
+
+* `surface_text`
+* `meta`
+* backend-specific ad hoc envelopes
+* frontend-only result objects
+* compatibility-only request forms when the canonical path endpoint is available
+
+---
+
+## 15. Final integration rule
+
+There is exactly one canonical public success envelope for successful generation responses.
+
+If two successful generation paths expose different top-level public shapes, the API contract is broken.
+
+If a client can only understand generation success by inspecting backend-specific internals instead of the stable top-level public fields, the integration boundary is wrong.
 

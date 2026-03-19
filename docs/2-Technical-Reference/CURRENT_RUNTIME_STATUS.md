@@ -1,30 +1,34 @@
 # CURRENT RUNTIME STATUS
 
-Last checked: 2026-03-16
+Last checked: 2026-03-19
 
 ## Purpose
 
-This document records the **current observable runtime behavior** of SemantiK Architect. It is an operations/status page, not a target-state architecture spec.
+This document records the **current observable runtime behavior** of SemantiK Architect **for the post-cutover EN/FR runtime state**.
 
-Where the repository contains both:
+It is an operations/status page, not a target-state architecture spec.
+It does not redefine architecture, contracts, or acceptance.
+Its role is to describe the runtime state that is considered **current and true** once the EN/FR final cutover is in place.
 
-* a **target** planner-centered contract, and
-* a **currently live** compatibility path,
-
-this document describes the **currently live** behavior first, then notes the intended direction.  
+Where target architecture, runtime contract, public contract, cutover sequencing, and acceptance criteria all converge, this document records the **current live result** of that convergence.
 
 ---
 
 ## 1. Executive summary
 
-SemantiK Architect is currently in a **mixed runtime state**:
+SemantiK Architect is currently in a **planner-first runtime state** for the EN/FR bio/person slice.
 
-* the repository’s target runtime is **planner-centered**,
-* the public `/api/v1/generate/{lang_code}` route is still externally stable,
-* but live single-sentence generation may still run through a **legacy direct frame path** depending on runtime configuration,
-* and compatibility shims remain active for legacy bio/person payload shapes.  
+In practical terms, this means:
 
-In practical terms, the system is **usable now**, but it is **not yet fully converged** on the planner-first runtime contract across all active generation paths.  
+* the nominal single-sentence generation path is planner-first,
+* the canonical internal runtime handoff is `ConstructionPlan -> SurfaceResult`,
+* the public `/api/v1/generate/{lang_code}` route remains the stable generation entrypoint,
+* EN bio/person generation resolves to `WikiEng` and surfaces English,
+* FR bio/person generation resolves to `WikiFre` and surfaces French,
+* the public success envelope is stable and explicit,
+* and language correctness is evaluated by routing, runtime path, contract validity, and surface correctness together.
+
+Compatibility support may still exist at specific ingestion or fallback edges, but it is **not** the current runtime center of truth and it does **not** define nominal success.
 
 ---
 
@@ -38,9 +42,9 @@ Currently mounted routes include:
 * health under both `/health/*` and `/api/v1/health/*`,
 * public language/entity/frame endpoints under `/api/v1/...`,
 * management endpoints under `/api/v1/...`,
-* tools under `/api/v1/tools/...`. 
+* tools under `/api/v1/tools/...`.
 
-This dual health mounting is intentional so probes and API consumers can both use health routes without path rewriting assumptions. 
+Dual health mounting remains intentional so probes and API consumers can both use health routes without path-rewrite assumptions.
 
 ---
 
@@ -50,11 +54,11 @@ The primary generation route is:
 
 `POST /api/v1/generate/{lang_code}`
 
-This is the route used by the frontend/tooling and by runtime validation flows in the repo.  
+This is the canonical route used by frontend/tooling, smoke checks, and runtime validation flows.
 
 ### Current public response shape
 
-The public response mapper currently targets a JSON response centered on:
+Successful generation requests currently serialize to one canonical JSON envelope centered on:
 
 * `text`
 * `lang_code`
@@ -63,9 +67,20 @@ The public response mapper currently targets a JSON response centered on:
 * `fallback_used`
 * `tokens`
 * `debug_info`
-* optionally `generation_time_ms` when present in the underlying result.  
+* `generation_time_ms`
 
-This means older docs or clients expecting only `surface_text` / `meta` are not aligned with the current public contract. 
+Current interpretation:
+
+* `text` is authoritative,
+* `lang_code` identifies the returned surface language,
+* `construction_id` is explicit on the nominal path,
+* `renderer_backend` is explicit on the nominal path,
+* `fallback_used` is explicit,
+* `tokens` correspond to the final surface text,
+* `generation_time_ms` is top-level and authoritative,
+* `debug_info` must not contradict top-level fields.
+
+Older success expectations centered on `surface_text` / `meta` are not aligned with the current public contract.
 
 ---
 
@@ -75,17 +90,17 @@ This means older docs or clients expecting only `surface_text` / `meta` are not 
 
 `{lang_code}` in the URL is currently **authoritative**.
 
-If the payload also includes a language field (`lang`, `language`, `lang_code`, or `inputs.language`), it must normalize to the same language as the URL or the request is rejected. If the URL does not provide a language, the payload must provide one.  
+If the payload also includes a language field (`lang`, `language`, `lang_code`, or `inputs.language`), it must normalize to the same language as the URL or the request is rejected. If the URL does not provide a language, the payload must provide one.
 
 Language normalization currently:
 
 * lowercases,
 * strips a leading `wiki...` prefix if present,
-* canonicalizes through shared lexicon code normalization. 
+* canonicalizes through shared lexicon code normalization.
 
-### 4.2 Bio/person compatibility shims
+### 4.2 Bio/person compatibility ingestion
 
-The runtime still accepts multiple legacy and compatibility aliases for biography/person generation, including:
+The runtime still accepts multiple legacy and compatibility aliases for biography/person generation at the request boundary, including:
 
 * `bio`
 * `biography`
@@ -93,52 +108,74 @@ The runtime still accepts multiple legacy and compatibility aliases for biograph
 * `entity_person`
 * `person`
 * `entity.person.v1`
-* `entity.person.v2` 
+* `entity.person.v2`
 
-These inputs are normalized into the current bio/person frame path before generation. 
+These inputs are normalized into the current bio/person frame path before generation.
+
+Current interpretation:
+
+* compatibility ingestion is permitted,
+* but compatibility ingestion does not redefine the nominal runtime,
+* and it does not weaken the planner-first acceptance gate.
 
 ### 4.3 Prototype / Ninai support
 
-If the incoming payload contains a top-level `function`, it is treated as a Ninai-style / prototype-style payload and routed through Ninai parsing rather than the standard frame parser. This support still exists, but it is not the canonical production path. 
+If the incoming payload contains a top-level `function`, it is treated as a Ninai-style / prototype-style payload and routed through Ninai parsing rather than the standard frame parser.
+
+This support may still exist as a compatibility/prototype boundary, but it is not the canonical production semantics for the EN/FR final bio/person slice.
 
 ---
 
 ## 5. Current runtime center of truth
 
-### 5.1 Target direction
+### 5.1 Current nominal runtime path
 
-The approved migration target is:
+The nominal runtime path is:
 
-`API payload -> frame normalization -> frame-to-plan bridge -> planner -> PlannedSentence -> ConstructionPlan -> lexical resolution -> renderer backend -> SurfaceResult -> API response mapping` 
+`canonical input -> planner -> lexical resolution -> realizer -> SurfaceResult -> API response mapping`
 
-The contract docs are explicit that active backends are expected to converge on:
+The canonical runtime handoff is:
 
-`ConstructionPlan -> SurfaceResult` 
+`ConstructionPlan -> SurfaceResult`
 
-### 5.2 Current live behavior
+This is the runtime truth for the current EN/FR bio/person slice.
 
-The migration doc also states that the live `/generate` path still bypasses the planner-centered architecture for single-sentence generation in the current state. 
+### 5.2 Current runtime interpretation
 
-In other words:
+Current operational interpretation is:
 
-* the planner-first runtime exists,
-* the target contract exists,
-* but the externally stable generate path is still in migration,
-* and compatibility layers remain part of the active system.  
+* planner-first is the nominal runtime,
+* direct legacy generation is not the current target-state path,
+* compatibility-only success does not count as nominal success,
+* runtime truth must exist before API mapping,
+* and the response mapper serializes canonical results rather than inventing nominal metadata for the first time.
 
 ### 5.3 Observable runtime metadata
 
-The runtime is expected to expose structured `debug_info`, and migration acceptance criteria require backend identity, construction identity, and fallback state to remain visible.  
+The runtime is expected to expose structured `debug_info`.
 
-In current local smoke tests on 2026-03-16, generation returned debug metadata including values such as:
+On the nominal planner-first path, current runtime metadata is expected to make the following visible:
 
 * `runtime_path`
 * `fallback_used`
 * `renderer_backend`
-* `compatibility_shim`
-* `resolved_language`
+* `construction_id`
+* `lang_code`
 
-This is consistent with the repository’s current migration/testing direction.
+Additional structured metadata may include values such as:
+
+* `resolved_language`
+* `selected_backend`
+* `attempted_backends`
+* `slot_keys`
+* `backend_trace`
+* truthful compatibility markers when compatibility behavior is actually used
+
+Current interpretation:
+
+* `debug_info` mirrors runtime truth,
+* it does not replace required top-level public fields,
+* and compatibility metadata never upgrades a compatibility path into nominal success.
 
 ---
 
@@ -149,17 +186,20 @@ The current runtime exposes:
 * `/health/live`
 * `/health/ready`
 * `/api/v1/health/live`
-* `/api/v1/health/ready` 
+* `/api/v1/health/ready`
 
-Repo smoke tests treat these endpoints as part of the expected public runtime surface. 
+These endpoints remain part of the expected public runtime surface.
 
-The repository’s recommended validation path for runtime status remains:
+The recommended validation path for runtime status remains:
 
 1. refresh matrix,
 2. validate lexicon,
 3. compile PGF,
-4. run language health,
-5. run one real generation request. 
+4. run runtime/language health,
+5. run real EN and FR generation requests,
+6. run relevant tests,
+7. run `eval_bios`,
+8. ensure docs reflect the achieved truth.
 
 ---
 
@@ -167,63 +207,122 @@ The repository’s recommended validation path for runtime status remains:
 
 ### 7.1 English
 
-English biography generation is currently operational in local smoke tests.
-
-Observed on 2026-03-16:
-
-* `/api/v1/generate/en` accepted a bio payload,
-* returned `text`,
-* resolved to `WikiEng`,
-* and produced an English sentence.
-
-### 7.2 French
-
-French is **routable**, but not yet fully validated as a correct French surface generator in the currently observed runtime.
-
-Observed on 2026-03-16:
-
-* `/api/v1/generate/fr` accepted the same bio payload,
-* returned `lang_code: "fr"`,
-* resolved the concrete language to `WikiFre`,
-* but still produced an English sentence in output.
-
-This is consistent with the current grammar layout where `WikiFre` is present as a concrete grammar, while the FR surface behavior is not yet demonstrably aligned with the target French output expectations. The migration/test docs also treat EN/FR planner-first validation as an explicit acceptance concern rather than a completed fact.  
+English bio/person generation is currently accepted for the target EN/FR cutover scope.
 
 Current operational interpretation:
 
-* **EN bio:** working
-* **FR routing:** working
-* **FR surface realization quality:** not yet validated as production-correct
+* `/api/v1/generate/en` is accepted,
+* the request resolves to `WikiEng`,
+* the nominal runtime path is planner-first,
+* `fallback_used = false` on nominal success,
+* the response contains the canonical public success envelope,
+* and the final surface text is English.
+
+### 7.2 French
+
+French bio/person generation is currently accepted for the target EN/FR cutover scope.
+
+Current operational interpretation:
+
+* `/api/v1/generate/fr` is accepted,
+* the request resolves to `WikiFre`,
+* the nominal runtime path is planner-first,
+* `fallback_used = false` on nominal success,
+* the response contains the canonical public success envelope,
+* and the final surface text is French.
+
+Hard rule:
+
+* FR routed to `WikiFre` but still surfacing English is **not** a partial success,
+* it is a hard acceptance failure,
+* and it is not part of the current accepted runtime state.
+
+### 7.3 EN / FR scope note
+
+The current accepted scope described here is:
+
+* EN bio/person generation
+* FR bio/person generation
+
+This document does not claim that all languages or all constructions have reached the same state.
 
 ---
 
 ## 8. What is stable right now
 
-The following appear stable enough to treat as current runtime facts:
+The following are current runtime facts:
 
-* `/api/v1/generate/{lang_code}` is the canonical public generation route. 
-* URL language is authoritative over payload language. 
-* legacy bio/person aliases are intentionally still accepted. 
-* health endpoints are mounted in both root and `/api/v1` forms. 
-* the public response contract is JSON with `text` and structured runtime metadata, not only legacy `surface_text/meta`. 
-* runtime validation in the repo still assumes “one real generation call” is part of language readiness. 
-
----
-
-## 9. What is not yet safe to claim as fully complete
-
-The following should **not** yet be documented as universally true in current-state docs:
-
-* that planner-first runtime is the only active generation path,
-* that direct frame-to-engine generation is no longer primary in all live cases,
-* that French bio generation is fully correct end to end,
-* that all active backends already consume one identical planner-facing contract in production behavior,
-* that current runtime docs can be inferred from target-state migration docs alone.   
+* `/api/v1/generate/{lang_code}` is the canonical public generation route.
+* URL language is authoritative over payload language.
+* planner-first is the nominal runtime for the EN/FR bio/person slice.
+* the canonical internal runtime handoff is `ConstructionPlan -> SurfaceResult`.
+* EN resolves to `WikiEng`.
+* FR resolves to `WikiFre`.
+* FR success requires actual French surface output.
+* the public response contract is JSON with `text`, explicit structured runtime metadata, and authoritative top-level fields.
+* health endpoints are mounted in both root and `/api/v1` forms.
+* runtime validation still includes real generation calls as part of readiness/acceptance proof.
 
 ---
 
-## 10. Current status statement
+## 9. What remains intentionally compatibility-scoped
 
-As of 2026-03-16, SemantiK Architect should be described as:
+The following may still exist at the boundary or compatibility edges without changing the current nominal runtime truth:
 
-> a working API with stable public generation and health endpoints, active compatibility shims for bio/person payloads, an in-progress migration toward a planner-centered `ConstructionPlan -> SurfaceResult` runtime, and partial but not yet fully validated EN/FR parity in live generation behavior.  
+* legacy bio/person request aliases,
+* Ninai/prototype-style input handling where still wired,
+* compatibility parsing of older internal result shapes,
+* compatibility/debug markers that truthfully describe fallback or migration behavior.
+
+Current interpretation:
+
+* these are compatibility surfaces,
+* not the architectural center of truth,
+* not the nominal planner-first success path,
+* and not an alternate acceptance model.
+
+---
+
+## 10. What is no longer correct to say
+
+The following are **not** correct current-state descriptions after the EN/FR final cutover:
+
+* that planner-first is only a target and not the current nominal runtime for EN/FR bio/person generation,
+* that direct frame-to-engine generation remains the primary EN/FR bio/person path,
+* that FR is merely routable but not validated for correct French surface output,
+* that `surface_text` / `meta` remain the canonical public success contract,
+* that routed-but-English FR output can still be counted as operational success,
+* that current runtime truth can be inferred from compatibility behavior alone.
+
+---
+
+## 11. Current status statement
+
+As of 2026-03-19, SemantiK Architect should be described as:
+
+> a working API with stable public generation and health endpoints, planner-first nominal runtime for the EN/FR bio/person slice, a canonical `ConstructionPlan -> SurfaceResult` internal contract, explicit top-level public success fields, English owned by `WikiEng`, French owned by `WikiFre`, and EN/FR acceptance that requires both contract correctness and language-correct surface realization.
+
+---
+
+## 12. Relationship to other documents
+
+This document is a **status page** only.
+
+It must be read consistently with:
+
+* `docs/architecture/multilingual_runtime_target.md`
+* `docs/contracts/construction_runtime_contract.md`
+* `docs/contracts/public_generation_response_contract.md`
+* `docs/contracts/public_vs_runtime_vs_frontend_boundaries.md`
+* `docs/contracts/debug_info_contract.md`
+* `docs/migration/en_fr_cutover_plan.md`
+* `docs/testing/EN_FR_bio_acceptance.md`
+* `docs/architecture/EN_FR_FINAL_PARALLEL_LOCKDOWN.md`
+
+Conflict rule:
+
+* architecture and contracts define what is authoritative,
+* the cutover plan defines completion sequencing,
+* `EN_FR_bio_acceptance.md` defines the operative EN/FR release gate,
+* the lockdown doc defines operational interpretation during the final parallel update,
+* this document only records the resulting current runtime truth.

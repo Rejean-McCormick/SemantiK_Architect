@@ -1,6 +1,18 @@
 # 🔌 API Reference & Semantic Frames
 
-**SemantiK Architect v2.1**
+**SemantiK Architect — Canonical Public HTTP Contract**
+
+Status: normative for the public HTTP generation surface  
+Applies to: `/api/v1/generate/{lang_code}` and closely related public utility endpoints  
+Related contracts:
+- `docs/contracts/public_generation_response_contract.md`
+- `docs/contracts/construction_runtime_contract.md`
+- `docs/contracts/debug_info_contract.md`
+- `docs/contracts/public_vs_runtime_vs_frontend_boundaries.md`
+- `docs/architecture/multilingual_runtime_target.md`
+- `docs/architecture/EN_FR_FINAL_PARALLEL_LOCKDOWN.md`
+
+---
 
 ## 1. Overview
 
@@ -13,24 +25,34 @@ The canonical backend API is served under:
 - **Encoding:** UTF-8
 - **Transport:** JSON over HTTP
 
-This reference describes the **current public HTTP contract** for generation and related utility endpoints.
+This reference defines the **canonical public HTTP contract** for generation and related utility endpoints.
 
-### Current generation model
+### Canonical generation model
 
 The primary generation route is:
 
 **`POST /api/v1/generate/{lang_code}`**
 
-This route accepts a JSON object, normalizes it into an internal frame/domain object, and returns a structured JSON success response.
+This route accepts a JSON object, normalizes it into the canonical internal semantic/frame shape, executes the planner-first runtime, and returns a structured JSON success response.
 
-### Important current-state notes
+### Architectural notes
 
 - The backend is canonically mounted at `/api/v1/...`.
 - Health is intentionally available at both:
   - `/health/live`, `/health/ready`
   - `/api/v1/health/live`, `/api/v1/health/ready`
-- Older docs or clients expecting only `surface_text` / `meta` are not aligned with the current public response shape.
-- The live runtime may still use compatibility shims and, depending on configuration, may pass through a legacy direct-frame path before full planner-first convergence.
+- The canonical runtime path for successful generation is **planner-first**.
+- The canonical public success response is a structured JSON envelope centered on:
+  - `text`
+  - `lang_code`
+  - `construction_id`
+  - `renderer_backend`
+  - `fallback_used`
+  - `tokens`
+  - `debug_info`
+  - `generation_time_ms`
+- Older clients that depend primarily on `surface_text` / `meta` are not aligned with the canonical public contract.
+- Legacy input aliases may still be accepted at the request boundary, but they do not change the canonical public response shape.
 
 ---
 
@@ -38,7 +60,14 @@ This route accepts a JSON object, normalizes it into an internal frame/domain ob
 
 This reference documents the API surface and payload/response contracts only.
 
-Authentication and authorization may be deployment-specific (for example, enforced at a reverse proxy, gateway, or on protected admin/tooling routes). Do not assume that generation requires a built-in `X-API-Key` unless your deployment explicitly adds that requirement.
+Authentication and authorization may be deployment-specific, for example:
+
+- reverse proxy enforcement,
+- API gateway enforcement,
+- protected admin/tooling routes,
+- environment-specific access policies.
+
+Do not assume that generation requires a built-in `X-API-Key` unless your deployment explicitly adds that requirement.
 
 ---
 
@@ -54,44 +83,49 @@ Generate natural-language text from a semantic payload.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `lang_code` | `string` | Yes | Authoritative language code for the request. The router normalizes common variants. |
+| `lang_code` | `string` | Yes | Authoritative language code for the request. The router normalizes supported variants. |
 
 ### Request Headers
 
 | Header | Value | Required | Description |
 | --- | --- | --- | --- |
 | `Content-Type` | `application/json` | Yes | Request body must be a JSON object. |
-| `Accept` | `application/json` | Recommended | Current public contract is JSON. |
+| `Accept` | `application/json` | Recommended | The canonical public response contract is JSON. |
 
 ### Request Body
 
 The request body must be a **single JSON object**.
 
-Rules enforced by the request mapper:
+Rules enforced by the request boundary:
 
-- If `lang_code` is present in the path, it is authoritative.
-- If both URL language and payload language are provided, they must match after normalization.
-- If no path language is provided, the payload must include one of:
-  - `lang`
-  - `language`
-  - `lang_code`
-  - `inputs.language`
-  - `inputs.lang`
-  - `inputs.lang_code`
-- Transport-level language fields are stripped before frame parsing.
+- the URL path language is authoritative;
+- if both URL language and payload language are provided, they must match after normalization;
+- if no path language is provided by some internal caller or alternate mounting path, the payload must carry a recognized language field;
+- transport-level language fields are normalized at the API boundary before semantic/frame parsing;
+- request compatibility aliases are a boundary concern only and do not redefine the internal runtime contract.
+
+Recognized payload language aliases may include:
+
+- `lang`
+- `language`
+- `lang_code`
+- `inputs.language`
+- `inputs.lang`
+- `inputs.lang_code`
 
 ---
 
 ## 4. Supported Input Modes
 
-The current request mapper supports two broad input styles:
+The public request boundary supports multiple input styles that converge to one internal semantic/frame model.
 
-1. **Bio/person payloads** with legacy compatibility aliases
-2. **Generic / Ninai / frame payloads** parsed into domain objects
+The stable public rule is:
 
-### A. Bio/person-compatible payloads
+**JSON object in, canonical JSON success envelope out.**
 
-The following frame types are treated as bio-like and normalized through the same compatibility path:
+### A. Bio / person payloads
+
+The following frame types are treated as bio/person-compatible inputs and normalized through the same compatibility boundary:
 
 - `bio`
 - `biography`
@@ -113,7 +147,7 @@ The following frame types are treated as bio-like and normalized through the sam
 }
 ````
 
-### Compatibility example
+### Compatibility bio example
 
 ```json
 {
@@ -128,18 +162,18 @@ The following frame types are treated as bio-like and normalized through the sam
 
 ### Common bio fields
 
-| Field         | Type             | Required     | Notes                                                   |
-| ------------- | ---------------- | ------------ | ------------------------------------------------------- |
-| `frame_type`  | `string`         | Yes          | Prefer `bio` for new clients.                           |
-| `name`        | `string`         | Usually yes  | Common top-level compatibility field.                   |
-| `profession`  | `string`         | Commonly yes | May be resolved through lexical normalization/fallback. |
-| `nationality` | `string`         | No           | Optional.                                               |
-| `gender`      | `string \| null` | No           | Optional compatibility field.                           |
-| `subject`     | `object`         | Sometimes    | Used by some newer/compat person payloads.              |
+| Field         | Type             | Required     | Notes                                                |
+| ------------- | ---------------- | ------------ | ---------------------------------------------------- |
+| `frame_type`  | `string`         | Yes          | Prefer `bio` for new clients.                        |
+| `name`        | `string`         | Usually yes  | Common top-level compatibility field.                |
+| `profession`  | `string`         | Commonly yes | May be normalized through lexical resolution.        |
+| `nationality` | `string`         | No           | Optional.                                            |
+| `gender`      | `string \| null` | No           | Optional compatibility field.                        |
+| `subject`     | `object`         | Sometimes    | Used by some newer or compatibility person payloads. |
 
-### B. Generic frame payloads
+### B. Generic semantic frame payloads
 
-Non-bio semantic payloads are also accepted and parsed into internal frame/domain objects when they match supported internal semantics.
+Non-bio semantic payloads are also accepted when they match supported internal frame/domain semantics.
 
 Example:
 
@@ -154,7 +188,7 @@ Example:
 
 ### C. Ninai / function-style payloads
 
-The mapper also supports Ninai-style or function-oriented payload parsing through the Ninai adapter.
+The request boundary may also accept Ninai-style or function-oriented payloads through the Ninai adapter.
 
 Example:
 
@@ -169,61 +203,155 @@ Example:
 }
 ```
 
-This path is supported as an adapter/parsing concern, but the stable public generation contract remains the same: **JSON in, structured JSON out**.
+This is a parsing/adapter concern only.
+The stable public generation contract remains the same.
 
 ---
 
-## 5. Success Response
+## 5. Semantic Frame Rules
 
-The current public success response is a JSON object centered on the following fields:
+Semantic frames are the canonical public input abstraction.
 
-| Field                | Type             | Required | Description                                               |
-| -------------------- | ---------------- | -------- | --------------------------------------------------------- |
-| `text`               | `string`         | Yes      | Final generated surface text.                             |
-| `lang_code`          | `string`         | Yes      | Language code of the returned text.                       |
-| `construction_id`    | `string \| null` | Yes      | Runtime construction identifier, when available.          |
-| `renderer_backend`   | `string \| null` | Yes      | Backend that produced the final text.                     |
-| `fallback_used`      | `boolean`        | Yes      | Whether fallback was used in producing the result.        |
-| `tokens`             | `string[]`       | Yes      | Tokenized representation of the returned text.            |
-| `debug_info`         | `object`         | Yes      | Structured diagnostics.                                   |
-| `generation_time_ms` | `number`         | Optional | Present when propagated by the underlying runtime result. |
+### Core rule
 
-### Example success response
+Clients send semantic intent, not renderer-specific instructions.
+
+That means:
+
+* clients describe the meaning to be generated;
+* the planner/runtime selects the construction;
+* lexical resolution binds language-appropriate material;
+* the realizer/backend produces the final surface text.
+
+### Public input boundary rules
+
+Public clients must not rely on:
+
+* GF-specific ASTs as the public contract,
+* backend-specific surface templates as the public contract,
+* direct renderer selection as a semantic requirement,
+* debug-only fields to carry required meaning.
+
+### Practical guidance
+
+For new API clients:
+
+* prefer stable frame-style JSON objects;
+* prefer `frame_type: "bio"` for person/bio generation;
+* treat compatibility aliases as tolerated inputs, not as the long-term design center.
+
+---
+
+## 6. Success Response
+
+The canonical public success response is a JSON object with this top-level shape:
+
+| Field                | Type       | Required | Description                                                 |
+| -------------------- | ---------- | -------- | ----------------------------------------------------------- |
+| `text`               | `string`   | Yes      | Final generated surface text.                               |
+| `lang_code`          | `string`   | Yes      | Language code of the returned text.                         |
+| `construction_id`    | `string`   | Yes      | Explicit construction identifier for the returned result.   |
+| `renderer_backend`   | `string`   | Yes      | Backend that produced the final text.                       |
+| `fallback_used`      | `boolean`  | Yes      | Whether fallback was used in producing the returned result. |
+| `tokens`             | `string[]` | Yes      | Tokenized representation of the returned text.              |
+| `debug_info`         | `object`   | Yes      | Structured diagnostics object.                              |
+| `generation_time_ms` | `number`   | Yes      | Authoritative top-level generation time in milliseconds.    |
+
+### Canonical success response example
 
 ```json
 {
-  "text": "Alan Turing is a British mathematician",
+  "text": "Alan Turing is a British mathematician.",
   "lang_code": "en",
-  "construction_id": null,
-  "renderer_backend": null,
+  "construction_id": "copula_equative_classification",
+  "renderer_backend": "family",
   "fallback_used": false,
-  "tokens": [],
+  "tokens": ["Alan", "Turing", "is", "a", "British", "mathematician."],
   "debug_info": {
-    "runtime_path": "legacy_direct_frame",
+    "runtime_path": "planner_first",
+    "construction_id": "copula_equative_classification",
+    "renderer_backend": "family",
+    "lang_code": "en",
+    "slot_keys": ["subject", "profession", "nationality"],
     "fallback_used": false,
-    "fallback_reason": null,
-    "legacy_engine": "GFGrammarEngine",
-    "planner_runtime_configured": false,
-    "renderer_backend": "gf",
-    "compatibility_shim": true,
-    "ast": "mkBioFull (mkEntityStr \"Alan Turing\") (strProf \"mathematician\") (strNat \"British\")",
-    "resolved_language": "WikiEng"
+    "selected_backend": "family",
+    "attempted_backends": ["family"]
   },
-  "generation_time_ms": 0.0
+  "generation_time_ms": 12.5
 }
 ```
 
-### Response notes
+### Response rules
 
 * `text` is the authoritative public text field.
-* Clients should no longer depend on `surface_text` as the primary public response field.
-* `debug_info` is structured and intended for observability and QA.
-* `tokens` may be provided directly by the runtime or derived from the final text.
-* Some compatibility paths may still return `construction_id` or `renderer_backend` as `null` even though the target-state contract expects them to be explicit.
+* `lang_code` identifies the returned surface language.
+* `construction_id` is explicit on the canonical nominal path.
+* `renderer_backend` is explicit on the canonical nominal path.
+* `fallback_used` is explicit.
+* `tokens` correspond to the final text.
+* `generation_time_ms` is top-level and authoritative.
+* `debug_info` must not contradict top-level fields.
+* top-level nominal facts must not exist **only** inside `debug_info`.
+
+### Parity rules
+
+When both top-level fields and `debug_info` carry the same fact, they must agree:
+
+* `lang_code == debug_info.lang_code`
+* `fallback_used == debug_info.fallback_used`
+* `renderer_backend == debug_info.renderer_backend` when both are present
+* `construction_id == debug_info.construction_id` when both are present
 
 ---
 
-## 6. Health Endpoints
+## 7. Diagnostics (`debug_info`)
+
+`debug_info` is the canonical structured diagnostics object carried in successful generation responses.
+
+### Minimum stable shared diagnostics
+
+Canonical planner-first results preserve these stable shared keys when available:
+
+* `construction_id`
+* `renderer_backend`
+* `lang_code`
+* `slot_keys`
+* `fallback_used`
+* `runtime_path`
+
+### Common recommended diagnostics
+
+Depending on runtime/backend availability, `debug_info` may also include:
+
+* `selected_backend`
+* `requested_backend`
+* `attempted_backends`
+* `dispatch_policy`
+* `fallback_reason`
+* `resolved_language`
+* `concrete_name`
+* `family`
+* `template_id`
+* `template_used`
+* `ast`
+* `lexical_resolution`
+* `backend_trace`
+* `warnings`
+* `errors`
+* `timings_ms`
+
+### Diagnostics rules
+
+* `debug_info` is diagnostics only.
+* It is not a replacement for top-level public response fields.
+* It must be a JSON object.
+* It must be machine-readable first.
+* It must not contain secrets, credentials, or raw sensitive payload dumps.
+* Public serializers preserve diagnostics; they do not invent missing nominal planner-first facts.
+
+---
+
+## 8. Health Endpoints
 
 ### Live
 
@@ -251,44 +379,46 @@ Typical readiness response:
 
 ---
 
-## 7. Other Mounted Public Endpoints
+## 9. Other Mounted Public Endpoints
 
-The app currently mounts additional public API areas under `/api/v1`, including:
+The app also mounts additional public API areas under `/api/v1`, including:
 
 * `/api/v1/languages`
 * `/api/v1/entities`
 * `/api/v1/frames`
 * `/api/v1/generate/{lang_code}`
 
-It also mounts protected/admin or developer-oriented areas, including:
+It may also mount protected, admin, or developer-oriented areas, including:
 
 * management endpoints under `/api/v1/...`
 * tools under `/api/v1/tools/...`
 
-This document focuses on the generation contract.
+This document focuses on the canonical generation contract.
 
 ---
 
-## 8. Error Handling
+## 10. Error Handling
 
 The generation route expects a JSON object and may reject invalid requests before generation starts.
 
 ### Common error situations
 
-| Status        | Condition                                                                 |
-| ------------- | ------------------------------------------------------------------------- |
-| `400` / `422` | Invalid JSON object, invalid payload shape, or validation/parsing failure |
-| `400`         | URL language and payload language do not match after normalization        |
-| `400`         | Missing language when no path language is provided                        |
-| `5xx`         | Internal runtime, realization, or infrastructure failure                  |
+| Status        | Condition                                                                    |
+| ------------- | ---------------------------------------------------------------------------- |
+| `400` / `422` | Invalid JSON object, invalid payload shape, or validation/parsing failure    |
+| `400`         | URL language and payload language do not match after normalization           |
+| `400`         | Missing language when no authoritative path language is provided             |
+| `5xx`         | Internal planner, lexical-resolution, realization, or infrastructure failure |
 
-### Important note
+### Error-handling notes
 
-Older error tables that describe specialized transport formats or exporter-specific HTTP semantics should not be treated as the authoritative current contract for `POST /api/v1/generate/{lang_code}` unless they are explicitly reintroduced and implemented on this route.
+* Validation/parsing failures may occur before generation begins.
+* Runtime failures must not be smuggled through a success response.
+* Older error tables tied to exporter-specific behavior or obsolete transport assumptions must not be treated as authoritative for `POST /api/v1/generate/{lang_code}` unless they are explicitly reintroduced and implemented on this route.
 
 ---
 
-## 9. Integration Guide (Python Client)
+## 11. Integration Guide (Python Client)
 
 ```python
 import requests
@@ -320,47 +450,70 @@ result = generate_text(
 )
 
 print(result["text"])
+print(result["lang_code"])
+print(result["construction_id"])
 ```
 
 ---
 
-## 10. Migration / Compatibility Notes
+## 12. Compatibility Notes
 
-Current runtime behavior is mixed:
+### Input compatibility
 
-* the target architecture is planner-centered,
-* the public generation route is stable,
-* compatibility shims still normalize legacy bio/person payloads,
-* and live generation may still run through a legacy direct-frame path depending on runtime configuration.
+Compatibility aliases may still be accepted at the request boundary, especially for bio/person-style payloads.
 
-For API consumers, the practical rule is:
+Examples include:
 
-* send a JSON object,
-* prefer `frame_type: "bio"` for new bio requests,
-* treat the returned JSON envelope documented above as the public success contract.
+* alternate `frame_type` values for person/bio inputs,
+* nested `subject` forms,
+* Ninai-style parsing adapters,
+* transport-level language aliases.
+
+### Output compatibility
+
+The canonical public response is the structured JSON envelope documented above.
+
+Clients should not depend on older assumptions such as:
+
+* top-level `surface_text` as the main success field,
+* top-level `meta` as the primary contract carrier,
+* text/plain as the canonical response contract for this route,
+* backend-specific internal fields as the public success contract.
+
+Compatibility handling may exist in code for migration-safe readers, but it does not redefine the public contract.
 
 ---
 
-## 11. Deprecated assumptions
+## 13. Deprecated Assumptions
 
-The following should be considered outdated for the current public generation route unless reintroduced explicitly:
+The following should be considered outdated for the canonical public generation route unless explicitly reintroduced and implemented:
 
-* response body centered only on `surface_text` / `meta`
+* response bodies centered only on `surface_text` / `meta`
 * `Accept: text/plain` as the primary documented contract
 * `Accept: text/x-conllu` as the documented contract for this route
-* `style` query parameter as part of the current stable generation API
-* `X-Session-ID` as part of the current stable generation API contract
+* `style` query parameter as part of the stable generation API contract
+* `X-Session-ID` as part of the stable generation API contract
+* legacy direct-frame execution as the canonical public runtime model
 
 ---
 
-## 12. Summary
+## 14. Summary
 
-For the current SemantiK Architect API, the authoritative generation contract is:
+The authoritative public generation contract is:
 
 * **Route:** `POST /api/v1/generate/{lang_code}`
-* **Input:** one JSON object
-* **Output:** one JSON object centered on `text` and structured runtime metadata
-* **Bio compatibility:** legacy person/bio aliases still supported
-* **Runtime status:** stable public route, mixed internal generation paths
+* **Input:** one JSON object carrying semantic/frame intent
+* **Runtime:** planner-first nominal generation
+* **Output:** one canonical JSON success envelope centered on:
 
+  * `text`
+  * `lang_code`
+  * `construction_id`
+  * `renderer_backend`
+  * `fallback_used`
+  * `tokens`
+  * `debug_info`
+  * `generation_time_ms`
+* **Diagnostics:** structured, machine-readable, and non-authoritative relative to top-level response fields
+* **Compatibility:** accepted at the request boundary where needed, but not allowed to redefine the canonical public contract
 

@@ -1,181 +1,251 @@
-# Migration: `/generate` Path to Planner-Centered Runtime
+# Migration: `/generate` Path to Planner-First Runtime
 
-Status: approved migration design
-Owner: SKA runtime / generation
-Last updated: 2026-03-10
+Status: normative migration and runtime-alignment document
+Owner: Runtime / Grammar / API / QA
+Scope: migration of the public `/generate` path to the planner-first multilingual runtime
+Immediate implementation scope: EN + FR bio/person generation
+Architectural scope: generic planner-first runtime designed to scale across construction families and languages
+Last updated: 2026-03-19
 
 ---
 
 ## 1. Purpose
 
-This document defines the migration from the current direct generation path:
+This document defines the migration of the live `/generate` path from a hybrid direct-generation model to the planner-first runtime model.
 
-`API payload -> frame normalization -> GenerateText -> engine.generate(...) -> text`
+It exists to ensure that the public generation path converges on one runtime truth instead of continuing to split sentence generation across:
 
-to the target planner-centered runtime:
+* API-facing normalization,
+* direct frame-to-engine generation,
+* planner/construction abstractions,
+* lexical behavior hidden in backends,
+* and backend-local realization behavior.
 
-`API payload -> frame normalization -> frame-to-plan bridge -> planner -> PlannedSentence -> ConstructionPlan -> lexical resolution -> renderer backend -> SurfaceResult -> API response mapping`
+This is a migration and runtime-alignment document.
+It does not replace the target architecture document, the EN/FR cutover plan, the EN/FR acceptance gate, or the public response contract.
+It defines how the live `/generate` path must be brought into alignment with them.
 
-The migration makes the **planner-centered construction runtime** the single source of truth for sentence generation across all supported frame families and sentence structures.
-
-This is a **runtime-alignment migration**, not a rewrite of the project’s architecture.
-
----
-
-## 2. Why this migration is necessary
-
-The repository already documents a layered architecture with clear separation between:
-
-* semantics
-* constructions
-* morphosyntax
-* lexicon
-* language-family realization
-
-The repository also already contains:
-
-* a generic discourse planner
-* a `PlannedSentence` abstraction
-* `construction_id` assignment
-* multiple construction modules
-* multiple family-engine backends
-* GF integration points
-* safe-mode generation
-
-However, the live `/generate` path still bypasses that architecture for single-sentence generation by sending normalized frames directly into runtime engines.
-
-This creates three competing centers of truth:
-
-1. the documented architecture
-2. the planner / construction layer
-3. the direct frame-to-engine generation path
-
-This migration resolves that drift by making the planner-centered path authoritative.
+This document is intentionally deeper than a short cutover note.
+Its job is to preserve operational clarity during implementation while keeping one architectural truth across runtime, contracts, tests, and documentation.
 
 ---
 
-## 3. Current state
+## 2. Document role and precedence
 
-### 3.1 Current live generation path
+This document is normative for migration and runtime alignment, but it is not the highest-precedence source for every question.
 
-Today, generation is effectively:
+If the issue is:
 
-1. API router receives payload.
-2. Router normalizes into `Frame` or a frame-family-specific domain object.
-3. `GenerateText.execute(...)` validates the normalized frame.
-4. `engine.generate(lang_code, frame)` is called directly.
-5. The engine converts the frame into its backend-specific representation.
-6. Text is returned.
+* target architecture, `multilingual_runtime_target.md` wins,
+* EN/FR cutover sequencing, `en_fr_cutover_plan.md` wins,
+* EN/FR bio/person acceptance, `EN_FR_bio_acceptance.md` wins,
+* public success envelope semantics, `public_generation_response_contract.md` wins,
+* planner/runtime/API/document precedence, `EN_FR_FINAL_PARALLEL_LOCKDOWN.md` wins.
 
-This path is operational, but it keeps sentence-design logic too close to the API/domain boundary and allows backend-local generation behavior to become implicit architecture.
+This document must remain consistent with all of those sources.
 
-### 3.2 Existing planner path
+This document therefore has a specific role:
 
-The repository already includes generic planning concepts such as:
-
-* `plan_generic(...)`
-* `plan_biography(...)`
-* `PlannedSentence`
-* `construction_id`
-* `topic_entity_id`
-* `focus_role`
-
-This proves the repository already has the right abstraction for a planner-centered runtime.
-
-### 3.3 Existing construction layer
-
-The repository already contains multiple construction modules beyond biography, including copular, locative, existential, possession, eventive, relative-clause, and topic-comment structures.
-
-This means the migration must be **generic across constructions**, not bio-specific.
-
-### 3.4 Existing backend diversity
-
-The repository already supports or anticipates multiple realization backends:
-
-* GF / PGF
-* family renderer
-* safe-mode renderer
-
-The migration must preserve that backend flexibility while forcing all backends behind one runtime contract.
+* it defines the runtime migration path,
+* it fixes the migration vocabulary,
+* it stabilizes object and boundary ownership during implementation,
+* and it prevents the `/generate` path from continuing to drift away from the documented planner-first architecture.
 
 ---
 
-## 4. Migration decision
+## 3. Migration statement
 
-### 4.1 Authoritative runtime center
+The live `/generate` path must become a planner-first runtime path.
+
+The target nominal path is:
+
+`API payload -> frame normalization -> frame-to-plan bridge -> planner -> PlannedSentence -> ConstructionPlan -> lexical resolution -> realizer dispatch -> SurfaceResult -> API response mapping`
+
+For the immediate implementation scope, this migration must make EN and FR bio/person generation planner-first on the nominal path.
+
+For the broader architectural scope, the migration must establish one generic runtime model that can later support additional construction families and many more languages without changing the core boundary contracts.
+
+Legacy direct frame-to-engine generation may remain only as explicit compatibility fallback during migration.
+It must not remain a competing authoritative runtime.
+
+---
+
+## 4. Why this migration is necessary
+
+The repository already defines a planner/construction-oriented architecture and already contains planning, construction, renderer, and multilingual abstractions.
+
+However, the live `/generate` path has historically allowed normalized frames to flow too directly into backend generation behavior.
+
+That creates runtime drift between:
+
+1. the documented architecture,
+2. the planner/construction runtime model,
+3. the live generation path,
+4. the public contract expectations,
+5. and backend-local behavior.
+
+As long as those remain peer sources of runtime truth, the system stays unstable.
+
+This migration resolves that drift by making the planner-first path authoritative and by demoting direct generation to explicit compatibility behavior only.
+
+---
+
+## 5. Current state
+
+### 5.1 Current live generation path
+
+Historically, generation has effectively been:
+
+1. the API router receives a payload,
+2. the router normalizes the payload into a `Frame` or related domain shape,
+3. `GenerateText.execute(...)` validates the normalized input,
+4. backend generation is invoked too directly,
+5. the backend converts the frame into its own realization shape,
+6. text is returned.
+
+This path is operational, but it keeps sentence-design logic too close to the API/domain boundary and lets backend-local behavior appear as architecture.
+
+### 5.2 Existing planner path
+
+The repository already includes planner/construction concepts such as:
+
+* generic planning,
+* biography planning,
+* `PlannedSentence`,
+* `construction_id`,
+* discourse-related packaging metadata,
+* topic/focus-oriented planning behavior.
+
+This proves the repository already has the right abstraction family for a planner-first runtime.
+
+### 5.3 Existing construction layer
+
+The repository already contains multiple construction modules beyond biography, including classes such as:
+
+* equative/classification constructions,
+* attributive/copular constructions,
+* locative constructions,
+* existential constructions,
+* possession constructions,
+* eventive constructions,
+* relative-clause constructions,
+* topic-comment structures.
+
+This means the runtime migration must stay generic across construction families rather than collapsing into a bio-only design.
+
+### 5.4 Existing backend diversity
+
+The repository already supports or anticipates multiple realization backends, including:
+
+* GF / PGF,
+* family renderers,
+* safe-mode or compatibility-style rendering.
+
+The migration must preserve backend flexibility while forcing all backends behind one runtime contract.
+
+### 5.5 Existing drift pattern
+
+The current state has historically allowed a mismatch between:
+
+* what the docs say the architecture is,
+* what the planner layer implies the architecture is,
+* what the live path actually does,
+* and what the public response suggests happened.
+
+That drift is the core migration problem.
+
+---
+
+## 6. Current-state problem summary
+
+The migration addresses the following current-state problems:
+
+1. the public `/generate` path has historically allowed direct engine generation to act as live runtime ownership,
+2. planner/construction abstractions exist but have not consistently been the live source of truth,
+3. backend-local generation behavior can still appear as architecture,
+4. compatibility behavior can still be mistaken for nominal behavior,
+5. lexical behavior can remain too hidden inside realization layers,
+6. and runtime/public-contract/documentation drift can survive because the live path is not fully aligned with the documented model.
+
+For the immediate EN/FR cutover, additional requirements apply:
+
+* planner-first must be the nominal path for EN and FR bio/person generation,
+* FR must not appear successful while surfacing English,
+* and compatibility fallback must not count as accepted nominal success.
+
+---
+
+## 7. Migration decision
+
+### 7.1 Authoritative runtime center
 
 After migration, the authoritative runtime center is:
 
-`frame normalization -> frame-to-plan bridge -> planner -> PlannedSentence -> ConstructionPlan -> lexical resolution -> renderer backend -> SurfaceResult`
+`frame normalization -> frame-to-plan bridge -> planner -> PlannedSentence -> ConstructionPlan -> lexical resolution -> realizer dispatch -> SurfaceResult`
 
-The planner-centered construction layer becomes the source of truth for:
+The planner-first construction layer becomes the source of truth for:
 
-* sentence type
-* information packaging
-* construction choice
-* topic/focus metadata
-* slot layout
-* realization options
-* lexical requirements
+* sentence type,
+* information packaging,
+* construction choice,
+* topic/focus metadata,
+* slot layout,
+* realization options,
+* lexical requirements.
 
 Backends become realization layers only.
 
-### 4.2 What is not changing
+### 7.2 What is not changing
 
-This migration does **not** change the following high-level architectural commitments:
+This migration does not change the following commitments:
 
-* SKA remains semantics-first and NLG-first.
-* GF remains a realization backend, not the architecture itself.
-* Family renderers remain first-class.
-* Lexicon remains a separate subsystem.
-* API compatibility is preserved during migration.
-
----
-
-## 5. Migration goals
-
-1. Make `PlannedSentence` and `ConstructionPlan` authoritative for runtime generation.
-2. Remove sentence-logic duplication across router, use case, and renderer adapters.
-3. Standardize a renderer-agnostic runtime contract.
-4. Keep GF, family, and safe-mode renderers behind one realization boundary.
-5. Preserve backward compatibility for current `/generate` callers.
-6. Support all major sentence-structure families already present in the repo.
-7. Prevent future drift between docs, planner, schemas, tests, and runtime code.
+* the system remains semantics-first,
+* the system remains NLG-first,
+* GF remains a realization backend rather than the architecture itself,
+* family renderers remain valid realization backends,
+* public request compatibility may be preserved at the HTTP boundary during migration,
+* immediate implementation scope remains EN + FR bio/person,
+* broader runtime design must still remain generic and multilingual.
 
 ---
 
-## 6. Non-goals
+## 8. Core migration goals
 
-This migration does **not** aim to:
+The migration has the following goals:
 
-* redesign the semantics model from scratch
-* replace GF
-* eliminate family renderers
-* rewrite every grammar before the new runtime lands
-* force one uniform realization depth for all languages
-* migrate callers to a new API payload format immediately
-
----
-
-## 7. Core problem statement
-
-The problem is **not** that the repository lacks architecture.
-
-The problem is that runtime generation is currently split between:
-
-* documented architecture
-* planner abstractions
-* direct engine generation
-
-As long as these coexist as peer runtime architectures, the system will keep drifting.
-
-The migration therefore makes one runtime contract authoritative.
+1. make planner-first the nominal `/generate` runtime,
+2. make `ConstructionPlan -> SurfaceResult` the authoritative live runtime contract,
+3. preserve `PlannedSentence` as the planner-owned sentence-level planning object,
+4. remove sentence-logic duplication across router, use case, planner, and renderer adapters,
+5. keep GF, family, and safe-mode style realization behind one runtime boundary,
+6. preserve current public request compatibility at the normalization boundary where needed,
+7. make legacy fallback explicit and machine-readable,
+8. standardize renderer-agnostic runtime contracts,
+9. support broader construction-family migration without changing the core runtime model,
+10. prevent future drift between docs, planner/runtime code, tests, QA, schemas, and public response shaping.
 
 ---
 
-## 8. Target runtime model
+## 9. Non-goals
 
-### 8.1 Canonical flow
+This migration does not aim to:
+
+* redesign semantics from scratch,
+* replace GF,
+* eliminate family renderers,
+* require uniform realization depth across all languages immediately,
+* force immediate public payload redesign,
+* declare all languages accepted,
+* or claim that all construction families are fully migrated now.
+
+Immediate runtime cutover scope is EN + FR bio/person only.
+Broader construction-family migration remains part of the architectural target, not proof that every family is complete today.
+
+---
+
+## 10. Target runtime model
+
+### 10.1 Canonical runtime flow
 
 ```text
 HTTP payload
@@ -185,7 +255,7 @@ HTTP payload
   -> PlannedSentence
   -> ConstructionPlan
   -> lexical resolution
-  -> renderer dispatch
+  -> realizer dispatch
        -> gf
        -> family
        -> safe_mode
@@ -193,145 +263,196 @@ HTTP payload
   -> API response mapping
 ```
 
-### 8.2 Runtime object roles
+### 10.2 Immediate nominal-path rule
 
-#### `PlannedSentence`
+For EN and FR bio/person generation, the nominal runtime path must be planner-first.
+
+That means:
+
+* planner-first is the default and intended live path,
+* `runtime_path = "planner_first"` on nominal success,
+* `fallback_used = false` on nominal success,
+* and the public response must serialize a coherent success envelope from that runtime result.
+
+### 10.3 Compatibility rule
+
+If a compatibility fallback still exists during migration, it must satisfy all of the following:
+
+* it is explicit,
+* it is machine-readable,
+* it is represented in runtime/debug metadata,
+* it does not count as nominal planner-first success,
+* and it is treated as temporary migration compatibility, not final runtime truth.
+
+---
+
+## 11. Canonical runtime objects
+
+### 11.1 `PlannedSentence`
 
 `PlannedSentence` is the sentence-level planning object.
 
 It carries planner-owned decisions such as:
 
-* `construction_id`
-* `topic_entity_id`
-* `focus_role`
-* `discourse_mode`
-* sentence packaging diagnostics
-* planner-local provenance
+* `construction_id`,
+* sentence packaging intent,
+* topic/focus decisions where used,
+* discourse-mode or packaging diagnostics where used,
+* planner-local provenance,
+* and the planner-facing representation of what sentence is being planned.
 
-It is authoritative for **what sentence is being planned**.
+It is authoritative for what sentence the planner has decided to express.
 
-#### `ConstructionPlan`
+`PlannedSentence` is upstream of renderer handoff.
+It is not the final backend-facing realization contract.
 
-`ConstructionPlan` is the backend-facing realization plan.
+### 11.2 `ConstructionPlan`
 
-It carries the normalized renderer handoff:
+`ConstructionPlan` is the canonical planner-to-realizer handoff contract.
+
+It is authoritative for what the runtime is asking the realizer to realize.
+
+It carries, conceptually:
 
 * `construction_id`
 * `lang_code`
 * `slot_map`
 * `generation_options`
 * optional `lexical_bindings`
-* optional provenance
+* optional `entity_ref`
+* optional `lexeme_ref`
+* optional lexical or provenance information
+* any other runtime metadata needed by the realizer boundary
 
-It is authoritative for **what the renderer must realize**.
+No alternate backend-local object may replace `ConstructionPlan` as the authoritative cross-boundary runtime handoff.
 
-#### `SurfaceResult`
+### 11.3 `SurfaceResult`
 
-`SurfaceResult` is the canonical renderer output before API serialization.
+`SurfaceResult` is the canonical realizer output before API serialization.
 
-It carries:
+It is authoritative for what the runtime produced.
+
+It carries, conceptually:
 
 * `text`
 * `lang_code`
 * `construction_id`
 * `renderer_backend`
+* `fallback_used`
+* `tokens`
 * `debug_info`
+* `generation_time_ms`
 
-The public API response may stay minimal, but internally it must come from `SurfaceResult`.
+The mapper may serialize this into the public response envelope, but it must not become the place where planner-first truth first appears.
 
-### 8.3 Authority boundaries
+### 11.4 Why `PlannedSentence` is not the public handoff
 
-#### API/router
+Planner-local sentence abstractions may still exist and may remain useful upstream of realization.
 
-Responsible for:
+However:
 
-* transport
-* payload validation
-* compatibility normalization
-* request metadata
-
-Not responsible for:
-
-* sentence design
-* construction choice
-* wording
-* lexical resolution
-* backend-specific realization
-
-#### Frame-to-plan bridge
-
-Responsible for:
-
-* mapping normalized frames into planner-ready construction requests
-* identifying candidate construction families
-* preserving semantic content needed for planning
-
-Not responsible for:
-
-* realization
-* morphology
-* string assembly
-
-#### Planner
-
-Responsible for:
-
-* construction selection
-* topic/focus assignment
-* sentence packaging
-* semantic slot layout
-* discourse-sensitive choices
-* default `generation_options`
-
-Not responsible for:
-
-* backend-specific syntax
-* morphology
-* AST ownership
-* string templating
-
-#### Lexical resolution
-
-Responsible for:
-
-* resolving entities and predicates into stable refs
-* producing `entity_ref` and `lexeme_ref` values where possible
-* attaching lexical features and provenance
-* controlled raw-string fallback
-* exposing fallback and confidence information
-
-Not responsible for:
-
-* choosing sentence structure
-* choosing topic/focus
-* changing construction meaning
-
-#### Renderer
-
-Responsible for:
-
-* backend-specific realization
-* morphology
-* agreement
-* word order
-* AST construction where relevant
-* string assembly
-* returning `SurfaceResult`
-
-Not responsible for:
-
-* choosing what sentence to say
-* redefining slot meanings
-* inventing semantics
-* silently replacing the selected construction
+* the canonical live runtime handoff for planner-to-realizer is `ConstructionPlan`,
+* the canonical realizer-to-API handoff is `SurfaceResult`,
+* and the runtime must not leave those boundaries ambiguous.
 
 ---
 
-## 9. Canonical runtime contracts
+## 12. Authority boundaries
 
-### 9.1 Required generic contracts
+### 12.1 API/router owns
 
-The migration introduces or stabilizes generic runtime contracts that are **not bio-specific**:
+The API/router layer owns:
+
+* transport,
+* request validation,
+* compatibility normalization,
+* HTTP-facing language code handling,
+* request metadata.
+
+It does not own:
+
+* sentence design,
+* construction choice,
+* lexical realization,
+* backend-specific syntax,
+* or public-contract repair of incomplete nominal runtime results.
+
+### 12.2 Frame-to-plan bridge owns
+
+The frame-to-plan bridge owns:
+
+* mapping normalized frames into planner-ready requests,
+* preserving semantic content needed for planning,
+* identifying candidate construction families,
+* identifying the planner-facing construction problem.
+
+It does not own:
+
+* realization,
+* morphology,
+* string assembly,
+* or backend-local syntax.
+
+### 12.3 Planner owns
+
+The planner owns:
+
+* construction selection,
+* sentence packaging,
+* slot layout,
+* discourse-sensitive decisions,
+* planner-facing generation defaults,
+* construction-level runtime intent.
+
+The planner does not own:
+
+* backend-specific syntax,
+* morphology,
+* word-order realization,
+* or renderer-local string templating.
+
+### 12.4 Lexical resolution owns
+
+The lexical resolution layer owns:
+
+* lexical binding resolution,
+* mapping semantic slots to lexical material,
+* lexical fallback behavior where required,
+* lexical metadata and provenance where exposed,
+* controlled raw-string fallback where required.
+
+It does not own:
+
+* construction choice,
+* discourse packaging,
+* or silent rewriting of meaning.
+
+### 12.5 Realizer owns
+
+The realizer owns:
+
+* backend-specific realization,
+* agreement,
+* morphology,
+* word order,
+* AST construction where relevant,
+* surface string assembly,
+* and `SurfaceResult`.
+
+The realizer does not own:
+
+* choosing what sentence to say,
+* redefining construction semantics,
+* inventing alternate runtime meaning,
+* or silently replacing the selected construction.
+
+---
+
+## 13. Canonical runtime contracts
+
+### 13.1 Required generic contracts
+
+The migration stabilizes the following generic runtime contracts:
 
 * `planned_sentence`
 * `construction_plan`
@@ -346,147 +467,200 @@ The migration introduces or stabilizes generic runtime contracts that are **not 
 * `debug_info`
 * `fallback_used`
 
-### 9.2 Why these contracts must be generic
+These contracts must remain generic rather than bio-specific.
 
-The repository already defines multiple sentence structures and construction families, not just biography.
+### 13.2 Why these contracts must be generic
+
+The repository already contains multiple sentence structures and construction families, not just biography.
 
 Therefore, runtime contracts must not be shaped around one construction family.
 
-Biography lead becomes one implementation, not the runtime model.
+Biography lead is one migrated construction family, not the runtime model itself.
 
-### 9.3 Construction ID rule
+### 13.3 Construction ID rule
 
-`construction_id` values must be canonical runtime identifiers shared by docs, code, tests, and schemas.
+`construction_id` values must be canonical runtime identifiers shared across:
 
-Use snake_case runtime IDs such as:
+* docs,
+* code,
+* tests,
+* QA,
+* schemas,
+* and public-contract expectations.
 
-* `copula_equative_simple`
-* `copula_equative_classification`
-* `copula_locative`
-* `copula_existential`
-* `possession_have`
-* `possession_existential`
-* `topic_comment_copular`
-* `topic_comment_eventive`
-* `intransitive_event`
-* `transitive_event`
-* `ditransitive_event`
-* `relative_clause_subject_gap`
-* `relative_clause_object_gap`
-* `bio_lead_identity`
+Do not introduce alternate dotted, renderer-local, or backend-only identifiers as the authoritative runtime name at the shared boundary.
 
-Do not introduce alternate dotted or backend-local identifiers at the runtime boundary.
+### 13.4 Nominal-path completeness rule
+
+On the nominal planner-first path, required runtime truth must already exist before public mapping.
+
+That means, on nominal success, `construction_id`, `renderer_backend`, `fallback_used`, `lang_code`, `tokens`, and `generation_time_ms` must not exist only as incidental repair data reconstructed later by the API mapper.
+
+### 13.5 Boundary rule
+
+`ConstructionPlan` is the only authoritative planner-to-realizer handoff contract.
+`SurfaceResult` is the only authoritative realizer-to-API handoff contract.
+
+No construction family, backend, or compatibility layer may introduce a second private runtime contract and still count as conforming to the planner-first runtime.
 
 ---
 
-## 10. Compatibility policy
+## 14. Public response relationship
 
-### 10.1 External API compatibility
+The runtime migration must remain aligned with the canonical public success envelope.
 
-Existing `/generate` callers continue to send current payloads.
+For nominal planner-first success, the public response must serialize:
 
-The router remains backward-compatible by accepting current payload shapes and normalizing them into the new planner-centered runtime path.
+* `text`
+* `lang_code`
+* `construction_id`
+* `renderer_backend`
+* `fallback_used`
+* `tokens`
+* `debug_info`
+* `generation_time_ms`
 
-### 10.2 Internal compatibility
+The public contract may preserve compatibility behavior where explicitly documented, but the final intended nominal path is one in which the runtime already returns the truth that the mapper serializes.
 
-During migration, `GenerateText` remains the public application use case, but internally becomes an orchestration layer over:
+The mapper is a serialization boundary, not the source of nominal planner-first truth.
 
-* frame normalization
-* frame-to-plan bridging
-* planning
-* lexical resolution
-* realization
-* response mapping
+---
 
-This preserves dependency and routing stability while moving the implementation center.
+## 15. Compatibility policy
 
-### 10.3 Temporary fallback policy
+### 15.1 External API compatibility
 
-Until all constructions are migrated:
+Existing `/generate` callers may continue sending current payload shapes during migration.
 
-* planner-first generation is authoritative for migrated constructions
-* direct engine generation may remain only as a temporary compatibility fallback
-* fallback use must be explicit in `debug_info`
-* `fallback_used` must be machine-readable
-* fallback paths must be removed once construction coverage is complete
+Compatibility belongs at the normalization boundary.
 
-### 10.4 Boundary rule for legacy payloads
+### 15.2 Internal compatibility rule
+
+Internal runtime code must converge on planner-first contracts.
+
+Downstream of normalization, runtime ownership must shift to:
+
+* frame-to-plan bridging,
+* planning,
+* lexical resolution,
+* realization,
+* `SurfaceResult`,
+* public mapping.
+
+Compatibility for old input shapes must not leak into downstream runtime contracts.
+
+### 15.3 Temporary fallback rule
+
+Direct frame-to-engine generation may remain only as temporary compatibility fallback during migration.
+
+If present, it must satisfy all of the following:
+
+* it is explicitly invoked,
+* it sets machine-readable fallback metadata,
+* it never masquerades as nominal planner-first success,
+* and it is removed or permanently demoted once the cutover conditions are satisfied.
+
+### 15.4 No compatibility-derived success rule
+
+A legacy-compatible success path does not count as target-state completion merely because it returns usable text.
+
+Compatibility behavior may help preserve service continuity during migration, but it does not redefine the architecture or the nominal runtime.
+
+### 15.5 Boundary rule for legacy payloads
 
 Legacy input-shape compatibility ends at normalization.
 
-Downstream runtime code must consume `PlannedSentence` / `ConstructionPlan`, not raw payload quirks.
+Downstream runtime code must consume planner/runtime contracts, not raw payload quirks.
 
 ---
 
-## 11. Scope of the final version
+## 16. Immediate EN/FR cutover rule
 
-The final version is **not** a bio-only runtime.
+For the immediate implementation scope, this migration must produce all of the following:
 
-It must support the repository’s broader construction inventory.
+1. EN bio/person generation runs planner-first on the nominal path,
+2. FR bio/person generation runs planner-first on the nominal path,
+3. EN resolves to `WikiEng`,
+4. FR resolves to `WikiFre`,
+5. FR outputs actually French surface text,
+6. the public success envelope is coherent at top level,
+7. `fallback_used = false` on nominal EN/FR success,
+8. compatibility fallback does not count as EN/FR acceptance.
 
-Minimum migration target includes:
-
-* equative / classification constructions
-* attributive copular constructions
-* locative constructions
-* existential constructions
-* possession constructions
-* topic-comment copular constructions
-* topic-comment eventive constructions
-* eventive clause constructions
-* relative clause constructions
-* biography lead as one specialized migrated construction
+This migration document does not replace the EN/FR acceptance gate.
+It defines the runtime migration conditions that make that gate achievable and meaningful.
 
 ---
 
-## 12. Migration strategy
+## 17. Scope of the final version
 
-### 12.1 Strategy summary
+The final runtime model is not bio-only.
 
-This migration is implemented in batches, but the target is the **final architecture**, not a temporary alternative design.
+The runtime contracts must remain generic enough to support broader construction families over time, including classes such as:
+
+* equative/classification constructions,
+* attributive copular constructions,
+* locative constructions,
+* existential constructions,
+* possession constructions,
+* topic-comment constructions,
+* eventive clause constructions,
+* relative clause constructions,
+* biography lead as one specialized construction family among others.
+
+This is an architectural scalability rule, not a claim that all such families are already complete in the immediate EN/FR cutover.
+
+---
+
+## 18. Migration strategy
+
+### 18.1 Strategy summary
+
+This migration is implemented in batches, but the target is the final planner-first runtime model, not a temporary alternative design.
 
 The migration sequence is:
 
-1. document the target runtime fully
-2. define the generic runtime contract
-3. wire planner-first orchestration
-4. migrate construction modules onto the shared contract
-5. externalize lexical resolution
-6. migrate renderers onto the shared contract
-7. retire direct frame-to-engine runtime ownership
+1. document the target runtime fully,
+2. define and stabilize the generic runtime contract,
+3. wire planner-first orchestration into the live path,
+4. migrate construction modules onto the shared contract,
+5. externalize lexical resolution,
+6. migrate renderers onto the shared contract,
+7. retire direct frame-to-engine runtime ownership.
 
-### 12.2 Why documentation comes first
+### 18.2 Why documentation comes first
 
-Documentation is Batch 1 because it prevents further drift in:
+Documentation is first because it prevents further drift in:
 
-* naming
-* interface boundaries
-* object ownership
-* construction coverage
-* migration sequencing
+* naming,
+* interface boundaries,
+* object ownership,
+* construction coverage,
+* migration sequencing,
+* and completion criteria.
 
-Without migration docs first, code changes will reintroduce local architectural decisions.
+Without documentation first, code changes will reintroduce local architectural decisions.
 
 ---
 
-## 13. Batch plan
+## 19. Batch plan
 
-### Batch 1 — Documentation
+### Batch 1 — Documentation alignment
 
 Deliver:
 
-* architecture alignment docs
-* runtime flow docs
-* runtime contract docs
-* planner / realizer interface docs
-* lexical resolution contract docs
-* migration and testing docs
+* aligned architecture docs,
+* aligned migration docs,
+* aligned contract docs,
+* aligned testing/acceptance docs,
+* aligned API/overview docs,
+* one agreed runtime vocabulary.
 
 Exit criteria:
 
-* one agreed authoritative runtime model
-* one agreed vocabulary for contracts and boundaries
-* one agreed file / batch plan
+* one authoritative migration story,
+* one authoritative runtime vocabulary,
+* no contradictory document-level runtime truth.
 
 ### Batch 2 — Generic runtime contracts and planning core
 
@@ -494,7 +668,7 @@ Deliver:
 
 * `PlannedSentence`
 * `ConstructionPlan`
-* `SlotMap`
+* slot-map normalization
 * shared planning/runtime classes
 * planner / realizer / lexical-resolver ports
 * frame-to-plan bridge
@@ -502,129 +676,136 @@ Deliver:
 
 Exit criteria:
 
-* one backend-agnostic runtime contract in code
-* one authoritative planning path
+* one backend-agnostic runtime contract in code,
+* one authoritative planning path,
+* one stable planner-facing vocabulary.
 
-### Batch 3 — API and DI realignment
+### Batch 3 — API and dependency-injection realignment
 
 Deliver:
 
-* router and dependency updates
-* container wiring
-* `GenerateText` orchestration changes
-* API request/response mappers
+* router and dependency updates,
+* container wiring,
+* `GenerateText` orchestration changes,
+* API request/response mapper alignment.
 
 Exit criteria:
 
-* `/generate` runs planner-first for migrated constructions
+* `/generate` runs planner-first for migrated constructions,
+* nominal-path truth reaches the mapper in canonical runtime form.
 
 ### Batch 4 — Construction module migration
 
 Deliver:
 
-* existing construction modules aligned to the shared slot/spec contract
-* construction registry alignment
-* shared slot model alignment
+* existing construction modules aligned to the shared slot/spec contract,
+* construction registry alignment,
+* shared slot-model alignment.
 
 Exit criteria:
 
-* construction layer uses one runtime shape across modules
+* construction logic uses one runtime shape across modules,
+* no construction family introduces a second private runtime contract.
 
 ### Batch 5 — Lexical resolution layer
 
 Deliver:
 
-* generic lexical resolution adapters
-* entity and predicate resolution helpers
-* controlled raw-string fallback
-* lexical bindings output for renderers
+* generic lexical resolution adapters,
+* entity and predicate resolution helpers,
+* controlled raw-string fallback,
+* lexical bindings output for realizers.
 
 Exit criteria:
 
-* renderers do not own lexical resolution logic
+* realizers do not own lexical resolution logic,
+* lexical fallback is explicit and traceable.
 
 ### Batch 6 — Renderer alignment
 
 Deliver:
 
-* generic renderer adapter boundary
-* GF renderer alignment
-* family renderer alignment
-* safe-mode alignment
+* generic realizer adapter boundary,
+* GF alignment,
+* family-renderer alignment,
+* safe-mode or compatibility-renderer alignment.
 
 Exit criteria:
 
-* all backends consume the same `ConstructionPlan` contract
-* all backends return `SurfaceResult`
+* all active realization backends consume the same `ConstructionPlan` contract,
+* all active realization backends return `SurfaceResult`.
 
 ### Batch 7 — Family-engine migration
 
 Deliver:
 
-* family backends converted from ad hoc construction entrypoints to shared-contract realization
+* family backends converted from ad hoc construction entrypoints to shared-contract realization.
 
 Exit criteria:
 
-* language-family engines become realization-only layers
+* language-family engines become realization-only layers.
 
 ### Batch 8 — GF grammar/runtime migration
 
 Deliver:
 
-* GF abstract/concrete/runtime surface aligned to construction runtime
-* direct ad hoc bio/event wrappers reduced or isolated
+* GF abstract/concrete/runtime surface aligned to construction runtime,
+* direct ad hoc bio/event wrappers reduced, isolated, or removed where required.
 
 Exit criteria:
 
-* GF is one backend under the same runtime contract
+* GF functions as one backend under the same runtime contract,
+* GF no longer acts as implicit runtime ownership.
 
 ### Batch 9 — Schema alignment
 
 Deliver:
 
-* contract schemas for runtime planning objects
-* frame-schema updates where needed for migrated construction mapping
+* contract schemas for runtime planning objects,
+* frame-schema updates where needed for migrated construction mapping,
+* schema names aligned to shared runtime vocabulary.
 
 Exit criteria:
 
-* schemas support the planner-centered runtime without forcing backend-shaped payloads
+* schemas support the planner-first runtime without forcing backend-shaped payloads.
 
 ### Batch 10 — Tests and cutover
 
 Deliver:
 
-* unit, integration, and API regression coverage
-* direct-path deprecation and removal
+* unit, integration, evaluator, and API regression coverage,
+* direct-path demotion and/or removal for the cutover scope,
+* acceptance alignment,
+* cutover completion validation.
 
 Exit criteria:
 
-* planner-centered runtime is the only authoritative generation path
+* planner-first runtime is the only authoritative generation path for the immediate cutover scope.
 
 ---
 
-## 14. Migration invariants
+## 20. Migration invariants
 
-These rules must remain true throughout the migration.
+The following rules must remain true throughout migration:
 
-1. The planner decides **what sentence to say**.
-2. The renderer decides **how the selected backend says it**.
-3. Lexical resolution is not hidden inside renderers.
-4. API payloads do not become backend-shaped.
-5. `ConstructionPlan` is the only planner-to-renderer handoff contract.
-6. `SurfaceResult` is the only renderer-to-API handoff contract.
-7. Debug metadata must expose at minimum:
-
-   * `construction_id`
-   * `renderer_backend`
-   * `fallback_used`
-8. No construction may introduce a second private runtime contract.
-9. No backend may silently replace planner-selected construction semantics.
+1. the planner decides what sentence is being asked for,
+2. the realizer decides how the selected backend realizes it,
+3. lexical resolution is not hidden inside realizers,
+4. API compatibility ends at normalization,
+5. `ConstructionPlan` is the only authoritative planner-to-realizer handoff contract,
+6. `SurfaceResult` is the only authoritative realizer-to-API handoff contract,
+7. nominal planner-first success must expose enough runtime truth for the public contract,
+8. no construction may introduce a second hidden runtime contract,
+9. no backend may silently replace planner-selected semantics,
+10. compatibility fallback must be explicit and machine-readable,
+11. routed-but-wrong-language output is not success,
+12. public serialization must not contradict runtime truth.
 
 ---
 
-## 15. Naming rules
+## 21. Naming rules
 
-To prevent drift, the migration uses these canonical names:
+To prevent drift, use these canonical shared runtime names:
 
 * `lang_code`
 * `planned_sentence`
@@ -640,32 +821,33 @@ To prevent drift, the migration uses these canonical names:
 * `debug_info`
 * `fallback_used`
 
-Use these planner fields where relevant:
+Use these runtime/public result names where relevant:
 
-* `topic_entity_id`
-* `focus_role`
-* `discourse_mode`
+* `text`
+* `tokens`
+* `generation_time_ms`
 
-### 15.1 Reserved usage rule
+### 21.1 Reserved usage rule
 
 * `generation_options` is the canonical cross-boundary options object passed into realization.
 * `debug_info` is the canonical structured runtime trace object returned from realization.
 * planner-local provenance or internal notes may exist, but they must not replace the canonical runtime names above.
 
-### 15.2 Avoided drift names
+### 21.2 Avoided drift names
 
 Avoid using these as authoritative shared runtime names:
 
-* `sentence` as the renderer contract object name
-* `surface_text` as the primary result object name
-* `metadata` as a generic replacement for `generation_options`
-* `engine_payload`
-* `gf_payload`
-* `template_payload`
-* `render_input`
-* `sentence_spec` as a generic replacement for `construction_plan`
+* `surface_text` as the canonical result field name,
+* `metadata` as a replacement for `generation_options`,
+* `engine_payload`,
+* `gf_payload`,
+* `template_payload`,
+* `render_input`,
+* `sentence_spec` as a generic replacement for `construction_plan`.
 
-### 15.3 Generic vs specialized names
+### 21.3 Generic vs specialized names
+
+Specialized names may still exist locally inside specialized modules, but they must not replace the canonical cross-boundary vocabulary.
 
 Examples of names that remain specialized rather than generic:
 
@@ -681,140 +863,180 @@ Examples of names that remain generic:
 
 ---
 
-## 16. Risk analysis
+## 22. Risk analysis
 
-### 16.1 Risk: duplication between planner and renderers
+### 22.1 Risk: planner/runtime drift survives
 
-If the planner and renderers both encode sentence packaging logic, the migration fails.
-
-Mitigation:
-
-* construction selection and packaging live only in planner/construction code
-* renderers only realize the given contract
-
-### 16.2 Risk: bio-specific architecture leak
-
-If runtime contracts are designed around biography, the migration will not scale to the existing construction inventory.
+If planner-first exists in principle but the live path still derives truth mainly from direct backend generation or mapper repair logic, migration is incomplete.
 
 Mitigation:
 
-* keep contracts generic
-* keep construction-specific specs local
+* enforce canonical runtime boundaries,
+* require nominal-path metadata completeness,
+* and keep mapper behavior aligned with serialization rather than repair.
 
-### 16.3 Risk: permanent compatibility bypass
+### 22.2 Risk: duplication between planner and realizers
 
-If the legacy direct runtime remains indefinitely, drift continues.
-
-Mitigation:
-
-* mark legacy direct generation as temporary
-* expose fallback use in `debug_info`
-* require `fallback_used`
-* remove direct fallback once construction coverage is complete
-
-### 16.4 Risk: backend lock-in
-
-If GF becomes the implicit owner of construction semantics, the repository will diverge from its documented architecture.
+If the planner and realizers both encode sentence packaging logic, the migration fails.
 
 Mitigation:
 
-* keep planner/runtime contracts renderer-agnostic
-* treat GF as one backend
+* construction selection and packaging live only in planner/construction code,
+* realizers only realize the given contract.
 
-### 16.5 Risk: uncontrolled lexical fallback
+### 22.3 Risk: bio-specific architecture leak
 
-If raw strings are injected directly into renderers without a lexical-resolution boundary, multilingual quality will remain brittle.
-
-Mitigation:
-
-* centralize lexical resolution
-* log fallback source and confidence
-* preserve deterministic fallback behavior
-
-### 16.6 Risk: object-boundary drift
-
-If `PlannedSentence`, `ConstructionPlan`, and `SurfaceResult` are used inconsistently, the migration will reintroduce ambiguity.
+If runtime contracts are designed around biography, the migration will not scale to the broader construction inventory.
 
 Mitigation:
 
-* planner emits `PlannedSentence`
-* planner-to-renderer handoff is `ConstructionPlan`
-* renderers return `SurfaceResult`
-* API response mapping happens only after `SurfaceResult`
+* keep contracts generic,
+* keep construction-specific specs local,
+* keep biography as one migrated construction family rather than the runtime model.
+
+### 22.4 Risk: compatibility path becomes permanent runtime ownership
+
+If legacy direct generation remains indefinitely as an unstated co-equal path, drift continues.
+
+Mitigation:
+
+* keep fallback explicit,
+* keep fallback machine-readable,
+* do not count fallback as target-state success,
+* remove or permanently demote direct fallback once the cutover completes.
+
+### 22.5 Risk: backend-local semantics become architecture
+
+If GF or family realizers become implicit owners of construction semantics, the runtime model breaks.
+
+Mitigation:
+
+* keep planner/runtime contracts backend-agnostic,
+* treat all realizers as realization layers only.
+
+### 22.6 Risk: lexical fallback stays hidden inside realizers
+
+If lexical fallback remains renderer-local, multilingual behavior remains brittle and hard to reason about.
+
+Mitigation:
+
+* centralize lexical resolution,
+* keep lexical fallback explicit,
+* expose enough lexical/runtime metadata where required.
+
+### 22.7 Risk: EN/FR appear complete while FR still surfaces English
+
+If FR routes correctly but still surfaces English literals, the migration has failed for the immediate cutover scope.
+
+Mitigation:
+
+* hard evaluator failure,
+* acceptance rejection,
+* and no routed-but-wrong-language false positives.
+
+### 22.8 Risk: object-boundary ambiguity reappears
+
+If runtime code uses multiple competing objects or silently mixes planner truth, realizer truth, and public truth, ambiguity returns.
+
+Mitigation:
+
+* planner-to-realizer handoff is `ConstructionPlan`,
+* realizer-to-API handoff is `SurfaceResult`,
+* planner-local sentence planning remains upstream in `PlannedSentence`,
+* and public mapping occurs only after the runtime result is complete.
 
 ---
 
-## 17. Testing and acceptance
+## 23. Testing and cutover expectations
 
-### 17.1 Acceptance conditions
+### 23.1 Migration completion conditions
 
-The migration is complete when:
+For the immediate cutover scope, migration is complete only when:
 
-1. `/generate` uses planner-first orchestration for all migrated constructions.
-2. Construction choice is visible in runtime `debug_info`.
-3. GF, family, and safe-mode backends consume the same `ConstructionPlan`.
-4. Lexical resolution is externalized from renderers.
-5. Existing construction families run through the shared runtime contract.
-6. Direct frame-to-engine generation is no longer an authoritative path.
-7. Renderer fallback, if any, is explicit through `renderer_backend` and `fallback_used`.
-8. API responses originate from `SurfaceResult`.
+1. `/generate` uses planner-first orchestration for EN and FR bio/person generation,
+2. nominal success exposes runtime truth required by the public contract,
+3. EN resolves correctly and surfaces English,
+4. FR resolves correctly and surfaces French,
+5. FR fails hard if it still looks English,
+6. compatibility fallback is explicit where still present,
+7. direct frame-to-engine generation is no longer an authoritative EN/FR runtime path,
+8. public responses originate from the canonical runtime result.
 
-### 17.2 Minimum regression coverage
+### 23.2 Minimum regression coverage
 
-Coverage must include:
+Coverage must include at minimum:
 
-* unit tests for planning objects and slot maps
-* unit tests for frame-to-plan mapping
-* unit tests for lexical resolution
-* unit tests for GF/family renderer adapters
-* integration tests for planner-first generation in English and French
-* API tests preserving current `/generate` compatibility
+* unit tests for planning objects and slot maps,
+* unit tests for frame-to-plan mapping,
+* unit tests for lexical resolution,
+* unit tests for GF and family realizer adapters,
+* core use-case tests for planner-first nominal success,
+* tests for explicit fallback behavior if fallback still exists,
+* tests that fail on missing nominal-path metadata,
+* tests for deterministic repeated planner-first behavior,
+* evaluator checks for language plausibility and contract shape,
+* integration tests for EN planner-first generation,
+* integration tests for FR planner-first generation,
+* API tests preserving documented request compatibility.
+
+### 23.3 Acceptance relationship
+
+This migration document does not itself replace the EN/FR acceptance gate.
+
+A migrated runtime path is not complete merely because it works operationally.
+It must also satisfy the acceptance and evaluator conditions defined elsewhere for the cutover scope.
 
 ---
 
-## 18. Operational guidance
+## 24. Operational guidance
 
 ### During migration
 
-* prefer additive compatibility shims over hidden rewrites
-* keep `debug_info` rich and machine-readable
-* avoid premature grammar rewrites before the runtime contract is fixed
-* document every new runtime object before broad usage
-* keep dotted/backend-local identifiers out of the shared runtime surface
+* prefer explicit compatibility behavior over hidden parallel paths,
+* keep `debug_info` structured and machine-readable,
+* do not let compatibility normalization leak into downstream runtime contracts,
+* do not let public mapping become the source of runtime truth,
+* keep backend-local naming out of the shared runtime surface,
+* avoid premature grammar rewrites before the runtime contract is fixed.
 
-### After each batch
+### After each migration step
 
-* refresh codedump
-* verify file inventory and interface names
-* validate that no new parallel runtime path has appeared
-* confirm object names still match the canonical vocabulary
-
----
-
-## 19. Definition of done
-
-This migration is done only when:
-
-* the planner/construction runtime is authoritative
-* `PlannedSentence` and `ConstructionPlan` have stable ownership boundaries
-* renderers are backend implementations only
-* `SurfaceResult` is the canonical output contract
-* the current direct runtime path is removed or strictly compatibility-only with documented sunset
-* the broader construction inventory is supported by the shared runtime contract
-* docs, code, schemas, and tests all describe the same runtime model
+* refresh codedump and inventory views,
+* verify runtime object names,
+* verify that no new parallel runtime path has appeared,
+* verify that docs, tests, and code still describe the same runtime model,
+* confirm that construction/runtime/public naming still matches the canonical vocabulary.
 
 ---
 
-## 20. Final statement
+## 25. Definition of done
 
-This migration does not invent a new architecture for SKA.
+This migration is done only when all of the following are true:
+
+* planner-first is the authoritative live `/generate` runtime for the immediate cutover scope,
+* `PlannedSentence` has stable planner-owned sentence-planning semantics upstream of realization,
+* `ConstructionPlan` has stable planner-to-realizer ownership,
+* `SurfaceResult` has stable realizer-to-API ownership,
+* the mapper serializes canonical runtime truth rather than inventing it,
+* compatibility fallback is explicit and non-authoritative,
+* EN/FR bio/person generation no longer depends on direct generation as the nominal path,
+* the broader runtime model remains generic rather than bio-specific,
+* and docs, runtime code, tests, QA, schemas, and public contract all describe the same live model.
+
+---
+
+## 26. Final statement
+
+This migration does not invent a new architecture.
 
 It restores alignment between:
 
-* the repository’s documented architecture
-* the existing planner/construction abstractions
-* the runtime generation path
+* the documented multilingual runtime architecture,
+* the live `/generate` path,
+* the planner-first construction runtime,
+* the public success contract,
+* and the EN/FR cutover truth.
 
-The final runtime model is therefore:
+The final live runtime model is therefore:
 
-**generic planner-centered construction runtime, explicit lexical resolution, backend-agnostic contracts, and renderer-specific realization behind a shared interface.**
+**planner-first orchestration, planner-owned sentence design, canonical `ConstructionPlan -> SurfaceResult` runtime boundaries, explicit lexical resolution, backend-specific realization behind one shared interface, and explicit compatibility fallback only where still temporarily required.**

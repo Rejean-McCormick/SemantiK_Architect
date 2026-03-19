@@ -1,93 +1,169 @@
 # EN/FR Bio Acceptance
 
-Status: normative  
-Owner: Runtime / Grammar / API  
-Scope: release-blocking acceptance criteria for biography generation in English (`en`) and French (`fr`)
+Status: normative acceptance document  
+Owner: QA / Runtime / Grammar / API  
+Scope: release-blocking acceptance criteria for EN/FR bio/person generation on the planner-first runtime path
 
 ---
 
 ## 1. Purpose
 
-This document defines the acceptance gate for biography generation in English and French.
+This document defines the operative release gate for English (`en`) and French (`fr`) bio/person generation.
 
-It exists to prevent drift between:
+It exists to prevent the system from confusing:
 
-- frame normalization,
-- planner output,
-- lexical resolution,
-- renderer behavior,
-- GF/runtime fallback behavior,
-- and the public API response.
+- routing with correctness,
+- compile success with readiness,
+- non-empty output with language success,
+- compatibility behavior with target-state success,
+- and debug-only metadata with a valid nominal public contract.
 
-This is not a “smoke test only” document.  
-This is the release gate for saying that EN/FR bio generation is aligned, robust, and production-credible.
+This is the final proof layer for EN/FR bio/person generation.
+It does not replace the architecture document, the cutover plan, or the public response contract.
+It applies those documents as a concrete acceptance gate for the EN/FR vertical slice.
 
 ---
 
-## 2. What this document covers
+## 2. Governing precedence
+
+This document is governed by the following precedence rules:
+
+1. `docs/architecture/multilingual_runtime_target.md` defines the target architecture.
+2. `docs/architecture/EN_FR_FINAL_PARALLEL_LOCKDOWN.md` defines the lock rules and conflict-resolution policy for the final cutover.
+3. `docs/contracts/public_generation_response_contract.md` defines the canonical public success envelope.
+4. `docs/contracts/construction_runtime_contract.md` defines the canonical runtime contract.
+5. `docs/migration/en_fr_cutover_plan.md` defines execution sequencing and completion gates.
+6. This document defines the operative EN/FR release gate.
+7. `docs/testing/en_fr_acceptance_and_multilingual_readiness.md` remains the broader readiness model and multilingual template.
+8. `docs/2-Technical-Reference/CURRENT_RUNTIME_STATUS.md` must not contradict any of the documents above.
+
+If any lower-precedence document conflicts with a higher-precedence document, the higher-precedence document wins.
+
+---
+
+## 3. Acceptance statement
+
+EN and FR are accepted only when they pass a full vertical slice:
+
+- canonical bio/person input,
+- planner-first runtime,
+- language-specific realization,
+- coherent public response contract,
+- explicit runtime diagnostics,
+- evaluator success,
+- and correct surface language.
+
+A language is **not accepted** because it:
+
+- exists in GF,
+- compiles,
+- loads,
+- routes,
+- or emits any non-empty text.
+
+---
+
+## 4. Normative acceptance variables
+
+These variables are normative and must remain conceptually consistent across runtime, tests, QA tools, and docs.
+
+### 4.1 Runtime variables
+
+- `EXPECTED_PRIMARY_RUNTIME = "planner_first"`
+- `LEGACY_SUCCESS_COUNTS_AS_ACCEPTED = false`
+- `LEGACY_FALLBACK_COUNTS_AS_NOMINAL_SUCCESS = false`
+
+### 4.2 EN variables
+
+- `EN_REQUEST_LANG = "en"`
+- `EN_EXPECTED_GF_LANGUAGE = "WikiEng"`
+- `EN_SURFACE_LANGUAGE = "english"`
+
+### 4.3 FR variables
+
+- `FR_REQUEST_LANG = "fr"`
+- `FR_EXPECTED_GF_LANGUAGE = "WikiFre"`
+- `FR_SURFACE_LANGUAGE = "french"`
+- `FR_SURFACE_MUST_NOT_LOOK_ENGLISH = true`
+
+### 4.4 Public contract variables
+
+- `REQUIRED_PUBLIC_TEXT = true`
+- `REQUIRED_PUBLIC_LANG_CODE = true`
+- `REQUIRED_PUBLIC_CONSTRUCTION_ID = true` on nominal path
+- `REQUIRED_PUBLIC_RENDERER_BACKEND = true` on nominal path
+- `REQUIRED_PUBLIC_FALLBACK_USED = true`
+- `REQUIRED_PUBLIC_TOKENS = true`
+- `REQUIRED_PUBLIC_DEBUG_INFO = true`
+- `REQUIRED_PUBLIC_GENERATION_TIME_MS = true`
+
+### 4.5 Metadata parity variables
+
+- `TOP_LEVEL_AND_DEBUG_LANG_CODE_MUST_MATCH = true`
+- `TOP_LEVEL_AND_DEBUG_FALLBACK_MUST_MATCH = true`
+- `TOP_LEVEL_AND_DEBUG_BACKEND_MUST_MATCH = true` when both are present
+- `TOP_LEVEL_AND_DEBUG_CONSTRUCTION_ID_MUST_MATCH = true` when both are present
+- `TOP_LEVEL_TIME_IS_AUTHORITATIVE = true`
+
+---
+
+## 5. Acceptance scope
 
 This document covers:
 
-- generation through `POST /api/v1/generate/{lang}`,
-- biography/person payloads normalized to the canonical bio frame,
-- planner-first generation for migrated bio constructions,
-- public API response shape,
-- lexical-resolution visibility,
-- fallback behavior,
-- gold-example regression for English and French.
+- `POST /api/v1/generate/{lang_code}`,
+- EN bio/person generation,
+- FR bio/person generation,
+- planner-first runtime behavior for these requests,
+- public success contract for these requests,
+- evaluator behavior for these requests,
+- and language-surface correctness for these requests.
 
-This document does **not** define the full generic runtime contract for every construction family.  
-It applies the generic runtime contract specifically to EN/FR bio generation.
+This document does not claim acceptance for:
 
----
-
-## 3. Acceptance philosophy
-
-EN/FR bio acceptance is achieved only when all of the following are true:
-
-1. the same semantic input can be normalized for both English and French,
-2. the runtime uses the same planner-facing contract for both languages,
-3. the selected construction semantics remain stable across backends,
-4. lexical resolution is explicit and inspectable,
-5. the public response shape is stable,
-6. French produces actual French surface text,
-7. English produces actual English surface text,
-8. fallback, if used, is explicit and machine-readable,
-9. regression can be caught automatically using gold examples.
-
-A passing compile is not sufficient.  
-A passing legacy direct-generation result is not sufficient.  
-A non-empty sentence is not sufficient.
+- all languages,
+- all constructions,
+- all backends in all contexts,
+- all historical compatibility paths,
+- or full multilingual readiness beyond the EN/FR scope.
 
 ---
 
-## 4. Canonical entrypoint
+## 6. Canonical entrypoint
 
 Primary endpoint under test:
 
 ```http
-POST /api/v1/generate/{lang}
+POST /api/v1/generate/{lang_code}
 ````
 
-Where:
+Rules:
 
-* `{lang}` is the authoritative path language,
+* `{lang_code}` is authoritative at the public boundary,
 * accepted values for this document are `en` and `fr`,
 * URL language and payload language must match if both are present,
-* language compatibility must be tested through the public API, not only internal unit tests.
+* language compatibility must be validated through the public API, not only through internal tests.
+
+Examples:
+
+* `/generate/en` + payload `lang=en` → valid
+* `/generate/fr` + payload `lang=fr` → valid
+* `/generate/fr` + payload `lang=en` → fail
+* missing language everywhere → fail
 
 ---
 
-## 5. Canonical input contract for bio acceptance
+## 7. Canonical input contract for EN/FR bio acceptance
 
-### 5.1 Canonical semantic shape
+### 7.1 Canonical semantic shape
 
-The acceptance target is a normalized bio/person frame that carries, at minimum:
+The acceptance target is a normalized bio/person frame carrying at least:
 
 * subject identity,
 * profession,
 * nationality,
-* optional gender and metadata,
+* optional gender,
+* optional metadata,
 * optional lexical provenance.
 
 Example canonical shape:
@@ -110,9 +186,9 @@ Example canonical shape:
 }
 ```
 
-### 5.2 Legacy compatibility at the boundary
+### 7.2 Compatibility aliases at the boundary
 
-The system may accept legacy or compatibility aliases such as:
+The public boundary may continue to accept compatibility aliases such as:
 
 * `bio`
 * `biography`
@@ -124,97 +200,35 @@ The system may accept legacy or compatibility aliases such as:
 
 However:
 
-* acceptance is awarded only after these inputs are normalized,
+* acceptance is awarded only after normalization,
 * compatibility ends at normalization,
-* downstream planner/runtime code must not depend on legacy payload quirks.
-
-### 5.3 Language authority rule
-
-If the path language is provided, it is authoritative.
-
-Examples:
-
-* `/generate/en` + payload `lang=en` → valid
-* `/generate/fr` + payload `lang=fr` → valid
-* `/generate/fr` + payload `lang=en` → fail
-* missing language everywhere → fail
+* downstream planner/runtime code must not depend on legacy payload quirks,
+* compatibility-path success does not count as nominal planner-first acceptance.
 
 ---
 
-## 6. Canonical runtime expectations
+## 8. Canonical runtime expectations
 
-For migrated bio generation, the authoritative path is:
+For migrated EN/FR bio/person generation, the authoritative path is:
 
 1. request normalization,
 2. frame-to-plan bridge,
 3. planner,
 4. lexical resolution,
-5. realization,
+5. realizer,
 6. response mapping.
 
-The acceptance path for migrated EN/FR bio generation is **planner-first**.
+The acceptance path for EN/FR bio/person generation is **planner-first**.
 
-Legacy direct frame-to-engine generation may remain temporarily for compatibility, but it must be treated as a compatibility path, not as the target architecture.
-
----
-
-## 7. Canonical runtime objects
-
-EN/FR bio acceptance must align to these runtime concepts:
-
-* `planned_sentence`
-* `construction_plan`
-* `construction_id`
-* `slot_map`
-* `lexical_bindings`
-* `generation_options`
-* `renderer_backend`
-* `surface_result`
-* `debug_info`
-* `fallback_used`
-
-No backend may require a second private planner-facing contract.
-
-No renderer may silently replace planner-selected construction semantics.
+Legacy direct frame-to-engine generation may remain temporarily as explicit compatibility fallback while migration cleanup is still being completed, but it is not a target-state success condition.
 
 ---
 
-## 8. Construction expectations
+## 9. Canonical runtime result expectations
 
-### 8.1 Construction identity
+The nominal planner-first runtime result handed to the response mapper must already be mapper-ready.
 
-The same semantic bio case in EN and FR must be realized from the same canonical runtime construction identity.
-
-Requirements:
-
-* `construction_id` must be canonical and planner-owned,
-* `construction_id` must not be backend-local,
-* EN and FR must not diverge into different semantic constructions for the same test case,
-* dotted compatibility input names are not acceptable runtime `construction_id` values.
-
-### 8.2 Allowed construction family
-
-The selected runtime construction for bio acceptance must belong to the canonical construction inventory for equative/classification-style biography output.
-
-Examples of acceptable canonical runtime IDs include project-approved IDs such as:
-
-* `copula_equative_simple`
-* `copula_equative_classification`
-* `bio_lead_identity`
-
-The exact accepted ID is whichever canonical runtime ID the planner selects for the tested bio lead configuration in this repository.
-
-What matters is:
-
-* it is canonical,
-* it is stable,
-* it is shared across EN and FR for the same semantic case.
-
----
-
-## 9. Public API response requirements
-
-A successful public generation response for EN/FR bio acceptance must expose:
+Required top-level runtime fields on nominal path:
 
 * `text`
 * `lang_code`
@@ -223,126 +237,192 @@ A successful public generation response for EN/FR bio acceptance must expose:
 * `fallback_used`
 * `tokens`
 * `debug_info`
+* `generation_time_ms`
 
-Minimum successful example shape:
+Required `debug_info` keys on nominal planner-first success:
+
+* `runtime_path = "planner_first"`
+* `lang_code`
+* `construction_id`
+* `renderer_backend`
+* `fallback_used`
+
+Recommended when available:
+
+* `resolved_language`
+* `selected_backend`
+* `attempted_backends`
+* `slot_keys`
+* `lexical_resolution`
+* `backend_trace`
+* `warnings`
+
+Parity rule:
+
+* when the same semantic field exists both top-level and inside `debug_info`, the values must match.
+
+No nominal-null rule:
+
+* `construction_id` must not be null,
+* `renderer_backend` must not be null,
+* `fallback_used` must not be omitted,
+* `debug_info` must not be omitted.
+
+The mapper may serialize and normalize.
+It must not be the place where nominal planner-first truth first appears.
+
+---
+
+## 10. EN acceptance criteria
+
+EN is accepted only when all of the following are true.
+
+### 10.1 Routing
+
+* request language is `en`
+* runtime resolves to `WikiEng`
+
+### 10.2 Runtime path
+
+* nominal path is planner-first
+* `runtime_path = "planner_first"`
+* `fallback_used = false`
+
+### 10.3 Surface
+
+* output is non-empty
+* output is English
+* output reflects the intended bio/person meaning
+
+### 10.4 Public contract
+
+The public success envelope contains:
+
+* `text`
+* `lang_code = "en"`
+* `construction_id`
+* `renderer_backend`
+* `fallback_used = false`
+* `tokens`
+* `debug_info`
+* `generation_time_ms`
+
+### 10.5 Metadata consistency
+
+* `debug_info.lang_code = "en"`
+* `debug_info.fallback_used = false`
+* `debug_info.runtime_path = "planner_first"`
+
+### 10.6 Negative acceptance rule
+
+EN is not accepted if it only succeeds through legacy fallback.
+
+---
+
+## 11. FR acceptance criteria
+
+FR is accepted only when all of the following are true.
+
+### 11.1 Routing
+
+* request language is `fr`
+* runtime resolves to `WikiFre`
+
+### 11.2 Runtime path
+
+* nominal path is planner-first
+* `runtime_path = "planner_first"`
+* `fallback_used = false`
+
+### 11.3 Surface
+
+* output is non-empty
+* output is French
+* output does not leak English literals from shared layers
+* output reflects the intended bio/person meaning
+
+### 11.4 Public contract
+
+The public success envelope contains:
+
+* `text`
+* `lang_code = "fr"`
+* `construction_id`
+* `renderer_backend`
+* `fallback_used = false`
+* `tokens`
+* `debug_info`
+* `generation_time_ms`
+
+### 11.5 Metadata consistency
+
+* `debug_info.lang_code = "fr"`
+* `debug_info.fallback_used = false`
+* `debug_info.runtime_path = "planner_first"`
+
+### 11.6 Mandatory failure rule
+
+FR must fail acceptance if:
+
+* request language is `fr`,
+* runtime resolves to `WikiFre`,
+* but the output still looks English.
+
+This is not a soft failure and not a partial success.
+It is a hard acceptance failure.
+
+### 11.7 Negative acceptance rule
+
+FR is not accepted if it only succeeds through legacy fallback.
+
+---
+
+## 12. Public response acceptance
+
+For EN and FR, the accepted success response shape is:
 
 ```json
 {
-  "text": "Marie Curie was a Polish physicist.",
+  "text": "Alan Turing is a British mathematician.",
   "lang_code": "en",
   "construction_id": "copula_equative_classification",
   "renderer_backend": "family",
   "fallback_used": false,
-  "tokens": [
-    "Marie",
-    "Curie",
-    "was",
-    "a",
-    "Polish",
-    "physicist."
-  ],
+  "tokens": ["Alan", "Turing", "is", "a", "British", "mathematician."],
   "debug_info": {
     "runtime_path": "planner_first",
     "construction_id": "copula_equative_classification",
     "renderer_backend": "family",
-    "lang_code": "en",
     "fallback_used": false,
-    "slot_keys": ["subject", "profession", "nationality"],
-    "selected_backend": "family",
-    "attempted_backends": ["family"]
-  }
+    "lang_code": "en"
+  },
+  "generation_time_ms": 12.5
 }
 ```
 
-French example shape:
+Contract rules:
 
-```json
-{
-  "text": "Marie Curie était une physicienne polonaise.",
-  "lang_code": "fr",
-  "construction_id": "copula_equative_classification",
-  "renderer_backend": "family",
-  "fallback_used": false,
-  "tokens": [
-    "Marie",
-    "Curie",
-    "était",
-    "une",
-    "physicienne",
-    "polonaise."
-  ],
-  "debug_info": {
-    "runtime_path": "planner_first",
-    "construction_id": "copula_equative_classification",
-    "renderer_backend": "family",
-    "lang_code": "fr",
-    "fallback_used": false,
-    "slot_keys": ["subject", "profession", "nationality"],
-    "selected_backend": "family",
-    "attempted_backends": ["family"]
-  }
-}
-```
+* `text` is authoritative,
+* `lang_code` identifies the returned surface language,
+* `construction_id` is explicit on the nominal path,
+* `renderer_backend` is explicit on the nominal path,
+* `fallback_used` is explicit,
+* `tokens` correspond to final text,
+* `generation_time_ms` is top-level and authoritative,
+* `debug_info` must not contradict top-level fields.
 
 ---
 
-## 10. Required `debug_info` expectations
-
-The top-level public response must keep stable diagnostics.
-
-For EN/FR bio acceptance, `debug_info` must expose enough information to determine:
-
-* which runtime path was used,
-* which construction was realized,
-* which backend produced the final surface,
-* whether fallback occurred,
-* which slots were consumed,
-* whether lexical resolution was applied.
-
-### 10.1 Minimum required debug keys
-
-Required keys:
-
-* `runtime_path`
-* `construction_id`
-* `renderer_backend`
-* `lang_code`
-* `fallback_used`
-
-Strongly recommended keys:
-
-* `slot_keys`
-* `selected_backend`
-* `attempted_backends`
-* `lexical_resolution`
-* `warnings`
-
-### 10.2 Runtime path requirement
-
-For migrated bio constructions, passing acceptance requires:
-
-```json
-{
-  "runtime_path": "planner_first"
-}
-```
-
-If the runtime path is `legacy_direct_frame`, the result may be recorded as compatibility evidence, but it does **not** satisfy planner-first EN/FR bio acceptance.
-
----
-
-## 11. Lexical-resolution requirements
+## 13. Lexical-resolution acceptance requirements
 
 Lexical resolution must be explicit and testable.
 
-For bio acceptance, this includes at least:
+For EN/FR bio/person acceptance, this includes at least:
 
 * profession lexicalization,
 * nationality lexicalization,
-* source/provenance visibility where available,
+* provenance visibility where available,
 * deterministic fallback behavior where lexical lookup fails.
-
-### 11.1 Required lexical invariants
 
 Lexical resolution must preserve:
 
@@ -358,59 +438,11 @@ Lexical resolution must not:
 * hide raw-string fallback,
 * bypass provenance when provenance exists.
 
-### 11.2 Language-specific lexicalization requirement
-
-For EN and FR, lexical realization must be language-appropriate.
-
-Examples:
-
-* English profession/nationality realizations must be English.
-* French profession/nationality realizations must be French.
-
-If the French path produces English lexical material for the same bio case, acceptance fails.
+If the French path produces English lexical material for the same bio case without explicit, approved fallback trace, acceptance fails.
 
 ---
 
-## 12. English-specific surface requirements
-
-For `lang=en`, accepted output must satisfy all of the following:
-
-* the sentence is grammatical English,
-* the copular/equative structure is English,
-* profession and nationality are expressed in English,
-* tokens and text align,
-* no French-only morphology appears unless explicitly quoted in the subject string,
-* no silent fallback changes semantics.
-
-Examples of acceptable English outputs depend on `generation_options`, but the language must remain clearly English.
-
----
-
-## 13. French-specific surface requirements
-
-For `lang=fr`, accepted output must satisfy all of the following:
-
-* the sentence is grammatical French,
-* the copular/equative structure is French,
-* profession and nationality are expressed in French,
-* article and agreement behavior are French-appropriate for the tested lexical items,
-* tokens and text align,
-* no English copula/article scaffold remains in the final surface,
-* no silent fallback changes semantics.
-
-Examples of unacceptable French outputs include outputs that contain English scaffold such as:
-
-* `is`
-* `is a`
-* `participated in`
-
-for ordinary French biography generation.
-
-A French request that resolves successfully but returns English surface text is a release blocker.
-
----
-
-## 14. EN/FR semantic equivalence requirements
+## 14. Cross-language semantic equivalence requirements
 
 For the same normalized bio input and the same generation options:
 
@@ -421,7 +453,7 @@ For the same normalized bio input and the same generation options:
 * EN and FR may differ in morphology, article use, agreement, and word order,
 * EN and FR must not diverge in truth conditions.
 
-Semantic equivalence does **not** require token-by-token literal correspondence.
+Semantic equivalence does not require token-by-token literal correspondence.
 It requires preserved semantic intent.
 
 ---
@@ -474,23 +506,11 @@ Required assertions:
 * lexical resolution is visible when applied,
 * slot keys include at least `subject`, `profession`, `nationality`.
 
-### 15.4 Suite D — Renderer parity tests
-
-At least two deterministic realizers/backends must be able to consume the same bio-oriented plan shape during migration or staging, where repository support exists.
-
-Parity does **not** require identical strings.
-Parity requires:
-
-* same `construction_id`,
-* same `lang_code`,
-* same semantic slot intent,
-* explicit backend trace.
-
-### 15.5 Suite E — Fallback behavior tests
+### 15.4 Suite D — Fallback behavior tests
 
 If fallback is triggered, tests must verify:
 
-* `fallback_used=true`,
+* `fallback_used = true`,
 * original backend is traceable,
 * final backend is traceable,
 * fallback reason is present,
@@ -500,7 +520,7 @@ If fallback is triggered, tests must verify:
 
 Silent fallback is an automatic fail.
 
-### 15.6 Suite F — Gold regression tests
+### 15.5 Suite E — Gold regression tests
 
 A gold-standard regression suite is mandatory for EN and FR.
 
@@ -547,22 +567,22 @@ Example record shape:
 ```
 
 Gold strings must be version-controlled and reviewed.
-If generation options change tense/register, the gold set must specify those options explicitly.
+If generation options change tense or register, the gold set must specify those options explicitly.
 
 ---
 
 ## 17. Acceptance commands
 
-Use the exact repo workflow expected for language validation.
+Use the repository validation workflow expected for EN/FR language acceptance.
 
 ### 17.1 Required validation flow
 
 1. refresh matrix,
 2. validate lexicon,
 3. compile PGF,
-4. validate language health,
+4. run language health,
 5. run real EN/FR generation,
-6. run judge/regression,
+6. run evaluator/judge,
 7. refresh matrix again.
 
 ### 17.2 Canonical commands
@@ -639,6 +659,7 @@ For every accepted EN/FR bio case:
 * `renderer_backend` is present,
 * `fallback_used` is present,
 * `debug_info` is present,
+* `generation_time_ms` is present,
 * `tokens` are aligned with the returned text.
 
 ### 18.2 Runtime pass conditions
@@ -688,7 +709,9 @@ Any of the following is an automatic fail.
 * missing `renderer_backend`
 * missing `fallback_used`
 * missing `debug_info`
+* missing `generation_time_ms`
 * missing or invalid `lang_code`
+* top-level/debug parity mismatch on canonical shared fields
 * hidden planner-facing contract required by one backend only
 
 ### 19.2 Runtime failures
@@ -697,6 +720,7 @@ Any of the following is an automatic fail.
 * fallback occurred but was not explicitly annotated
 * renderer silently changed construction semantics
 * runtime consumed raw payload quirks below normalization
+* mapper repaired nominal planner-first nulls instead of serializing a valid runtime result
 
 ### 19.3 English failures
 
@@ -713,8 +737,8 @@ Any of the following is an automatic fail.
 ### 19.5 Regression failures
 
 * gold example similarity falls below the project threshold
-* judge/regression fails
-* matrix/build/health state regresses after a change
+* judge or evaluator fails
+* matrix, build, or health state regresses after a change
 * one language passes only through compatibility fallback while the other passes planner-first
 
 ---
@@ -756,10 +780,10 @@ For each acceptance run, archive:
 
 ## 22. Definition of done
 
-EN/FR bio generation is considered accepted only when:
+EN/FR bio/person generation is considered accepted only when:
 
 1. canonical bio inputs and compatibility aliases both normalize correctly,
-2. planner-first runtime is used for migrated bio generation,
+2. planner-first runtime is used for migrated bio/person generation,
 3. EN and FR share the same canonical construction semantics,
 4. French generates actual French surface text,
 5. English generates actual English surface text,
@@ -767,16 +791,16 @@ EN/FR bio generation is considered accepted only when:
 7. public response fields are stable and complete,
 8. fallback is explicit and machine-readable,
 9. gold examples exist for both languages,
-10. judge/regression passes,
+10. judge and evaluator pass,
 11. matrix and health checks remain green after the acceptance run.
 
-If any of these conditions is false, EN/FR bio acceptance is not complete.
+If any of these conditions is false, EN/FR bio/person acceptance is not complete.
 
 ---
 
 ## 23. Final rule
 
-EN/FR bio acceptance is not awarded for “some sentence came out.”
+EN/FR bio/person acceptance is not awarded for “some sentence came out”.
 
 It is awarded only when:
 

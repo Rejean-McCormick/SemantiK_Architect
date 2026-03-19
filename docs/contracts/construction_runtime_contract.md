@@ -2,7 +2,7 @@
 
 Status: normative  
 Owner: Architecture / Runtime  
-Last updated: 2026-03-16
+Last updated: 2026-03-19
 
 ---
 
@@ -18,7 +18,8 @@ It governs the canonical handoff between:
 4. construction-plan building,
 5. lexical resolution,
 6. renderer realization,
-7. API response mapping.
+7. runtime-result normalization,
+8. API response mapping.
 
 It exists to prevent architectural drift.
 
@@ -29,7 +30,8 @@ That means:
 - biography lead generation is one consumer of this contract,
 - locatives, equatives, existentials, possession, topic-comment, eventive clauses, relative clauses, and future constructions must use the same runtime shape,
 - no backend is allowed to invent a competing planner-facing sentence contract,
-- no renderer is allowed to become the hidden owner of construction semantics.
+- no renderer is allowed to become the hidden owner of construction semantics,
+- and no response mapper is allowed to become the hidden owner of nominal runtime truth.
 
 ---
 
@@ -55,7 +57,7 @@ It does **not** define:
 - GF abstract or concrete grammar internals,
 - family-specific morphology internals,
 - multi-sentence discourse policy beyond sentence-level metadata,
-- the public HTTP success envelope,
+- the full public HTTP success envelope,
 - the public HTTP error envelope.
 
 The public HTTP success envelope is defined separately in `public_generation_response_contract.md`.
@@ -71,16 +73,19 @@ Boundary ownership is as follows:
 - this document governs the internal runtime objects and flow,
 - `slot_map_contract.md` governs slot naming and slot payload rules,
 - `lexical_resolution_contract.md` governs lexicalization semantics,
-- `construction_renderer_contract.md` governs renderer-facing behavior,
+- `docs/grammar/construction_renderer_contract.md` governs renderer-facing behavior,
 - `debug_info_contract.md` governs structured runtime trace keys,
-- `public_generation_response_contract.md` governs the public HTTP success envelope.
+- `public_generation_response_contract.md` governs the public HTTP success envelope,
+- `public_vs_runtime_vs_frontend_boundaries.md` governs layer separation between runtime, public HTTP, and frontend convenience models.
 
 Conflict rule:
 
 - if the issue is about planner/runtime object shape, this document wins,
-- if the issue is about slot naming, the slot-map contract wins,
+- if the issue is about slot naming or slot payload rules, the slot-map contract wins,
+- if the issue is about lexical provenance or lexical fallback semantics, the lexical-resolution contract wins,
 - if the issue is about renderer-facing behavior, the renderer contract wins,
-- if the issue is about HTTP serialization, the public generation response contract wins.
+- if the issue is about HTTP serialization, the public generation response contract wins,
+- if the issue is about whether a field belongs to runtime vs HTTP vs frontend, the boundary document wins.
 
 Any disagreement must be corrected immediately.
 
@@ -112,7 +117,8 @@ In particular:
 * lexical resolvers must not choose discourse packaging,
 * GF adapters must not become the primary semantic contract,
 * family engines must not redefine construction meaning,
-* direct `/generate` shortcuts must remain compatibility shims only during migration.
+* direct `/generate` shortcuts must remain compatibility shims only during migration,
+* response mappers must serialize canonical runtime truth rather than invent missing nominal metadata.
 
 ---
 
@@ -147,6 +153,10 @@ The same validated `ConstructionPlan` under the same backend and configuration s
 ### 5.7 Explicit about migration
 
 Compatibility shims may exist temporarily, but must not become the authoritative architecture.
+
+### 5.8 Mapper-ready on the nominal path
+
+On the nominal planner-first path, runtime results must arrive at the response mapper already carrying the canonical top-level fields required for success serialization.
 
 ---
 
@@ -340,7 +350,9 @@ SlotMap = dict[str, Any]
 
 ## 7.6 `SurfaceResult`
 
-`SurfaceResult` is the canonical renderer result before API serialization.
+`SurfaceResult` is the canonical renderer/runtime result before public success serialization.
+
+It is still an internal runtime object. However, on the nominal planner-first path it MUST already contain the canonical top-level fields needed for stable success mapping.
 
 ### Minimum shape
 
@@ -349,8 +361,17 @@ SlotMap = dict[str, Any]
   "text": "Alan Turing is a British mathematician.",
   "lang_code": "en",
   "construction_id": "copula_equative_classification",
-  "renderer_backend": "gf",
-  "debug_info": {}
+  "renderer_backend": "family",
+  "fallback_used": false,
+  "tokens": ["Alan", "Turing", "is", "a", "British", "mathematician."],
+  "debug_info": {
+    "runtime_path": "planner_first",
+    "construction_id": "copula_equative_classification",
+    "renderer_backend": "family",
+    "fallback_used": false,
+    "lang_code": "en"
+  },
+  "generation_time_ms": 12.5
 }
 ```
 
@@ -360,13 +381,17 @@ SlotMap = dict[str, Any]
 * `lang_code: str`
 * `construction_id: str`
 * `renderer_backend: str`
+* `fallback_used: bool`
 * `debug_info: dict[str, Any]`
+* `generation_time_ms: float | int`
+
+### Conditionally required fields
+
+* `tokens: list[str]`
 
 ### Optional fields
 
-* `tokens: list[str] | None`
 * `warnings: list[str] | None`
-* `fallback_used: bool`
 * `confidence: float | None`
 
 ### Rules
@@ -375,13 +400,18 @@ SlotMap = dict[str, Any]
 * `lang_code` MUST equal the normalized input language code for the realized sentence.
 * `construction_id` MUST equal the validated input construction.
 * `renderer_backend` MUST identify the backend actually used.
+* `fallback_used` MUST be explicit at top level.
 * `debug_info` MUST be machine-readable.
-* `fallback_used` MAY appear top-level and SHOULD also be reflected in `debug_info`.
-* `SurfaceResult` is an internal runtime object; transport-specific fields such as `generation_time_ms` belong to the public response mapping layer, not to this contract.
+* `generation_time_ms` MUST be explicit at top level on the runtime object handed to the mapper on the nominal planner-first path.
+* `tokens` SHOULD be explicit at top level on the nominal planner-first path. They MAY be omitted only when the runtime intentionally relies on deterministic fallback tokenization policy.
+* when both top-level and `debug_info` contain the same semantic field, they MUST match.
+* `SurfaceResult` remains an internal runtime object even when some of its fields are later surfaced unchanged by the public success envelope.
 
 ### Compatibility note
 
 Older code may still use a broader `Sentence` domain object. At the renderer/runtime boundary, the canonical output shape is `SurfaceResult`.
+
+`Sentence` MAY remain only as a compatibility wrapper or alias around `SurfaceResult`. It MUST NOT become a competing conceptual runtime target.
 
 ---
 
@@ -403,6 +433,7 @@ The following names are mandatory across new runtime code and documentation.
 * `surface_result`
 * `debug_info`
 * `fallback_used`
+* `generation_time_ms`
 
 ### 8.2 Preferred names
 
@@ -430,6 +461,7 @@ The following MUST NOT become top-level canonical runtime names:
 * `template_payload`
 * `render_input`
 * `surface_text` as the canonical runtime output field name
+* `meta` as a canonical result metadata field
 * `metadata` as the only renderer-facing options bag
 * `sentence_spec` as a generic replacement for `construction_plan`
 
@@ -651,7 +683,8 @@ A renderer backend MUST NOT:
 * bypass slot validation,
 * rewrite planner meaning silently,
 * change `construction_id`,
-* silently hide fallback behavior.
+* silently hide fallback behavior,
+* return a nominal success shape that depends on the response mapper to invent missing canonical top-level fields.
 
 ## 12.2 Canonical renderer interface
 
@@ -751,6 +784,22 @@ The runtime orchestrator MUST:
 
 This is the preferred successor to direct `GenerateText -> engine.generate(frame)` for construction-based generation.
 
+### Orchestrator lock rule
+
+On the nominal planner-first path, the orchestrator or its immediate result-normalization layer MUST hand the response mapper a mapper-ready `SurfaceResult`-compatible object.
+
+That means the orchestrator side, not the mapper, owns nominal truth for at least:
+
+* `text`
+* `lang_code`
+* `construction_id`
+* `renderer_backend`
+* `fallback_used`
+* `debug_info`
+* `generation_time_ms`
+
+`tokens` SHOULD also be top-level there unless deterministic fallback tokenization policy is intentionally used.
+
 ---
 
 ## 14. API boundary rule
@@ -772,8 +821,9 @@ The canonical public HTTP success envelope is defined separately and MUST be der
 This means:
 
 * runtime code returns `SurfaceResult`,
-* API mappers serialize public fields such as `text`, `lang_code`, `construction_id`, `renderer_backend`, `fallback_used`, `tokens`, and `debug_info`,
-* transport-specific response details belong in the public response contract, not in this runtime contract.
+* on the nominal planner-first path, `SurfaceResult` already carries the canonical top-level success fields required for mapping,
+* API mappers serialize public fields such as `text`, `lang_code`, `construction_id`, `renderer_backend`, `fallback_used`, `tokens`, `debug_info`, and `generation_time_ms`,
+* transport-specific HTTP semantics still belong to the public response contract even when some fields are carried unchanged from the runtime result.
 
 ## 14.3 Backward compatibility
 
@@ -782,7 +832,8 @@ The runtime MAY continue to support current `bio`-style payloads during migratio
 However:
 
 * legacy input-shape compatibility MUST terminate at normalization,
-* downstream runtime logic MUST consume `PlannedSentence` and `ConstructionPlan`, not raw payload quirks.
+* downstream runtime logic MUST consume `PlannedSentence` and `ConstructionPlan`, not raw payload quirks,
+* compatibility parsing in the mapper MUST remain a migration tail, not the target nominal contract.
 
 ---
 
@@ -797,6 +848,10 @@ However:
 * `lang_code`
 * `slot_keys`
 * `fallback_used`
+
+### Required on nominal planner-first success
+
+* `runtime_path = "planner_first"`
 
 ### Recommended shared keys
 
@@ -830,11 +885,18 @@ However:
 * Backend-specific keys MAY be added, but MUST NOT replace shared keys.
 * Fallback reasons MUST be explicit when fallback occurs.
 * `debug_info` is separate from `slot_map`; it is derived from the plan, slot state, lexical-resolution metadata, backend selection, and fallback behavior.
+* when both top-level and `debug_info` contain the same semantic field, they MUST match for at least:
+
+  * `lang_code`
+  * `construction_id`
+  * `renderer_backend`
+  * `fallback_used`
 
 ### Example
 
 ```json
 {
+  "runtime_path": "planner_first",
   "construction_id": "copula_equative_simple",
   "renderer_backend": "family",
   "lang_code": "fr",
@@ -939,7 +1001,8 @@ Target end state:
 * planner and construction runtime contract are authoritative,
 * all renderers consume the same `ConstructionPlan`,
 * direct frame-to-renderer generation is removed or reduced to an internal adapter,
-* `Sentence` remains at most a compatibility wrapper around `SurfaceResult`.
+* `Sentence` remains at most a compatibility wrapper around `SurfaceResult`,
+* planner-first nominal results arrive mapper-ready rather than mapper-repaired.
 
 ### Current-state rule
 
@@ -995,13 +1058,15 @@ The runtime contract is successfully implemented when:
 2. renderer-facing handoff is represented as `ConstructionPlan`,
 3. all new generation code consumes `slot_map`,
 4. `generation_options` is the canonical renderer-safe options object,
-5. renderers expose `renderer_backend`, `fallback_used`, and structured `debug_info`,
-6. `debug_info` contains the required shared keys, including `slot_keys`,
-7. lexical resolution is explicit and testable,
-8. the API runtime no longer treats one construction family as architecturally special,
-9. at least two backends can realize the same construction plan,
-10. direct payload quirks no longer leak below normalization,
-11. API response mapping happens only after `SurfaceResult`.
+5. renderers expose `renderer_backend`, `fallback_used`, `generation_time_ms`, and structured `debug_info`,
+6. nominal planner-first runtime results expose explicit top-level `construction_id` and `renderer_backend`,
+7. `debug_info` contains the required shared keys, including `slot_keys`,
+8. lexical resolution is explicit and testable,
+9. the API runtime no longer treats one construction family as architecturally special,
+10. at least two backends can realize the same construction plan,
+11. direct payload quirks no longer leak below normalization,
+12. API response mapping happens only after `SurfaceResult`,
+13. the nominal planner-first path no longer depends on the mapper to invent missing canonical metadata.
 
 ---
 
@@ -1015,9 +1080,12 @@ The system’s runtime source of truth is:
 * slot-map based,
 * lexicon-aware,
 * backend-agnostic,
-* debuggable.
+* debuggable,
+* and mapper-ready on the nominal path.
 
 Everything else must align to that.
 
 If two backends require different planner-facing inputs, the contract is broken.
+
+If planner-first can still appear successful while missing canonical top-level nominal metadata that only the mapper later invents, the contract is broken.
 
