@@ -1,3 +1,4 @@
+```python
 # tests/unit/planning/test_construction_plan.py
 from __future__ import annotations
 
@@ -89,11 +90,16 @@ def test_frozen_internal_state_does_not_expose_mutable_jsonish_objects():
     assert isinstance(plan.generation_options, MappingProxyType)
     assert isinstance(plan.generation_options["style"], tuple)
 
+    assert isinstance(plan.metadata, MappingProxyType)
+
     with pytest.raises(TypeError):
         plan.slot_map["new_slot"] = "x"  # type: ignore[index]
 
     with pytest.raises(TypeError):
         plan.slot_map["subject"]["name"] = "Changed"  # type: ignore[index]
+
+    with pytest.raises(TypeError):
+        plan.metadata["new_key"] = "x"  # type: ignore[index]
 
 
 def test_to_dict_round_trips_and_omits_empty_optional_mappings_by_default():
@@ -133,6 +139,60 @@ def test_to_dict_round_trips_and_omits_empty_optional_mappings_by_default():
 
     assert rebuilt == plan
     assert rebuilt.to_dict(include_empty=True) == full
+
+
+def test_metadata_is_preserved_as_canonical_runtime_contract_field():
+    plan = ConstructionPlan(
+        construction_id="copula_equative_classification",
+        lang_code="eng",
+        slot_map={
+            "subject": {"id": "Q1", "name": "Marie Curie"},
+            "predicate_nominal": "scientist",
+        },
+        metadata={
+            "register": "formal",
+            "wrapper_construction_id": "topic_comment_copular",
+            "base_construction_id": "copula_equative_classification",
+        },
+    )
+
+    compact = plan.to_dict()
+    full = plan.to_dict(include_empty=True)
+
+    assert compact["metadata"] == {
+        "register": "formal",
+        "wrapper_construction_id": "topic_comment_copular",
+        "base_construction_id": "copula_equative_classification",
+    }
+    assert full["metadata"]["register"] == "formal"
+
+    rebuilt = ConstructionPlan.from_dict(full)
+
+    assert rebuilt == plan
+    assert rebuilt.metadata["register"] == "formal"
+    assert rebuilt.wrapper_construction_id == "topic_comment_copular"
+    assert rebuilt.base_construction_id == "copula_equative_classification"
+
+
+def test_generation_options_remain_supported_as_migration_era_compatibility_field():
+    plan = ConstructionPlan(
+        construction_id="copula_equative_classification",
+        lang_code="eng",
+        slot_map={
+            "subject": {"id": "Q1", "name": "Marie Curie"},
+            "predicate_nominal": "scientist",
+        },
+        generation_options={"register": "formal", "voice": "active"},
+    )
+
+    assert plan.generation_options == {
+        "register": "formal",
+        "voice": "active",
+    }
+    assert plan.to_dict()["generation_options"] == {
+        "register": "formal",
+        "voice": "active",
+    }
 
 
 def test_from_dict_requires_mapping_like_input():
@@ -276,3 +336,4 @@ def test_validate_returns_self_for_explicit_contract_checks():
     )
 
     assert plan.validate() is plan
+```

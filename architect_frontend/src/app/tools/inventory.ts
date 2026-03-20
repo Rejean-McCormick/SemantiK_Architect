@@ -3,14 +3,18 @@ import type { Tool } from "./types";
 
 /**
  * Tools Command Center
- * Inventory v2.5 (generated 2026-01-02)
+ * Inventory v2.6.0 (generated 2026-03-19)
  * API: http://localhost:8000/api/v1
- * Normal mode shows only backend-wired runnable tools.
- * Enable Power user (debug) to reveal the full inventory.
+ *
+ * Normal mode shows backend-wired runnable tools aligned to the planner-first
+ * runtime workflows.
+ *
+ * Enable Power user (debug) to reveal the broader inventory, including scanners,
+ * deeper QA surfaces, and legacy/reference paths that still matter for audits.
  */
 export const INVENTORY = {
-  version: "2.5",
-  generated_on: "2026-01-02",
+  version: "2.6.0",
+  generated_on: "2026-03-19",
   root_entrypoints: [
     "Makefile",
     "context_gatherer.py",
@@ -104,6 +108,15 @@ export const INVENTORY = {
       "tests/test_lexicon_wikidata_bridge.py",
       "tests/test_multilingual_generation.py",
     ],
+    // Canonical HTTP API surface
+    http_api: [
+      "tests/http_api/test_ai.py",
+      "tests/http_api/test_entities.py",
+      "tests/http_api/test_frames_registry.py",
+      "tests/http_api/test_generate.py",
+      "tests/http_api/test_generations.py",
+    ],
+    // Backward-compatible alias kept to avoid breaking any old readers of this snapshot
     http_api_legacy: [
       "tests/http_api/test_ai.py",
       "tests/http_api/test_entities.py",
@@ -111,11 +124,39 @@ export const INVENTORY = {
       "tests/http_api/test_generate.py",
       "tests/http_api/test_generations.py",
     ],
+    core: [
+      "tests/core/test_domain_models.py",
+      "tests/core/test_use_cases.py",
+    ],
+    integration: [
+      "tests/integration/test_generate_via_planner_en.py",
+      "tests/integration/test_generate_via_planner_fr.py",
+      "tests/integration/test_ninai.py",
+      "tests/integration/test_quality.py",
+      "tests/integration/test_worker_flow.py",
+    ],
+    unit_use_cases: [
+      "tests/unit/use_cases/test_plan_text.py",
+      "tests/unit/use_cases/test_realize_text.py",
+    ],
+    unit_renderers: [
+      "tests/unit/renderers/test_family_construction_adapter.py",
+      "tests/unit/renderers/test_gf_construction_adapter.py",
+    ],
+    unit_planning: [
+      "tests/unit/planning/test_construction_plan.py",
+      "tests/unit/planning/test_frame_to_plan.py",
+      "tests/unit/planning/test_frame_to_slots.py",
+    ],
+    unit_lexicon: ["tests/unit/lexicon/test_lexical_resolution.py"],
+    // Backward-compatible catch-all bucket retained for older UI assumptions
     adapters_core_integration: [
       "tests/adapters/test_api_endpoints.py",
       "tests/adapters/test_wikidata_adapter.py",
       "tests/core/test_domain_models.py",
       "tests/core/test_use_cases.py",
+      "tests/integration/test_generate_via_planner_en.py",
+      "tests/integration/test_generate_via_planner_fr.py",
       "tests/integration/test_ninai.py",
       "tests/integration/test_quality.py",
       "tests/integration/test_worker_flow.py",
@@ -161,7 +202,14 @@ export const INVENTORY_PATHS: readonly string[] = (() => {
   addMany(INVENTORY.prototypes);
 
   addMany(INVENTORY.tests.root);
+  addMany(INVENTORY.tests.http_api);
   addMany(INVENTORY.tests.http_api_legacy);
+  addMany(INVENTORY.tests.core);
+  addMany(INVENTORY.tests.integration);
+  addMany(INVENTORY.tests.unit_use_cases);
+  addMany(INVENTORY.tests.unit_renderers);
+  addMany(INVENTORY.tests.unit_planning);
+  addMany(INVENTORY.tests.unit_lexicon);
   addMany(INVENTORY.tests.adapters_core_integration);
 
   return Object.freeze(out);
@@ -169,7 +217,24 @@ export const INVENTORY_PATHS: readonly string[] = (() => {
 
 // --- ACTIVE TOOL REGISTRY (GUI) ---
 // Keep this list user-facing & curated (not necessarily 1:1 with every inventory path).
+// These tools align with the current planner-first runtime workflows and the
+// EN/FR final cutover validation chain.
 export const TOOLS = [
+  {
+    id: "build_index",
+    name: "Build Index",
+    description:
+      "Refresh the Everything Matrix and repository readiness signals before build, runtime, or QA work.",
+    category: "build",
+    defaultArgs: "--verbose",
+  },
+  {
+    id: "compile_pgf",
+    name: "Compile Grammar",
+    description: "Trigger a full PGF compilation sequence.",
+    category: "build",
+    defaultArgs: "",
+  },
   {
     id: "language_health",
     name: "Language Health",
@@ -180,23 +245,16 @@ export const TOOLS = [
   {
     id: "diagnostic_audit",
     name: "Diagnostic Audit",
-    description: "Identify zombie files and broken grammar links.",
+    description: "Identify stale artifacts, zombie files, and broken grammar links.",
     category: "maintenance",
     defaultArgs: "--verbose",
   },
   {
     id: "lexicon_coverage",
     name: "Lexicon Coverage",
-    description: "Report on vocabulary size and semantic gaps per language.",
+    description: "Report on vocabulary size, intended coverage, and semantic gaps per language.",
     category: "data",
     defaultArgs: "--include-files",
-  },
-  {
-    id: "compile_pgf",
-    name: "Compile Grammar",
-    description: "Trigger a full PGF compilation sequence.",
-    category: "build",
-    defaultArgs: "",
   },
   {
     id: "harvest_lexicon",
@@ -206,6 +264,28 @@ export const TOOLS = [
     defaultArgs: "",
   },
   {
+    id: "gap_filler",
+    name: "Lexicon Gap Filler",
+    description: "Find missing words compared to a pivot language.",
+    category: "data",
+    defaultArgs: "--verbose",
+  },
+  {
+    id: "bootstrap_tier1",
+    name: "Bootstrap Tier 1",
+    description: "Scaffold Tier 1 wrappers or bridge files for selected languages.",
+    category: "maintenance",
+    defaultArgs: "--verbose",
+  },
+  {
+    id: "eval_bios",
+    name: "Bio Evaluator",
+    description:
+      "Run EN/FR and multilingual bio/person evaluation with runtime-path, contract, and surface-language checks.",
+    category: "qa",
+    defaultArgs: "--verbose",
+  },
+  {
     id: "run_judge",
     name: "Run Judge",
     description: "Execute Gold Standard regression tests via AI Judge.",
@@ -213,24 +293,17 @@ export const TOOLS = [
     defaultArgs: "--verbose",
   },
   {
-    id: "ai_refiner",
-    name: "AI Refiner",
-    description: "Refine grammar rules using AI.",
-    category: "ai",
-    defaultArgs: "--verbose",
-  },
-  {
     id: "profiler",
     name: "Performance Profiler",
-    description: "Measure latency and memory usage.",
+    description: "Measure runtime latency and performance regressions.",
     category: "health",
     defaultArgs: "--verbose",
   },
   {
-    id: "gap_filler",
-    name: "Lexicon Gap Filler",
-    description: "Find missing words compared to a pivot language.",
-    category: "data",
+    id: "ai_refiner",
+    name: "AI Refiner",
+    description: "Refine grammar rules using AI after deterministic workflows identify a real gap.",
+    category: "ai",
     defaultArgs: "--verbose",
   },
 ] as const satisfies readonly Tool[];
@@ -250,3 +323,4 @@ export const TOOL_DEFAULT_ARGS: Readonly<Record<ToolId, string>> = Object.freeze
     return acc;
   }, {} as Record<ToolId, string>)
 );
+

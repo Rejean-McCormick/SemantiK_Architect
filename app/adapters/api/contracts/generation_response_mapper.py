@@ -4,6 +4,10 @@ from collections.abc import Mapping
 from typing import Any
 
 
+CANONICAL_RUNTIME_PATH = "planner_first"
+COMPATIBILITY_RUNTIME_PATH = "compatibility_unknown"
+
+
 def _get_value(source: Any, key: str, default: Any = None) -> Any:
     """
     Read a field from either a dict-like object or an attribute-bearing object.
@@ -15,6 +19,13 @@ def _get_value(source: Any, key: str, default: Any = None) -> Any:
 
 def _normalize_lang_code(value: Any) -> str:
     return str(value or "").strip().lower()
+
+
+def _normalize_nonempty_string(value: Any) -> str | None:
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    return normalized or None
 
 
 def _coerce_debug_info(value: Any) -> dict[str, Any]:
@@ -46,10 +57,14 @@ def _coerce_debug_info(value: Any) -> dict[str, Any]:
     return {"raw_debug_info": str(value)}
 
 
-def _coerce_tokens(value: Any, *, fallback_text: str) -> list[str]:
+def _coerce_tokens(value: Any) -> list[str] | None:
     if isinstance(value, list) and all(isinstance(tok, str) for tok in value):
         return value
-    return [part for part in str(fallback_text or "").split() if part]
+    return None
+
+
+def _tokenize_fallback_text(text: str) -> list[str]:
+    return [part for part in str(text or "").split() if part]
 
 
 def _coerce_bool(value: Any, default: bool = False) -> bool:
@@ -75,20 +90,36 @@ def _coerce_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
+def _has_compatibility_markers(debug_info: Mapping[str, Any]) -> bool:
+    return any(
+        key in debug_info
+        for key in (
+            "compatibility_mode",
+            "compatibility_shim",
+            "legacy_result_key",
+            "fallback_reason",
+        )
+    )
+
+
+def _is_nominal_runtime_path(runtime_path: str) -> bool:
+    return runtime_path == CANONICAL_RUNTIME_PATH
+
+
 def map_generation_response(
     result: Any,
     *,
     requested_lang_code: str | None = None,
 ) -> dict[str, Any]:
     """
-    Map a domain/use-case generation result into the public API response shape.
+    Map a domain/use-case generation result into the canonical public API response.
 
     Canonical public contract:
         {
             "text": "...",
             "lang_code": "en",
-            "construction_id": "copula_equative_classification" | null,
-            "renderer_backend": "gf" | "family" | "safe_mode" | null,
+            "construction_id": "copula_equative_classification",
+            "renderer_backend": "gf" | "family" | "safe_mode",
             "fallback_used": false,
             "tokens": ["..."],
             "debug_info": {...},
@@ -96,13 +127,15 @@ def map_generation_response(
         }
 
     Accepts:
-    - Sentence-like objects exposing attributes such as `.text`, `.lang_code`,
-      `.debug_info`, `.generation_time_ms`
+    - SurfaceResult-like objects exposing canonical attributes
     - dict-like results with equivalent keys
-    - raw string results (best-effort compatibility)
+    - compatibility shapes during the migration tail
+    - raw string results only as best-effort compatibility input
 
     Raises:
-        ValueError: when required response fields cannot be derived.
+        ValueError: when required public fields cannot be derived or when a
+        nominal planner-first result is missing required canonical top-level
+        fields before mapping.
     """
     if result is None:
         raise ValueError("Generation result cannot be None.")
@@ -112,6 +145,7 @@ def map_generation_response(
 
     if text is None and isinstance(result, str):
         text = result
+        legacy_surface_key_used = True
     elif text is None:
         legacy_surface_text = _get_value(result, "surface_text")
         if legacy_surface_text is not None:
@@ -135,63 +169,101 @@ def map_generation_response(
     if legacy_surface_key_used:
         debug_info.setdefault("legacy_result_key", "surface_text")
 
-    # Top-level promoted fields are authoritative in the public envelope.
-    # When missing on the result object, fall back to debug_info if available.
-    construction_id = _get_value(result, "construction_id", None)
+    explicit_runtime_path = _normalize_nonempty_string(_get_value(result, "runtime_path"))
+    debug_runtime_path = _normalize_nonempty_string(debug_info.get("runtime_path"))
+    runtime_path = explicit_runtime_path or debug_runtime_path
+
+    if runtime_path is None:
+        compatibility_signals = legacy_surface_key_used or _has_compatibility_markers(debug_info)
+        if compatibility_signals:
+            runtime_path = COMPATIBILITY_RUNTIME_PATH
+        else:
+            raise ValueError(
+                "Generation result is missing required debug field 'runtime_path'."
+            )
+
+    nominal_path = _is_nominal_runtime_path(runtime_path)
+
+    construction_id = _normalize_nonempty_string(_get_value(result, "construction_id"))
+    if construction_id is None and not nominal_path:
+        construction_id = _normalize_nonempty_string(debug_info.get("construction_id"))
     if construction_id is None:
-        construction_id = debug_info.get("construction_id")
+        raise ValueError(
+            "Generation result is missing required field 'construction_id'."
+        )
 
-    renderer_backend = _get_value(result, "renderer_backend", None)
+    renderer_backend = _normalize_nonempty_string(_get_value(result, "renderer_backend"))
+    if renderer_backend is None and not nominal_path:
+        renderer_backend = _normalize_nonempty_string(debug_info.get("renderer_backend"))
     if renderer_backend is None:
-        renderer_backend = debug_info.get("renderer_backend")
+        raise ValueError(
+            "Generation result is missing required field 'renderer_backend'."
+        )
 
-    fallback_used = _get_value(result, "fallback_used", None)
-    if fallback_used is None:
-        fallback_used = debug_info.get("fallback_used", False)
-    fallback_used = _coerce_bool(fallback_used, default=False)
+    fallback_used_raw = _get_value(result, "fallback_used", None)
+    if fallback_used_raw is None and not nominal_path:
+        fallback_used_raw = debug_info.get("fallback_used", True)
+    if fallback_used_raw is None and nominal_path:
+        raise ValueError(
+            "Generation result is missing required field 'fallback_used'."
+        )
+    fallback_used = _coerce_bool(
+        fallback_used_raw,
+        default=not nominal_path,
+    )
 
-    tokens = _get_value(result, "tokens", None)
+    tokens = _coerce_tokens(_get_value(result, "tokens", None))
+    if tokens is None and not nominal_path:
+        tokens = _coerce_tokens(debug_info.get("tokens"))
+
     if tokens is None:
-        tokens = debug_info.get("tokens")
-    tokens = _coerce_tokens(tokens, fallback_text=text)
+        if nominal_path:
+            raise ValueError(
+                "Generation result is missing required field 'tokens' on the nominal "
+                "planner-first path."
+            )
+        tokens = _tokenize_fallback_text(text)
 
-    generation_time_ms = _get_value(result, "generation_time_ms", None)
-    if generation_time_ms is None:
-        generation_time_ms = debug_info.get("generation_time_ms", 0.0)
-    generation_time_ms = _coerce_float(generation_time_ms, default=0.0)
+    generation_time_raw = _get_value(result, "generation_time_ms", None)
+    if generation_time_raw is None and not nominal_path:
+        generation_time_raw = debug_info.get("generation_time_ms", 0.0)
+    if generation_time_raw is None and nominal_path:
+        raise ValueError(
+            "Generation result is missing required field 'generation_time_ms'."
+        )
+    generation_time_ms = _coerce_float(generation_time_raw, default=0.0)
 
     # Preserve useful runtime metadata when it exists outside debug_info.
     promoted_keys = (
-        "construction_id",
-        "renderer_backend",
-        "fallback_used",
         "selected_backend",
         "attempted_backends",
-        "tokens",
         "warnings",
         "confidence",
         "slot_keys",
+        "backend_trace",
+        "resolved_language",
+        "fallback_reason",
+        "compatibility_mode",
+        "compatibility_shim",
+        "legacy_result_key",
     )
     for key in promoted_keys:
         value = _get_value(result, key, None)
         if value is not None and key not in debug_info:
             debug_info[key] = value
 
-    # Mirror the canonical public fields back into debug_info so observability
-    # stays aligned with the top-level response.
-    debug_info["lang_code"] = lang_code
-    debug_info["fallback_used"] = fallback_used
-    debug_info["tokens"] = tokens
-    debug_info["generation_time_ms"] = generation_time_ms
-
-    if construction_id is not None:
-        debug_info["construction_id"] = construction_id
-    if renderer_backend is not None:
-        debug_info["renderer_backend"] = renderer_backend
-
     resolved_language = _get_value(result, "language", None)
     if resolved_language and "resolved_language" not in debug_info:
         debug_info["resolved_language"] = str(resolved_language)
+
+    # Mirror the canonical public fields back into debug_info so observability
+    # stays aligned with the top-level response.
+    debug_info["runtime_path"] = runtime_path
+    debug_info["lang_code"] = lang_code
+    debug_info["construction_id"] = construction_id
+    debug_info["renderer_backend"] = renderer_backend
+    debug_info["fallback_used"] = fallback_used
+    debug_info.setdefault("slot_keys", [])
 
     return {
         "text": text,

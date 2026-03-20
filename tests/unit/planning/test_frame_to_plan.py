@@ -1,3 +1,4 @@
+```python id="v95dah"
 # tests/unit/planning/test_frame_to_plan.py
 from __future__ import annotations
 
@@ -19,6 +20,10 @@ def _construction_ids(plans: list[PlannedSentence]) -> list[str]:
 
 def _order_indexes(plans: list[PlannedSentence]) -> list[int]:
     return [int(plan.metadata["order_index"]) for plan in plans]
+
+
+def _planner_domains(plans: list[PlannedSentence]) -> list[str]:
+    return [str(plan.metadata["planner_domain"]) for plan in plans]
 
 
 def test_select_construction_id_prefers_explicit_frame_override():
@@ -79,10 +84,17 @@ def test_plan_biography_orders_by_explicit_priority_then_bio_policy():
         "intransitive_event",
     ]
     assert _order_indexes(plans) == [0, 1, 2]
+    assert _planner_domains(plans) == ["bio", "bio", "bio"]
+    assert [plan.lang_code for plan in plans] == ["en", "en", "en"]
     assert [plan.metadata["frame_type"] for plan in plans] == [
         "award",
         "definition",
         "career",
+    ]
+    assert [plan.source_frame_ids for plan in plans] == [
+        ("F-award",),
+        ("F-definition",),
+        ("F-career",),
     ]
 
 
@@ -116,6 +128,7 @@ def test_plan_biography_reuses_topic_anchor_only_for_matching_entity():
     assert plans[0].metadata["is_lead_sentence"] is True
     assert plans[1].metadata["is_lead_sentence"] is False
     assert plans[2].metadata["is_lead_sentence"] is False
+    assert _planner_domains(plans) == ["bio", "bio", "bio"]
 
 
 def test_plan_generic_preserves_input_order_for_non_biography_domain():
@@ -150,6 +163,12 @@ def test_plan_generic_preserves_input_order_for_non_biography_domain():
         "achievement",
     ]
     assert _order_indexes(plans) == [0, 1, 2]
+    assert _planner_domains(plans) == ["generic", "generic", "generic"]
+    assert [plan.source_frame_ids for plan in plans] == [
+        ("F-loc",),
+        ("F-class",),
+        ("F-ach",),
+    ]
 
 
 def test_plan_generic_auto_routes_biography_like_frames_to_biography_policy():
@@ -187,6 +206,7 @@ def test_plan_builds_metadata_defaults_and_preserves_input_mappings():
 
     [plan] = plan_generic([frame], lang_code="EN", domain="generic")
 
+    assert isinstance(plan, PlannedSentence)
     assert plan.lang_code == "en"
     assert plan.focus_role == "patient"
     assert plan.discourse_mode == "declarative"
@@ -202,6 +222,25 @@ def test_plan_builds_metadata_defaults_and_preserves_input_mappings():
     assert metadata["main_entity_id"] == "Q1"
 
     assert frame == original
+
+
+def test_plan_copies_nested_input_mappings_instead_of_aliasing_them():
+    frame = _frame(
+        "achievement",
+        id="F-1",
+        entity_id="Q1",
+        metadata={"source": "fixture"},
+        generation_options={"style": "formal"},
+    )
+
+    [plan] = plan_generic([frame], lang_code="en", domain="generic")
+
+    # Mutating the original input after planning must not mutate planner output.
+    frame["metadata"]["source"] = "changed_after_planning"
+    frame["generation_options"]["style"] = "casual"
+
+    assert plan.metadata["source"] == "fixture"
+    assert dict(plan.generation_options) == {"style": "formal"}
 
 
 def test_plan_uses_source_frame_ids_when_present_and_deduplicates_them():
@@ -235,3 +274,4 @@ def test_plan_generic_is_deterministic_for_same_input():
     second = plan_generic(deepcopy(frames), lang_code="en", domain="auto")
 
     assert [plan.to_dict() for plan in first] == [plan.to_dict() for plan in second]
+```

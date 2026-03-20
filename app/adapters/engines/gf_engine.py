@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections.abc import Mapping as ABCMapping
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
@@ -21,7 +22,7 @@ from app.core.domain.exceptions import (
     UnsupportedFrameTypeError,
 )
 from app.core.domain.frame import BioFrame
-from app.core.domain.models import Frame, Sentence
+from app.core.domain.models import Frame, SurfaceResult
 from app.core.ports.grammar_engine import IGrammarEngine
 from app.shared.config import settings
 
@@ -167,12 +168,16 @@ def _coerce_non_empty_str(value: Any, *, field_name: str) -> str:
     return text
 
 
+def _tokenize_surface_text(text: str) -> list[str]:
+    return [part for part in str(text).split() if part]
+
+
 class GFEngine(IGrammarEngine):
     """
     GF-backed renderer.
 
     Canonical path:
-        ConstructionPlan -> realize() -> Sentence
+        ConstructionPlan -> realize() -> SurfaceResult
 
     Compatibility path:
         Frame -> generate() -> ConstructionPlan shim -> realize()
@@ -233,7 +238,9 @@ class GFEngine(IGrammarEngine):
             suffix = str(name).replace("Wiki", "").strip()
             if not suffix:
                 continue
-            iso2 = self._wiki_to_iso2.get(suffix) or self._wiki_to_iso2.get(suffix.lower())
+            iso2 = self._wiki_to_iso2.get(suffix) or self._wiki_to_iso2.get(
+                suffix.lower()
+            )
             out.add((iso2 or suffix).lower())
         return out
 
@@ -336,7 +343,9 @@ class GFEngine(IGrammarEngine):
     # Canonical realization path
     # ------------------------------------------------------------------
 
-    async def realize(self, construction_plan: ConstructionPlan) -> Sentence:
+    async def realize(self, construction_plan: ConstructionPlan) -> SurfaceResult:
+        started_at = time.perf_counter()
+
         construction_id = _coerce_non_empty_str(
             _get_value(construction_plan, "construction_id"),
             field_name="construction_id",
@@ -393,14 +402,22 @@ class GFEngine(IGrammarEngine):
         if not text:
             raise GrammarCompilationError(lang_code, "GF returned empty surface text.")
 
+        fallback_used = bool(render_meta["fallback_used"])
+        tokens = _tokenize_surface_text(text)
+        generation_time_ms = round((time.perf_counter() - started_at) * 1000.0, 3)
+
         debug_info: dict[str, Any] = {
+            "runtime_path": "planner_first",
             "construction_id": construction_id,
             "renderer_backend": self.backend_name,
             "lang_code": lang_code,
             "resolved_language": gf_lang_name,
-            "fallback_used": bool(render_meta["fallback_used"]),
+            "fallback_used": fallback_used,
             "slot_keys": list(render_meta["slot_keys"]),
+            "selected_backend": self.backend_name,
+            "attempted_backends": [self.backend_name],
             "ast": ast_string,
+            "tokens": list(tokens),
             "backend_trace": [
                 "validated ConstructionPlan",
                 "mapped plan to GF AST",
@@ -416,21 +433,26 @@ class GFEngine(IGrammarEngine):
         if isinstance(lexical_resolution, ABCMapping) and lexical_resolution:
             debug_info["lexical_resolution"] = dict(lexical_resolution)
 
-        return Sentence(
+        return SurfaceResult(
             text=text,
             lang_code=lang_code,
             construction_id=construction_id,
             renderer_backend=self.backend_name,
-            fallback_used=bool(render_meta["fallback_used"]),
-            tokens=[part for part in text.split() if part],
+            fallback_used=fallback_used,
+            tokens=tokens,
             debug_info=debug_info,
+            generation_time_ms=generation_time_ms,
         )
 
     # ------------------------------------------------------------------
     # Legacy compatibility path
     # ------------------------------------------------------------------
 
-    async def generate(self, lang_code: str, frame: Frame | Mapping[str, Any]) -> Sentence:
+    async def generate(
+        self, lang_code: str, frame: Frame | Mapping[str, Any]
+    ) -> SurfaceResult:
+        started_at = time.perf_counter()
+
         plan = self._frame_to_construction_plan(lang_code=lang_code, frame=frame)
         realized = await self.realize(plan)
 
@@ -441,18 +463,33 @@ class GFEngine(IGrammarEngine):
         else:
             trace = []
         trace.insert(0, "legacy generate() compatibility shim")
-        debug_info["backend_trace"] = trace
-        debug_info["compatibility_mode"] = "frame_to_plan_to_realize"
 
-        return Sentence(
+        debug_info["backend_trace"] = trace
+        debug_info["runtime_path"] = "legacy_direct_frame"
+        debug_info["compatibility_mode"] = "frame_to_plan_to_realize"
+        debug_info["compatibility_shim"] = "legacy_generate_path"
+        debug_info["fallback_used"] = True
+        debug_info["selected_backend"] = self.backend_name
+        debug_info["attempted_backends"] = [self.backend_name]
+        debug_info["tokens"] = list(realized.tokens)
+
+        warnings = list(debug_info.get("warnings", [])) if isinstance(
+            debug_info.get("warnings"), list
+        ) else []
+        warnings.append("legacy_generate_path_used")
+        debug_info["warnings"] = warnings
+
+        generation_time_ms = round((time.perf_counter() - started_at) * 1000.0, 3)
+
+        return SurfaceResult(
             text=realized.text,
-            lang_code=realized.lang_code,
+            lang_code=(realized.lang_code or (lang_code or "")).strip().lower(),
             construction_id=realized.construction_id,
             renderer_backend=realized.renderer_backend,
-            fallback_used=realized.fallback_used,
+            fallback_used=True,
             tokens=list(realized.tokens),
             debug_info=debug_info,
-            generation_time_ms=realized.generation_time_ms,
+            generation_time_ms=generation_time_ms,
         )
 
     def _frame_to_construction_plan(
@@ -491,6 +528,12 @@ class GFEngine(IGrammarEngine):
                 "source": "legacy_frame",
             }
 
+        metadata = {
+            "allow_fallback": True,
+            "compatibility_mode": "frame_to_plan_to_realize",
+            "legacy_generate_path": True,
+        }
+
         payload: dict[str, Any] = {
             "construction_id": (
                 "copula_equative_classification"
@@ -499,9 +542,8 @@ class GFEngine(IGrammarEngine):
             ),
             "lang_code": (lang_code or "").strip().lower(),
             "slot_map": slot_map,
-            "generation_options": {
-                "allow_fallback": True,
-            },
+            "metadata": metadata,
+            "generation_options": metadata,
             "focus_role": "predicate_nominal",
             "lexical_bindings": lexical_bindings,
         }
@@ -528,6 +570,7 @@ class GFEngine(IGrammarEngine):
 
         slot_map = _get_mapping(construction_plan, "slot_map")
         lexical_bindings = _get_mapping(construction_plan, "lexical_bindings")
+        metadata = _get_mapping(construction_plan, "metadata")
         generation_options = _get_mapping(construction_plan, "generation_options")
 
         subject_name = self._extract_subject_name(slot_map)
@@ -547,13 +590,16 @@ class GFEngine(IGrammarEngine):
             slot_name="nationality",
         )
 
-        # predicate_nominal may carry profession/nationality-like payloads in some plans.
         predicate_nominal = slot_map.get("predicate_nominal")
         if isinstance(predicate_nominal, ABCMapping):
             profession = profession or _mapping_get_str(predicate_nominal, "profession")
-            nationality = nationality or _mapping_get_str(predicate_nominal, "nationality")
+            nationality = nationality or _mapping_get_str(
+                predicate_nominal, "nationality"
+            )
 
-        allow_fallback = bool(generation_options.get("allow_fallback", False))
+        allow_fallback = bool(
+            metadata.get("allow_fallback", generation_options.get("allow_fallback", False))
+        )
         fallback_used = False
         warnings: list[str] = []
 
@@ -644,7 +690,7 @@ class GFEngine(IGrammarEngine):
     # ------------------------------------------------------------------
 
     def _frame_type(self, frame: Any) -> str:
-        return str(getattr(frame, "frame_type", "") or "").strip().lower()
+        return str(_get_value(frame, "frame_type", "") or "").strip().lower()
 
     def _extract_bio_fields(
         self,
@@ -707,3 +753,4 @@ class GFEngine(IGrammarEngine):
         raise DomainError(
             f"Unsupported frame object for bio extraction: {type(frame).__name__}"
         )
+

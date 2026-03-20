@@ -1,26 +1,27 @@
 # Tokenization Contract
 
-Status: normative  
-Owner: Runtime / API  
-Scope: public and runtime-facing semantics of the `tokens` field carried by `SurfaceResult` and serialized into generation responses
+Status: normative
+Owner: Runtime / API
+Scope: runtime and public semantics of the canonical `tokens` field carried by `SurfaceResult` and serialized into generation responses
 
 ---
 
 ## 1. Purpose
 
-This document defines the canonical meaning and normalization rules for the `tokens` field used in SemantiK Architect generation results.
+This document defines the canonical meaning, production rules, normalization rules, and public obligations for the `tokens` field used in SemantiK Architect generation results.
 
 It exists to ensure that:
 
-- renderers and response mappers expose one stable token field,
-- clients receive predictable token arrays,
-- migration paths do not invent backend-specific token contracts,
-- test code can rely on minimal deterministic behavior,
-- token transport stays clearly separated from lexical resolution, slot planning, and deeper linguistic annotation.
+* runtime producers and response mappers expose one stable token field,
+* clients receive predictable token arrays,
+* planner-first nominal success does not rely on hidden mapper repair,
+* migration paths do not invent backend-specific token contracts,
+* test code can rely on deterministic behavior,
+* token transport stays clearly separated from lexical resolution, slot planning, and deeper linguistic annotation.
 
 This contract is intentionally narrow.
 
-It defines how `tokens` are represented and normalized.
+It defines how `tokens` are represented, required, normalized, and exposed.
 It does **not** define a full linguistic tokenization theory.
 
 ---
@@ -29,21 +30,22 @@ It does **not** define a full linguistic tokenization theory.
 
 This document defines:
 
-- the meaning of `tokens` in `SurfaceResult`,
-- the normalization rules for values supplied by backends,
-- fallback token derivation behavior when no backend tokens are supplied,
-- the guarantees clients may rely on,
-- the non-goals of this field.
+* the meaning of `tokens` in `SurfaceResult`,
+* the normalization rules for token values supplied by runtime producers,
+* fallback token derivation behavior for compatibility paths,
+* the guarantees clients may rely on,
+* the obligations of runtime producers and response mappers,
+* and the acceptance semantics of `tokens` on the nominal planner-first path.
 
 This document does **not** define:
 
-- lexical segmentation for all languages,
-- morphology-aware token decomposition,
-- grapheme or subword segmentation,
-- UD tokenization,
-- sentence splitting,
-- clause boundary detection,
-- search/index normalization.
+* lexical segmentation for all languages,
+* morphology-aware token decomposition,
+* grapheme or subword segmentation,
+* UD tokenization,
+* sentence splitting,
+* clause boundary detection,
+* search or index normalization.
 
 ---
 
@@ -55,18 +57,19 @@ It appears in runtime results such as `SurfaceResult` and in the public generati
 
 Canonical shape:
 
-```json
+```json id="l2s3p7"
 {
-  "tokens": ["Marie Curie", "était", "une", "physicienne", "polonaise"]
+  "tokens": ["Marie Curie", "était", "une", "physicienne", "polonaise."]
 }
-````
+```
 
 Rules:
 
 * `tokens` MUST be an ordered sequence of strings.
 * `tokens` MUST correspond to the final returned surface text.
-* `tokens` MUST NOT encode planner slots, lexical bindings, or AST fragments.
+* `tokens` MUST NOT encode planner slots, lexical bindings, AST fragments, or backend control strings.
 * `tokens` MUST remain transport-oriented and lightweight.
+* `tokens` is the only canonical top-level token field for realized text.
 
 ---
 
@@ -77,15 +80,15 @@ In this repository, a token is a **surface chunk** of the final text, not a ling
 A token MAY be:
 
 * a whitespace-separated word-like piece,
-* a multi-word surface chunk if the backend emits it that way,
+* a multi-word surface chunk if the producer emits it that way,
 * a punctuation-bearing item such as `mathematician.`,
 * a larger atomic chunk such as `Marie Curie`.
 
 This is important:
 
-* the runtime does **not** currently force one universal token granularity,
-* the backend may provide a higher-level token grouping,
-* fallback behavior is simpler and whitespace-driven.
+* the runtime does **not** force one universal token granularity,
+* a producer may provide a higher-level surface grouping,
+* compatibility fallback behavior is simpler and whitespace-driven.
 
 Therefore, clients MUST treat `tokens` as a stable ordered surface sequence, not as a guaranteed morphology-grade tokenization.
 
@@ -95,35 +98,71 @@ Therefore, clients MUST treat `tokens` as a stable ordered surface sequence, not
 
 The source-of-truth for `tokens` is:
 
-1. backend-provided `tokens`, if present and valid,
-2. otherwise a fallback derivation from the final `text`.
+1. runtime-produced `tokens`, if present and valid,
+2. otherwise compatibility fallback derivation from the final `text`.
 
 This precedence is mandatory.
 
-If a backend provides valid `tokens`, the mapper MUST preserve them after normalization.
-If no valid tokens are provided, the mapper MUST derive them from `text`.
+If a runtime producer provides valid `tokens`, the mapper MUST preserve them after normalization.
+If no valid tokens are provided, compatibility fallback MAY derive them from `text` under the rules below.
 
 ---
 
-## 6. Normalization rules
+## 6. Final-path strictness rule
 
-The current normalization behavior is intentionally simple.
+This is the most important rule in this contract.
 
-### 6.1 Input value: `null`
+### 6.1 Nominal planner-first rule
+
+On the **nominal planner-first path**, `tokens` MUST already be present in the runtime `SurfaceResult` before public response mapping.
+
+That means:
+
+* `tokens` MUST be explicit on nominal planner-first success,
+* `tokens` MUST NOT be omitted on nominal planner-first success,
+* mapper-side fallback token derivation MUST NOT be treated as nominal planner-first steady-state behavior.
+
+### 6.2 Compatibility rule
+
+Fallback derivation from `text` exists for:
+
+* compatibility paths,
+* migration tails,
+* older internal result shapes,
+* explicit degraded or legacy behavior.
+
+It does **not** define the final steady-state obligation for nominal planner-first results.
+
+### 6.3 Public-envelope rule
+
+The public success envelope always includes `tokens`.
+
+If runtime did not provide valid tokens on a compatibility path, the mapper must still emit canonical `tokens` before public serialization.
+
+So:
+
+* public transport still guarantees `tokens`,
+* but nominal planner-first runtime must arrive mapper-ready with `tokens` already present.
+
+---
+
+## 7. Normalization rules
+
+Normalization behavior is intentionally simple.
+
+## 7.1 Input value: `null`
 
 If the incoming token value is `null`, normalized `tokens` MUST become an empty sequence.
 
 Example:
 
-```json
+```json id="x3z1v0"
 {
   "tokens": []
 }
 ```
 
----
-
-### 6.2 Input value: string
+## 7.2 Input value: string
 
 If the incoming token value is a string:
 
@@ -135,31 +174,29 @@ Examples:
 
 Input:
 
-```json
+```json id="k7m5n2"
 "Alan Turing"
 ```
 
 Normalized:
 
-```json
+```json id="h1q8y4"
 ["Alan Turing"]
 ```
 
 Input:
 
-```json
+```json id="d6w4c1"
 "   "
 ```
 
 Normalized:
 
-```json
+```json id="b9e2r5"
 []
 ```
 
----
-
-### 6.3 Input value: sequence
+## 7.3 Input value: sequence
 
 If the incoming token value is a sequence:
 
@@ -174,27 +211,25 @@ Example:
 
 Input:
 
-```json
+```json id="t8u4i6"
 [" Alan ", "", "Turing", null, " mathematician. "]
 ```
 
 Normalized:
 
-```json
+```json id="g5f1l3"
 ["Alan", "Turing", "mathematician."]
 ```
 
----
-
-### 6.4 Input value: other type
+## 7.4 Input value: other type
 
 If the incoming token value is any other type, normalized `tokens` MUST become an empty sequence.
 
 ---
 
-## 7. Fallback derivation from `text`
+## 8. Compatibility fallback derivation from `text`
 
-If normalized backend tokens are empty and the final surface `text` is available, tokens MUST be derived from `text` by simple whitespace splitting.
+If normalized runtime tokens are empty and the final surface `text` is available, tokens MAY be derived from `text` by simple whitespace splitting **only for compatibility handling**.
 
 Fallback derivation rule:
 
@@ -210,33 +245,35 @@ Example:
 
 Text:
 
-```text
+```text id="a2p9s6"
 Alan Turing is a British mathematician.
 ```
 
 Fallback tokens:
 
-```json
+```json id="m4j8q2"
 ["Alan", "Turing", "is", "a", "British", "mathematician."]
 ```
 
 This fallback is intentionally minimal and deterministic.
 
+It is a compatibility rule, not the nominal planner-first target.
+
 ---
 
-## 8. Invariants
+## 9. Invariants
 
 The following invariants are mandatory.
 
-### 8.1 Order invariant
+## 9.1 Order invariant
 
 `tokens` MUST preserve surface order.
 
-### 8.2 Surface invariant
+## 9.2 Surface invariant
 
 Joining or reading `tokens` left-to-right must reflect the same realized text sequence as the final `text`, modulo token-boundary granularity and whitespace compression.
 
-### 8.3 Final-text invariant
+## 9.3 Final-text invariant
 
 `tokens` MUST correspond to the final returned surface text, not to:
 
@@ -245,27 +282,36 @@ Joining or reading `tokens` left-to-right must reflect the same realized text se
 * a lexical binding inventory,
 * a partially realized template.
 
-### 8.4 Stability invariant
+## 9.4 Stability invariant
 
-For a given generation path and identical backend output, token normalization MUST be deterministic.
+For a given generation path and identical runtime output, token normalization MUST be deterministic.
 
-### 8.5 Non-empty item invariant
+## 9.5 Non-empty item invariant
 
 A normalized token sequence MUST NOT contain empty strings.
 
+## 9.6 Public-field invariant
+
+Every successful public generation response MUST include top-level `tokens`.
+
+## 9.7 Nominal-path invariant
+
+Every nominal planner-first `SurfaceResult` MUST include top-level `tokens` before mapping.
+
 ---
 
-## 9. What clients may rely on
+## 10. What clients may rely on
 
 Clients MAY rely on the following:
 
 * `tokens` is always ordered,
 * each token is a string,
 * empty tokens are removed,
-* a backend-provided non-empty token sequence is preferred over fallback splitting,
-* fallback tokenization is whitespace-based and deterministic,
+* a valid producer-provided non-empty token sequence is preferred over fallback splitting,
+* compatibility fallback tokenization is whitespace-based and deterministic,
 * punctuation may remain attached to tokens,
-* multi-word tokens may occur.
+* multi-word tokens may occur,
+* successful public responses always include `tokens`.
 
 Clients MUST NOT rely on the following unless another contract says so:
 
@@ -274,18 +320,18 @@ Clients MUST NOT rely on the following unless another contract says so:
 * one-token-per-grapheme cluster,
 * punctuation always split into separate tokens,
 * compatibility with UD tokenization,
-* stable multilingual word segmentation quality.
+* stable multilingual word-segmentation quality.
 
 ---
 
-## 10. Relationship to other contracts
+## 11. Relationship to other contracts
 
-### 10.1 `ConstructionPlan`
+## 11.1 `ConstructionPlan`
 
 `ConstructionPlan` does not own tokenization.
 Tokenization belongs only after realization.
 
-### 10.2 `SurfaceResult`
+## 11.2 `SurfaceResult`
 
 `SurfaceResult` is the runtime object that carries `tokens` alongside:
 
@@ -295,27 +341,38 @@ Tokenization belongs only after realization.
 * `renderer_backend`
 * `fallback_used`
 * `debug_info`
+* `generation_time_ms`
 
-### 10.3 Public generation response
+## 11.3 Public generation response
 
-The public API success envelope may expose `tokens` directly.
-When it does, it must preserve the semantics defined here.
+The public API success envelope exposes `tokens` directly.
+It must preserve the semantics defined here.
 
-### 10.4 Debug info
+## 11.4 Debug info
 
 Debug metadata may describe how tokens were produced, but `tokens` itself remains a first-class top-level field, not a debug-only artifact.
 
+## 11.5 Runtime vs public vs frontend boundary
+
+`tokens` belongs to:
+
+* the runtime result layer,
+* the public HTTP transport layer,
+* and optionally frontend or client consumers that mirror the public response.
+
+It does not become a planner field, lexical-resolution field, or frontend-only convenience invention.
+
 ---
 
-## 11. Producer obligations
+## 12. Producer obligations
 
-A renderer or runtime producer that emits `tokens` SHOULD:
+A renderer or runtime producer that emits `tokens` MUST:
 
-* provide tokens already aligned with final text,
+* provide tokens aligned with final text,
 * avoid empty token items,
 * avoid backend-local placeholder strings,
 * keep token order stable,
-* emit semantically useful token chunks when possible.
+* emit surface-oriented token chunks.
 
 A producer MUST NOT:
 
@@ -323,28 +380,44 @@ A producer MUST NOT:
 * emit hidden backend control strings,
 * emit tokens for an earlier unnormalized draft of the sentence.
 
-If a producer cannot provide reliable tokens, it MAY omit them and rely on fallback derivation.
+### 12.1 Nominal planner-first obligation
+
+On nominal planner-first success, a producer MUST provide `tokens`.
+
+It may not omit them and rely on mapper fallback as the steady-state implementation strategy.
+
+### 12.2 Compatibility allowance
+
+On compatibility or migration paths, a producer MAY omit `tokens`, in which case compatibility fallback derivation may be used before public serialization.
 
 ---
 
-## 12. Mapper obligations
+## 13. Mapper obligations
 
 The response-mapping layer MUST:
 
 * normalize incoming token values,
-* preserve backend-provided tokens when valid,
-* derive fallback tokens from `text` when needed,
-* keep tokens comparable across planner-first and compatibility paths.
+* preserve valid producer-provided tokens,
+* derive compatibility fallback tokens from `text` when needed,
+* ensure successful public responses always include canonical `tokens`.
 
 The mapper MUST NOT:
 
-* invent morphology-aware tokenization that the backend did not provide,
-* silently reinterpret backend token boundaries beyond normalization,
-* replace valid backend tokens with a different tokenization strategy.
+* invent morphology-aware tokenization that the runtime did not provide,
+* silently reinterpret producer token boundaries beyond normalization,
+* replace valid producer tokens with a different tokenization strategy,
+* treat fallback-derived tokens as proof that nominal planner-first runtime supplied them.
+
+### 13.1 Nominal-path boundary rule
+
+On the nominal planner-first path, mapper token derivation is a bug signal, not the intended steady-state source of truth.
+
+The mapper may serialize and normalize.
+It must not be the hidden owner of nominal token production.
 
 ---
 
-## 13. Language and backend neutrality
+## 14. Language and backend neutrality
 
 This contract is backend-neutral and language-neutral.
 
@@ -354,7 +427,7 @@ That means:
 * family engines may emit tokens,
 * safe mode may emit tokens,
 * compatibility shims may emit tokens,
-* fallback splitting may be used in any language when no token list is present.
+* compatibility fallback splitting may be used in any language when no token list is present.
 
 However, the token contract does **not** require all backends to tokenize with identical granularity.
 
@@ -364,13 +437,14 @@ The shared contract is about:
 * type,
 * normalization,
 * order,
-* fallback behavior.
+* public presence,
+* and compatibility fallback behavior.
 
 It is not about enforcing one universal tokenizer across all languages.
 
 ---
 
-## 14. Non-goals
+## 15. Non-goals
 
 The `tokens` field is **not**:
 
@@ -387,13 +461,13 @@ If the project needs any of those, they require separate contracts.
 
 ---
 
-## 15. Recommended debug metadata
+## 16. Recommended debug metadata
 
 When useful, producers or mappers SHOULD expose token provenance in `debug_info`.
 
 Recommended optional keys:
 
-```json
+```json id="c8n4u1"
 {
   "token_source": "backend",
   "tokenization_mode": "surface_chunks",
@@ -417,11 +491,11 @@ These keys are recommended, not required.
 
 ---
 
-## 16. Examples
+## 17. Examples
 
-### 16.1 Backend-provided multi-word token
+## 17.1 Backend-provided multi-word token
 
-```json
+```json id="r4m2t8"
 {
   "text": "Marie Curie était une physicienne polonaise.",
   "tokens": ["Marie Curie", "était", "une", "physicienne", "polonaise."]
@@ -430,11 +504,9 @@ These keys are recommended, not required.
 
 This is valid.
 
----
+## 17.2 Backend-provided whitespace-like tokens
 
-### 16.2 Backend-provided whitespace-like tokens
-
-```json
+```json id="v9y3k6"
 {
   "text": "Alan Turing is a British mathematician.",
   "tokens": ["Alan", "Turing", "is", "a", "British", "mathematician."]
@@ -443,30 +515,26 @@ This is valid.
 
 This is valid.
 
----
+## 17.3 Missing tokens on compatibility path
 
-### 16.3 Missing tokens, fallback split
-
-```json
+```json id="j6d1f7"
 {
   "text": "Alan Turing is a British mathematician.",
   "tokens": []
 }
 ```
 
-Normalized final tokens:
+Normalized final tokens on a compatibility path:
 
-```json
+```json id="p5h8w2"
 ["Alan", "Turing", "is", "a", "British", "mathematician."]
 ```
 
----
+## 17.4 String token input
 
-### 16.4 String token input
+Incoming producer value:
 
-Incoming backend value:
-
-```json
+```json id="q7l2s4"
 {
   "tokens": "Alan Turing"
 }
@@ -474,17 +542,15 @@ Incoming backend value:
 
 Normalized final tokens:
 
-```json
+```json id="n3c6b8"
 ["Alan Turing"]
 ```
 
----
+## 17.5 Invalid token payload
 
-### 16.5 Invalid token payload
+Incoming producer value:
 
-Incoming backend value:
-
-```json
+```json id="u2x9m5"
 {
   "tokens": 123
 }
@@ -492,21 +558,21 @@ Incoming backend value:
 
 Normalized tokens before fallback:
 
-```json
+```json id="e1g7r3"
 []
 ```
 
-If final `text` is available, fallback derivation then applies.
+If final `text` is available on a compatibility path, fallback derivation then applies.
 
 ---
 
-## 17. Migration policy
+## 18. Migration policy
 
 During migration:
 
 * older code paths MAY omit tokens,
-* response mappers MUST still expose normalized `tokens`,
-* fallback token derivation MUST remain deterministic,
+* response mappers MUST still expose canonical public `tokens`,
+* compatibility fallback token derivation MUST remain deterministic,
 * no backend may invent a second top-level token field.
 
 Avoid drift names such as:
@@ -520,25 +586,34 @@ The canonical field name is:
 
 * `tokens`
 
+### 18.1 Final-state direction
+
+The final-state direction is:
+
+* nominal planner-first runtime produces `tokens` directly,
+* mapper fallback survives only as a compatibility edge,
+* public responses remain stable throughout the migration.
+
 ---
 
-## 18. Acceptance criteria
+## 19. Acceptance criteria
 
 This contract is considered implemented when:
 
-1. all active generation paths expose a top-level `tokens` field,
-2. backend-provided token sequences normalize deterministically,
-3. empty or invalid token payloads fall back to whitespace splitting from final `text`,
-4. no path emits empty-string tokens,
-5. `tokens` always corresponds to final surface text rather than intermediate structures,
-6. token semantics are documented consistently across runtime and public API docs.
+1. all successful public generation paths expose a top-level `tokens` field,
+2. nominal planner-first runtime results expose top-level `tokens` before mapping,
+3. producer-provided token sequences normalize deterministically,
+4. compatibility paths with empty or invalid token payloads fall back deterministically from final `text`,
+5. no path emits empty-string tokens,
+6. `tokens` always corresponds to final surface text rather than intermediate structures,
+7. token semantics are documented consistently across runtime and public API docs.
 
 ---
 
-## 19. Final rule
+## 20. Final rule
 
 There is exactly one canonical token field for realized text: `tokens`.
 
 If two generation paths expose different top-level token fields or incompatible token normalization rules, the contract is broken.
 
-
+If nominal planner-first success omits `tokens` and relies on mapper fallback as the steady-state behavior, the contract is also broken.

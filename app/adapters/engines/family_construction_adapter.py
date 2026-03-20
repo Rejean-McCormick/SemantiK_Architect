@@ -1,11 +1,13 @@
+```python
 from __future__ import annotations
 
 import importlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from time import perf_counter
 from typing import TYPE_CHECKING, Any
-from collections.abc import Mapping
 
 import structlog
 
@@ -19,6 +21,7 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 _BACKEND_NAME = "family"
+_RUNTIME_PATH = "planner_first"
 
 # Migration-era supported coverage:
 # - legacy biography-like plans
@@ -45,6 +48,12 @@ _ENGINE_MODULE_ALIASES: dict[str, str] = {
     "uralic": "analytic",
 }
 
+# Optional language-module hints used only for debug observability where helpful.
+_RESOLVED_LANGUAGE_HINTS: dict[str, str] = {
+    "en": "WikiEng",
+    "fr": "WikiFre",
+}
+
 
 # ---------------------------------------------------------------------------
 # Runtime-safe SurfaceResult import
@@ -65,6 +74,7 @@ class _FallbackSurfaceResult:
     fallback_used: bool = False
     tokens: list[str] = field(default_factory=list)
     debug_info: dict[str, Any] = field(default_factory=dict)
+    generation_time_ms: float = 0.0
 
 
 def _build_surface_result(
@@ -76,6 +86,7 @@ def _build_surface_result(
     fallback_used: bool,
     tokens: list[str],
     debug_info: dict[str, Any],
+    generation_time_ms: float,
 ) -> Any:
     if _ImportedSurfaceResult is not None:
         try:
@@ -87,6 +98,7 @@ def _build_surface_result(
                 fallback_used=fallback_used,
                 tokens=tokens,
                 debug_info=debug_info,
+                generation_time_ms=generation_time_ms,
             )
         except TypeError:
             pass
@@ -99,6 +111,7 @@ def _build_surface_result(
         fallback_used=fallback_used,
         tokens=tokens,
         debug_info=debug_info,
+        generation_time_ms=generation_time_ms,
     )
 
 
@@ -116,7 +129,9 @@ class UnsupportedConstructionError(DomainError):
 
 class MissingRequiredRoleError(DomainError):
     def __init__(self, role_name: str):
-        super().__init__(f"Missing required role/slot for family realization: '{role_name}'.")
+        super().__init__(
+            f"Missing required role/slot for family realization: '{role_name}'."
+        )
 
 
 class FamilyRendererError(DomainError):
@@ -169,11 +184,7 @@ def _get_member(obj: Any, key: str, default: Any = None) -> Any:
 def _deep_merge(base: Mapping[str, Any], overlay: Mapping[str, Any]) -> dict[str, Any]:
     out = dict(base)
     for key, value in overlay.items():
-        if (
-            key in out
-            and isinstance(out[key], Mapping)
-            and isinstance(value, Mapping)
-        ):
+        if key in out and isinstance(out[key], Mapping) and isinstance(value, Mapping):
             out[key] = _deep_merge(dict(out[key]), dict(value))
         else:
             out[key] = value
@@ -343,6 +354,11 @@ def _extract_lexical_item(
     return None, "missing"
 
 
+def _resolved_language_hint(lang_code: str) -> str:
+    normalized = (_clean_str(lang_code) or "").lower()
+    return _RESOLVED_LANGUAGE_HINTS.get(normalized, normalized)
+
+
 # ---------------------------------------------------------------------------
 # Adapter
 # ---------------------------------------------------------------------------
@@ -413,12 +429,18 @@ class FamilyConstructionAdapter:
         if construction_plan is None:
             raise FamilyRendererError("construction_plan must not be None")
 
+        started_at = perf_counter()
+
         requested_construction_id = _clean_str(_get_member(construction_plan, "construction_id"))
         lang_code = (_clean_str(_get_member(construction_plan, "lang_code")) or "").lower()
         slot_map = _as_dict(_get_member(construction_plan, "slot_map"))
-        generation_options = _as_dict(_get_member(construction_plan, "generation_options"))
-        lexical_bindings = _as_dict(_get_member(construction_plan, "lexical_bindings"))
+
         metadata = _as_dict(_get_member(construction_plan, "metadata"))
+        legacy_generation_options = _as_dict(_get_member(construction_plan, "generation_options"))
+        metadata_generation_options = _as_dict(metadata.get("generation_options"))
+        generation_options = _deep_merge(legacy_generation_options, metadata_generation_options)
+
+        lexical_bindings = _as_dict(_get_member(construction_plan, "lexical_bindings"))
 
         if not requested_construction_id:
             raise FamilyRendererError("construction_plan.construction_id is required")
@@ -427,7 +449,9 @@ class FamilyConstructionAdapter:
         if not slot_map:
             raise FamilyRendererError("construction_plan.slot_map must be a non-empty mapping")
 
-        construction_id = _clean_str(metadata.get("base_construction_id")) or requested_construction_id
+        construction_id = (
+            _clean_str(metadata.get("base_construction_id")) or requested_construction_id
+        )
         wrapper_construction_id = _clean_str(metadata.get("wrapper_construction_id"))
 
         if construction_id not in _SUPPORTED_CONSTRUCTIONS:
@@ -455,7 +479,9 @@ class FamilyConstructionAdapter:
         if not name:
             raise MissingRequiredRoleError("subject")
 
-        gender, gender_source, gender_defaulted = _extract_subject_gender(slot_map, lexical_bindings)
+        gender, gender_source, gender_defaulted = _extract_subject_gender(
+            slot_map, lexical_bindings
+        )
         if gender_defaulted:
             warnings.append("subject gender missing; defaulted to masculine morphology")
             trace.append("defaulted subject gender to masculine")
@@ -466,7 +492,13 @@ class FamilyConstructionAdapter:
             key="profession",
             slot_map=slot_map,
             lexical_bindings=lexical_bindings,
-            slot_fallback_keys=("profession", "classifier", "class", "predicate_nominal", "predicate"),
+            slot_fallback_keys=(
+                "profession",
+                "classifier",
+                "class",
+                "predicate_nominal",
+                "predicate",
+            ),
         )
         if not profession:
             # Common classification construction often uses `classifier`.
@@ -553,25 +585,37 @@ class FamilyConstructionAdapter:
         tokens = _tokenize(text)
         trace.append("assembled family surface")
 
+        generation_time_ms = round((perf_counter() - started_at) * 1000.0, 3)
+
+        requested_backend = (
+            _clean_str(generation_options.get("renderer_backend"))
+            or _clean_str(generation_options.get("backend"))
+            or self.backend_name
+        )
+
         debug_info: dict[str, Any] = {
+            "runtime_path": _RUNTIME_PATH,
             "construction_id": requested_construction_id,
             "renderer_backend": self.backend_name,
             "lang_code": lang_code,
-            "slot_keys": list(slot_map.keys()),
             "fallback_used": lexical_fallback_used,
-            "requested_backend": generation_options.get("renderer_backend", self.backend_name),
+            "slot_keys": list(slot_map.keys()),
+            "requested_backend": requested_backend,
             "selected_backend": self.backend_name,
             "attempted_backends": [self.backend_name],
             "family": family_name,
-            "resolved_language": lang_code,
+            "resolved_language": _resolved_language_hint(lang_code),
             "lexical_sources": lexical_sources,
             "backend_trace": trace,
             "surface_tokens": tokens,
             "warnings": warnings,
             "profile_name": _clean_str(profile.get("name")),
+            "generation_time_ms": generation_time_ms,
         }
 
-        template_id = _clean_str(config.get("template_id")) or _clean_str(config.get("structure_id"))
+        template_id = _clean_str(config.get("template_id")) or _clean_str(
+            config.get("structure_id")
+        )
         if template_id:
             debug_info["template_id"] = template_id
 
@@ -580,7 +624,10 @@ class FamilyConstructionAdapter:
             debug_info["base_construction_id"] = construction_id
 
         if lexical_fallback_used:
-            debug_info["fallback_reason"] = "used slot content and/or default morphology because lexical bindings were absent or incomplete"
+            debug_info["fallback_reason"] = (
+                "used slot content and/or default morphology because lexical bindings "
+                "were absent or incomplete"
+            )
 
         logger.info(
             "family_realization_completed",
@@ -599,6 +646,7 @@ class FamilyConstructionAdapter:
             fallback_used=lexical_fallback_used,
             tokens=tokens,
             debug_info=debug_info,
+            generation_time_ms=generation_time_ms,
         )
 
     # ------------------------------------------------------------------
@@ -621,7 +669,8 @@ class FamilyConstructionAdapter:
             return importlib.import_module(f"{self._engine_package}.{module_name}")
         except Exception as exc:
             raise FamilyRendererError(
-                f"Could not import family engine module '{module_name}' for family '{family_name}': {exc}"
+                f"Could not import family engine module '{module_name}' for family "
+                f"'{family_name}': {exc}"
             ) from exc
 
     def _load_language_config(
@@ -670,3 +719,4 @@ __all__ = [
     "MissingRequiredRoleError",
     "FamilyRendererError",
 ]
+```

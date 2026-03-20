@@ -1,4 +1,3 @@
-# tests/core/test_domain_models.py
 import pytest
 from pydantic import ValidationError
 
@@ -205,13 +204,14 @@ class TestFrameModel:
 
 
 class TestSurfaceResultModels:
-    def test_surface_result_syncs_required_debug_info_keys(self):
+    def test_surface_result_syncs_required_debug_info_keys_and_runtime_fields(self):
         result = SurfaceResult(
             text="Marie Curie is a physicist.",
             lang_code="ENG",
             construction_id="copula_equative_simple",
             renderer_backend="gf",
             fallback_used=True,
+            tokens=["Marie", "Curie", "is", "a", "physicist."],
             debug_info={"custom": "value"},
             generation_time_ms=12.5,
         )
@@ -221,32 +221,68 @@ class TestSurfaceResultModels:
         assert result.construction_id == "copula_equative_simple"
         assert result.renderer_backend == "gf"
         assert result.fallback_used is True
+        assert result.tokens == ["Marie", "Curie", "is", "a", "physicist."]
         assert result.generation_time_ms == 12.5
+
         assert result.debug_info["custom"] == "value"
         assert result.debug_info["construction_id"] == "copula_equative_simple"
         assert result.debug_info["renderer_backend"] == "gf"
         assert result.debug_info["lang_code"] == "eng"
         assert result.debug_info["fallback_used"] is True
+        assert result.debug_info["tokens"] == ["Marie", "Curie", "is", "a", "physicist."]
+        assert result.debug_info["generation_time_ms"] == 12.5
 
-    def test_surface_result_preserves_existing_debug_info_values(self):
+    def test_surface_result_top_level_fields_override_conflicting_debug_values(self):
         result = SurfaceResult(
             text="Bonjour.",
             lang_code="fr",
             construction_id="copula_equative_simple",
             renderer_backend="family",
             fallback_used=False,
+            tokens=["Bonjour."],
             debug_info={
                 "construction_id": "already-set",
                 "renderer_backend": "manual",
                 "lang_code": "custom-fr",
                 "fallback_used": True,
+                "tokens": ["WRONG"],
+                "generation_time_ms": 999.0,
             },
+            generation_time_ms=7.25,
         )
 
-        assert result.debug_info["construction_id"] == "already-set"
-        assert result.debug_info["renderer_backend"] == "manual"
-        assert result.debug_info["lang_code"] == "custom-fr"
-        assert result.debug_info["fallback_used"] is True
+        assert result.debug_info["construction_id"] == "copula_equative_simple"
+        assert result.debug_info["renderer_backend"] == "family"
+        assert result.debug_info["lang_code"] == "fr"
+        assert result.debug_info["fallback_used"] is False
+        assert result.debug_info["tokens"] == ["Bonjour."]
+        assert result.debug_info["generation_time_ms"] == 7.25
+
+    def test_surface_result_preserves_nonconflicting_debug_info_values(self):
+        result = SurfaceResult(
+            text="Bonjour.",
+            lang_code="fr",
+            construction_id="copula_equative_simple",
+            renderer_backend="family",
+            fallback_used=False,
+            tokens=["Bonjour."],
+            debug_info={
+                "slot_keys": ["subject", "predicate_nominal"],
+                "resolved_language": "WikiFre",
+                "backend_trace": ["assembled sentence"],
+            },
+            generation_time_ms=3.0,
+        )
+
+        assert result.debug_info["slot_keys"] == ["subject", "predicate_nominal"]
+        assert result.debug_info["resolved_language"] == "WikiFre"
+        assert result.debug_info["backend_trace"] == ["assembled sentence"]
+        assert result.debug_info["construction_id"] == "copula_equative_simple"
+        assert result.debug_info["renderer_backend"] == "family"
+        assert result.debug_info["lang_code"] == "fr"
+        assert result.debug_info["fallback_used"] is False
+        assert result.debug_info["tokens"] == ["Bonjour."]
+        assert result.debug_info["generation_time_ms"] == 3.0
 
     def test_sentence_is_backwards_compatible_surface_result(self):
         sentence = Sentence(
@@ -254,22 +290,38 @@ class TestSurfaceResultModels:
             lang_code="EN",
             construction_id="copula_equative_classification",
             renderer_backend="safe_mode",
+            fallback_used=False,
+            tokens=["Alan", "Turing", "was", "a", "mathematician."],
+            generation_time_ms=1.0,
         )
 
         assert isinstance(sentence, SurfaceResult)
         assert sentence.text == "Alan Turing was a mathematician."
         assert sentence.lang_code == "en"
+        assert sentence.construction_id == "copula_equative_classification"
+        assert sentence.renderer_backend == "safe_mode"
+        assert sentence.fallback_used is False
+        assert sentence.tokens == ["Alan", "Turing", "was", "a", "mathematician."]
+        assert sentence.generation_time_ms == 1.0
         assert sentence.debug_info["construction_id"] == "copula_equative_classification"
         assert sentence.debug_info["renderer_backend"] == "safe_mode"
         assert sentence.debug_info["lang_code"] == "en"
         assert sentence.debug_info["fallback_used"] is False
+        assert sentence.debug_info["tokens"] == ["Alan", "Turing", "was", "a", "mathematician."]
+        assert sentence.debug_info["generation_time_ms"] == 1.0
 
-    def test_surface_result_requires_text_and_lang_code(self):
+    def test_surface_result_requires_text_lang_code_and_tokens(self):
         with pytest.raises(ValidationError):
-            SurfaceResult(lang_code="en")
+            SurfaceResult(lang_code="en", tokens=["Hello"])
 
         with pytest.raises(ValidationError):
-            SurfaceResult(text="Hello", lang_code="")
+            SurfaceResult(text="Hello", lang_code="", tokens=["Hello"])
+
+        with pytest.raises(ValidationError):
+            SurfaceResult(text="Hello", lang_code="en")
+
+        with pytest.raises(ValidationError):
+            SurfaceResult(text="Hello", lang_code="en", tokens=[])
 
 
 class TestLexiconEntryModel:
@@ -390,3 +442,4 @@ class TestGenerationRequestModel:
                     "subject": {"name": "No Lang"},
                 }
             )
+

@@ -44,16 +44,19 @@ async def generate_text_from_payload(
         ...,
         description=(
             "Abstract Semantic Frame or Ninai Protocol payload "
-            "(must include lang or inputs.language)"
+            "(must include lang, language, or lang_code either at top level "
+            "or inside inputs)."
         ),
     ),
     x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
     use_case: GenerateText = Depends(get_generate_text_use_case),
 ) -> Sentence:
     """
-    Same generator, but language is provided inside the payload:
-      - top-level: lang | language | lang_code
-      - or inside inputs: language | lang | lang_code
+    Generation endpoint where the target language is provided inside the payload.
+
+    Accepted language spellings are normalized by the request mapper. The router
+    owns only HTTP ingress/orchestration. Planner-first runtime truth remains in
+    the use case and public transport shaping remains in the response mapper.
     """
     return await _execute_generation(
         request_mapper=lambda: map_generation_request(payload),
@@ -73,7 +76,7 @@ async def generate_text(
     lang_code: str,
     payload: Dict[str, Any] = Body(
         ...,
-        description="Abstract Semantic Frame or Ninai Protocol payload",
+        description="Abstract Semantic Frame or Ninai Protocol payload.",
     ),
     x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
     use_case: GenerateText = Depends(get_generate_text_use_case),
@@ -82,9 +85,10 @@ async def generate_text(
     Converts a semantic frame into a concrete sentence in the target language.
 
     Features:
-    - Ninai Protocol support via request mapping
-    - Discourse planning via X-Session-ID
-    - Domain validation via the use case
+    - request normalization via the request mapper
+    - optional discourse planning via X-Session-ID
+    - planner-first runtime execution via GenerateText
+    - stable public response serialization via the response mapper
     """
     return await _execute_generation(
         request_mapper=lambda: map_generation_request(
@@ -104,18 +108,28 @@ async def _execute_generation(
     use_case: GenerateText,
     log_lang: Optional[str],
 ) -> Sentence:
+    """
+    Shared request flow:
+
+    HTTP payload
+      -> request normalization
+      -> optional discourse context application
+      -> planner-first runtime execution
+      -> public response mapping
+    """
     lang: Optional[str] = log_lang
 
     try:
-        mapped = request_mapper()
-        lang = mapped.lang_code
-        frame = mapped.frame
+        mapped_request = request_mapper()
+        lang = mapped_request.lang_code
+        frame = mapped_request.frame
 
         if x_session_id and isinstance(frame, BioFrame):
             await _apply_discourse_context(x_session_id, frame)
 
-        sentence = await use_case.execute(lang, frame)
-        return map_generation_response(sentence)
+        runtime_result = await use_case.execute(lang, frame)
+        public_result = map_generation_response(runtime_result)
+        return public_result
 
     except Exception as exc:
         _raise_generation_http_exception(exc, lang=lang)
@@ -181,7 +195,9 @@ def _extract_subject_qid(frame: BioFrame) -> Optional[str]:
 async def _apply_discourse_context(session_id: str, frame: BioFrame) -> None:
     """
     Applies pronominalization logic based on the session history.
-    Mutates the frame in-place if the subject matches the current focus.
+
+    This mutates the BioFrame in place before planner-first generation runs.
+    It is a request-context concern, not a public-response concern.
     """
     context = await redis_bus.get_session(session_id)
     if context is None:
@@ -238,3 +254,4 @@ async def _apply_discourse_context(session_id: str, frame: BioFrame) -> None:
     )
     context.update_focus(new_entity)
     await redis_bus.save_session(context)
+

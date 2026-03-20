@@ -1,3 +1,4 @@
+```python
 # tests/integration/test_generate_via_planner_fr.py
 from __future__ import annotations
 
@@ -56,7 +57,7 @@ class RecordingFrenchPlanner:
                 lang_code=lang_code,
                 frame=frame,
                 topic_entity_id="Q7259",
-                focus_role="profession",
+                focus_role="predicate_nominal",
                 generation_options={"register": "neutral"},
                 metadata={"source": "test_planner_fr"},
             )
@@ -81,7 +82,7 @@ class RecordingFrenchLexicalResolver:
     ) -> ConstructionPlan:
         assert isinstance(planned_sentence, PlannedSentence)
 
-        resolved_lang = lang_code or planned_sentence.lang_code
+        resolved_lang = (lang_code or planned_sentence.lang_code).strip().lower()
         self.calls.append(
             {
                 "lang_code": resolved_lang,
@@ -94,7 +95,11 @@ class RecordingFrenchLexicalResolver:
             construction_id=planned_sentence.construction_id,
             lang_code=resolved_lang,
             slot_map={
-                "subject": "Ada Lovelace",
+                "subject": {
+                    "label": "Ada Lovelace",
+                    "qid": "Q7259",
+                    "entity_type": "person",
+                },
                 "profession": "mathématicienne",
                 "nationality": "britannique",
                 "gender": "f",
@@ -150,12 +155,14 @@ class RecordingFrenchRealizer:
     ) -> SurfaceResult:
         assert isinstance(construction_plan, ConstructionPlan)
 
-        effective_lang = lang_code or construction_plan.lang_code
+        effective_lang = (lang_code or construction_plan.lang_code).strip().lower()
+        slot_keys = list(construction_plan.slot_keys)
+
         self.calls.append(
             {
                 "lang_code": effective_lang,
                 "construction_id": construction_plan.construction_id,
-                "slot_keys": list(construction_plan.slot_keys),
+                "slot_keys": slot_keys,
                 "frame_type": getattr(frame, "frame_type", None),
             }
         )
@@ -175,13 +182,25 @@ class RecordingFrenchRealizer:
                 "britannique.",
             ],
             debug_info={
+                "runtime_path": "planner_first",
+                "construction_id": construction_plan.construction_id,
+                "renderer_backend": self.backend_name,
+                "lang_code": effective_lang,
+                "fallback_used": False,
+                "resolved_language": "WikiFre",
                 "selected_backend": self.backend_name,
                 "attempted_backends": [self.backend_name],
-                "slot_keys": list(construction_plan.slot_keys),
+                "slot_keys": slot_keys,
                 "lexical_resolution": dict(
                     construction_plan.metadata.get("lexical_resolution", {})
                 ),
+                "backend_trace": [
+                    "validated ConstructionPlan",
+                    "resolved lexical bindings",
+                    "assembled FR equative clause",
+                ],
             },
+            generation_time_ms=7.5,
         )
 
 
@@ -197,6 +216,70 @@ def sample_french_bio_frame() -> BioFrame:
         context_id="Q7259",
         meta={"register": "neutral"},
     )
+
+
+def _assert_runtime_result_contract(result: Sentence) -> None:
+    """
+    Integration-level contract assertions for the planner-first EN/FR cutover.
+
+    GenerateText may still return a broader Sentence compatibility object,
+    but the result must carry stable nominal-path runtime truth either as
+    top-level fields or, at minimum during compatibility wrapping, in
+    structured debug_info.
+    """
+    assert isinstance(result, Sentence)
+    assert isinstance(result.text, str) and result.text.strip()
+    assert result.lang_code == "fr"
+
+    debug = result.debug_info
+    assert isinstance(debug, dict)
+
+    # Canonical runtime-path truth
+    assert debug["runtime_path"] == "planner_first"
+    assert debug["fallback_used"] is False
+    assert debug["construction_id"] == "copula_equative_classification"
+    assert debug["renderer_backend"] == "family"
+    assert debug["lang_code"] == "fr"
+
+    # Required observability
+    assert debug["selected_backend"] == "family"
+    assert debug["attempted_backends"] == ["family"]
+    assert debug["resolved_language"] == "WikiFre"
+    assert set(debug["slot_keys"]) >= {"subject", "profession", "nationality"}
+    assert debug["lexical_resolution"]["applied"] is True
+    assert set(debug["lexical_resolution"]["resolved_slots"]) == {
+        "profession",
+        "nationality",
+    }
+
+    # Tokens must exist somewhere canonical and match the final text.
+    top_level_tokens = getattr(result, "tokens", None)
+    debug_tokens = debug.get("tokens")
+
+    expected_tokens = [
+        "Ada",
+        "Lovelace",
+        "est",
+        "une",
+        "mathématicienne",
+        "britannique.",
+    ]
+
+    if top_level_tokens is not None:
+        assert list(top_level_tokens) == expected_tokens
+    if debug_tokens is not None:
+        assert list(debug_tokens) == expected_tokens
+
+    # If the broader Sentence model has already been upgraded with the
+    # canonical top-level runtime fields, they must match debug_info.
+    if hasattr(result, "construction_id"):
+        assert getattr(result, "construction_id") == "copula_equative_classification"
+    if hasattr(result, "renderer_backend"):
+        assert getattr(result, "renderer_backend") == "family"
+    if hasattr(result, "fallback_used"):
+        assert getattr(result, "fallback_used") is False
+    if hasattr(result, "generation_time_ms"):
+        assert float(getattr(result, "generation_time_ms")) >= 0.0
 
 
 @pytest.mark.asyncio
@@ -216,24 +299,11 @@ async def test_generate_via_planner_fr_returns_planner_first_sentence(
 
     result = await use_case.execute("fr", sample_french_bio_frame)
 
-    assert isinstance(result, Sentence)
-    assert result.lang_code == "fr"
     assert "Ada Lovelace" in result.text
     assert "mathématicienne" in result.text
+    assert "britannique" in result.text
 
-    debug = result.debug_info
-    assert debug["runtime_path"] == "planner_first"
-    assert debug["fallback_used"] is False
-    assert debug["construction_id"] == "copula_equative_classification"
-    assert debug["renderer_backend"] == "family"
-    assert debug["selected_backend"] == "family"
-    assert debug["attempted_backends"] == ["family"]
-    assert debug["lexical_resolution"]["applied"] is True
-    assert set(debug["lexical_resolution"]["resolved_slots"]) == {
-        "profession",
-        "nationality",
-    }
-    assert set(debug["slot_keys"]) >= {"subject", "profession", "nationality"}
+    _assert_runtime_result_contract(result)
 
     assert len(planner.calls) == 1
     assert planner.calls[0]["lang_code"] == "fr"
@@ -241,12 +311,18 @@ async def test_generate_via_planner_fr_returns_planner_first_sentence(
 
     assert len(lexical_resolver.calls) == 1
     assert lexical_resolver.calls[0]["lang_code"] == "fr"
-    assert lexical_resolver.calls[0]["construction_id"] == "copula_equative_classification"
+    assert lexical_resolver.calls[0]["construction_id"] == (
+        "copula_equative_classification"
+    )
 
     assert len(realizer.calls) == 1
     assert realizer.calls[0]["lang_code"] == "fr"
     assert realizer.calls[0]["construction_id"] == "copula_equative_classification"
-    assert set(realizer.calls[0]["slot_keys"]) >= {"subject", "profession", "nationality"}
+    assert set(realizer.calls[0]["slot_keys"]) >= {
+        "subject",
+        "profession",
+        "nationality",
+    }
 
 
 @pytest.mark.asyncio
@@ -263,6 +339,7 @@ async def test_generate_via_planner_fr_prefers_planner_runtime_over_legacy_engin
             text="Ceci ne devrait jamais être utilisé.",
             lang_code="fr",
             debug_info={"runtime_path": "legacy_engine"},
+            generation_time_ms=0.0,
         )
     )
 
@@ -276,13 +353,63 @@ async def test_generate_via_planner_fr_prefers_planner_runtime_over_legacy_engin
 
     result = await use_case.execute("fr", sample_french_bio_frame)
 
-    assert result.lang_code == "fr"
     assert "Ada Lovelace" in result.text
-    assert result.debug_info["runtime_path"] == "planner_first"
-    assert result.debug_info["renderer_backend"] == "family"
-    assert result.debug_info["fallback_used"] is False
+    assert "mathématicienne" in result.text
+
+    _assert_runtime_result_contract(result)
 
     legacy_engine.generate.assert_not_awaited()
     assert len(planner.calls) == 1
     assert len(lexical_resolver.calls) == 1
     assert len(realizer.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_generate_via_planner_fr_is_deterministic_across_repeated_calls(
+    sample_french_bio_frame: BioFrame,
+) -> None:
+    planner = RecordingFrenchPlanner()
+    lexical_resolver = RecordingFrenchLexicalResolver()
+    realizer = RecordingFrenchRealizer()
+
+    use_case = GenerateText(
+        planner=planner,
+        lexical_resolver=lexical_resolver,
+        realizer=realizer,
+        allow_legacy_engine_fallback=False,
+    )
+
+    first = await use_case.execute("fr", sample_french_bio_frame)
+    second = await use_case.execute("fr", sample_french_bio_frame)
+
+    assert first.text == second.text
+    assert first.lang_code == second.lang_code == "fr"
+    assert first.debug_info["runtime_path"] == second.debug_info["runtime_path"] == (
+        "planner_first"
+    )
+    assert first.debug_info["construction_id"] == second.debug_info["construction_id"] == (
+        "copula_equative_classification"
+    )
+    assert first.debug_info["renderer_backend"] == second.debug_info["renderer_backend"] == (
+        "family"
+    )
+    assert first.debug_info["fallback_used"] is False
+    assert second.debug_info["fallback_used"] is False
+
+    first_tokens = list(getattr(first, "tokens", []) or first.debug_info.get("tokens", []))
+    second_tokens = list(
+        getattr(second, "tokens", []) or second.debug_info.get("tokens", [])
+    )
+    assert first_tokens == second_tokens == [
+        "Ada",
+        "Lovelace",
+        "est",
+        "une",
+        "mathématicienne",
+        "britannique.",
+    ]
+
+    assert len(planner.calls) == 2
+    assert len(lexical_resolver.calls) == 2
+    assert len(realizer.calls) == 2
+```

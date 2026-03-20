@@ -1,3 +1,6 @@
+Use this updated version:
+
+```python
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -7,7 +10,7 @@ import pytest
 
 from app.core.domain.events import EventType
 from app.core.domain.exceptions import DomainError, InvalidFrameError
-from app.core.domain.models import Frame, Sentence
+from app.core.domain.models import Frame, Sentence, SurfaceResult
 from app.core.use_cases.build_language import BuildLanguage
 from app.core.use_cases.generate_text import GenerateText
 
@@ -38,7 +41,11 @@ class TestGenerateText:
             return_value={
                 "construction_id": "copula_equative_classification",
                 "lang_code": "en",
-                "slot_map": {"subject": "Alan Turing"},
+                "slot_map": {
+                    "subject": "Alan Turing",
+                    "profession": "mathematician",
+                    "nationality": "British",
+                },
             }
         )
 
@@ -47,7 +54,11 @@ class TestGenerateText:
             return_value={
                 "construction_id": "copula_equative_classification",
                 "lang_code": "en",
-                "slot_map": {"subject": "Alan Turing"},
+                "slot_map": {
+                    "subject": "Alan Turing",
+                    "profession": "mathematician",
+                    "nationality": "British",
+                },
                 "lexical_bindings": {
                     "profession": {"lemma": "mathematician"},
                     "nationality": {"lemma": "British"},
@@ -57,14 +68,13 @@ class TestGenerateText:
 
         realizer = MagicMock()
         realizer.realize = AsyncMock(
-            return_value=SimpleNamespace(
+            return_value=SurfaceResult(
                 text="Alan Turing is a British mathematician.",
                 lang_code="en",
                 construction_id="copula_equative_classification",
                 renderer_backend="family",
                 fallback_used=False,
                 tokens=["Alan", "Turing", "is", "a", "British", "mathematician."],
-                selected_backend="family",
                 debug_info={
                     "selected_backend": "family",
                     "construction_id": "copula_equative_classification",
@@ -87,8 +97,21 @@ class TestGenerateText:
         result = await use_case.execute("en", frame)
 
         assert isinstance(result, Sentence)
+        assert isinstance(result, SurfaceResult)
+
         assert result.text == "Alan Turing is a British mathematician."
         assert result.lang_code == "en"
+        assert result.construction_id == "copula_equative_classification"
+        assert result.renderer_backend == "family"
+        assert result.fallback_used is False
+        assert result.tokens == [
+            "Alan",
+            "Turing",
+            "is",
+            "a",
+            "British",
+            "mathematician.",
+        ]
         assert result.generation_time_ms == 12.5
 
         assert result.debug_info["runtime_path"] == "planner_first"
@@ -100,16 +123,7 @@ class TestGenerateText:
         assert result.debug_info["planner"] == planner.__class__.__name__
         assert result.debug_info["lexical_resolver"] == lexical_resolver.__class__.__name__
         assert result.debug_info["realizer"] == realizer.__class__.__name__
-        assert result.debug_info["slot_keys"] == ["subject"]
-        assert result.debug_info["tokens"] == [
-            "Alan",
-            "Turing",
-            "is",
-            "a",
-            "British",
-            "mathematician.",
-        ]
-        assert result.debug_info["generation_time_ms"] == 12.5
+        assert result.debug_info["slot_keys"] == ["nationality", "profession", "subject"]
 
         planner.plan.assert_awaited_once()
         lexical_resolver.resolve.assert_awaited_once()
@@ -146,8 +160,15 @@ class TestGenerateText:
 
         result = await use_case.execute("en", frame)
 
+        assert isinstance(result, Sentence)
+        assert isinstance(result, SurfaceResult)
+
         assert result.text == "Alan Turing is a Mathematician."
         assert result.lang_code == "en"
+        assert result.renderer_backend == "gf"
+        assert result.fallback_used is True
+        assert result.tokens == ["Alan", "Turing", "is", "a", "Mathematician."]
+
         assert result.debug_info["runtime_path"] == "legacy_engine_fallback"
         assert result.debug_info["fallback_used"] is True
         assert "planner exploded" in result.debug_info["fallback_reason"]
@@ -207,8 +228,15 @@ class TestGenerateText:
 
         result = await use_case.execute("en", frame)
 
+        assert isinstance(result, Sentence)
+        assert isinstance(result, SurfaceResult)
+
         assert result.text == "Alan Turing is a Mathematician."
         assert result.lang_code == "en"
+        assert result.renderer_backend == "gf"
+        assert result.fallback_used is True
+        assert result.tokens == ["Alan", "Turing", "is", "a", "Mathematician."]
+
         assert result.debug_info["runtime_path"] == "legacy_engine_fallback"
         assert result.debug_info["fallback_used"] is True
         assert result.debug_info["fallback_reason"] == "planner_runtime_unavailable"
@@ -268,13 +296,17 @@ class TestGenerateText:
             return_value={
                 "construction_id": "copula_equative_classification",
                 "lang_code": "en",
-                "slot_map": {"subject": "Alan Turing"},
+                "slot_map": {
+                    "subject": "Alan Turing",
+                    "profession": "mathematician",
+                    "nationality": "British",
+                },
             }
         )
 
         realizer = MagicMock()
         realizer.realize = AsyncMock(
-            return_value=SimpleNamespace(
+            return_value=SurfaceResult(
                 text="Alan Turing is a British mathematician.",
                 lang_code="en",
                 construction_id="copula_equative_classification",
@@ -297,6 +329,50 @@ class TestGenerateText:
 
         assert "missing renderer_backend" in str(excinfo.value)
 
+    async def test_execute_rejects_planner_first_result_missing_tokens(self):
+        frame = _sample_frame()
+
+        planner = MagicMock()
+        planner.plan = AsyncMock(
+            return_value={
+                "construction_id": "copula_equative_classification",
+                "lang_code": "en",
+                "slot_map": {
+                    "subject": "Alan Turing",
+                    "profession": "mathematician",
+                    "nationality": "British",
+                },
+            }
+        )
+
+        realizer = MagicMock()
+        realizer.realize = AsyncMock(
+            return_value=SurfaceResult(
+                text="Alan Turing is a British mathematician.",
+                lang_code="en",
+                construction_id="copula_equative_classification",
+                renderer_backend="family",
+                fallback_used=False,
+                tokens=[],
+                debug_info={
+                    "construction_id": "copula_equative_classification",
+                    "renderer_backend": "family",
+                },
+                generation_time_ms=5.0,
+            )
+        )
+
+        use_case = GenerateText(
+            planner=planner,
+            realizer=realizer,
+            allow_legacy_engine_fallback=False,
+        )
+
+        with pytest.raises(DomainError) as excinfo:
+            await use_case.execute("en", frame)
+
+        assert "missing tokens" in str(excinfo.value)
+
     async def test_execute_fails_cleanly_when_realizer_output_is_unmappable(self):
         frame = _sample_frame()
 
@@ -305,7 +381,11 @@ class TestGenerateText:
             return_value={
                 "construction_id": "copula_equative_classification",
                 "lang_code": "en",
-                "slot_map": {"subject": "Alan Turing"},
+                "slot_map": {
+                    "subject": "Alan Turing",
+                    "profession": "mathematician",
+                    "nationality": "British",
+                },
             }
         )
 
@@ -331,13 +411,17 @@ class TestGenerateText:
             return_value={
                 "construction_id": "copula_equative_classification",
                 "lang_code": "en",
-                "slot_map": {"subject": "Alan Turing"},
+                "slot_map": {
+                    "subject": "Alan Turing",
+                    "profession": "mathematician",
+                    "nationality": "British",
+                },
             }
         )
 
         realizer = MagicMock()
         realizer.realize = AsyncMock(
-            return_value=SimpleNamespace(
+            return_value=SurfaceResult(
                 text="Alan Turing is a British mathematician.",
                 lang_code="en",
                 construction_id="copula_equative_classification",
@@ -356,6 +440,18 @@ class TestGenerateText:
 
         assert first.text == second.text
         assert first.lang_code == second.lang_code == "en"
+        assert first.construction_id == second.construction_id == "copula_equative_classification"
+        assert first.renderer_backend == second.renderer_backend == "family"
+        assert first.fallback_used is False
+        assert second.fallback_used is False
+        assert first.tokens == second.tokens == [
+            "Alan",
+            "Turing",
+            "is",
+            "a",
+            "British",
+            "mathematician.",
+        ]
         assert first.debug_info["runtime_path"] == "planner_first"
         assert second.debug_info["runtime_path"] == "planner_first"
         assert first.debug_info["construction_id"] == second.debug_info["construction_id"]
@@ -425,4 +521,14 @@ class TestBuildLanguage:
         assert "redis unavailable" in str(excinfo.value)
         mock_broker.publish.assert_awaited_once()
         mock_task_queue.enqueue_language_build.assert_awaited_once()
+```
 
+Key consistency updates in this version:
+
+* imports `SurfaceResult` and treats it as the canonical runtime result while still accepting `Sentence` as the compatibility model,
+* asserts top-level `construction_id`, `renderer_backend`, `fallback_used`, and `tokens`, not only `debug_info`,
+* strengthens the planner-first path to use realistic `slot_map` keys,
+* adds an explicit failure test for **missing nominal tokens**,
+* keeps legacy fallback observable but distinct from nominal planner-first success.
+
+One important note: this test file assumes `GenerateText` will be updated to preserve canonical top-level `SurfaceResult` fields all the way through and to fail planner-first results that are missing `tokens`. Right now the codedump is not fully there yet, so this is the **target final test file**, not a guarantee that the current implementation already passes it.

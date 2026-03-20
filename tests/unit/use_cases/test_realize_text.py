@@ -1,3 +1,6 @@
+Use this updated version:
+
+```python id="7j4q0z"
 # tests/unit/use_cases/test_realize_text.py
 from __future__ import annotations
 
@@ -19,18 +22,21 @@ from app.core.use_cases.realize_text import (
 def make_plan(
     *,
     construction_id: str = "copula_equative_classification",
-    lang_code: str = "eng",
+    lang_code: str = "en",
     slot_map: dict[str, object] | None = None,
     generation_options: dict[str, object] | None = None,
+    metadata: dict[str, object] | None = None,
 ) -> ConstructionPlan:
     return ConstructionPlan(
         construction_id=construction_id,
         lang_code=lang_code,
-        slot_map=slot_map or {
+        slot_map=slot_map
+        or {
             "subject": "Ada Lovelace",
             "predicate_nominal": "mathematician",
         },
         generation_options=generation_options or {},
+        metadata=metadata or {},
     )
 
 
@@ -91,15 +97,16 @@ class ExpectedResolverDomainError(DomainError):
 
 
 @pytest.mark.asyncio
-async def test_execute_returns_normalized_surface_result_and_debug_metadata():
+async def test_execute_returns_normalized_surface_result_and_runtime_metadata():
     plan = make_plan()
     realizer = StaticRealizer(
         {
             "text": "Ada Lovelace is a mathematician.",
-            "lang_code": "eng",
+            "lang_code": "en",
             "renderer_backend": "family",
-            "fallback_used": True,
+            "fallback_used": False,
             "debug_info": {"capability_tier": "full"},
+            "generation_time_ms": 12.5,
         },
         backend_name="family",
     )
@@ -108,22 +115,45 @@ async def test_execute_returns_normalized_surface_result_and_debug_metadata():
 
     assert isinstance(result, SurfaceResult)
     assert result.text == "Ada Lovelace is a mathematician."
-    assert result.lang_code == "eng"
+    assert result.lang_code == "en"
     assert result.construction_id == "copula_equative_classification"
     assert result.renderer_backend == "family"
-    assert result.fallback_used is True
+    assert result.fallback_used is False
     assert list(result.tokens) == ["Ada", "Lovelace", "is", "a", "mathematician."]
+    assert result.generation_time_ms == 12.5
 
     assert result.debug_info["construction_id"] == plan.construction_id
-    assert result.debug_info["lang_code"] == "eng"
+    assert result.debug_info["lang_code"] == "en"
     assert result.debug_info["renderer_backend"] == "family"
     assert result.debug_info["selected_backend"] == "family"
     assert result.debug_info["attempted_backends"] == ["family"]
-    assert result.debug_info["fallback_used"] is True
+    assert result.debug_info["fallback_used"] is False
     assert result.debug_info["capability_tier"] == "full"
 
     assert len(realizer.calls) == 1
     assert realizer.calls[0] is plan
+
+
+@pytest.mark.asyncio
+async def test_execute_derives_tokens_from_text_when_realizer_omits_them():
+    plan = make_plan()
+    realizer = StaticRealizer(
+        {
+            "text": "Ada Lovelace is a mathematician.",
+            "lang_code": "en",
+            "renderer_backend": "family",
+            "fallback_used": False,
+            "debug_info": {},
+            "generation_time_ms": 3.0,
+        },
+        backend_name="family",
+    )
+
+    result = await RealizeText(realizer).execute(plan)
+
+    assert list(result.tokens) == ["Ada", "Lovelace", "is", "a", "mathematician."]
+    assert result.generation_time_ms == 3.0
+    assert result.renderer_backend == "family"
 
 
 @pytest.mark.asyncio
@@ -152,8 +182,12 @@ async def test_execute_applies_lexical_resolution_and_clones_plan_without_mutati
     realizer = StaticRealizer(
         {
             "text": "Alan Turing is a mathematician.",
+            "lang_code": "en",
             "renderer_backend": "gf",
+            "fallback_used": False,
+            "tokens": ["Alan", "Turing", "is", "a", "mathematician."],
             "debug_info": {},
+            "generation_time_ms": 4.0,
         },
         backend_name="gf",
     )
@@ -169,9 +203,12 @@ async def test_execute_applies_lexical_resolution_and_clones_plan_without_mutati
     assert realized_plan.lexical_bindings["predicate_nominal"]["lemma"] == "mathematician"
 
     assert result.renderer_backend == "gf"
+    assert result.generation_time_ms == 4.0
     assert result.debug_info["lexical_resolution"]["applied"] is True
     assert result.debug_info["lexical_resolution"]["resolver"] == "FakeResolver"
     assert result.debug_info["renderer_backend"] == "gf"
+    assert result.debug_info["selected_backend"] == "gf"
+    assert result.debug_info["attempted_backends"] == ["gf"]
 
 
 @pytest.mark.asyncio
@@ -185,11 +222,14 @@ async def test_execute_accepts_raw_string_result_and_infers_backend_name():
     result = await RealizeText(realizer).execute(plan)
 
     assert result.text == "Ada Lovelace mathematician"
+    assert result.lang_code == "en"
     assert result.renderer_backend == "safe_mode"
+    assert result.fallback_used is False
+    assert list(result.tokens) == ["Ada", "Lovelace", "mathematician"]
+    assert result.generation_time_ms == 0.0
     assert result.debug_info["renderer_backend"] == "safe_mode"
     assert result.debug_info["selected_backend"] == "safe_mode"
     assert result.debug_info["attempted_backends"] == ["safe_mode"]
-    assert list(result.tokens) == ["Ada", "Lovelace", "mathematician"]
 
 
 @pytest.mark.asyncio
@@ -197,12 +237,12 @@ async def test_execute_accepts_raw_string_result_and_infers_backend_name():
     "bad_plan",
     [
         None,
-        {"construction_id": "copula_equative_classification", "lang_code": "eng"},
-        {"construction_id": "", "lang_code": "eng", "slot_map": {}},
+        {"construction_id": "copula_equative_classification", "lang_code": "en"},
+        {"construction_id": "", "lang_code": "en", "slot_map": {}},
         {"construction_id": "copula_equative_classification", "lang_code": "", "slot_map": {}},
         {
             "construction_id": "copula_equative_classification",
-            "lang_code": "eng",
+            "lang_code": "en",
             "slot_map": None,
         },
     ],
@@ -254,6 +294,44 @@ async def test_execute_wraps_backend_failure_as_realization_error():
 
 
 @pytest.mark.asyncio
+async def test_execute_rejects_result_without_non_empty_text():
+    plan = make_plan()
+    realizer = StaticRealizer(
+        {
+            "text": "",
+            "lang_code": "en",
+            "renderer_backend": "family",
+        },
+        backend_name="family",
+    )
+
+    with pytest.raises(RealizationError, match="non-empty 'text' field"):
+        await RealizeText(realizer).execute(plan)
+
+
+@pytest.mark.asyncio
+async def test_execute_preserves_explicit_generation_time_ms_from_realizer():
+    plan = make_plan()
+    realizer = StaticRealizer(
+        {
+            "text": "Ada Lovelace is a mathematician.",
+            "lang_code": "en",
+            "renderer_backend": "family",
+            "fallback_used": False,
+            "tokens": ["Ada", "Lovelace", "is", "a", "mathematician."],
+            "debug_info": {"timings_ms": {"realization": 7.25}},
+            "generation_time_ms": 7.25,
+        },
+        backend_name="family",
+    )
+
+    result = await RealizeText(realizer).execute(plan)
+
+    assert result.generation_time_ms == 7.25
+    assert result.debug_info["timings_ms"]["realization"] == 7.25
+
+
+@pytest.mark.asyncio
 async def test_execute_many_preserves_order_and_returns_one_surface_result_per_plan():
     plans = [
         make_plan(
@@ -269,8 +347,12 @@ async def test_execute_many_preserves_order_and_returns_one_surface_result_per_p
     def realize_for_plan(plan: ConstructionPlan, _index: int) -> dict[str, object]:
         return {
             "text": f"{plan.slot_map['subject']} realized",
+            "lang_code": "en",
             "renderer_backend": "family",
+            "fallback_used": False,
+            "tokens": [str(plan.slot_map["subject"]), "realized"],
             "debug_info": {},
+            "generation_time_ms": 1.0,
         }
 
     realizer = FunctionalRealizer(realize_for_plan, backend_name="family")
@@ -284,6 +366,7 @@ async def test_execute_many_preserves_order_and_returns_one_surface_result_per_p
         "copula_equative_classification",
         "copula_equative_classification",
     ]
+    assert [result.renderer_backend for result in results] == ["family", "family"]
     assert [call.slot_map["subject"] for call in realizer.calls] == [
         "Ada Lovelace",
         "Grace Hopper",
@@ -302,10 +385,27 @@ async def test_execute_many_wraps_non_domain_failures_with_index_context():
             raise RuntimeError("second call exploded")
         return {
             "text": f"{plan.slot_map['subject']} realized",
+            "lang_code": "en",
             "renderer_backend": "family",
+            "fallback_used": False,
+            "tokens": [str(plan.slot_map["subject"]), "realized"],
+            "debug_info": {},
+            "generation_time_ms": 1.0,
         }
 
     realizer = FunctionalRealizer(flaky_realizer, backend_name="family")
 
     with pytest.raises(RealizationError, match="index 1"):
         await RealizeText(realizer).execute_many(plans)
+```
+
+What changed for consistency with the final contract:
+
+* `lang_code` uses `en` instead of `eng`
+* `SurfaceResult` remains the canonical result target
+* `generation_time_ms` is asserted as a first-class runtime field
+* `tokens` are always asserted on successful normalized results
+* lexical-resolution and backend debug fields stay aligned with the current `RealizeText` normalization behavior
+* the tests no longer encode the older looser runtime assumptions
+
+One important note: this test file assumes `RealizeText` will preserve `generation_time_ms` when normalizing results. In the current dump, that part is not fully wired yet, so this is the **target final test file** for the code you’re about to bring into alignment.

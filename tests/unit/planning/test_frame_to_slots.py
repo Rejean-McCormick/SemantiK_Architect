@@ -77,26 +77,15 @@ def test_functional_entrypoint_builds_classification_slot_map_from_dict() -> Non
         construction_id="copula_equative_classification",
     )
 
-    assert slot_map["subject"] == {
-        "label": "Marie Curie",
-        "entity_id": "Q7186",
-        "features": {
-            "gender": "female",
-            "human": True,
+    assert slot_map == {
+        "subject": {
+            "label": "Marie Curie",
+            "entity_id": "Q7186",
+            "features": {
+                "gender": "female",
+                "human": True,
+            },
         },
-    }
-    assert slot_map["profession"] == {
-        "lemma": "physicist",
-        "pos": "NOUN",
-        "source": "frame",
-    }
-    assert slot_map["nationality"] == {
-        "lemma": "polish",
-        "pos": "ADJ",
-        "source": "frame",
-    }
-    assert slot_map["predicate_nominal"] == {
-        "role": "profession_plus_nationality",
         "profession": {
             "lemma": "physicist",
             "pos": "NOUN",
@@ -107,11 +96,24 @@ def test_functional_entrypoint_builds_classification_slot_map_from_dict() -> Non
             "pos": "ADJ",
             "source": "frame",
         },
-    }
-    assert slot_map["time"] == {
-        "start_year": 1867,
-        "start_month": 11,
-        "start_day": 7,
+        "predicate_nominal": {
+            "role": "profession_plus_nationality",
+            "profession": {
+                "lemma": "physicist",
+                "pos": "NOUN",
+                "source": "frame",
+            },
+            "nationality": {
+                "lemma": "polish",
+                "pos": "ADJ",
+                "source": "frame",
+            },
+        },
+        "time": {
+            "start_year": 1867,
+            "start_month": 11,
+            "start_day": 7,
+        },
     }
 
 
@@ -134,6 +136,7 @@ def test_build_slot_map_accepts_pydantic_frame_model() -> None:
     )
 
     assert slot_map["subject"]["label"] == "Marie Curie"
+    assert slot_map["subject"]["entity_id"] == "Q7186"
     assert slot_map["predicate_nominal"]["role"] == "profession_plus_nationality"
     assert slot_map["profession"]["lemma"] == "physicist"
     assert slot_map["nationality"]["lemma"] == "polish"
@@ -169,32 +172,34 @@ def test_transitive_event_extracts_subject_object_predicate_and_common_modifiers
         construction_id="transitive_event",
     )
 
-    assert slot_map["subject"] == {
-        "label": "Marie Curie",
-        "entity_id": "Q7186",
-        "features": {"human": True},
-    }
-    assert slot_map["object"] == {
-        "label": "polonium",
-        "entity_id": "Q36963",
-    }
-    assert slot_map["predicate"] == {
-        "lemma": "discover",
-        "pos": "VERB",
-        "source": "frame",
-        "event_type": "discover",
-    }
-    assert slot_map["time"] == {
-        "start_year": 1898,
-        "start_month": 7,
-        "start_day": 1,
-    }
-    assert slot_map["location"] == {
-        "label": "Paris",
-        "entity_id": "Q90",
-        "entity_type": "city",
-        "country_code": "FR",
-        "location_type": "city",
+    assert slot_map == {
+        "subject": {
+            "label": "Marie Curie",
+            "entity_id": "Q7186",
+            "features": {"human": True},
+        },
+        "object": {
+            "label": "polonium",
+            "entity_id": "Q36963",
+        },
+        "predicate": {
+            "lemma": "discover",
+            "pos": "VERB",
+            "source": "frame",
+            "event_type": "discover",
+        },
+        "time": {
+            "start_year": 1898,
+            "start_month": 7,
+            "start_day": 1,
+        },
+        "location": {
+            "label": "Paris",
+            "entity_id": "Q90",
+            "entity_type": "city",
+            "country_code": "FR",
+            "location_type": "city",
+        },
     }
 
 
@@ -252,11 +257,24 @@ def test_unknown_construction_with_no_meaningful_content_raises() -> None:
         frame_to_slots(frame, construction_id="experimental_unknown_construction")
 
 
-def test_reserved_plan_level_slot_names_are_rejected() -> None:
+@pytest.mark.parametrize(
+    "reserved_key",
+    [
+        "construction_id",
+        "lang_code",
+        "renderer_backend",
+        "fallback_used",
+        "tokens",
+        "debug_info",
+        "generation_time_ms",
+        "metadata",
+    ],
+)
+def test_reserved_plan_level_slot_names_are_rejected(reserved_key: str) -> None:
     bridge = FrameToSlotsBridge(
         custom_handlers={
             "custom_reserved_key": lambda _frame: {
-                "construction_id": "should_not_be_a_slot",
+                reserved_key: "should_not_be_a_slot",
                 "subject": {"label": "Marie Curie"},
             }
         }
@@ -264,7 +282,7 @@ def test_reserved_plan_level_slot_names_are_rejected() -> None:
 
     with pytest.raises(
         InvalidSlotMapError,
-        match="Reserved plan-level field 'construction_id'",
+        match=rf"Reserved plan-level field '{reserved_key}'",
     ):
         bridge.build_slot_map({}, construction_id="custom_reserved_key")
 
@@ -325,9 +343,68 @@ def test_bridge_is_deterministic_and_does_not_mutate_input_or_share_nested_state
     assert first == second
     assert frame == original
 
-    # The returned structures should be independent from one another.
+    # Returned structures should be independent from one another.
     first["subject"]["label"] = "Changed"
     first["profession"]["lemma"] = "chemist"
 
     assert second["subject"]["label"] == "Marie Curie"
     assert second["profession"]["lemma"] == "physicist"
+    assert frame["main_entity"]["name"] == "Marie Curie"
+    assert frame["primary_profession_lemmas"] == ["physicist"]
+
+
+def test_generic_fallback_emits_semantic_slot_names_not_backend_specific_names() -> None:
+    frame = {
+        "frame_type": "event",
+        "subject": {"name": "Marie Curie"},
+        "object": {"name": "radium"},
+        "predicate": "discover",
+        "properties": {"time": "1898"},
+    }
+
+    slot_map = frame_to_slots(
+        frame,
+        construction_id="experimental_unknown_construction",
+    )
+
+    assert "subject" in slot_map
+    assert "object" in slot_map
+    assert "predicate" in slot_map
+    assert "time" in slot_map
+
+    forbidden_backendish_keys = {
+        "gf_ast",
+        "ast",
+        "linearization",
+        "renderer_backend",
+        "construction_id",
+        "lang_code",
+        "debug_info",
+        "tokens",
+    }
+    assert forbidden_backendish_keys.isdisjoint(slot_map.keys())
+
+
+def test_bio_slot_map_preserves_semantic_runtime_shape_for_planner_and_realizer() -> None:
+    slot_map = frame_to_slots(
+        _bio_frame_dict(),
+        construction_id="copula_equative_classification",
+    )
+
+    # Shared construction-level runtime semantics.
+    assert set(slot_map.keys()) >= {
+        "subject",
+        "profession",
+        "nationality",
+        "predicate_nominal",
+    }
+
+    # Subject remains an entity-like semantic bundle, not raw surface text only.
+    assert slot_map["subject"]["label"] == "Marie Curie"
+    assert slot_map["subject"]["entity_id"] == "Q7186"
+
+    # Predicate nominal remains constructional and semantic, not backend-specific.
+    assert slot_map["predicate_nominal"]["role"] == "profession_plus_nationality"
+    assert slot_map["predicate_nominal"]["profession"]["lemma"] == "physicist"
+    assert slot_map["predicate_nominal"]["nationality"]["lemma"] == "polish"
+

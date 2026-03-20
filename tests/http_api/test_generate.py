@@ -1,3 +1,4 @@
+```python
 # tests/http_api/test_generate.py
 from __future__ import annotations
 
@@ -10,7 +11,7 @@ from fastapi.testclient import TestClient
 from app.adapters.api.dependencies import get_generate_text_use_case
 from app.adapters.api.main import create_app
 from app.core.domain.exceptions import LanguageNotFoundError
-from app.core.domain.models import Sentence
+from app.core.domain.models import SurfaceResult
 
 API_PREFIX = "/api/v1"
 AUTH_HEADERS = {"X-API-Key": "dev-api-key"}
@@ -18,10 +19,10 @@ AUTH_HEADERS = {"X-API-Key": "dev-api-key"}
 
 class StubGenerateTextUseCase:
     """
-    Simple async test double for the GenerateText use case.
+    Async test double for the GenerateText use case.
 
     It records calls so tests can verify request normalization, and can return
-    either a Sentence-like result or raise an exception.
+    either a SurfaceResult-compatible value or raise an exception.
     """
 
     def __init__(self, result: Any):
@@ -38,7 +39,7 @@ class StubGenerateTextUseCase:
 @pytest.fixture
 def client_factory():
     @contextmanager
-    def _make(use_case: StubGenerateTextUseCase):
+    def _make(use_case: Any):
         app = create_app()
         app.dependency_overrides[get_generate_text_use_case] = lambda: use_case
         try:
@@ -54,20 +55,25 @@ def test_generate_success_path_language_preserves_public_shape_and_runtime_metad
     client_factory,
 ):
     use_case = StubGenerateTextUseCase(
-        Sentence(
-            text="Marie Curie is a physicist.",
+        SurfaceResult(
+            text="Marie Curie is a Polish physicist.",
             lang_code="en",
             construction_id="copula_equative_classification",
             renderer_backend="family",
             fallback_used=False,
+            tokens=["Marie", "Curie", "is", "a", "Polish", "physicist."],
             debug_info={
-                "planner_runtime": True,
-                "slot_keys": ["subject", "predicate_nominal"],
+                "runtime_path": "planner_first",
+                "slot_keys": ["subject", "profession", "nationality"],
+                "selected_backend": "family",
+                "attempted_backends": ["family"],
             },
+            generation_time_ms=12.5,
         )
     )
 
-    # Flat legacy-compatible payload: mapper should normalize this into a bio frame.
+    # Flat compatibility payload: request mapper should normalize this to a
+    # canonical bio/person frame before it reaches the use case.
     payload = {
         "frame_type": "entity.person",
         "name": "Marie Curie",
@@ -86,16 +92,32 @@ def test_generate_success_path_language_preserves_public_shape_and_runtime_metad
     assert response.status_code == 200
     data = response.json()
 
-    assert data["text"] == "Marie Curie is a physicist."
+    assert data["text"] == "Marie Curie is a Polish physicist."
     assert data["lang_code"] == "en"
+    assert data["construction_id"] == "copula_equative_classification"
+    assert data["renderer_backend"] == "family"
+    assert data["fallback_used"] is False
+    assert data["tokens"] == ["Marie", "Curie", "is", "a", "Polish", "physicist."]
+    assert data["generation_time_ms"] == 12.5
 
     assert "debug_info" in data
-    assert data["debug_info"]["planner_runtime"] is True
+    assert data["debug_info"]["runtime_path"] == "planner_first"
     assert data["debug_info"]["construction_id"] == "copula_equative_classification"
     assert data["debug_info"]["renderer_backend"] == "family"
     assert data["debug_info"]["fallback_used"] is False
     assert data["debug_info"]["lang_code"] == "en"
-    assert data["debug_info"]["slot_keys"] == ["subject", "predicate_nominal"]
+    assert data["debug_info"]["tokens"] == [
+        "Marie",
+        "Curie",
+        "is",
+        "a",
+        "Polish",
+        "physicist.",
+    ]
+    assert data["debug_info"]["generation_time_ms"] == 12.5
+    assert data["debug_info"]["slot_keys"] == ["subject", "profession", "nationality"]
+    assert data["debug_info"]["selected_backend"] == "family"
+    assert data["debug_info"]["attempted_backends"] == ["family"]
 
     assert len(use_case.calls) == 1
     lang_code, frame = use_case.calls[0]
@@ -107,13 +129,21 @@ def test_generate_success_path_language_preserves_public_shape_and_runtime_metad
 
 def test_generate_success_language_inside_payload_uses_payload_route(client_factory):
     use_case = StubGenerateTextUseCase(
-        Sentence(
-            text="Marie Curie est physicienne.",
+        SurfaceResult(
+            text="Marie Curie est une physicienne polonaise.",
             lang_code="fr",
             construction_id="copula_equative_classification",
             renderer_backend="gf",
             fallback_used=False,
-            debug_info={"planner_runtime": True},
+            tokens=["Marie", "Curie", "est", "une", "physicienne", "polonaise."],
+            debug_info={
+                "runtime_path": "planner_first",
+                "slot_keys": ["subject", "profession", "nationality"],
+                "selected_backend": "gf",
+                "attempted_backends": ["gf"],
+                "resolved_language": "WikiFre",
+            },
+            generation_time_ms=9.0,
         )
     )
 
@@ -121,6 +151,8 @@ def test_generate_success_language_inside_payload_uses_payload_route(client_fact
         "lang": "fr",
         "frame_type": "bio",
         "subject": {"name": "Marie Curie", "qid": "Q7186"},
+        "profession": "physicienne",
+        "nationality": "polonaise",
     }
 
     with client_factory(use_case) as client:
@@ -133,13 +165,39 @@ def test_generate_success_language_inside_payload_uses_payload_route(client_fact
     assert response.status_code == 200
     data = response.json()
 
-    assert data["text"] == "Marie Curie est physicienne."
+    assert data["text"] == "Marie Curie est une physicienne polonaise."
     assert data["lang_code"] == "fr"
-    assert data["debug_info"]["planner_runtime"] is True
+    assert data["construction_id"] == "copula_equative_classification"
+    assert data["renderer_backend"] == "gf"
+    assert data["fallback_used"] is False
+    assert data["tokens"] == [
+        "Marie",
+        "Curie",
+        "est",
+        "une",
+        "physicienne",
+        "polonaise.",
+    ]
+    assert data["generation_time_ms"] == 9.0
+
+    assert data["debug_info"]["runtime_path"] == "planner_first"
     assert data["debug_info"]["construction_id"] == "copula_equative_classification"
     assert data["debug_info"]["renderer_backend"] == "gf"
     assert data["debug_info"]["fallback_used"] is False
     assert data["debug_info"]["lang_code"] == "fr"
+    assert data["debug_info"]["tokens"] == [
+        "Marie",
+        "Curie",
+        "est",
+        "une",
+        "physicienne",
+        "polonaise.",
+    ]
+    assert data["debug_info"]["generation_time_ms"] == 9.0
+    assert data["debug_info"]["slot_keys"] == ["subject", "profession", "nationality"]
+    assert data["debug_info"]["selected_backend"] == "gf"
+    assert data["debug_info"]["attempted_backends"] == ["gf"]
+    assert data["debug_info"]["resolved_language"] == "WikiFre"
 
     assert len(use_case.calls) == 1
     lang_code, frame = use_case.calls[0]
@@ -148,12 +206,48 @@ def test_generate_success_language_inside_payload_uses_payload_route(client_fact
     assert getattr(frame, "subject", {})["name"] == "Marie Curie"
 
 
-def test_generate_validation_error_missing_frame_type_returns_422(client_factory):
+def test_generate_payload_route_requires_language_when_not_in_path(client_factory):
     use_case = StubGenerateTextUseCase(
-        Sentence(
+        SurfaceResult(
             text="unused",
             lang_code="en",
-            debug_info={},
+            construction_id="copula_equative_classification",
+            renderer_backend="family",
+            fallback_used=False,
+            tokens=["unused"],
+            debug_info={"runtime_path": "planner_first"},
+            generation_time_ms=0.0,
+        )
+    )
+
+    payload = {
+        "frame_type": "bio",
+        "subject": {"name": "Marie Curie", "qid": "Q7186"},
+    }
+
+    with client_factory(use_case) as client:
+        response = client.post(
+            f"{API_PREFIX}/generate",
+            json=payload,
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 422
+    assert "Missing language" in response.json()["detail"]
+    assert use_case.calls == []
+
+
+def test_generate_validation_error_missing_frame_type_returns_422(client_factory):
+    use_case = StubGenerateTextUseCase(
+        SurfaceResult(
+            text="unused",
+            lang_code="en",
+            construction_id="copula_equative_classification",
+            renderer_backend="family",
+            fallback_used=False,
+            tokens=["unused"],
+            debug_info={"runtime_path": "planner_first"},
+            generation_time_ms=0.0,
         )
     )
 
@@ -175,10 +269,15 @@ def test_generate_validation_error_missing_frame_type_returns_422(client_factory
 
 def test_generate_validation_error_language_mismatch_between_url_and_payload(client_factory):
     use_case = StubGenerateTextUseCase(
-        Sentence(
+        SurfaceResult(
             text="unused",
             lang_code="en",
-            debug_info={},
+            construction_id="copula_equative_classification",
+            renderer_backend="family",
+            fallback_used=False,
+            tokens=["unused"],
+            debug_info={"runtime_path": "planner_first"},
+            generation_time_ms=0.0,
         )
     )
 
@@ -222,8 +321,16 @@ def test_generate_returns_404_when_use_case_reports_unknown_language(client_fact
 def test_generate_returns_422_when_result_cannot_be_mapped_to_public_response(client_factory):
     class BrokenGenerateTextUseCase:
         async def execute(self, lang_code: str, frame: Any) -> Any:
-            # Missing required "text" field; generation_response_mapper should reject this.
-            return {"lang_code": lang_code, "debug_info": {"source": "broken-test"}}
+            # Missing required public field "text"; response mapper must reject it.
+            return {
+                "lang_code": lang_code,
+                "construction_id": "copula_equative_classification",
+                "renderer_backend": "family",
+                "fallback_used": False,
+                "tokens": ["broken"],
+                "debug_info": {"runtime_path": "planner_first"},
+                "generation_time_ms": 1.0,
+            }
 
     payload = {
         "frame_type": "bio",
@@ -239,3 +346,6 @@ def test_generate_returns_422_when_result_cannot_be_mapped_to_public_response(cl
 
     assert response.status_code == 422
     assert "text" in response.json()["detail"]
+```
+
+This aligns the test with the current public response mapper behavior, which always returns the canonical envelope with `text`, `lang_code`, `construction_id`, `renderer_backend`, `fallback_used`, `tokens`, `debug_info`, and `generation_time_ms`, and mirrors canonical fields back into `debug_info`.

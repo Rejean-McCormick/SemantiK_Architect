@@ -1,7 +1,7 @@
 # Public Generation Response Contract
 
-Status: normative  
-Owner: API / Runtime  
+Status: normative
+Owner: API / Runtime
 Scope: canonical HTTP success response returned by SemantiK Architect generation endpoints
 
 ---
@@ -12,19 +12,21 @@ This document defines the authoritative **public HTTP success response** for tex
 
 It covers the response returned by generation endpoints such as:
 
-- `POST /api/v1/generate/{lang}`
-- any future HTTP generation endpoint that exposes the same generation runtime outcome
+* `POST /api/v1/generate/{lang_code}`
+* `POST /api/v1/generate`
+* any future HTTP generation endpoint that exposes the same generation runtime outcome
 
 This contract exists to ensure that:
 
-- API clients receive one stable success shape,
-- runtime migration does not leak backend-specific response drift,
-- planner-first and compatibility paths serialize to the same public envelope,
-- diagnostics remain machine-readable,
-- frontend and backend teams do not drift into different “public” response definitions.
+* API clients receive one stable success shape,
+* runtime migration does not leak backend-specific response drift,
+* planner-first and compatibility paths serialize to the same public envelope,
+* diagnostics remain machine-readable,
+* frontend and backend teams do not drift into different “public” response definitions,
+* and the response mapper remains a serialization boundary rather than the hidden owner of nominal runtime truth.
 
-This is the **public transport contract**.  
-It is not the full internal planning contract and it is not the renderer-facing `ConstructionPlan` contract.
+This is the **public transport contract**.
+It is not the full internal planning contract, not the renderer-facing `ConstructionPlan` contract, and not a frontend convenience object.
 
 ---
 
@@ -32,22 +34,23 @@ It is not the full internal planning contract and it is not the renderer-facing 
 
 This document defines:
 
-- the top-level JSON fields of a successful generation response,
-- required field semantics,
-- normalization rules,
-- debug and fallback observability rules,
-- tokenization transport rules,
-- compatibility behavior during migration,
-- precedence against adjacent contracts.
+* the top-level JSON fields of a successful generation response,
+* required field semantics,
+* normalization rules,
+* debug and fallback observability rules,
+* token transport rules,
+* compatibility behavior during migration,
+* mapper strictness on the nominal planner-first path,
+* precedence against adjacent contracts.
 
 This document does **not** define:
 
-- request payload shape,
-- planner input/output shape,
-- lexical binding internals,
-- error response envelopes,
-- multi-sentence discourse serialization,
-- frontend-local result objects outside the HTTP API.
+* request payload shape,
+* planner input/output shape,
+* lexical binding internals,
+* error response envelopes,
+* multi-sentence discourse serialization,
+* frontend-local result objects outside the HTTP API.
 
 ---
 
@@ -55,21 +58,22 @@ This document does **not** define:
 
 There are three distinct layers that MUST NOT be conflated:
 
-1. **Public HTTP success envelope**  
+1. **Public HTTP success envelope**
    Defined by this document.
 
-2. **Internal runtime result contract**  
+2. **Internal runtime result contract**
    Defined by runtime-facing contracts such as `construction_runtime_contract.md`.
 
-3. **Frontend or helper-library result shapes**  
+3. **Frontend or helper-library result shapes**
    Any UI-facing or convenience result object is not automatically the public HTTP contract.
 
 Precedence rules:
 
-- if the issue is about **HTTP success serialization**, this document wins;
-- if the issue is about **renderer input/output inside runtime**, runtime contracts win;
-- if the issue is about **debug structure**, this document and `debug_info_contract.md` must agree;
-- if any helper API or frontend model differs from this document, that helper/model MUST adapt to this contract, not the reverse.
+* if the issue is about **HTTP success serialization**, this document wins;
+* if the issue is about **renderer input/output inside runtime**, runtime contracts win;
+* if the issue is about **runtime vs public vs frontend boundaries**, `public_vs_runtime_vs_frontend_boundaries.md` and this document must agree;
+* if the issue is about **debug structure**, this document and `debug_info_contract.md` must agree;
+* if any helper API or frontend model differs from this document, that helper or model MUST adapt to this contract, not the reverse.
 
 ---
 
@@ -108,7 +112,7 @@ A successful generation response MUST serialize as a JSON object with the follow
   },
   "generation_time_ms": 12.5
 }
-````
+```
 
 There is exactly one canonical public success envelope.
 
@@ -273,11 +277,21 @@ Rules:
 * MUST be an array of strings.
 * MUST preserve the left-to-right order of the returned text.
 * MUST correspond to the final returned text, not to an intermediate AST or slot map.
-* MAY be provided directly by the backend.
-* If not provided by the backend, it SHOULD be derived from the final `text`.
+* MUST always be present in a successful public response.
 * MUST remain lightweight and transport-oriented.
 
-Tokenization transport policy:
+Nominal-path rule:
+
+* On the nominal planner-first path, `tokens` MUST already exist before public response mapping.
+* The response mapper MUST NOT be the place where nominal planner-first token truth first becomes real.
+
+Compatibility rule:
+
+* During compatibility-only paths, a runtime producer MAY fail to supply `tokens`.
+* In that case, tokens MAY be deterministically derived from the final `text` before the public response is emitted.
+* This compatibility allowance does **not** redefine the nominal planner-first requirement.
+
+Token transport policy:
 
 * `tokens` is not a full linguistic annotation layer.
 * Clients MUST NOT assume morphology, lemma, POS, or syntactic segmentation.
@@ -327,7 +341,7 @@ Minimum required debug keys:
 `slot_keys` rules:
 
 * MUST be an array of strings.
-* MUST list the semantic/planner-facing slot names materially used to produce the result.
+* MUST list the semantic or planner-facing slot names materially used to produce the result.
 * MAY be an empty array when no such slots are applicable.
 
 Recommended additional keys:
@@ -386,7 +400,7 @@ The following fields are **not** part of the canonical public success envelope a
 Notes:
 
 * `warnings` MAY appear under `debug_info`.
-* `confidence` is currently reserved for internal/runtime use unless and until explicitly promoted by a future version of this public contract.
+* `confidence` is currently reserved for internal or runtime use unless and until explicitly promoted by a future version of this public contract.
 
 ---
 
@@ -509,6 +523,8 @@ If timing metadata also appears inside `debug_info`, it MUST NOT contradict the 
 ### 9.9 Token invariant
 
 `tokens` MUST correspond to the final text returned to the caller.
+
+On nominal planner-first success, the runtime must already supply them before public mapping.
 
 ---
 
@@ -649,12 +665,14 @@ This contract is considered implemented when:
 1. generation endpoints return the same top-level success shape regardless of backend,
 2. `text` is always the authoritative public surface field,
 3. `lang_code`, `construction_id`, `renderer_backend`, and `fallback_used` are explicit and non-null,
-4. `debug_info` is always present,
-5. `debug_info` contains the required stable keys, including `runtime_path` and `slot_keys`,
-6. planner-first and compatibility paths serialize to the same public envelope,
-7. legacy response shapes such as `surface_text` and `meta` are fully deprecated,
-8. clients can compare generation outcomes across backends without inspecting internal runtime objects,
-9. nominal planner-first results do not depend on the public mapper to invent or repair missing canonical top-level fields.
+4. `tokens` are always present in successful public responses,
+5. `debug_info` is always present,
+6. `debug_info` contains the required stable keys, including `runtime_path` and `slot_keys`,
+7. planner-first and compatibility paths serialize to the same public envelope,
+8. legacy response shapes such as `surface_text` and `meta` are fully deprecated,
+9. clients can compare generation outcomes across backends without inspecting internal runtime objects,
+10. nominal planner-first results do not depend on the public mapper to invent or repair missing canonical top-level fields,
+11. nominal planner-first results do not depend on the public mapper to invent missing `tokens`.
 
 ---
 
@@ -680,6 +698,11 @@ Conflict rule:
 * if the issue is about token transport semantics, this document and `tokenization_contract.md` must agree;
 * if the issue is about path-specific serialization guarantees, this document and `generation_path_serialization_matrix.md` must agree.
 
+Additional lock for EN/FR final cutover:
+
+* on nominal planner-first EN/FR success, `tokens` must already exist before mapping;
+* compatibility-only derivation of tokens does not redefine the nominal planner-first contract.
+
 Any disagreement must be corrected immediately.
 
 ---
@@ -692,4 +715,4 @@ If two generation paths return different public top-level shapes for the same cl
 
 If a result can appear publicly successful only because the mapper repaired missing nominal planner-first fields that should have been present already, the contract is also broken.
 
-
+If nominal planner-first EN/FR success depends on the mapper to invent missing `tokens`, the contract is also broken.

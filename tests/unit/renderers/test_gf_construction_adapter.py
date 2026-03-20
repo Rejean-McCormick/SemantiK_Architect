@@ -72,7 +72,7 @@ def test_supports_and_support_status_cover_direct_and_wrapper_paths() -> None:
 
 
 @pytest.mark.asyncio
-async def test_realize_direct_plan_returns_surface_result_and_debug_info() -> None:
+async def test_realize_direct_plan_returns_surface_result_and_runtime_debug_info() -> None:
     engine = FakeGFEngine(linearize_value="Marie Curie is a Polish physicist.")
     adapter = GFConstructionAdapter(engine=engine)
 
@@ -95,15 +95,22 @@ async def test_realize_direct_plan_returns_surface_result_and_debug_info() -> No
     )
 
     assert engine.linearize_calls == [(expected_ast, "eng")]
+
     assert result.text == "Marie Curie is a Polish physicist."
     assert result.lang_code == "eng"
     assert result.construction_id == "copula_equative_classification"
     assert result.renderer_backend == "gf"
     assert result.fallback_used is False
     assert result.tokens == ["Marie", "Curie", "is", "a", "Polish", "physicist."]
+    assert isinstance(result.generation_time_ms, (int, float))
+    assert result.generation_time_ms >= 0.0
 
+    assert result.debug_info["runtime_path"] == "planner_first"
     assert result.debug_info["renderer_backend"] == "gf"
     assert result.debug_info["construction_id"] == "copula_equative_classification"
+    assert result.debug_info["lang_code"] == "eng"
+    assert result.debug_info["fallback_used"] is False
+    assert result.debug_info["slot_keys"] == ["subject", "predicate_nominal"]
     assert result.debug_info["resolved_language"] == "WikiEng"
     assert result.debug_info["selected_backend"] == "gf"
     assert result.debug_info["attempted_backends"] == ["gf"]
@@ -114,6 +121,12 @@ async def test_realize_direct_plan_returns_surface_result_and_debug_info() -> No
     assert "mapped_slot_map_to_gf_arguments" in result.debug_info["backend_trace"]
     assert "selected_mkBioFull" in result.debug_info["backend_trace"]
     assert "linearized_ast" in result.debug_info["backend_trace"]
+
+    # Top-level/debug parity
+    assert result.debug_info["construction_id"] == result.construction_id
+    assert result.debug_info["renderer_backend"] == result.renderer_backend
+    assert result.debug_info["lang_code"] == result.lang_code
+    assert result.debug_info["fallback_used"] == result.fallback_used
 
 
 @pytest.mark.asyncio
@@ -136,8 +149,16 @@ async def test_realize_wrapper_passthrough_records_fallback_and_wrapper_metadata
     expected_ast = 'mkBioProf (mkEntityStr "Marie Curie") (strProf "physicist")'
 
     assert engine.linearize_calls == [(expected_ast, "eng")]
-    assert result.fallback_used is True
+    assert result.text == "Marie Curie is a physicist."
+    assert result.lang_code == "eng"
+    assert result.construction_id == "topic_comment_copular"
     assert result.renderer_backend == "gf"
+    assert result.fallback_used is True
+    assert result.tokens == ["Marie", "Curie", "is", "a", "physicist."]
+    assert isinstance(result.generation_time_ms, (int, float))
+    assert result.generation_time_ms >= 0.0
+
+    assert result.debug_info["runtime_path"] == "planner_first"
     assert result.debug_info["effective_construction_id"] == "copula_equative_simple"
     assert result.debug_info["capability_tier"] == "partial"
     assert result.debug_info["wrapper_construction_id"] == "topic_comment_copular"
@@ -161,7 +182,10 @@ async def test_realize_defaults_missing_predicate_nominal_when_fallback_allowed(
     expected_ast = 'mkBioProf (mkEntityStr "Marie Curie") (strProf "person")'
 
     assert engine.linearize_calls == [(expected_ast, "eng")]
+    assert result.text == "Marie Curie is a person."
     assert result.fallback_used is True
+    assert result.tokens == ["Marie", "Curie", "is", "a", "person."]
+    assert result.debug_info["runtime_path"] == "planner_first"
     assert result.debug_info["ast"] == expected_ast
     assert "defaulted_missing_predicate_nominal_to_person" in result.debug_info["backend_trace"]
 
@@ -267,3 +291,4 @@ async def test_realize_does_not_mutate_plan_slot_map() -> None:
 
     after = plan.to_dict(include_empty=True)
     assert after == before
+

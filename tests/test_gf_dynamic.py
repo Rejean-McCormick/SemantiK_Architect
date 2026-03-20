@@ -1,3 +1,4 @@
+```python
 # tests/test_gf_dynamic.py
 from __future__ import annotations
 
@@ -52,6 +53,49 @@ def gf_engine() -> GFGrammarEngine:
         )
 
     return engine
+
+
+def _assert_shared_surface_result_contract(
+    result,
+    *,
+    expected_lang_code: str,
+    expected_construction_id: str,
+    expected_backend: str,
+    expected_fallback_used: bool,
+) -> None:
+    """
+    Shared assertion helper aligned with the final runtime/public contract lock.
+
+    This test file is runtime-facing, but the runtime result is expected to
+    arrive mapper-ready on the nominal path and structurally stable on explicit
+    fallback paths.
+    """
+    assert result.text, "SurfaceResult.text must be non-empty."
+    assert isinstance(result.text, str)
+    assert result.lang_code == expected_lang_code
+    assert result.construction_id == expected_construction_id
+    assert result.renderer_backend == expected_backend
+    assert result.fallback_used is expected_fallback_used
+
+    assert isinstance(result.tokens, list)
+    assert result.tokens, "SurfaceResult.tokens must be present and non-empty."
+    assert all(isinstance(token, str) for token in result.tokens)
+
+    assert isinstance(result.debug_info, dict)
+    assert isinstance(result.generation_time_ms, (int, float))
+    assert result.generation_time_ms >= 0.0
+
+    # Required shared parity keys.
+    assert result.debug_info["construction_id"] == expected_construction_id
+    assert result.debug_info["renderer_backend"] == expected_backend
+    assert result.debug_info["lang_code"] == expected_lang_code
+    assert result.debug_info["fallback_used"] is expected_fallback_used
+
+    # Required runtime-path observability.
+    assert isinstance(result.debug_info["slot_keys"], list)
+    assert "runtime_path" in result.debug_info
+    assert isinstance(result.debug_info["runtime_path"], str)
+    assert result.debug_info["runtime_path"]
 
 
 @pytest.mark.asyncio
@@ -113,8 +157,9 @@ async def test_realize_bio_construction_plan_returns_surface_result_with_metadat
     gf_engine: GFGrammarEngine,
 ) -> None:
     """
-    Keep this file aligned with the planner-era runtime by proving the GF
-    wrapper can consume ConstructionPlan directly and emits canonical metadata.
+    Keep this file aligned with the planner-first runtime by proving the GF
+    wrapper can consume ConstructionPlan directly and emit canonical runtime
+    metadata without depending on public-response repair.
     """
     lang = _select_input_lang(gf_engine)
     resolved_language = gf_engine._resolve_concrete_name(lang)
@@ -134,21 +179,24 @@ async def test_realize_bio_construction_plan_returns_surface_result_with_metadat
 
     result = await gf_engine.realize(plan)
 
-    assert result.text
-    assert not result.text.startswith("<"), result.text
-    assert result.lang_code == lang
-    assert result.construction_id == "copula_equative_classification"
-    assert result.renderer_backend == "gf"
-    assert result.fallback_used is False
-    assert result.tokens
+    _assert_shared_surface_result_contract(
+        result,
+        expected_lang_code=lang,
+        expected_construction_id="copula_equative_classification",
+        expected_backend="gf",
+        expected_fallback_used=False,
+    )
 
-    assert result.debug_info["construction_id"] == "copula_equative_classification"
-    assert result.debug_info["renderer_backend"] == "gf"
-    assert result.debug_info["lang_code"] == lang
-    assert result.debug_info["fallback_used"] is False
+    assert not result.text.startswith("<"), result.text
+    assert result.debug_info["runtime_path"] == "planner_first"
     assert result.debug_info["resolved_language"] == resolved_language
-    assert set(result.debug_info["slot_keys"]) == {"subject", "profession", "nationality"}
+    assert set(result.debug_info["slot_keys"]) == {
+        "subject",
+        "profession",
+        "nationality",
+    }
     assert "backend_trace" in result.debug_info
+    assert isinstance(result.debug_info["backend_trace"], list)
     assert any(
         "constructed GF AST from ConstructionPlan" in step
         for step in result.debug_info["backend_trace"]
@@ -177,11 +225,20 @@ async def test_realize_unsupported_construction_is_explicit_fallback(
 
     result = await gf_engine.realize(plan)
 
-    assert result.renderer_backend == "gf"
-    assert result.construction_id == "relational_temporal_relation"
-    assert result.fallback_used is True
+    _assert_shared_surface_result_contract(
+        result,
+        expected_lang_code=lang,
+        expected_construction_id="relational_temporal_relation",
+        expected_backend="gf",
+        expected_fallback_used=True,
+    )
+
     assert result.text.startswith("<GF Unsupported Construction:")
-    assert result.debug_info["fallback_used"] is True
     assert result.debug_info["construction_id"] == "relational_temporal_relation"
     assert "warnings" in result.debug_info
-    assert any("unsupported GF construction_id" in warning for warning in result.debug_info["warnings"])
+    assert isinstance(result.debug_info["warnings"], list)
+    assert any(
+        "unsupported GF construction_id" in warning
+        for warning in result.debug_info["warnings"]
+    )
+```

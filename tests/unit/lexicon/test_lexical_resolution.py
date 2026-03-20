@@ -7,14 +7,25 @@ import pytest
 import app.adapters.persistence.lexicon.lexical_resolution as lexical_resolution
 from app.adapters.persistence.lexicon.lexical_resolution import LexicalResolver
 from app.core.domain.constructions.slot_models import LexemeRef
+from app.core.domain.planning.construction_plan import ConstructionPlan
 
 
 @dataclass(slots=True)
 class FakeEntry:
+    """
+    Minimal fake lexicon entry aligned with the current lexical resolver helpers.
+
+    Important:
+    - `_entry_lexeme_id()` reads `entry.id`
+    - `_entry_qid()` prefers `entry.qid`
+    - `_entry_label()` reads `entry.lemma`
+    """
+
     key: str
     lemma: str
     pos: str | None = None
-    wikidata_qid: str | None = None
+    qid: str | None = None
+    id: str | None = None
     forms: dict[str, str] = field(default_factory=dict)
     extra: dict[str, object] = field(default_factory=dict)
 
@@ -63,9 +74,10 @@ def _entry(
         key=key or lemma,
         lemma=lemma,
         pos=pos,
-        wikidata_qid=qid,
+        qid=qid,
+        id=lexeme_id,
         forms=forms or {},
-        extra={"lexeme_id": lexeme_id} if lexeme_id else {},
+        extra={},
     )
 
 
@@ -81,6 +93,7 @@ async def test_resolve_slot_preserves_existing_lexeme_ref() -> None:
 
     existing = LexemeRef(
         lemma="physicist",
+        lang_code="en",
         lexeme_id="L123",
         qid="Q169470",
         pos="NOUN",
@@ -281,11 +294,13 @@ async def test_resolve_slot_map_materializes_resolved_values_and_populates_lexic
     assert bindings["profession"]["source"] == "language_lexicon"
     assert bindings["profession"]["lemma"] == "physicist"
     assert bindings["profession"]["qid"] == "Q169470"
+    assert bindings["profession"]["lexeme_id"] == "L123"
     assert bindings["profession"]["fallback_used"] is False
 
     assert bindings["nationality"]["kind"] == "lexeme_ref"
     assert bindings["nationality"]["pos"] == "ADJ"
     assert bindings["nationality"]["lemma"] == "French"
+    assert bindings["nationality"]["lexeme_id"] == "L456"
 
     assert bindings["year"]["kind"] == "literal"
     assert bindings["year"]["source"] == "literal_passthrough"
@@ -331,7 +346,7 @@ async def test_resolve_slot_map_is_deterministic_and_does_not_mutate_input(
     assert first == second
 
 
-async def test_resolve_plan_returns_updated_mapping_with_top_level_lexical_bindings(
+async def test_resolve_plan_returns_updated_construction_plan_with_top_level_lexical_bindings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     physicist = _entry(
@@ -348,29 +363,37 @@ async def test_resolve_plan_returns_updated_mapping_with_top_level_lexical_bindi
     _install_index(monkeypatch, index)
 
     resolver = LexicalResolver()
-    plan = {
-        "construction_id": "copula_equative_classification",
-        "lang_code": "en",
-        "generation_options": {"debug": True},
-        "slot_map": {
+    plan = ConstructionPlan(
+        construction_id="copula_equative_classification",
+        lang_code="en",
+        generation_options={"debug": True},
+        metadata={"planner": "bio_v2"},
+        slot_map={
             "profession": "physicist",
             "year": 1903,
         },
-    }
+    )
 
     resolved_plan = await resolver.resolve_plan(construction_plan=plan)
 
     assert resolved_plan is not plan
-    assert resolved_plan["construction_id"] == "copula_equative_classification"
-    assert isinstance(resolved_plan["slot_map"]["profession"], LexemeRef)
-    assert resolved_plan["slot_map"]["year"] == 1903
+    assert isinstance(resolved_plan, ConstructionPlan)
+    assert resolved_plan.construction_id == "copula_equative_classification"
+    assert resolved_plan.lang_code == "en"
+    assert resolved_plan.generation_options == {"debug": True}
+    assert resolved_plan.metadata == {"planner": "bio_v2"}
 
-    assert resolved_plan["lexical_bindings"] == resolved_plan["slot_map"]["lexical_bindings"]
-    assert resolved_plan["lexical_bindings"]["profession"]["lemma"] == "physicist"
-    assert resolved_plan["lexical_bindings"]["profession"]["fallback_used"] is False
+    assert isinstance(resolved_plan.slot_map["profession"], LexemeRef)
+    assert resolved_plan.slot_map["year"] == 1903
 
-    assert plan["slot_map"]["profession"] == "physicist"
-    assert "lexical_bindings" not in plan
+    assert resolved_plan.lexical_bindings == resolved_plan.slot_map["lexical_bindings"]
+    assert resolved_plan.lexical_bindings["profession"]["lemma"] == "physicist"
+    assert resolved_plan.lexical_bindings["profession"]["lexeme_id"] == "L123"
+    assert resolved_plan.lexical_bindings["profession"]["fallback_used"] is False
+
+    assert plan.slot_map["profession"] == "physicist"
+    assert "lexical_bindings" not in plan.slot_map
+    assert plan.lexical_bindings == {}
 
 
 async def test_resolve_sequence_aggregates_item_metadata_and_fallback(
@@ -408,6 +431,7 @@ async def test_resolve_sequence_aggregates_item_metadata_and_fallback(
     assert isinstance(resolved_values[0], LexemeRef)
     assert isinstance(resolved_values[1], LexemeRef)
     assert resolved_values[0].lemma == "physicist"
+    assert resolved_values[0].lexeme_id == "L123"
     assert resolved_values[1].lemma == "chrononaut"
     assert resolved_values[1].source == "raw_string"
 
@@ -415,3 +439,4 @@ async def test_resolve_sequence_aggregates_item_metadata_and_fallback(
     assert len(items) == 2
     assert items[0]["fallback_used"] is False
     assert items[1]["fallback_used"] is True
+

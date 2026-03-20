@@ -1,19 +1,52 @@
-# utils/eval_bios.py
+# tools/qa/eval_bios.py
 """
 Evaluate biography generation against the live SemantiK Architect API.
 
-This version is aligned with the current public generation contract:
+This version is aligned with the final EN/FR cutover and the current public
+generation contract.
 
-- primary target: POST /api/v1/generate/{lang}
-- success envelope centered on:
-    * text
-    * lang_code
-    * construction_id
-    * renderer_backend
-    * fallback_used
-    * tokens
-    * debug_info
-    * generation_time_ms
+Primary target
+--------------
+
+- POST /api/v1/generate/{lang_code}
+
+Canonical success envelope
+--------------------------
+
+A successful response is centered on:
+
+- text
+- lang_code
+- construction_id
+- renderer_backend
+- fallback_used
+- tokens
+- debug_info
+- generation_time_ms
+
+Final EN/FR evaluator rules
+---------------------------
+
+For EN/FR bio/person evaluation, this tool validates:
+
+- public response contract shape,
+- returned lang_code,
+- explicit construction_id / renderer_backend / fallback_used,
+- runtime_path,
+- top-level vs debug_info parity,
+- surface-language plausibility,
+- resolved language when available,
+- and final acceptance semantics.
+
+For the final EN/FR slice, the evaluator treats the following as failures:
+
+- invalid public envelope,
+- runtime_path != "planner_first",
+- fallback_used != False,
+- missing or contradictory canonical metadata,
+- FR resolved to WikiFre but surfacing obvious English,
+- EN resolved to WikiEng but surfacing obvious French,
+- contract-valid but language-invalid output.
 
 The evaluator is intentionally lightweight and offline-friendly:
 
@@ -25,10 +58,9 @@ The evaluator is intentionally lightweight and offline-friendly:
     * builds a bio-compatible payload,
     * calls the local SemantiK API,
     * validates the public response contract,
-    * records whether a non-empty sentence was produced,
-    * records runtime metadata (resolved language, runtime path, fallback),
-    * flags obvious language-surface mismatches
-      (e.g. lang=fr, resolved_language=WikiFre, but English surface),
+    * validates planner-first acceptance expectations,
+    * records runtime metadata,
+    * flags obvious language-surface mismatches,
     * optionally compares against gold bios if present in the input.
 
 Input schema (LOCAL MODE, recommended)
@@ -64,7 +96,7 @@ Usage
 
 From project root:
 
-    python utils/eval_bios.py \
+    python tools/qa/eval_bios.py \
         --source local \
         --input data/samples/wikidata_people_sample.jsonl \
         --langs en fr \
@@ -73,14 +105,14 @@ From project root:
 
 or:
 
-    python utils/eval_bios.py \
+    python tools/qa/eval_bios.py \
         --source wikidata \
         --langs en fr \
         --limit 50
 
 You can also point to a non-default API:
 
-    python utils/eval_bios.py \
+    python tools/qa/eval_bios.py \
         --api-base http://localhost:8000/api/v1 \
         --source local \
         --input data/samples/wikidata_people_sample.jsonl \
@@ -89,8 +121,8 @@ You can also point to a non-default API:
 Exit code
 ---------
 
-- 0: no contract/language failures detected
-- 1: one or more contract/language failures detected
+- 0: no contract / runtime-path / language failures detected
+- 1: one or more contract / runtime-path / language failures detected
 """
 
 from __future__ import annotations
@@ -106,6 +138,34 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 from urllib import error as urlerror
 from urllib import request as urlrequest
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+NOMINAL_RUNTIME_PATH = "planner_first"
+EXPECTED_PUBLIC_FIELDS = (
+    "text",
+    "lang_code",
+    "construction_id",
+    "renderer_backend",
+    "fallback_used",
+    "tokens",
+    "debug_info",
+    "generation_time_ms",
+)
+REQUIRED_DEBUG_FIELDS = (
+    "runtime_path",
+    "construction_id",
+    "renderer_backend",
+    "lang_code",
+    "fallback_used",
+    "slot_keys",
+)
+EXPECTED_RESOLVED_LANGUAGE_BY_LANG = {
+    "en": "WikiEng",
+    "fr": "WikiFre",
+}
 
 # ---------------------------------------------------------------------------
 # Project bootstrap (run reliably from anywhere)
@@ -196,6 +256,9 @@ class EvalResult:
     contract_ok: bool
     contract_errors: List[str] = field(default_factory=list)
 
+    acceptance_ok: bool = False
+    acceptance_errors: List[str] = field(default_factory=list)
+
     response_lang_code: str = ""
     construction_id: str = ""
     renderer_backend: str = ""
@@ -240,6 +303,10 @@ def _ensure_list(value: Any) -> List[str]:
     if isinstance(value, (list, tuple, set)):
         return [str(v).strip() for v in value if str(v).strip()]
     return [str(value).strip()] if str(value).strip() else []
+
+
+def _is_nonempty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
 
 
 def _load_json_records(path: Path) -> List[Dict[str, Any]]:
@@ -363,7 +430,7 @@ def fetch_wikidata_persons(limit: int) -> List[PersonRecord]:
 
     headers = {
         "Accept": "application/sparql-results+json",
-        "User-Agent": "semantik-architect-eval-bios/0.2 (tooling)",
+        "User-Agent": "semantik-architect-eval-bios/0.3 (tooling)",
     }
 
     resp = requests.get(endpoint, params={"query": sparql}, headers=headers, timeout=60)
@@ -487,54 +554,71 @@ def _build_bio_payload(
     return payload
 
 
+# ---------------------------------------------------------------------------
+# Contract and acceptance validation
+# ---------------------------------------------------------------------------
+
+
 def _validate_public_response_contract(response: Dict[str, Any], requested_lang: str) -> List[str]:
     errors: List[str] = []
 
     if not isinstance(response, dict):
         return ["response is not a JSON object"]
 
-    if not isinstance(response.get("text"), str):
+    for field_name in EXPECTED_PUBLIC_FIELDS:
+        if field_name not in response:
+            errors.append(f"missing top-level '{field_name}'")
+
+    text = response.get("text")
+    if not _is_nonempty_string(text):
         errors.append("missing or invalid top-level 'text'")
 
-    if not isinstance(response.get("lang_code"), str):
+    lang_code = response.get("lang_code")
+    if not isinstance(lang_code, str):
         errors.append("missing or invalid top-level 'lang_code'")
-    else:
-        if _normalize_lang(response.get("lang_code")) != _normalize_lang(requested_lang):
-            errors.append(
-                f"top-level lang_code mismatch: expected {requested_lang}, got {response.get('lang_code')}"
-            )
+    elif _normalize_lang(lang_code) != _normalize_lang(requested_lang):
+        errors.append(
+            f"top-level lang_code mismatch: expected {requested_lang}, got {lang_code}"
+        )
 
-    if "construction_id" not in response:
-        errors.append("missing top-level 'construction_id'")
+    construction_id = response.get("construction_id")
+    if not _is_nonempty_string(construction_id):
+        errors.append("missing or invalid top-level 'construction_id'")
 
-    if "renderer_backend" not in response:
-        errors.append("missing top-level 'renderer_backend'")
+    renderer_backend = response.get("renderer_backend")
+    if not _is_nonempty_string(renderer_backend):
+        errors.append("missing or invalid top-level 'renderer_backend'")
 
     if not isinstance(response.get("fallback_used"), bool):
         errors.append("missing or invalid top-level 'fallback_used'")
 
     tokens = response.get("tokens")
-    if not isinstance(tokens, list) or any(not isinstance(t, str) for t in tokens):
+    if not isinstance(tokens, list) or not tokens or any(not isinstance(t, str) for t in tokens):
         errors.append("missing or invalid top-level 'tokens'")
 
     debug_info = response.get("debug_info")
     if not isinstance(debug_info, dict):
         errors.append("missing or invalid top-level 'debug_info'")
     else:
-        for key in ("runtime_path", "fallback_used", "lang_code"):
+        for key in REQUIRED_DEBUG_FIELDS:
             if key not in debug_info:
                 errors.append(f"debug_info missing '{key}'")
 
-        if "fallback_used" in debug_info and response.get("fallback_used") != debug_info.get("fallback_used"):
-            errors.append("top-level fallback_used does not match debug_info.fallback_used")
+        if not _is_nonempty_string(debug_info.get("runtime_path")):
+            errors.append("invalid debug_info.runtime_path")
 
-        if "lang_code" in debug_info and _normalize_lang(debug_info.get("lang_code")) != _normalize_lang(requested_lang):
-            errors.append(
-                f"debug_info.lang_code mismatch: expected {requested_lang}, got {debug_info.get('lang_code')}"
-            )
+        slot_keys = debug_info.get("slot_keys")
+        if not isinstance(slot_keys, list) or any(not isinstance(k, str) for k in slot_keys):
+            errors.append("invalid debug_info.slot_keys")
 
-    if "generation_time_ms" in response and not isinstance(response.get("generation_time_ms"), (int, float)):
-        errors.append("invalid top-level 'generation_time_ms'")
+        # Required parity with top-level fields
+        for key in ("construction_id", "renderer_backend", "lang_code", "fallback_used"):
+            if key in debug_info and response.get(key) != debug_info.get(key):
+                errors.append(f"top-level {key} does not match debug_info.{key}")
+
+    generation_time_ms = response.get("generation_time_ms")
+    if not isinstance(generation_time_ms, (int, float)):
+        errors.append("missing or invalid top-level 'generation_time_ms'")
 
     return errors
 
@@ -544,13 +628,15 @@ def _looks_obviously_english(text: str) -> bool:
     markers = [
         " is ",
         " is a ",
-        " participated in ",
         " was ",
         " were ",
+        " participated in ",
         " british ",
         " mathematician ",
         " physicist ",
         " chemist ",
+        " writer ",
+        " scientist ",
     ]
     return any(m in s for m in markers)
 
@@ -561,6 +647,7 @@ def _looks_obviously_french(text: str) -> bool:
         " est ",
         " était ",
         " participe à ",
+        " participé à ",
         " français ",
         " française ",
         " britannique ",
@@ -568,6 +655,10 @@ def _looks_obviously_french(text: str) -> bool:
         " mathématicienne ",
         " physicien ",
         " physicienne ",
+        " chimiste ",
+        " écrivain ",
+        " écrivaine ",
+        " scientifique ",
     ]
     return any(m in s for m in markers)
 
@@ -593,8 +684,50 @@ def _check_language_surface(
     if lang == "en":
         if resolved == "WikiEng" and _looks_obviously_french(output):
             return False, "resolved_wikieng_but_surface_looks_french"
+        if _looks_obviously_french(output) and not _looks_obviously_english(output):
+            return False, "requested_en_but_surface_looks_french"
 
     return True, ""
+
+
+def _validate_acceptance_semantics(response: Dict[str, Any], requested_lang: str) -> List[str]:
+    """
+    Validate final EN/FR cutover semantics, not just transport shape.
+    """
+    errors: List[str] = []
+
+    if not isinstance(response, dict):
+        return ["response is not a JSON object"]
+
+    debug_info = response.get("debug_info") if isinstance(response.get("debug_info"), dict) else {}
+
+    runtime_path = str(debug_info.get("runtime_path") or "").strip()
+    if runtime_path != NOMINAL_RUNTIME_PATH:
+        errors.append(
+            f"runtime_path is not nominal planner-first: expected {NOMINAL_RUNTIME_PATH}, got {runtime_path or '<missing>'}"
+        )
+
+    fallback_used = response.get("fallback_used")
+    if fallback_used is not False:
+        errors.append(
+            f"fallback_used must be false for EN/FR nominal acceptance, got {fallback_used!r}"
+        )
+
+    lang = _normalize_lang(requested_lang)
+    expected_resolved = EXPECTED_RESOLVED_LANGUAGE_BY_LANG.get(lang)
+    resolved_language = str(debug_info.get("resolved_language") or "").strip()
+
+    if expected_resolved:
+        if not resolved_language:
+            errors.append(
+                f"missing debug_info.resolved_language for requested language {lang}"
+            )
+        elif resolved_language != expected_resolved:
+            errors.append(
+                f"resolved_language mismatch: expected {expected_resolved}, got {resolved_language}"
+            )
+
+    return errors
 
 
 def _normalize_text_for_match(text: str) -> str:
@@ -663,12 +796,17 @@ def evaluate_persons(
                 response = {
                     "text": "",
                     "lang_code": _normalize_lang(lang),
+                    "construction_id": "",
+                    "renderer_backend": "",
                     "fallback_used": False,
                     "tokens": [],
                     "debug_info": {
                         "runtime_path": "evaluation_error",
                         "lang_code": _normalize_lang(lang),
+                        "construction_id": "",
+                        "renderer_backend": "",
                         "fallback_used": False,
+                        "slot_keys": [],
                         "error": str(exc),
                     },
                     "generation_time_ms": 0.0,
@@ -676,6 +814,9 @@ def evaluate_persons(
 
             contract_errors = _validate_public_response_contract(response, lang)
             contract_ok = not contract_errors
+
+            acceptance_errors = _validate_acceptance_semantics(response, lang)
+            acceptance_ok = not acceptance_errors
 
             output = str(response.get("text") or "").strip()
             rendered = bool(output)
@@ -691,7 +832,11 @@ def evaluate_persons(
                 or debug_info.get("renderer_backend")
                 or ""
             )
-            generation_time_ms = float(response.get("generation_time_ms") or 0.0)
+
+            try:
+                generation_time_ms = float(response.get("generation_time_ms") or 0.0)
+            except (TypeError, ValueError):
+                generation_time_ms = 0.0
 
             language_surface_ok, language_surface_reason = _check_language_surface(
                 requested_lang=lang,
@@ -715,6 +860,8 @@ def evaluate_persons(
                     exact_match=exact_match,
                     contract_ok=contract_ok,
                     contract_errors=contract_errors,
+                    acceptance_ok=acceptance_ok,
+                    acceptance_errors=acceptance_errors,
                     response_lang_code=response_lang_code,
                     construction_id=construction_id,
                     renderer_backend=renderer_backend,
@@ -745,7 +892,7 @@ def summarize_results(results: List[EvalResult]) -> None:
 
     header = (
         f"{'Lang':<6} {'Pairs':>8} {'Rendered':>10} {'Coverage%':>10} "
-        f"{'HasGold':>8} {'Exact':>8} {'ContractOK':>11} {'LangOK':>8}"
+        f"{'HasGold':>8} {'Exact':>8} {'ContractOK':>11} {'AcceptOK':>10} {'LangOK':>8}"
     )
     print(header)
     print("-" * len(header))
@@ -756,12 +903,13 @@ def summarize_results(results: List[EvalResult]) -> None:
         has_gold = sum(1 for r in rs if r.has_gold)
         exact = sum(1 for r in rs if r.exact_match)
         contract_ok = sum(1 for r in rs if r.contract_ok)
+        acceptance_ok = sum(1 for r in rs if r.acceptance_ok)
         lang_ok = sum(1 for r in rs if r.language_surface_ok)
         coverage = 100.0 * rendered / total if total else 0.0
 
         print(
             f"{lang:<6} {total:>8} {rendered:>10} {coverage:>9.1f}% "
-            f"{has_gold:>8} {exact:>8} {contract_ok:>11} {lang_ok:>8}"
+            f"{has_gold:>8} {exact:>8} {contract_ok:>11} {acceptance_ok:>10} {lang_ok:>8}"
         )
 
     print()
@@ -782,6 +930,8 @@ def dump_results_csv(results: List[EvalResult], path: Path) -> None:
                 "exact_match",
                 "contract_ok",
                 "contract_errors",
+                "acceptance_ok",
+                "acceptance_errors",
                 "response_lang_code",
                 "construction_id",
                 "renderer_backend",
@@ -804,6 +954,8 @@ def dump_results_csv(results: List[EvalResult], path: Path) -> None:
                     int(r.exact_match),
                     int(r.contract_ok),
                     "; ".join(r.contract_errors),
+                    int(r.acceptance_ok),
+                    "; ".join(r.acceptance_errors),
                     r.response_lang_code,
                     r.construction_id,
                     r.renderer_backend,
@@ -850,6 +1002,8 @@ def print_sample_outputs(
             suffix = []
             if not r.contract_ok:
                 suffix.append("CONTRACT_FAIL")
+            if not r.acceptance_ok:
+                suffix.extend(r.acceptance_errors)
             if not r.language_surface_ok:
                 suffix.append(r.language_surface_reason or "LANG_FAIL")
             tag = f" [{' | '.join(suffix)}]" if suffix else ""
@@ -861,6 +1015,8 @@ def compute_failure_count(results: List[EvalResult]) -> int:
     count = 0
     for r in results:
         if not r.contract_ok:
+            count += 1
+        elif not r.acceptance_ok:
             count += 1
         elif not r.language_surface_ok:
             count += 1
@@ -913,7 +1069,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--no-fail-on-issues",
         action="store_true",
-        help="Always exit 0 even if contract or language-surface failures are found.",
+        help="Always exit 0 even if contract, acceptance, or language-surface failures are found.",
     )
 
     return parser.parse_args(argv)
@@ -995,12 +1151,14 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     failure_count = compute_failure_count(results)
     contract_failures = sum(1 for r in results if not r.contract_ok)
+    acceptance_failures = sum(1 for r in results if not r.acceptance_ok)
     language_failures = sum(1 for r in results if not r.language_surface_ok)
 
     log.summary(
         {
             "Total Pairs": len(results),
             "Contract Failures": contract_failures,
+            "Acceptance Failures": acceptance_failures,
             "Language Failures": language_failures,
             "Exit Code": 0 if args.no_fail_on_issues or failure_count == 0 else 1,
         }
@@ -1012,3 +1170,4 @@ def main(argv: Optional[List[str]] = None) -> None:
 
 if __name__ == "__main__":
     main()
+

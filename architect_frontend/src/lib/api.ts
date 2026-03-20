@@ -5,11 +5,19 @@
  *
  * Goals:
  * - Default base URL targets /api/v1
- * - Robust against common backend variants during migration:
- * - health: /health, /health/live
- * - schemas: /schemas/frames/:type, /frames/schemas/:type
- * - generate: /generate/:lang (new), /generate (legacy)
- * - languages: strings (legacy) vs objects (v2.1)
+ * - Prefer the canonical public HTTP contract
+ * - Remain robust against a small set of migration-era endpoint/path variants
+ * - Keep frontend/client convenience separate from the canonical transport shape
+ *
+ * Canonical generation response:
+ * - text
+ * - lang_code
+ * - construction_id
+ * - renderer_backend
+ * - fallback_used
+ * - tokens
+ * - debug_info
+ * - generation_time_ms
  */
 
 const DEFAULT_API_BASE_URL =
@@ -44,7 +52,7 @@ function joinUrl(base: string, path: string): string {
 function extractErrorMessage(parsed: unknown, status: number): string {
   if (typeof parsed === "string" && parsed.trim()) return parsed;
   if (parsed && typeof parsed === "object") {
-    const obj = parsed as any;
+    const obj = parsed as Record<string, unknown>;
     if (typeof obj.detail === "string" && obj.detail.trim()) return obj.detail;
     if (typeof obj.message === "string" && obj.message.trim()) return obj.message;
     if (typeof obj.error === "string" && obj.error.trim()) return obj.error;
@@ -90,14 +98,22 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     console.error("API Request Failed:", url, response.status, parsed);
-    throw new ApiError(extractErrorMessage(parsed, response.status), response.status, parsed);
+    throw new ApiError(
+      extractErrorMessage(parsed, response.status),
+      response.status,
+      parsed,
+    );
   }
 
   return parsed as T;
 }
 
-async function requestWithFallback<T>(paths: string[], init?: RequestInit): Promise<T> {
+async function requestWithFallback<T>(
+  paths: string[],
+  init?: RequestInit,
+): Promise<T> {
   let lastErr: unknown = null;
+
   for (const p of paths) {
     try {
       return await request<T>(p, init);
@@ -106,7 +122,158 @@ async function requestWithFallback<T>(paths: string[], init?: RequestInit): Prom
       if (e instanceof ApiError && e.status !== 404) break;
     }
   }
+
   throw lastErr;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared helpers                                                             */
+/* -------------------------------------------------------------------------- */
+
+type JsonObject = Record<string, unknown>;
+
+function asObject(value: unknown): JsonObject | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as JsonObject)
+    : null;
+}
+
+function firstNonEmptyString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+function asBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function asStringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.map((item) => String(item));
+}
+
+/**
+ * Lightweight transport tokenization.
+ *
+ * This intentionally keeps punctuation attached when split by whitespace,
+ * matching the public transport contract's lightweight semantics.
+ */
+function tokenizeTransportText(text: string): string[] {
+  return text
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function requireStringField(
+  value: string | null,
+  fieldName: string,
+): string {
+  if (!value) {
+    throw new Error(`Non-conformant generation response: missing ${fieldName}`);
+  }
+  return value;
+}
+
+function normalizeGenerationResult(
+  raw: unknown,
+  options: {
+    requestedLangCode?: string;
+    compatibilityRuntimePath?: string;
+  } = {},
+): GenerationResult {
+  const root = asObject(raw);
+  if (!root) {
+    throw new Error("Non-conformant generation response: expected object.");
+  }
+
+  const rawDebugInfo = asObject(root.debug_info) ?? asObject(root.debug) ?? {};
+
+  const text = requireStringField(
+    firstNonEmptyString(root.text, root.surface_text),
+    "text",
+  );
+
+  const langCode = requireStringField(
+    firstNonEmptyString(
+      root.lang_code,
+      root.lang,
+      root.language,
+      rawDebugInfo.lang_code,
+      options.requestedLangCode,
+    ),
+    "lang_code",
+  );
+
+  const constructionId = requireStringField(
+    firstNonEmptyString(root.construction_id, rawDebugInfo.construction_id),
+    "construction_id",
+  );
+
+  const rendererBackend = requireStringField(
+    firstNonEmptyString(root.renderer_backend, rawDebugInfo.renderer_backend),
+    "renderer_backend",
+  );
+
+  const fallbackUsed =
+    asBoolean(root.fallback_used) ??
+    asBoolean(rawDebugInfo.fallback_used) ??
+    (options.compatibilityRuntimePath ? true : undefined);
+
+  if (typeof fallbackUsed !== "boolean") {
+    throw new Error(
+      "Non-conformant generation response: missing fallback_used",
+    );
+  }
+
+  const runtimePath =
+    firstNonEmptyString(rawDebugInfo.runtime_path) ??
+    options.compatibilityRuntimePath;
+
+  if (!runtimePath) {
+    throw new Error(
+      "Non-conformant generation response: missing debug_info.runtime_path",
+    );
+  }
+
+  const slotKeys = asStringArray(rawDebugInfo.slot_keys) ?? [];
+  const tokens = asStringArray(root.tokens) ?? tokenizeTransportText(text);
+
+  const generationTimeMs =
+    typeof root.generation_time_ms === "number" ? root.generation_time_ms : 0.0;
+
+  const debugInfo: GenerationDebugInfo = {
+    ...rawDebugInfo,
+    runtime_path: runtimePath,
+    construction_id: constructionId,
+    renderer_backend: rendererBackend,
+    lang_code: langCode,
+    fallback_used: fallbackUsed,
+    slot_keys: slotKeys,
+  };
+
+  return {
+    text,
+    lang_code: langCode,
+    construction_id: constructionId,
+    renderer_backend: rendererBackend,
+    fallback_used: fallbackUsed,
+    tokens,
+    debug_info: debugInfo,
+    generation_time_ms: generationTimeMs,
+  };
+}
+
+function resolveGenerateLangCode(req: GenerateRequest): string {
+  const langCode = req.lang_code ?? req.lang;
+  if (!langCode || !langCode.trim()) {
+    throw new Error("GenerateRequest requires lang_code or lang.");
+  }
+  return langCode.trim();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -142,9 +309,9 @@ export function getLabelText(
 /* -------------------------------------------------------------------------- */
 
 export interface Language {
-  code: string; // e.g. "zul" (ISO 639-3) or "en" depending on backend
-  name: string; // e.g. "Zulu"
-  z_id: string; // e.g. "Z1032"
+  code: string; // public API language code, e.g. "en", "fr"
+  name: string; // e.g. "English"
+  z_id: string; // optional catalog / inventory ID
 }
 
 /* -------------------------------------------------------------------------- */
@@ -243,23 +410,54 @@ export interface SuggestionResponse {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Generation Types (NLG)                                                     */
+/* Generation Types (NLG / Public Transport)                                  */
 /* -------------------------------------------------------------------------- */
 
 export interface GenerateRequest {
-  lang: string;
+  /**
+   * Preferred spelling for new frontend code.
+   */
+  lang_code?: string;
+
+  /**
+   * Backward-compatible convenience alias.
+   */
+  lang?: string;
+
   frame_type: string;
   frame_payload: Record<string, unknown>;
   options?: Record<string, unknown>;
 }
 
+export interface GenerationDebugInfo {
+  runtime_path: string;
+  construction_id: string;
+  renderer_backend: string;
+  lang_code: string;
+  fallback_used: boolean;
+  slot_keys: string[];
+  selected_backend?: string;
+  attempted_backends?: string[];
+  backend_trace?: string[];
+  resolved_language?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Canonical public generation response shape.
+ *
+ * This mirrors the public HTTP transport contract rather than a frontend-only
+ * convenience object.
+ */
 export interface GenerationResult {
   text: string;
-  sentences?: string[];
-  lang?: string;
-  frame?: Record<string, unknown>;
-  debug_info?: Record<string, unknown>;
-  surface_text?: string;
+  lang_code: string;
+  construction_id: string;
+  renderer_backend: string;
+  fallback_used: boolean;
+  tokens: string[];
+  debug_info: GenerationDebugInfo;
+  generation_time_ms: number;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -270,7 +468,7 @@ export interface ArchitectApi {
   health(): Promise<boolean>;
 
   listFrameTypes(): Promise<FrameTypeMeta[]>;
-  getFrameSchema(frameType: string): Promise<Record<string, any>>;
+  getFrameSchema(frameType: string): Promise<Record<string, unknown>>;
 
   listLanguages(): Promise<Language[]>;
 
@@ -294,18 +492,21 @@ function normalizeFrameTypes(raw: unknown): FrameTypeMeta[] {
   if (!Array.isArray(raw)) return [];
 
   return raw
-    .map((item: any) => {
+    .map((item: unknown) => {
+      const obj = asObject(item);
+
       // Preferred shape (target contract)
-      if (item && typeof item === "object" && typeof item.frame_type === "string") {
-        return item as FrameTypeMeta;
+      if (obj && typeof obj.frame_type === "string") {
+        return obj as unknown as FrameTypeMeta;
       }
 
-      // Common fallback shape seen in placeholder registries: { id, label, description, schema_ref, icon? }
-      if (item && typeof item === "object" && typeof item.id === "string") {
-        const id: string = item.id;
+      // Common fallback shape seen in placeholder registries:
+      // { id, label, description, schema_ref, icon? }
+      if (obj && typeof obj.id === "string") {
+        const id = obj.id;
         const family =
-          typeof item.family === "string"
-            ? item.family
+          typeof obj.family === "string"
+            ? obj.family
             : id.includes(".")
               ? id.split(".")[0]
               : "frame";
@@ -313,8 +514,9 @@ function normalizeFrameTypes(raw: unknown): FrameTypeMeta[] {
         return {
           frame_type: id,
           family,
-          title: typeof item.label === "string" ? item.label : id,
-          description: typeof item.description === "string" ? item.description : "",
+          title: typeof obj.label === "string" ? obj.label : id,
+          description:
+            typeof obj.description === "string" ? obj.description : "",
           status: "implemented",
         } satisfies FrameTypeMeta;
       }
@@ -326,23 +528,35 @@ function normalizeFrameTypes(raw: unknown): FrameTypeMeta[] {
 
 function normalizeLanguages(raw: unknown): Language[] {
   if (!Array.isArray(raw)) return [];
-  // [FIX] Handle legacy backend returning string[] instead of Language[]
-  return raw.map((item: any) => {
-    if (typeof item === "string") {
-      return { code: item, name: item, z_id: "" };
-    }
-    if (item && typeof item === "object" && item.code) {
-      return item as Language;
-    }
-    return null;
-  }).filter(Boolean) as Language[];
+
+  return raw
+    .map((item: unknown) => {
+      if (typeof item === "string") {
+        return { code: item, name: item, z_id: "" };
+      }
+
+      const obj = asObject(item);
+      if (obj && typeof obj.code === "string") {
+        return {
+          code: obj.code,
+          name: typeof obj.name === "string" ? obj.name : obj.code,
+          z_id: typeof obj.z_id === "string" ? obj.z_id : "",
+        } satisfies Language;
+      }
+
+      return null;
+    })
+    .filter(Boolean) as Language[];
 }
 
 export const architectApi: ArchitectApi = {
   async health(): Promise<boolean> {
     try {
       // Prefer the newer liveness endpoint; fall back to older /health if present.
-      const data = await requestWithFallback<any>(["/health/live", "/health"]);
+      const data = await requestWithFallback<Record<string, unknown>>([
+        "/health/live",
+        "/health",
+      ]);
       return (data?.status ?? "") === "ok";
     } catch {
       return false;
@@ -354,16 +568,15 @@ export const architectApi: ArchitectApi = {
     return normalizeFrameTypes(raw);
   },
 
-  getFrameSchema(frameType: string): Promise<Record<string, any>> {
+  getFrameSchema(frameType: string): Promise<Record<string, unknown>> {
     const ft = encodeURIComponent(frameType);
-    return requestWithFallback<Record<string, any>>([
+    return requestWithFallback<Record<string, unknown>>([
       `/schemas/frames/${ft}`,
       `/frames/schemas/${ft}`,
     ]);
   },
 
   async listLanguages(): Promise<Language[]> {
-    // Prefer no trailing slash; FastAPI may redirect; fetch follows 307 for GET.
     const raw = await request<unknown>("/languages");
     return normalizeLanguages(raw);
   },
@@ -416,48 +629,47 @@ export const architectApi: ArchitectApi = {
   },
 
   async generate(req: GenerateRequest): Promise<GenerationResult> {
-    // Preferred (new): POST /generate/{lang_code}
-    const lang = encodeURIComponent(req.lang);
+    const langCode = resolveGenerateLangCode(req);
+    const encodedLangCode = encodeURIComponent(langCode);
+
+    // Preferred path: POST /generate/{lang_code}
     try {
-      // [FIX] Flatten payload for Strict Path (BioFrame)
-      // The backend expects flat keys (name, profession) at the root, 
-      // NOT nested in 'frame_payload'.
-      const flatBody = {
+      const normalizedBody = {
         frame_type: req.frame_type,
         ...req.frame_payload,
-        ...req.options,
+        ...(req.options ?? {}),
       };
 
-      return await request<GenerationResult>(`/generate/${lang}`, {
+      const raw = await request<unknown>(`/generate/${encodedLangCode}`, {
         method: "POST",
-        body: JSON.stringify(flatBody),
+        body: JSON.stringify(normalizedBody),
+      });
+
+      return normalizeGenerationResult(raw, {
+        requestedLangCode: langCode,
       });
     } catch (e) {
-      // Backward-compatible fallback (legacy): POST /generate with frame_slug/language/fields.
+      // Backward-compatible path fallback:
+      // POST /generate with language in payload.
+      //
+      // We still normalize into the canonical public transport shape.
       if (e instanceof ApiError && e.status === 404) {
-        const legacy = await request<any>("/generate", {
+        const raw = await request<unknown>("/generate", {
           method: "POST",
           body: JSON.stringify({
-            frame_slug: req.frame_type,
-            language: req.lang,
-            fields: req.frame_payload,
-            options: req.options ?? {},
+            frame_type: req.frame_type,
+            lang_code: langCode,
+            ...req.frame_payload,
+            ...(req.options ?? {}),
           }),
         });
 
-        // Best-effort normalization to GenerationResult
-        if (legacy && typeof legacy === "object") {
-          const text = legacy.text ?? legacy.surface_text ?? "";
-          return {
-            text: String(text ?? ""),
-            sentences: Array.isArray(legacy.sentences) ? legacy.sentences : undefined,
-            lang: legacy.lang ?? legacy.language ?? req.lang,
-            frame: legacy.frame ?? undefined,
-            debug_info: legacy.debug_info ?? legacy.debug ?? undefined,
-            surface_text: legacy.surface_text ?? undefined,
-          };
-        }
+        return normalizeGenerationResult(raw, {
+          requestedLangCode: langCode,
+          compatibilityRuntimePath: "legacy_direct_frame",
+        });
       }
+
       throw e;
     }
   },

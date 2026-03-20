@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 from collections.abc import Mapping as ABCMapping, Sequence
 
 import structlog
@@ -52,10 +52,16 @@ _BACKEND_ALIASES: dict[str, str] = {
     "safe": "safe_mode",
 }
 _ATTEMPTABLE_STATUSES = {"full", "partial", "fallback_only"}
+_NOMINAL_RUNTIME_PATH = "planner_first"
 
 
 @dataclass(frozen=True, slots=True)
 class _FallbackSurfaceResult:
+    """
+    Import-safe fallback used only when the canonical SurfaceResult model cannot
+    be imported during migration batches.
+    """
+
     text: str
     lang_code: str
     construction_id: str
@@ -102,6 +108,10 @@ def _normalize_tokens(value: Any) -> tuple[str, ...]:
     return ()
 
 
+def _derive_tokens_from_text(text: str) -> tuple[str, ...]:
+    return tuple(part for part in str(text).split() if part)
+
+
 def _normalize_backend_name(value: Any) -> str | None:
     if not isinstance(value, str):
         return None
@@ -136,6 +146,38 @@ def _truthy(value: Any, *, default: bool) -> bool:
     return default
 
 
+def _coerce_generation_time_ms(value: Any) -> float:
+    try:
+        return float(value or 0.0)
+    except Exception:
+        return 0.0
+
+
+def _resolve_slot_keys(construction_plan: Any) -> list[str]:
+    explicit_slot_keys = _get_value(construction_plan, "slot_keys", None)
+    if isinstance(explicit_slot_keys, Sequence) and not isinstance(explicit_slot_keys, str):
+        out: list[str] = []
+        for item in explicit_slot_keys:
+            if isinstance(item, str):
+                item = item.strip()
+                if item:
+                    out.append(item)
+        if out:
+            return out
+
+    slot_map = _get_value(construction_plan, "slot_map", {})
+    if isinstance(slot_map, ABCMapping):
+        out = []
+        for key in slot_map.keys():
+            if isinstance(key, str):
+                key = key.strip()
+                if key:
+                    out.append(key)
+        return out
+
+    return []
+
+
 def _build_result_object(
     *,
     text: str,
@@ -161,6 +203,7 @@ def _build_result_object(
             )
         except TypeError:
             try:
+                # Transitional compatibility for partially updated model signatures.
                 return _ImportedSurfaceResult(
                     text=text,
                     lang_code=lang_code,
@@ -377,8 +420,7 @@ class ConstructionRealizer:
             )
 
             dispatch_fallback_used = (
-                len(attempted_backends) > 1
-                or (backend_name == "safe_mode" and forced_backend is None)
+                len(attempted_backends) > 1 or support_status == "fallback_only"
             )
 
             return self._normalize_result(
@@ -517,7 +559,7 @@ class ConstructionRealizer:
             except Exception:
                 return "unsupported"
 
-        # Conservative defaults for migration-era adapters:
+        # Conservative defaults for migration-era adapters.
         if backend_name == "safe_mode":
             return "fallback_only"
         return "partial"
@@ -551,6 +593,17 @@ class ConstructionRealizer:
                 raise RealizationError(
                     f"Backend '{selected_backend}' returned no usable text"
                 )
+        text = str(text).strip()
+
+        result_construction_id = _get_value(raw_result, "construction_id")
+        if _is_non_empty_string(result_construction_id):
+            normalized_result_cid = str(result_construction_id).strip()
+            if normalized_result_cid != construction_id:
+                raise RealizationError(
+                    f"Backend '{selected_backend}' returned construction_id "
+                    f"'{normalized_result_cid}' but the plan requested "
+                    f"'{construction_id}'"
+                )
 
         lang_code = _get_value(raw_result, "lang_code", plan_lang_code)
         if not _is_non_empty_string(lang_code):
@@ -558,39 +611,44 @@ class ConstructionRealizer:
         lang_code = str(lang_code).strip().lower()
 
         debug_info = _as_plain_dict(_get_value(raw_result, "debug_info", {}))
-        child_fallback = bool(
-            _get_value(raw_result, "fallback_used", debug_info.get("fallback_used", False))
+
+        child_fallback = _truthy(
+            _get_value(raw_result, "fallback_used", debug_info.get("fallback_used")),
+            default=False,
         )
         fallback_used = bool(child_fallback or dispatch_fallback_used)
 
         tokens = _normalize_tokens(_get_value(raw_result, "tokens"))
         if not tokens:
-            tokens = tuple(part for part in str(text).split() if part)
+            # Canonical runtime result must carry tokens before API mapping.
+            tokens = _derive_tokens_from_text(text)
 
-        generation_time_ms = _get_value(raw_result, "generation_time_ms", 0.0)
-        try:
-            generation_time_ms = float(generation_time_ms or 0.0)
-        except Exception:
-            generation_time_ms = 0.0
+        generation_time_ms = _coerce_generation_time_ms(
+            _get_value(raw_result, "generation_time_ms", 0.0)
+        )
 
+        slot_keys = _resolve_slot_keys(construction_plan)
+
+        # Canonical runtime truth: these are authoritative and must not drift.
+        debug_info["runtime_path"] = str(
+            debug_info.get("runtime_path") or _NOMINAL_RUNTIME_PATH
+        ).strip() or _NOMINAL_RUNTIME_PATH
         debug_info["construction_id"] = construction_id
         debug_info["lang_code"] = lang_code
         debug_info["renderer_backend"] = selected_backend
         debug_info["selected_backend"] = selected_backend
         debug_info["attempted_backends"] = list(attempted_backends)
         debug_info["fallback_used"] = fallback_used
+        debug_info["slot_keys"] = list(slot_keys)
         debug_info.setdefault("capability_tier", capability_tier)
         debug_info["backend_trace"] = list(backend_trace)
-        debug_info.setdefault(
-            "dispatch_policy",
-            {
-                "allow_fallback": allow_fallback,
-                "forced_backend": forced_backend,
-            },
-        )
+        debug_info["dispatch_policy"] = {
+            "allow_fallback": allow_fallback,
+            "forced_backend": forced_backend,
+        }
 
         return _build_result_object(
-            text=str(text).strip(),
+            text=text,
             lang_code=lang_code,
             construction_id=construction_id,
             renderer_backend=selected_backend,
@@ -605,3 +663,4 @@ __all__ = [
     "ConstructionRealizer",
     "RealizationError",
 ]
+

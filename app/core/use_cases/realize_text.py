@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass, field, is_dataclass, replace
+from time import perf_counter
 from typing import TYPE_CHECKING, Any
 from collections.abc import Iterable, Mapping, Sequence
 
@@ -68,8 +69,9 @@ except Exception:
 class _FallbackSurfaceResult:
     """
     Local fallback result contract used until app.core.domain.models exports
-    a canonical SurfaceResult object.
+    the canonical SurfaceResult object with the final runtime fields.
     """
+
     text: str
     lang_code: str
     construction_id: str
@@ -77,6 +79,7 @@ class _FallbackSurfaceResult:
     fallback_used: bool = False
     tokens: tuple[str, ...] = field(default_factory=tuple)
     debug_info: dict[str, Any] = field(default_factory=dict)
+    generation_time_ms: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -94,6 +97,36 @@ def _coerce_string(value: Any, *, field_name: str) -> str:
     if not normalized:
         raise ValueError(f"{field_name} must not be empty")
     return normalized
+
+
+def _coerce_float(value: Any, *, field_name: str, default: float = 0.0) -> float:
+    if value is None:
+        return float(default)
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be numeric") from exc
+
+
+def _normalize_lang_code(value: Any, *, default: str = "") -> str:
+    if value is None:
+        return default
+    text = str(value).strip().lower()
+    return text or default
+
+
+def _coerce_bool(value: Any, *, default: bool = False) -> bool:
+    if value is None:
+        return bool(default)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "y"}:
+            return True
+        if normalized in {"false", "0", "no", "n"}:
+            return False
+    return bool(value)
 
 
 def _get_value(obj: Any, key: str, default: Any = None) -> Any:
@@ -114,9 +147,9 @@ def _normalize_tokens(value: Any) -> tuple[str, ...]:
 
     if isinstance(value, str):
         stripped = value.strip()
-        return (stripped,) if stripped else ()
+        return tuple(part for part in stripped.split() if part)
 
-    if isinstance(value, Sequence):
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
         tokens: list[str] = []
         for item in value:
             if isinstance(item, str):
@@ -128,10 +161,22 @@ def _normalize_tokens(value: Any) -> tuple[str, ...]:
     return ()
 
 
+def _normalize_slot_keys(slot_map: Any) -> list[str]:
+    if isinstance(slot_map, Mapping):
+        keys: list[str] = []
+        for key in slot_map.keys():
+            normalized = str(key).strip()
+            if normalized:
+                keys.append(normalized)
+        return keys
+    return []
+
+
 def _infer_renderer_backend(result: Any, realizer: Any, debug_info: Mapping[str, Any]) -> str:
     for candidate in (
         _get_value(result, "renderer_backend"),
         debug_info.get("renderer_backend"),
+        debug_info.get("selected_backend"),
         getattr(realizer, "renderer_backend", None),
         getattr(realizer, "backend_name", None),
     ):
@@ -149,6 +194,7 @@ def _build_result_object(
     fallback_used: bool,
     tokens: tuple[str, ...],
     debug_info: dict[str, Any],
+    generation_time_ms: float,
 ) -> Any:
     """
     Construct the canonical SurfaceResult if available; otherwise fall back
@@ -164,9 +210,10 @@ def _build_result_object(
                 fallback_used=fallback_used,
                 tokens=list(tokens),
                 debug_info=debug_info,
+                generation_time_ms=generation_time_ms,
             )
         except TypeError:
-            # Future models may temporarily differ; preserve the contract here.
+            # Preserve runtime continuity while the model finishes converging.
             pass
 
     return _FallbackSurfaceResult(
@@ -177,6 +224,7 @@ def _build_result_object(
         fallback_used=fallback_used,
         tokens=tokens,
         debug_info=debug_info,
+        generation_time_ms=generation_time_ms,
     )
 
 
@@ -257,7 +305,7 @@ class RealizeText:
     1. Validate the incoming ConstructionPlan contract.
     2. Optionally resolve slot values through a lexical resolver.
     3. Delegate surface generation to the configured realizer backend.
-    4. Normalize the returned SurfaceResult shape and debug metadata.
+    4. Normalize the returned SurfaceResult shape and runtime debug metadata.
     5. Preserve plan immutability by cloning instead of mutating.
     """
 
@@ -288,8 +336,8 @@ class RealizeText:
         lang_code = _get_value(plan, "lang_code")
 
         with tracer.start_as_current_span("use_case.realize_text") as span:
-            span.set_attribute("app.lang_code", lang_code)
-            span.set_attribute("app.construction_id", construction_id)
+            span.set_attribute("app.lang_code", str(lang_code))
+            span.set_attribute("app.construction_id", str(construction_id))
 
             logger.info(
                 "realization_started",
@@ -298,13 +346,18 @@ class RealizeText:
                 lexical_resolution=bool(self.lexical_resolver),
             )
 
+            started_at = perf_counter()
+
             try:
                 resolved_plan, resolution_info = await self._apply_lexical_resolution(plan)
                 raw_result = await _maybe_await(self.realizer.realize(resolved_plan))
+                elapsed_ms = max((perf_counter() - started_at) * 1000.0, 0.0)
+
                 normalized = self._normalize_surface_result(
                     raw_result,
                     resolved_plan,
                     resolution_info=resolution_info,
+                    elapsed_ms=elapsed_ms,
                 )
 
                 logger.info(
@@ -313,6 +366,7 @@ class RealizeText:
                     construction_id=normalized.construction_id,
                     renderer_backend=normalized.renderer_backend,
                     fallback_used=bool(normalized.fallback_used),
+                    generation_time_ms=float(getattr(normalized, "generation_time_ms", 0.0) or 0.0),
                 )
 
                 return normalized
@@ -337,7 +391,7 @@ class RealizeText:
         Realize multiple plans sequentially and deterministically.
 
         Sequential execution is intentional here: it preserves ordering and
-        avoids incidental backend/caching behavior differences during the
+        avoids incidental backend or caching behavior differences during the
         migration phase.
         """
         if construction_plans is None:
@@ -425,6 +479,7 @@ class RealizeText:
         construction_plan: Any,
         *,
         resolution_info: Mapping[str, Any],
+        elapsed_ms: float,
     ) -> Any:
         if raw_result is None:
             raise RealizationError("realizer returned None")
@@ -433,9 +488,8 @@ class RealizeText:
             _get_value(construction_plan, "construction_id"),
             field_name="construction_id",
         )
-        plan_lang_code = _coerce_string(
-            _get_value(construction_plan, "lang_code"),
-            field_name="lang_code",
+        plan_lang_code = _normalize_lang_code(
+            _coerce_string(_get_value(construction_plan, "lang_code"), field_name="lang_code")
         )
 
         text = _get_value(raw_result, "text")
@@ -447,33 +501,63 @@ class RealizeText:
                     "realizer result must expose a non-empty 'text' field"
                 )
 
-        lang_code = _get_value(raw_result, "lang_code", plan_lang_code)
-        if not _is_non_empty_string(lang_code):
+        text = str(text).strip()
+
+        lang_code = _normalize_lang_code(
+            _get_value(raw_result, "lang_code", plan_lang_code),
+            default=plan_lang_code,
+        )
+        if not lang_code:
             lang_code = plan_lang_code
-        lang_code = str(lang_code).strip()
 
         existing_debug = _as_plain_dict(_get_value(raw_result, "debug_info", {}))
         renderer_backend = _infer_renderer_backend(raw_result, self.realizer, existing_debug)
+        if not _is_non_empty_string(renderer_backend):
+            raise RealizationError("realizer result is missing required 'renderer_backend'")
 
         fallback_used_raw = _get_value(
             raw_result,
             "fallback_used",
             existing_debug.get("fallback_used", False),
         )
-        fallback_used = bool(fallback_used_raw)
+        fallback_used = _coerce_bool(fallback_used_raw, default=False)
 
         tokens = _normalize_tokens(_get_value(raw_result, "tokens"))
+        if not tokens:
+            # Runtime-level deterministic fallback is allowed here so the mapper
+            # still receives a canonical SurfaceResult on nominal paths.
+            tokens = tuple(part for part in text.split() if part)
+
+        if not tokens:
+            raise RealizationError("realizer result must expose usable 'tokens' for the final text")
+
+        slot_keys = _normalize_slot_keys(_extract_slot_map(construction_plan))
+
+        generation_time_ms_raw = _get_value(
+            raw_result,
+            "generation_time_ms",
+            existing_debug.get("generation_time_ms", elapsed_ms),
+        )
+        try:
+            generation_time_ms = _coerce_float(
+                generation_time_ms_raw,
+                field_name="generation_time_ms",
+                default=elapsed_ms,
+            )
+        except ValueError:
+            generation_time_ms = float(elapsed_ms)
 
         debug_info = dict(existing_debug)
-        debug_info.setdefault("construction_id", construction_id)
-        debug_info.setdefault("renderer_backend", renderer_backend)
-        debug_info.setdefault("lang_code", lang_code)
-        debug_info.setdefault("fallback_used", fallback_used)
+        debug_info["runtime_path"] = "planner_first"
+        debug_info["construction_id"] = construction_id
+        debug_info["renderer_backend"] = renderer_backend
+        debug_info["lang_code"] = lang_code
+        debug_info["fallback_used"] = fallback_used
+        debug_info["slot_keys"] = slot_keys
+        debug_info["selected_backend"] = renderer_backend
 
-        if "selected_backend" not in debug_info and renderer_backend != "unknown":
-            debug_info["selected_backend"] = renderer_backend
-
-        if "attempted_backends" not in debug_info and renderer_backend != "unknown":
+        attempted_backends = debug_info.get("attempted_backends")
+        if not isinstance(attempted_backends, list) or not attempted_backends:
             debug_info["attempted_backends"] = [renderer_backend]
 
         if resolution_info.get("applied"):
@@ -481,22 +565,23 @@ class RealizeText:
             if isinstance(existing_lr, Mapping):
                 merged_lr = dict(existing_lr)
                 for key, value in resolution_info.items():
-                    merged_lr.setdefault(key, value)
+                    merged_lr.setdefault(str(key), value)
                 debug_info["lexical_resolution"] = merged_lr
             else:
                 debug_info["lexical_resolution"] = dict(resolution_info)
 
-        if not tokens and isinstance(text, str):
-            tokens = tuple(part for part in text.split() if part)
+        debug_info["tokens"] = list(tokens)
+        debug_info["generation_time_ms"] = generation_time_ms
 
         return _build_result_object(
-            text=str(text).strip(),
+            text=text,
             lang_code=lang_code,
             construction_id=construction_id,
             renderer_backend=renderer_backend,
             fallback_used=fallback_used,
             tokens=tokens,
             debug_info=debug_info,
+            generation_time_ms=generation_time_ms,
         )
 
 

@@ -1,3 +1,4 @@
+```python
 import json
 from pathlib import Path
 
@@ -115,6 +116,39 @@ def _make_plan(
     )
 
 
+def _assert_canonical_runtime_result(
+    result,
+    *,
+    expected_lang: str,
+    expected_construction_id: str,
+    expected_backend: str = "family",
+    expected_fallback_used: bool,
+) -> None:
+    assert result.text
+    assert result.lang_code == expected_lang
+    assert result.construction_id == expected_construction_id
+    assert result.renderer_backend == expected_backend
+    assert result.fallback_used is expected_fallback_used
+
+    assert isinstance(result.tokens, list)
+    assert result.tokens
+    assert all(isinstance(token, str) for token in result.tokens)
+    assert result.tokens == result.text.split()
+
+    assert isinstance(result.debug_info, dict)
+    assert isinstance(result.generation_time_ms, (int, float))
+    assert result.generation_time_ms >= 0.0
+
+    debug = result.debug_info
+    assert debug["construction_id"] == expected_construction_id
+    assert debug["renderer_backend"] == expected_backend
+    assert debug["lang_code"] == expected_lang
+    assert debug["fallback_used"] is expected_fallback_used
+
+    assert isinstance(debug.get("slot_keys", []), list)
+    assert all(isinstance(key, str) for key in debug.get("slot_keys", []))
+
+
 def test_supports_and_support_status_follow_construction_and_language_contract(
     build_family_adapter,
 ):
@@ -157,15 +191,15 @@ async def test_realize_success_prefers_lexical_bindings_and_emits_structured_met
     result = await adapter.realize(plan)
 
     assert result.text == "Marie Curie is a Polish physicist [germanic-marker|female]"
-    assert result.lang_code == "en"
-    assert result.construction_id == "copula_equative_classification"
-    assert result.renderer_backend == "family"
-    assert result.fallback_used is False
-    assert result.tokens == result.text.split()
+    _assert_canonical_runtime_result(
+        result,
+        expected_lang="en",
+        expected_construction_id="copula_equative_classification",
+        expected_backend="family",
+        expected_fallback_used=False,
+    )
 
     debug = result.debug_info
-    assert debug["construction_id"] == "copula_equative_classification"
-    assert debug["renderer_backend"] == "family"
     assert debug["selected_backend"] == "family"
     assert debug["attempted_backends"] == ["family"]
     assert debug["resolved_language"] == "en"
@@ -173,7 +207,6 @@ async def test_realize_success_prefers_lexical_bindings_and_emits_structured_met
     assert debug["template_id"] == "en-germanic-bio"
     assert debug["wrapper_construction_id"] == "biography_lead"
     assert debug["base_construction_id"] == "copula_equative_classification"
-    assert debug["fallback_used"] is False
     assert debug["lexical_sources"]["subject"] == "slot:subject.name"
     assert debug["lexical_sources"]["gender"] == "slot:subject.gender"
     assert debug["lexical_sources"]["profession"] == "binding:profession"
@@ -198,10 +231,15 @@ async def test_realize_uses_slot_fallback_and_marks_fallback_explicitly(
     result = await adapter.realize(plan)
 
     assert result.text == "Alan Turing is a British mathematician [germanic-marker|male]"
-    assert result.fallback_used is True
+    _assert_canonical_runtime_result(
+        result,
+        expected_lang="en",
+        expected_construction_id="copula_equative_classification",
+        expected_backend="family",
+        expected_fallback_used=True,
+    )
 
     debug = result.debug_info
-    assert debug["fallback_used"] is True
     assert "fallback_reason" in debug
     assert debug["lexical_sources"]["profession"] == "slot:profession"
     assert debug["lexical_sources"]["nationality"] == "slot:nationality"
@@ -330,6 +368,13 @@ async def test_family_alias_mapping_loads_analytic_module_for_agglutinative_prof
     result = await adapter.realize(plan)
 
     assert result.text == "ANALYTIC::Test Subject::female::engineer::agglutinative-marker"
-    assert result.renderer_backend == "family"
+    _assert_canonical_runtime_result(
+        result,
+        expected_lang="tr",
+        expected_construction_id="copula_equative_classification",
+        expected_backend="family",
+        expected_fallback_used=False,
+    )
     assert result.debug_info["family"] == "agglutinative"
     assert result.debug_info["selected_backend"] == "family"
+```

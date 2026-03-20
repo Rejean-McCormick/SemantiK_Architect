@@ -1,248 +1,398 @@
-# tests/http_api/test_generations.py
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Iterable
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.adapters.api.dependencies import get_generate_text_use_case, verify_api_key
-from app.adapters.api.main import create_app
-from app.core.domain.models import Sentence
+from app.core.domain.exceptions import DomainError, InvalidFrameError
+from app.core.domain.models import Frame
+from app.core.domain.planning.planned_sentence import PlannedSentence
+from app.core.use_cases.plan_text import PlanText
+import app.core.use_cases.plan_text as plan_text_module
 
-API_PREFIX = "/api/v1"
+_CANONICAL_CONSTRUCTION_ID = "copula_equative_classification"
 
 
-class FakeGenerateTextUseCase:
+def _bio_frame(name: str = "Alan Turing") -> Frame:
+    return Frame(
+        frame_type="bio",
+        subject={"name": name, "qid": "Q7251"},
+        properties={"profession": "mathematician"},
+        meta={"source": "unit-test"},
+    )
+
+
+@pytest.fixture(autouse=True)
+def _reset_lexicon(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Lightweight fake for HTTP API tests.
-
-    It records every call so tests can assert language normalization and
-    payload mapping behavior without depending on the real planner / renderer
-    stack.
+    Keep language normalization deterministic in unit tests unless a test
+    intentionally overrides it.
     """
+    monkeypatch.setattr(plan_text_module, "lexicon", None)
 
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, Any]] = []
 
-    async def execute(self, lang_code: str, frame: Any) -> Sentence:
+class RecordingKeywordPlanner:
+    def __init__(self, result):
+        self.result = result
+        self.calls: list[tuple[str, object]] = []
+
+    async def plan(self, *, lang_code: str, frame: object):
         self.calls.append((lang_code, frame))
-        subject_name = self._extract_subject_name(frame)
-
-        text = f"Fake generated text for {subject_name} in {lang_code}"
-
-        return Sentence(
-            text=text,
-            lang_code=lang_code,
-            construction_id="copula_equative_simple",
-            renderer_backend="safe_mode",
-            fallback_used=False,
-            tokens=text.split(),
-            generation_time_ms=1.25,
-            debug_info={
-                "source": "FakeGenerateTextUseCase",
-                "planner_mode": "stubbed",
-            },
-        )
-
-    @staticmethod
-    def _extract_subject_name(frame: Any) -> str:
-        # Common case: BioFrame / compatibility Frame with .subject
-        subject = getattr(frame, "subject", None)
-        if isinstance(subject, dict):
-            value = subject.get("name") or subject.get("label")
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-
-        if subject is not None:
-            value = getattr(subject, "name", None) or getattr(subject, "label", None)
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-
-        # Fallbacks for other frame/object shapes
-        for attr in ("name", "label"):
-            value = getattr(frame, attr, None)
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-
-        if isinstance(frame, dict):
-            value = frame.get("name") or frame.get("label")
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-
-        return "Unknown"
+        return self.result
 
 
-@pytest.fixture()
-def fake_use_case() -> FakeGenerateTextUseCase:
-    return FakeGenerateTextUseCase()
+class RecordingPlanTextPlanner:
+    def __init__(self, result):
+        self.result = result
+        self.calls: list[tuple[str, object]] = []
+
+    async def plan_text(self, *, lang_code: str, frame: object):
+        self.calls.append((lang_code, frame))
+        return self.result
 
 
-@pytest.fixture()
-def client(fake_use_case: FakeGenerateTextUseCase) -> TestClient:
-    """
-    Create a TestClient with generation/auth dependencies overridden.
+class RecordingPositionalExecutePlanner:
+    def __init__(self, result):
+        self.result = result
+        self.calls: list[tuple[str, object]] = []
 
-    Overriding verify_api_key keeps the test independent from environment
-    configuration while still exercising the mounted router.
-    """
-    app = create_app()
-    app.dependency_overrides[get_generate_text_use_case] = lambda: fake_use_case
-    app.dependency_overrides[verify_api_key] = lambda: "test-api-key"
-
-    with TestClient(app) as c:
-        yield c
-
-    app.dependency_overrides.clear()
+    async def execute(self, lang_code: str, frame: object):
+        self.calls.append((lang_code, frame))
+        return self.result
 
 
-def _valid_bio_payload() -> dict[str, Any]:
-    return {
-        "frame_type": "bio",
-        "subject": {
-            "name": "Ada Lovelace",
-            "gender": "f",
-            "qid": "Q7259",
-        },
-        "properties": {
-            "profession": "mathematician",
-            "nationality": "British",
-        },
-        "meta": {
-            "register": "neutral",
-        },
-    }
+class GeneratorPlanner:
+    def __init__(self, items: Iterable[object]):
+        self.items = list(items)
+        self.calls: list[tuple[str, object]] = []
+
+    async def plan(self, *, lang_code: str, frame: object):
+        self.calls.append((lang_code, frame))
+        return (item for item in self.items)
 
 
-def test_generate_from_payload_success_top_level_lang(
-    client: TestClient,
-    fake_use_case: FakeGenerateTextUseCase,
+class StringPlanner:
+    async def plan(self, *, lang_code: str, frame: object):
+        return "not-a-valid-plan"
+
+
+class NoEntrypointPlanner:
+    pass
+
+
+class DumpablePlan:
+    def __init__(self, payload: dict):
+        self._payload = payload
+
+    def model_dump(self) -> dict:
+        return dict(self._payload)
+
+
+@pytest.mark.asyncio
+async def test_execute_returns_planned_sentences_from_canonical_planner() -> None:
+    frame = _bio_frame()
+    planner_result = PlannedSentence.for_frame(
+        frame=frame,
+        construction_id=_CANONICAL_CONSTRUCTION_ID,
+        lang_code="en",
+        topic_entity_id="Q7251",
+        focus_role="profession",
+        metadata={"planner": "unit"},
+    )
+    planner = RecordingKeywordPlanner(planner_result)
+    use_case = PlanText(planner=planner)
+
+    result = await use_case.execute("EN", frame)
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], PlannedSentence)
+    assert result[0].construction_id == _CANONICAL_CONSTRUCTION_ID
+    assert result[0].lang_code == "en"
+    assert result[0].topic_entity_id == "Q7251"
+    assert result[0].focus_role == "profession"
+    assert dict(result[0].metadata) == {"planner": "unit"}
+    assert result[0].frame == frame
+    assert planner.calls == [("en", frame)]
+
+
+@pytest.mark.asyncio
+async def test_execute_uses_lexicon_normalize_code_when_available(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    POST /generate should accept language in the payload, normalize aliases,
-    and preserve promoted runtime metadata in debug_info.
-    """
-    payload = {
-        "lang": "eng",
-        **_valid_bio_payload(),
+    frame = _bio_frame()
+    planner_result = PlannedSentence.for_frame(
+        frame=frame,
+        construction_id=_CANONICAL_CONSTRUCTION_ID,
+        lang_code="fra",
+    )
+    planner = RecordingKeywordPlanner(planner_result)
+    use_case = PlanText(planner=planner)
+
+    class DummyLexicon:
+        @staticmethod
+        def normalize_code(value: str) -> str:
+            assert value == "fr-ca"
+            return "fra"
+
+    monkeypatch.setattr(plan_text_module, "lexicon", DummyLexicon())
+
+    result = await use_case.execute("FR-CA", frame)
+
+    assert len(result) == 1
+    assert planner.calls == [("fra", frame)]
+
+
+@pytest.mark.asyncio
+async def test_execute_falls_back_to_legacy_plan_text_entrypoint() -> None:
+    frame = _bio_frame()
+    planner_payload = {
+        "construction_id": _CANONICAL_CONSTRUCTION_ID,
+        "lang_code": "en",
+        "frame": frame,
+        "topic_entity_id": "Q7251",
+        "focus_role": "profession",
+        "metadata": {"planner_method": "plan_text"},
     }
+    planner = RecordingPlanTextPlanner(planner_payload)
+    use_case = PlanText(planner=planner)
 
-    response = client.post(f"{API_PREFIX}/generate", json=payload)
+    result = await use_case.execute("eng", frame)
 
-    assert response.status_code == 200, response.text
-    data = response.json()
-
-    assert fake_use_case.calls, "Expected fake use case to be invoked."
-    assert fake_use_case.calls[-1][0] == "en"
-
-    assert data["lang_code"] == "en"
-    assert "Ada Lovelace" in data["text"]
-
-    debug = data["debug_info"]
-    assert debug["source"] == "FakeGenerateTextUseCase"
-    assert debug["lang_code"] == "en"
-    assert debug["construction_id"] == "copula_equative_simple"
-    assert debug["renderer_backend"] == "safe_mode"
-    assert debug["fallback_used"] is False
-    assert debug["planner_mode"] == "stubbed"
+    assert len(result) == 1
+    assert result[0].construction_id == _CANONICAL_CONSTRUCTION_ID
+    assert result[0].lang_code == "en"
+    assert result[0].topic_entity_id == "Q7251"
+    assert result[0].focus_role == "profession"
+    assert dict(result[0].metadata) == {"planner_method": "plan_text"}
+    assert planner.calls == [("en", frame)]
 
 
-def test_generate_from_payload_accepts_language_inside_inputs(
-    client: TestClient,
-    fake_use_case: FakeGenerateTextUseCase,
-) -> None:
-    """
-    POST /generate should also accept language nested under inputs.language.
-    """
-    payload = {
-        **_valid_bio_payload(),
-        "inputs": {
-            "language": "eng",
-        },
+@pytest.mark.asyncio
+async def test_execute_falls_back_to_legacy_execute_entrypoint_with_positional_signature() -> None:
+    frame = _bio_frame()
+    planner_payload = {
+        "construction_id": _CANONICAL_CONSTRUCTION_ID,
+        "lang_code": "en",
+        "frame": frame,
+        "metadata": {"planner_method": "execute"},
     }
+    planner = RecordingPositionalExecutePlanner(planner_payload)
+    use_case = PlanText(planner=planner)
 
-    response = client.post(f"{API_PREFIX}/generate", json=payload)
+    result = await use_case.execute("ENG", frame)
 
-    assert response.status_code == 200, response.text
-    data = response.json()
-
-    assert fake_use_case.calls[-1][0] == "en"
-    assert data["lang_code"] == "en"
-    assert "Ada Lovelace" in data["text"]
-
-
-def test_generate_from_payload_requires_language(client: TestClient) -> None:
-    """
-    POST /generate should reject payloads that do not specify language either
-    top-level or inside inputs.
-    """
-    payload = _valid_bio_payload()
-
-    response = client.post(f"{API_PREFIX}/generate", json=payload)
-
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert "Missing language" in detail
+    assert len(result) == 1
+    assert result[0].construction_id == _CANONICAL_CONSTRUCTION_ID
+    assert dict(result[0].metadata) == {"planner_method": "execute"}
+    assert planner.calls == [("en", frame)]
 
 
-def test_generate_path_route_rejects_language_mismatch(client: TestClient) -> None:
-    """
-    When both URL and payload specify language, the URL is authoritative and
-    mismatches must raise 422.
-    """
-    payload = {
-        "lang": "fr",
-        **_valid_bio_payload(),
-    }
-
-    response = client.post(f"{API_PREFIX}/generate/en", json=payload)
-
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert "Language mismatch" in detail
-
-
-def test_generate_path_route_supports_ninai_protocol(
-    client: TestClient,
-    fake_use_case: FakeGenerateTextUseCase,
-) -> None:
-    """
-    POST /generate/{lang_code} should accept Ninai payloads and forward the
-    normalized language to the use case.
-    """
-    ninai_payload = {
-        "function": "ninai.constructors.Statement",
-        "args": [
-            {"type": "ninai.types.Bio"},
+@pytest.mark.asyncio
+async def test_execute_accepts_iterable_of_mapping_like_plans() -> None:
+    frame = _bio_frame()
+    planner = GeneratorPlanner(
+        [
             {
-                "function": "ninai.constructors.Entity",
-                "args": ["Q7259", "Ada Lovelace"],
+                "construction_id": _CANONICAL_CONSTRUCTION_ID,
+                "lang_code": "en",
+                "frame": frame,
+                "focus_role": "profession",
             },
-            "mathematician",
-            "british",
-        ],
+            {
+                "construction_id": "topic_comment_copular",
+                "lang_code": "en",
+                "frame": frame,
+                "focus_role": "topic",
+            },
+        ]
+    )
+    use_case = PlanText(planner=planner)
+
+    result = await use_case.execute("en", frame)
+
+    assert [item.construction_id for item in result] == [
+        _CANONICAL_CONSTRUCTION_ID,
+        "topic_comment_copular",
+    ]
+    assert [item.focus_role for item in result] == ["profession", "topic"]
+    assert planner.calls == [("en", frame)]
+
+
+@pytest.mark.asyncio
+async def test_execute_accepts_model_dump_style_planner_items() -> None:
+    frame = _bio_frame()
+    planner = RecordingKeywordPlanner(
+        DumpablePlan(
+            {
+                "construction_id": _CANONICAL_CONSTRUCTION_ID,
+                "lang_code": "en",
+                "frame": frame,
+                "topic_entity_id": "Q7251",
+                "metadata": {"shape": "model_dump"},
+            }
+        )
+    )
+    use_case = PlanText(planner=planner)
+
+    result = await use_case.execute("en", frame)
+
+    assert len(result) == 1
+    assert result[0].construction_id == _CANONICAL_CONSTRUCTION_ID
+    assert result[0].topic_entity_id == "Q7251"
+    assert dict(result[0].metadata) == {"shape": "model_dump"}
+
+
+@pytest.mark.asyncio
+async def test_execute_preserves_generation_options_and_priority_from_mapping_output() -> None:
+    frame = _bio_frame()
+    planner = RecordingKeywordPlanner(
+        {
+            "construction_id": _CANONICAL_CONSTRUCTION_ID,
+            "lang_code": "en",
+            "frame": frame,
+            "focus_role": "profession",
+            "discourse_mode": "declarative",
+            "generation_options": {
+                "register": "formal",
+                "allow_fallback": False,
+            },
+            "metadata": {"planner": "mapping"},
+            "source_frame_ids": ["frame-1", "frame-1", "frame-2"],
+            "priority": 7,
+        }
+    )
+    use_case = PlanText(planner=planner)
+
+    result = await use_case.execute("en", frame)
+
+    assert len(result) == 1
+    planned = result[0]
+    assert planned.construction_id == _CANONICAL_CONSTRUCTION_ID
+    assert planned.focus_role == "profession"
+    assert planned.discourse_mode == "declarative"
+    assert dict(planned.generation_options) == {
+        "register": "formal",
+        "allow_fallback": False,
     }
-
-    response = client.post(f"{API_PREFIX}/generate/en", json=ninai_payload)
-
-    assert response.status_code == 200, response.text
-    data = response.json()
-
-    assert fake_use_case.calls[-1][0] == "en"
-    assert data["lang_code"] == "en"
-    assert "text" in data
-    assert data["debug_info"]["source"] == "FakeGenerateTextUseCase"
+    assert dict(planned.metadata) == {"planner": "mapping"}
+    assert planned.source_frame_ids == ("frame-1", "frame-2")
+    assert planned.priority == 7
 
 
-def test_generate_path_route_invalid_payload_returns_422(client: TestClient) -> None:
-    """
-    Missing frame_type / missing Ninai function should be treated as a bad
-    generation request.
-    """
-    invalid_payload = {"broken": "data"}
+@pytest.mark.asyncio
+async def test_execute_one_returns_single_plan() -> None:
+    frame = _bio_frame()
+    planner = RecordingKeywordPlanner(
+        PlannedSentence.for_frame(
+            frame=frame,
+            construction_id=_CANONICAL_CONSTRUCTION_ID,
+            lang_code="en",
+        )
+    )
+    use_case = PlanText(planner=planner)
 
-    response = client.post(f"{API_PREFIX}/generate/en", json=invalid_payload)
+    result = await use_case.execute_one("en", frame)
 
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert "frame_type" in detail.lower() or "invalid" in detail.lower()
+    assert isinstance(result, PlannedSentence)
+    assert result.construction_id == _CANONICAL_CONSTRUCTION_ID
+
+
+@pytest.mark.asyncio
+async def test_execute_one_raises_when_multiple_plans_are_returned() -> None:
+    frame = _bio_frame()
+    planner = RecordingKeywordPlanner(
+        [
+            PlannedSentence.for_frame(
+                frame=frame,
+                construction_id=_CANONICAL_CONSTRUCTION_ID,
+                lang_code="en",
+            ),
+            PlannedSentence.for_frame(
+                frame=frame,
+                construction_id="topic_comment_copular",
+                lang_code="en",
+            ),
+        ]
+    )
+    use_case = PlanText(planner=planner)
+
+    with pytest.raises(DomainError, match="Expected exactly one planned sentence"):
+        await use_case.execute_one("en", frame)
+
+
+@pytest.mark.asyncio
+async def test_execute_rejects_invalid_bio_frame_before_planner_call() -> None:
+    invalid_frame = {
+        "frame_type": "bio",
+        "subject": {},
+        "properties": {"profession": "mathematician"},
+    }
+    planner = RecordingKeywordPlanner([])
+    use_case = PlanText(planner=planner)
+
+    with pytest.raises(InvalidFrameError, match="subject with a non-empty 'name'"):
+        await use_case.execute("en", invalid_frame)
+
+    assert planner.calls == []
+
+
+@pytest.mark.asyncio
+async def test_execute_raises_when_planner_has_no_supported_entrypoint() -> None:
+    frame = _bio_frame()
+    use_case = PlanText(planner=NoEntrypointPlanner())
+
+    with pytest.raises(DomainError, match="supported planning entrypoint"):
+        await use_case.execute("en", frame)
+
+
+@pytest.mark.asyncio
+async def test_execute_raises_when_planner_returns_invalid_string_like_result() -> None:
+    frame = _bio_frame()
+    use_case = PlanText(planner=StringPlanner())
+
+    with pytest.raises(DomainError, match="invalid string-like result"):
+        await use_case.execute("en", frame)
+
+
+@pytest.mark.asyncio
+async def test_execute_raises_when_planner_returns_empty_sequence() -> None:
+    frame = _bio_frame()
+    planner = RecordingKeywordPlanner([])
+    use_case = PlanText(planner=planner)
+
+    with pytest.raises(DomainError, match="produced no sentence plans"):
+        await use_case.execute("en", frame)
+
+
+@pytest.mark.asyncio
+async def test_execute_raises_when_planner_returns_non_canonical_construction_id() -> None:
+    frame = _bio_frame()
+    planner = RecordingKeywordPlanner(
+        {
+            "construction_id": "relation.temporal",
+            "lang_code": "en",
+            "frame": frame,
+        }
+    )
+    use_case = PlanText(planner=planner)
+
+    with pytest.raises(DomainError, match="Unexpected planning failure"):
+        await use_case.execute("en", frame)
+
+
+@pytest.mark.asyncio
+async def test_execute_raises_when_planner_output_omits_frame() -> None:
+    frame = _bio_frame()
+    planner = RecordingKeywordPlanner(
+        {
+            "construction_id": _CANONICAL_CONSTRUCTION_ID,
+            "lang_code": "en",
+            "topic_entity_id": "Q7251",
+        }
+    )
+    use_case = PlanText(planner=planner)
+
+    with pytest.raises(DomainError, match="without a frame"):
+        await use_case.execute("en", frame)
+

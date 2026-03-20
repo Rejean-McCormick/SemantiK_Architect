@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Mapping
 
 import pytest
 
@@ -11,6 +12,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.adapters.engines.gf_wrapper import GFGrammarEngine
 from app.core.domain.planning.construction_plan import ConstructionPlan
+
+
+CANONICAL_CONSTRUCTION_ID = "copula_equative_classification"
+CANONICAL_BACKEND = "gf"
+NOMINAL_RUNTIME_PATH = "planner_first"
+COMPATIBILITY_RUNTIME_PATH = "legacy_direct_frame"
 
 
 def _non_placeholder_text(text: str) -> bool:
@@ -35,9 +42,13 @@ def _pick_input_lang(engine: GFGrammarEngine, *candidates: str) -> str:
     pytest.skip(f"No supported language among candidates: {candidates}")
 
 
+def _resolved_public_lang_code(lang: str) -> str:
+    return str(lang or "").strip().lower()
+
+
 def _bio_plan(lang_code: str) -> ConstructionPlan:
     return ConstructionPlan(
-        construction_id="copula_equative_classification",
+        construction_id=CANONICAL_CONSTRUCTION_ID,
         lang_code=lang_code,
         slot_map={
             "subject": {
@@ -67,6 +78,56 @@ def _bio_plan(lang_code: str) -> ConstructionPlan:
         },
         metadata={"test_case": "multilingual_generation"},
     )
+
+
+def _assert_surface_result_shape(
+    result: object,
+    *,
+    expected_lang_code: str,
+    expected_runtime_path: str,
+    expect_fallback_used: bool,
+) -> None:
+    assert hasattr(result, "text")
+    assert hasattr(result, "lang_code")
+    assert hasattr(result, "construction_id")
+    assert hasattr(result, "renderer_backend")
+    assert hasattr(result, "fallback_used")
+    assert hasattr(result, "tokens")
+    assert hasattr(result, "debug_info")
+    assert hasattr(result, "generation_time_ms")
+
+    text = str(result.text)
+    assert _non_placeholder_text(text), f"Unexpected GF output: {text!r}"
+
+    assert result.lang_code == expected_lang_code
+    assert result.construction_id == CANONICAL_CONSTRUCTION_ID
+    assert result.renderer_backend == CANONICAL_BACKEND
+    assert result.fallback_used is expect_fallback_used
+
+    assert isinstance(result.tokens, list), f"tokens must be a list, got {type(result.tokens)!r}"
+    assert result.tokens, "tokens must be present and non-empty"
+    assert all(isinstance(tok, str) for tok in result.tokens), f"Non-string token found: {result.tokens!r}"
+
+    assert isinstance(result.debug_info, Mapping), f"debug_info must be mapping-like, got {type(result.debug_info)!r}"
+    debug = dict(result.debug_info)
+
+    # Canonical parity requirements
+    assert debug["runtime_path"] == expected_runtime_path
+    assert debug["construction_id"] == result.construction_id
+    assert debug["renderer_backend"] == result.renderer_backend
+    assert debug["lang_code"] == result.lang_code
+    assert debug["fallback_used"] == result.fallback_used
+
+    # Required observability
+    assert "resolved_language" in debug
+    assert isinstance(debug.get("backend_trace"), list)
+
+    # Canonical top-level timing
+    assert isinstance(result.generation_time_ms, (int, float))
+    assert result.generation_time_ms >= 0.0
+
+    lowered = text.lower()
+    assert "marie" in lowered or "curie" in lowered
 
 
 @pytest.fixture(scope="module")
@@ -161,25 +222,20 @@ def test_transitive_event_ast_generation_and_linearization(gf_engine: GFGrammarE
 @pytest.mark.asyncio
 async def test_realize_construction_plan_in_english(gf_engine: GFGrammarEngine) -> None:
     lang = _pick_input_lang(gf_engine, "eng", "en", "WikiEng")
+    public_lang_code = _resolved_public_lang_code(lang)
     plan = _bio_plan(lang)
 
     result = await gf_engine.realize(plan)
 
-    assert _non_placeholder_text(result.text), f"Unexpected GF output: {result.text!r}"
-    assert "marie" in result.text.lower() or "curie" in result.text.lower()
-
-    assert result.lang_code == lang.lower()
-    assert result.construction_id == "copula_equative_classification"
-    assert result.renderer_backend == "gf"
+    _assert_surface_result_shape(
+        result,
+        expected_lang_code=public_lang_code,
+        expected_runtime_path=NOMINAL_RUNTIME_PATH,
+        expect_fallback_used=False,
+    )
 
     debug = dict(result.debug_info or {})
-    assert debug["renderer_backend"] == "gf"
-    assert debug["construction_id"] == "copula_equative_classification"
-    assert debug["lang_code"] == lang.lower()
-    assert "resolved_language" in debug
     assert "ast" in debug and "mkBio" in str(debug["ast"])
-    assert isinstance(debug.get("backend_trace"), list)
-    assert debug.get("fallback_used") == result.fallback_used
 
 
 @pytest.mark.asyncio
@@ -187,17 +243,19 @@ async def test_realize_construction_plan_in_french_when_available(
     gf_engine: GFGrammarEngine,
 ) -> None:
     lang = _pick_input_lang(gf_engine, "fre", "fra", "fr", "WikiFre", "WikiFra")
+    public_lang_code = _resolved_public_lang_code(lang)
     plan = _bio_plan(lang)
 
     result = await gf_engine.realize(plan)
 
-    assert _non_placeholder_text(result.text), f"Unexpected GF output: {result.text!r}"
-    assert "marie" in result.text.lower() or "curie" in result.text.lower()
+    _assert_surface_result_shape(
+        result,
+        expected_lang_code=public_lang_code,
+        expected_runtime_path=NOMINAL_RUNTIME_PATH,
+        expect_fallback_used=False,
+    )
 
     debug = dict(result.debug_info or {})
-    assert debug["renderer_backend"] == "gf"
-    assert debug["construction_id"] == "copula_equative_classification"
-    assert "resolved_language" in debug
     assert "ast" in debug and "mkBio" in str(debug["ast"])
 
 
@@ -206,6 +264,7 @@ async def test_legacy_generate_bio_frame_remains_available_as_compatibility_shim
     gf_engine: GFGrammarEngine,
 ) -> None:
     lang = _pick_input_lang(gf_engine, "eng", "en", "WikiEng")
+    public_lang_code = _resolved_public_lang_code(lang)
     frame = {
         "frame_type": "bio",
         "name": "Marie Curie",
@@ -216,13 +275,16 @@ async def test_legacy_generate_bio_frame_remains_available_as_compatibility_shim
 
     result = await gf_engine.generate(lang, frame)
 
-    assert _non_placeholder_text(result.text), f"Unexpected GF output: {result.text!r}"
+    _assert_surface_result_shape(
+        result,
+        expected_lang_code=public_lang_code,
+        expected_runtime_path=COMPATIBILITY_RUNTIME_PATH,
+        expect_fallback_used=True,
+    )
+
     debug = dict(result.debug_info or {})
-    assert debug["renderer_backend"] == "gf"
-    assert debug["runtime_path"] == "legacy_direct_frame"
-    assert debug["compatibility_shim"] is True
+    assert debug.get("compatibility_shim") is True
     assert "ast" in debug and "mkBio" in str(debug["ast"])
-    assert "resolved_language" in debug
 
 
 def test_error_handling_invalid_ninai_payload_is_strict(gf_engine: GFGrammarEngine) -> None:
@@ -233,3 +295,4 @@ def test_error_handling_invalid_ninai_payload_is_strict(gf_engine: GFGrammarEngi
 
     with pytest.raises(ValueError, match="Missing function attribute"):
         gf_engine._convert_to_gf_ast(invalid_obj, "eng")
+
