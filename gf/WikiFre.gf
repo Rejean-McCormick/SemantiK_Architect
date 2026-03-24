@@ -4,8 +4,8 @@ concrete WikiFre of SemantikArchitect =
     flags coding = utf8 ;
 
     lin
-      mkBioProf e p   = ss (e.s ++ "est" ++ p.s) ;
-      mkBioNat  e n   = ss (e.s ++ "est" ++ n.s) ;
-      mkBioFull e p n = ss (e.s ++ "est" ++ p.s ++ n.s) ;
-      mkEvent e ev    = ss (e.s ++ "a participé à" ++ ev.s) ;
+      mkBioProf e p   = ss (e.s ++ " est " ++ p.s) ;
+      mkBioNat  e n   = ss (e.s ++ " est " ++ n.s) ;
+      mkBioFull e p n = ss (e.s ++ " est " ++ p.s ++ " " ++ n.s) ;
+      mkEvent e ev    = ss (e.s ++ " a participé à " ++ ev.s) ;
   };
