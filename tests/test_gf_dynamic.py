@@ -1,4 +1,3 @@
-```python
 # tests/test_gf_dynamic.py
 from __future__ import annotations
 
@@ -241,4 +240,4 @@ async def test_realize_unsupported_construction_is_explicit_fallback(
         "unsupported GF construction_id" in warning
         for warning in result.debug_info["warnings"]
     )
-```
+

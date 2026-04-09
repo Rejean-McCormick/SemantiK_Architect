@@ -1,342 +1,606 @@
 {
   "gf/WikiEng.gf": {
-    "status": "VALID",
-    "hash": "b9791a41c2a56d47bc2df6f162aee619fe3aab861d425dd084f238817d5b9881",
-    "last_check": 1773691789.8056037
+    "status": "BROKEN",
+    "hash": "0830e9ab6e73ff8e69eabd93b19f1d958aa4163c55a61403121b87f2dd91b5c4",
+    "last_check": 1774528516.6676466
   },
   "gf/WikiFre.gf": {
-    "status": "VALID",
-    "hash": "528f078fa6fa5db4e582877c8ade684f2e3ac9a7e9b00d20fc00f31da834d4c0",
-    "last_check": 1773691789.805609
+    "status": "BROKEN",
+    "hash": "bcb0dfaaf76f79b7383d2fa65fe9d96b501053508679626b3d5fff7b9437e390",
+    "last_check": 1774528516.6676495
   },
   "gf/WikiCym.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "cea8a965ac9ebf4735dc70b11e258ba249741e33989d719b0d1f5d0c9f545f8d",
-    "last_check": 1773691789.8056011
+    "error": "Source missing: gf/WikiCym.gf",
+    "duration_s": 0.0,
+    "iso2": "cy",
+    "gf_lang": "Cym",
+    "ts": 1774528504
   },
   "gf/WikiBen.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "e398a5b91820f6d5e64a2caace2507f0be0bc3e03e568a637d17901a91b99e24",
-    "last_check": 1773691789.8055985
+    "error": "Source missing: gf/WikiBen.gf",
+    "duration_s": 0.0,
+    "iso2": "bn",
+    "gf_lang": "Ben",
+    "ts": 1774528504
   },
   "gf/WikiBel.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "d45726cfb1bae9ade6c350c91f4648126858e13acd6f2f340ecb2d5de68adad5",
-    "last_check": 1773691789.8055964
+    "error": "Source missing: gf/WikiBel.gf",
+    "duration_s": 0.0,
+    "iso2": "be",
+    "gf_lang": "Bel",
+    "ts": 1774528504
   },
   "gf/WikiCze.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "a0bf80faea864340c4080201ff3c7bff7cc407a1225be79361d2e57632fe42ac",
-    "last_check": 1773691789.8056002
+    "error": "Source missing: gf/WikiCze.gf",
+    "duration_s": 0.0,
+    "iso2": "cs",
+    "gf_lang": "Cze",
+    "ts": 1774528504
   },
   "gf/WikiFao.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "4fb2ac52974f5da6c0264be077ad248248a50dbef6768e39a1976b88d6cea56a",
-    "last_check": 1773691789.8056085
+    "error": "Source missing: gf/WikiFao.gf",
+    "duration_s": 0.0,
+    "iso2": "fo",
+    "gf_lang": "Fao",
+    "ts": 1774528504
   },
   "gf/WikiAfr.gf": {
-    "status": "VALID",
-    "hash": "c2b17075190ba149d60ade637bfee83322548893a3de5cf0a960fc7d79401049",
-    "last_check": 1773691789.8055906
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiAfr.gf",
+    "duration_s": 0.0,
+    "iso2": "af",
+    "gf_lang": "Afr",
+    "ts": 1774528504
   },
   "gf/WikiGla.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "f31e5f7976406b3115b38712fab8eda7958731e81c814b39c6a507056d4f49f1",
-    "last_check": 1773691789.8056102
+    "error": "Source missing: gf/WikiGla.gf",
+    "duration_s": 0.0,
+    "iso2": "gd",
+    "gf_lang": "Gla",
+    "ts": 1774528504
   },
   "gf/WikiPes.gf": {
-    "status": "VALID",
-    "hash": "0e60e73fa4d3aebe828687b58724506f77ab3d55df78cba4a1cf518b5aa3b400",
-    "last_check": 1773691789.8056066
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiPes.gf",
+    "duration_s": 0.0,
+    "iso2": "fa",
+    "gf_lang": "Pes",
+    "ts": 1774528504
   },
   "gf/WikiAmh.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "2b17a621c9b7093e2b29e6ad021e146f2ca0a08937da076720088aaf2e84daac",
-    "last_check": 1773691789.805593
+    "error": "Source missing: gf/WikiAmh.gf",
+    "duration_s": 0.0,
+    "iso2": "am",
+    "gf_lang": "Amh",
+    "ts": 1774528504
   },
   "gf/WikiHrv.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "25399436e21d61e6ee7ec1b5b541f81d22a3a4402f4b4354435d9dc4a7706953",
-    "last_check": 1773691789.8056128
+    "error": "Source missing: gf/WikiHrv.gf",
+    "duration_s": 0.0,
+    "iso2": "hr",
+    "gf_lang": "Hrv",
+    "ts": 1774528504
   },
   "gf/WikiHye.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "e64889788299edebe59d47f5c77ae7dc4874e08a181c47ae618dd85c7fe9a48e",
-    "last_check": 1773691789.805614
+    "error": "Source missing: gf/WikiHye.gf",
+    "duration_s": 0.0,
+    "iso2": "hy",
+    "gf_lang": "Hye",
+    "ts": 1774528504
   },
   "gf/WikiCat.gf": {
-    "status": "VALID",
-    "hash": "d7114f0eecd5fd30f48c4795290440c77e8daec8255b22ab0d0d3ebb7b081625",
-    "last_check": 1773691789.805599
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiCat.gf",
+    "duration_s": 0.0,
+    "iso2": "ca",
+    "gf_lang": "Cat",
+    "ts": 1774528504
   },
   "gf/WikiInd.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "708bacea30561f029b6aeb79f5a91f78de2e04b0e4d11fa5085668ed5a658a9b",
-    "last_check": 1773691789.8056152
+    "error": "Source missing: gf/WikiInd.gf",
+    "duration_s": 0.0,
+    "iso2": "id",
+    "gf_lang": "Ind",
+    "ts": 1774528504
   },
   "gf/WikiBul.gf": {
-    "status": "VALID",
-    "hash": "e65446d6080a0c1c2d7627d6cca19db988a1a529ae8bf2d0dd6d3791d205176d",
-    "last_check": 1773691789.805597
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiBul.gf",
+    "duration_s": 0.0,
+    "iso2": "bg",
+    "gf_lang": "Bul",
+    "ts": 1774528504
   },
   "gf/WikiHeb.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "13b75bbbfb95e71f7d8b07999db9bab030d3a060fbb3ea6d216cdc41f15b6fb3",
-    "last_check": 1773691789.805611
+    "error": "Source missing: gf/WikiHeb.gf",
+    "duration_s": 0.0,
+    "iso2": "he",
+    "gf_lang": "Heb",
+    "ts": 1774528504
   },
   "gf/WikiInu.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "198f77adc0bf3a8f11f194f4000c5517ae8f1d509fba5335b45446ff11a486b3",
-    "last_check": 1773691789.8056169
+    "error": "Source missing: gf/WikiInu.gf",
+    "duration_s": 0.0,
+    "iso2": "iu",
+    "gf_lang": "Inu",
+    "ts": 1774528504
   },
   "gf/WikiSpa.gf": {
-    "status": "VALID",
-    "hash": "bd704307a8c65396b9f24d35d13304fa7e8b46b7b87d84e806c57fbd32fb7015",
-    "last_check": 1773691789.8056047
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiSpa.gf",
+    "duration_s": 0.0,
+    "iso2": "es",
+    "gf_lang": "Spa",
+    "ts": 1774528504
   },
   "gf/WikiKaz.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "0a1af03fcdf392e7aa6b111906ac908259f0a5a56e44a03c7a8280d8d99274b7",
-    "last_check": 1773691789.8056185
+    "error": "Source missing: gf/WikiKaz.gf",
+    "duration_s": 0.0,
+    "iso2": "kk",
+    "gf_lang": "Kaz",
+    "ts": 1774528504
   },
   "gf/WikiKor.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "3c689fa91f8a618fd35f8e5b79b0dd92b1034d7cf70cc35e56b0a83bfdcb563c",
-    "last_check": 1773691789.8056192
+    "error": "Source missing: gf/WikiKor.gf",
+    "duration_s": 0.0,
+    "iso2": "ko",
+    "gf_lang": "Kor",
+    "ts": 1774528504
   },
   "gf/WikiHin.gf": {
-    "status": "VALID",
-    "hash": "3b569428bbec3498d496779d9fe5958cbb212493264b478700373e7c369fcef3",
-    "last_check": 1773691789.805612
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiHin.gf",
+    "duration_s": 0.0,
+    "iso2": "hi",
+    "gf_lang": "Hin",
+    "ts": 1774528504
   },
   "gf/WikiEst.gf": {
-    "status": "VALID",
-    "hash": "423cd9fd9a2dc71a979d98056d40575cc3c8751abcd5296cd979b32fe7ad75d4",
-    "last_check": 1773691789.8056052
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiEst.gf",
+    "duration_s": 0.0,
+    "iso2": "et",
+    "gf_lang": "Est",
+    "ts": 1774528504
   },
   "gf/WikiIna.gf": {
-    "status": "VALID",
-    "hash": "e33ab55511b69d41b4377f85e16d217a78c64b2a10df9ac2c20ddcad2515a005",
-    "last_check": 1773691789.8056147
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiIna.gf",
+    "duration_s": 0.0,
+    "iso2": "ia",
+    "gf_lang": "Ina",
+    "ts": 1774528504
   },
   "gf/WikiLit.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "068b351b4197ea2ee7ba1c22a74ee635b1c4a27ec43f199d2929df8535789f19",
-    "last_check": 1773691789.8056202
+    "error": "Source missing: gf/WikiLit.gf",
+    "duration_s": 0.0,
+    "iso2": "lt",
+    "gf_lang": "Lit",
+    "ts": 1774528504
   },
   "gf/WikiHun.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "211077b0062926bab45f1b116abe93699adcdec8a07799fbf3976c335e6e5e38",
-    "last_check": 1773691789.8056135
+    "error": "Source missing: gf/WikiHun.gf",
+    "duration_s": 0.0,
+    "iso2": "hu",
+    "gf_lang": "Hun",
+    "ts": 1774528504
   },
   "gf/WikiMal.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "9db25571a90e32de00e3bd82f250f73d2c72c273ce8162a91082e052fcef95f3",
-    "last_check": 1773691789.8056223
+    "error": "Source missing: gf/WikiMal.gf",
+    "duration_s": 0.0,
+    "iso2": "ml",
+    "gf_lang": "Mal",
+    "ts": 1774528504
   },
   "gf/WikiJpn.gf": {
-    "status": "VALID",
-    "hash": "a4ef42580349db9401d3c77fbc3144b3c7a55cb352889267b8d020ea1047a415",
-    "last_check": 1773691789.8056173
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiJpn.gf",
+    "duration_s": 0.0,
+    "iso2": "ja",
+    "gf_lang": "Jpn",
+    "ts": 1774528504
   },
   "gf/WikiMkd.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "52e2c7addf739a09a64697d8f21934d0466c549e552ba93011a711fb0b51e341",
-    "last_check": 1773691789.8056214
+    "error": "Source missing: gf/WikiMkd.gf",
+    "duration_s": 0.0,
+    "iso2": "mk",
+    "gf_lang": "Mkd",
+    "ts": 1774528504
   },
   "gf/WikiMay.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "6095ed11e373be6f67a7f72bcdac2084e723bc00b97b50fcba29b0df1a36c239",
-    "last_check": 1773691789.8056233
+    "error": "Source missing: gf/WikiMay.gf",
+    "duration_s": 0.0,
+    "iso2": "ms",
+    "gf_lang": "May",
+    "ts": 1774528504
   },
   "gf/WikiGre.gf": {
-    "status": "VALID",
-    "hash": "9e970eb503eb5802e0f48e073a12a2b1224da8bccd262e8ddabf6b527deff8ca",
-    "last_check": 1773691789.805603
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiGre.gf",
+    "duration_s": 0.0,
+    "iso2": "el",
+    "gf_lang": "Gre",
+    "ts": 1774528504
   },
   "gf/WikiGer.gf": {
-    "status": "VALID",
-    "hash": "823eea591e8cecfaec60d590addad9a3285bb8c04f540f8b8cbe5873f9bda73f",
-    "last_check": 1773691789.8056028
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiGer.gf",
+    "duration_s": 0.0,
+    "iso2": "de",
+    "gf_lang": "Ger",
+    "ts": 1774528504
   },
   "gf/WikiDan.gf": {
-    "status": "VALID",
-    "hash": "9f0852d09baf457fce1b058615ead54f48aeafba12e2460a4397a5eba87c48cd",
-    "last_check": 1773691789.8056016
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiDan.gf",
+    "duration_s": 0.0,
+    "iso2": "da",
+    "gf_lang": "Dan",
+    "ts": 1774528504
   },
   "gf/WikiLat.gf": {
-    "status": "VALID",
-    "hash": "d608389f166fedde4482ce9eccfe8ed430f6e3d27d9aeb019b337b47171804c2",
-    "last_check": 1773691789.8056195
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiLat.gf",
+    "duration_s": 0.0,
+    "iso2": "la",
+    "gf_lang": "Lat",
+    "ts": 1774528504
   },
   "gf/WikiDut.gf": {
-    "status": "VALID",
-    "hash": "88c1dcd992685c8461ed11bdfcf45214785971b58bed4cc38326ac437f02ed21",
-    "last_check": 1773691789.8056252
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiDut.gf",
+    "duration_s": 0.0,
+    "iso2": "nl",
+    "gf_lang": "Dut",
+    "ts": 1774528504
   },
   "gf/WikiMon.gf": {
-    "status": "VALID",
-    "hash": "31d5941b84a8d6bb5b71a25bb876b1fda34ae671c38a190144b2d83e2294db55",
-    "last_check": 1773691789.8056226
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiMon.gf",
+    "duration_s": 0.0,
+    "iso2": "mn",
+    "gf_lang": "Mon",
+    "ts": 1774528504
   },
   "gf/WikiPol.gf": {
-    "status": "VALID",
-    "hash": "37ff1f8ed7919936a2763372d5f1708860fd0d916642a1893df6ee23d3393ccd",
-    "last_check": 1773691789.805627
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiPol.gf",
+    "duration_s": 0.0,
+    "iso2": "pl",
+    "gf_lang": "Pol",
+    "ts": 1774528504
   },
   "gf/WikiNor.gf": {
-    "status": "VALID",
-    "hash": "1ff7495a0ad4af53fdfe4508450cb2b52f7ebd64c8d6e4c44d4741794ff4b0a4",
-    "last_check": 1773691789.8056262
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiNor.gf",
+    "duration_s": 0.0,
+    "iso2": "no",
+    "gf_lang": "Nor",
+    "ts": 1774528504
   },
   "gf/WikiIce.gf": {
-    "status": "VALID",
-    "hash": "109a0a5fccd571cc070555bafd41487bc3f7726205f1e713eedf6eeecf562ae8",
-    "last_check": 1773691789.8056157
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiIce.gf",
+    "duration_s": 0.0,
+    "iso2": "is",
+    "gf_lang": "Ice",
+    "ts": 1774528504
   },
   "gf/WikiAra.gf": {
-    "status": "VALID",
-    "hash": "dd749d654540b8e651d97ef3273f46df844e3bf6e54f8d7cbd89676ca6810066",
-    "last_check": 1773691789.805595
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiAra.gf",
+    "duration_s": 0.0,
+    "iso2": "ar",
+    "gf_lang": "Ara",
+    "ts": 1774528504
   },
   "gf/WikiSlo.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "679fc9bf520343e415c83fc1a92a85e0369d45b54c46741e646e1be617051d84",
-    "last_check": 1773691789.8056295
+    "error": "Source missing: gf/WikiSlo.gf",
+    "duration_s": 0.0,
+    "iso2": "sk",
+    "gf_lang": "Slo",
+    "ts": 1774528504
   },
   "gf/WikiRus.gf": {
-    "status": "VALID",
-    "hash": "14eb560ae821441d4a2130a5030bc2e2db881c34918e2e71cca6ad0250fde79f",
-    "last_check": 1773691789.8056283
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiRus.gf",
+    "duration_s": 0.0,
+    "iso2": "ru",
+    "gf_lang": "Rus",
+    "ts": 1774528504
   },
   "gf/WikiSqi.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "806260514d9aca839774e90b40a59edc9c399ce3ce0a5100f30a5f668b0da478",
-    "last_check": 1773691789.8056314
+    "error": "Source missing: gf/WikiSqi.gf",
+    "duration_s": 0.0,
+    "iso2": "sq",
+    "gf_lang": "Sqi",
+    "ts": 1774528504
   },
   "gf/WikiTam.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "9bbb25152789a279c0b8c4979333efc713ae3acfcfed94fd956c8f3289e37280",
-    "last_check": 1773691789.8056338
+    "error": "Source missing: gf/WikiTam.gf",
+    "duration_s": 0.0,
+    "iso2": "ta",
+    "gf_lang": "Tam",
+    "ts": 1774528504
   },
   "gf/WikiPor.gf": {
-    "status": "VALID",
-    "hash": "0510974793acaf80507155fdffca5ca3eb1c12706c8a06d3e577230d4fa31115",
-    "last_check": 1773691789.8056276
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiPor.gf",
+    "duration_s": 0.0,
+    "iso2": "pt",
+    "gf_lang": "Por",
+    "ts": 1774528504
   },
   "gf/WikiSlv.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "34cebd2945473a21d0e9fbb1e90b3e06f1a8b33f1e687c5960390b47ffe8e15d",
-    "last_check": 1773691789.8056302
+    "error": "Source missing: gf/WikiSlv.gf",
+    "duration_s": 0.0,
+    "iso2": "sl",
+    "gf_lang": "Slv",
+    "ts": 1774528504
   },
   "gf/WikiSom.gf": {
-    "status": "VALID",
-    "hash": "59e57a74f204a91588f3287d1c00e3552044b5db6c272a677ceea13ac0dfe984",
-    "last_check": 1773691789.8056307
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiSom.gf",
+    "duration_s": 0.0,
+    "iso2": "so",
+    "gf_lang": "Som",
+    "ts": 1774528504
   },
   "gf/WikiTel.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "5e5478644cfd84689dc35c8a22ba287b9f5d218c21f78095b38d5ccdf1d2ace5",
-    "last_check": 1773691789.8056343
+    "error": "Source missing: gf/WikiTel.gf",
+    "duration_s": 0.0,
+    "iso2": "te",
+    "gf_lang": "Tel",
+    "ts": 1774528504
   },
   "gf/WikiSwa.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "e44b4a6ded987bac3edfcd6be55fef40c50fb1133f4292af7b231c379d28ede6",
-    "last_check": 1773691789.8056326
+    "error": "Source missing: gf/WikiSwa.gf",
+    "duration_s": 0.0,
+    "iso2": "sw",
+    "gf_lang": "Swa",
+    "ts": 1774528504
   },
   "gf/WikiTgl.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "ddd2cd9248c419f7b26074d2bffbe3ae021e5d71a6b061dd61d350fd60462bb5",
-    "last_check": 1773691789.8056352
+    "error": "Source missing: gf/WikiTgl.gf",
+    "duration_s": 0.0,
+    "iso2": "tl",
+    "gf_lang": "Tgl",
+    "ts": 1774528504
   },
   "gf/WikiVie.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "7e3f0bc8c1b3c1d039e061d4b02fc1e0c919a5f01aaaf099bcd6f01f7e4d9634",
-    "last_check": 1773691789.8056378
+    "error": "Source missing: gf/WikiVie.gf",
+    "duration_s": 0.0,
+    "iso2": "vi",
+    "gf_lang": "Vie",
+    "ts": 1774528504
   },
   "gf/WikiUkr.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "177e328492c178ca16109b2fc78450826c594564e0a03b1c56f7b1099840c879",
-    "last_check": 1773691789.8056371
+    "error": "Source missing: gf/WikiUkr.gf",
+    "duration_s": 0.0,
+    "iso2": "uk",
+    "gf_lang": "Ukr",
+    "ts": 1774528504
   },
   "gf/WikiTha.gf": {
-    "status": "VALID",
-    "hash": "301e09b2aa0d8dc8c17deb5570684c20058ffce36c8b87ac95e4c54e048b6e1e",
-    "last_check": 1773691789.8056347
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiTha.gf",
+    "duration_s": 0.0,
+    "iso2": "th",
+    "gf_lang": "Tha",
+    "ts": 1774528504
   },
   "gf/WikiNno.gf": {
-    "status": "VALID",
-    "hash": "09d42ee267478bcaab85d3686da575435c3a57b7028209cad3b3606aa6a7cc44",
-    "last_check": 1773691789.8056257
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiNno.gf",
+    "duration_s": 0.0,
+    "iso2": "nn",
+    "gf_lang": "Nno",
+    "ts": 1774528504
   },
   "gf/WikiSwe.gf": {
-    "status": "VALID",
-    "hash": "1217f9741fb52abda13aabc000af303cc8de6d31c56d33a4d52bcb164847005a",
-    "last_check": 1773691789.8056316
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiSwe.gf",
+    "duration_s": 0.0,
+    "iso2": "sv",
+    "gf_lang": "Swe",
+    "ts": 1774528504
   },
   "gf/WikiZul.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "7171ccc9e22a70df01609a81ee6cff5f42a641216e136b9ed6eb067592752e00",
-    "last_check": 1773691789.805639
+    "error": "Source missing: gf/WikiZul.gf",
+    "duration_s": 0.0,
+    "iso2": "zu",
+    "gf_lang": "Zul",
+    "ts": 1774528504
   },
   "gf/WikiPnb.gf": {
-    "status": "VALID",
-    "hash": "5e8481ebb95c89922cfd7378932734e35a79ff86eb7505ffdc0ca423dbd4e6b3",
-    "last_check": 1773691789.8056266
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiPnb.gf",
+    "duration_s": 0.0,
+    "iso2": "pa",
+    "gf_lang": "Pnb",
+    "ts": 1774528504
   },
   "gf/WikiChi.gf": {
-    "status": "VALID",
-    "hash": "912f024593f8bcb17c075704e7927ab1db902fc5211f8e86e66b65ae1505d7b0",
-    "last_check": 1773691789.8056383
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiChi.gf",
+    "duration_s": 0.0,
+    "iso2": "zh",
+    "gf_lang": "Chi",
+    "ts": 1774528504
   },
   "gf/WikiTur.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "71a9f36c8024166ae72386e677e4ab7b3260bcb800f557b2bd65eaf8828adf70",
-    "last_check": 1773691789.8056364
+    "error": "Source missing: gf/WikiTur.gf",
+    "duration_s": 0.0,
+    "iso2": "tr",
+    "gf_lang": "Tur",
+    "ts": 1774528504
   },
   "gf/WikiUrd.gf": {
-    "status": "VALID",
-    "hash": "2d4b2198a2bf5e34ec77ec0314d6bd4294f4204435a9acc0610585452da39bf0",
-    "last_check": 1773691789.8056374
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiUrd.gf",
+    "duration_s": 0.0,
+    "iso2": "ur",
+    "gf_lang": "Urd",
+    "ts": 1774528504
   },
   "gf/WikiSnd.gf": {
-    "status": "VALID",
-    "hash": "aca8403787811c2f93682d2a3cd0c99768110e7ccba169d5cf1c6b011e8567ec",
-    "last_check": 1773691789.805629
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiSnd.gf",
+    "duration_s": 0.0,
+    "iso2": "sd",
+    "gf_lang": "Snd",
+    "ts": 1774528504
   },
   "gf/WikiNep.gf": {
-    "status": "VALID",
-    "hash": "3ec18877a336716332f1dfdffef916925073909389d511e25802da98c6edfa62",
-    "last_check": 1773691789.8056245
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiNep.gf",
+    "duration_s": 0.0,
+    "iso2": "ne",
+    "gf_lang": "Nep",
+    "ts": 1774528504
   },
   "gf/WikiEus.gf": {
-    "status": "VALID",
-    "hash": "b981ce4269a8ccfd1cec6babd1605aae0bd558e3ab1d741fd283b77d0724275f",
-    "last_check": 1773691789.8056056
+    "hash": "",
+    "status": "BROKEN",
+    "error": "Source missing: gf/WikiEus.gf",
+    "duration_s": 0.0,
+    "iso2": "eu",
+    "gf_lang": "Eus",
+    "ts": 1774528504
   },
   "gf/WikiFin.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "6cb2f20b8e16c21641f075e41905f824d25fca369f2b93636493b28ba96143cb",
-    "last_check": 1773691789.8056078
+    "error": "Source missing: gf/WikiFin.gf",
+    "duration_s": 0.0,
+    "iso2": "fi",
+    "gf_lang": "Fin",
+    "ts": 1774528504
   },
   "gf/WikiIta.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "ad84c1de7286a5f948886df73a8bb3d2f35e29e5ca504673c2eb1d495d90074f",
-    "last_check": 1773691789.8056161
+    "error": "Source missing: gf/WikiIta.gf",
+    "duration_s": 0.0,
+    "iso2": "it",
+    "gf_lang": "Ita",
+    "ts": 1774528504
   },
   "gf/WikiLav.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "456998428df56ce60bc4cf114c3a1fbdeae64dbc23bf3153582982a0b40ddc05",
-    "last_check": 1773691789.8056207
+    "error": "Source missing: gf/WikiLav.gf",
+    "duration_s": 0.0,
+    "iso2": "lv",
+    "gf_lang": "Lav",
+    "ts": 1774528504
   },
   "gf/WikiMlt.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "b8cd4f2163656241e5dd5c08e0a41c7bb7db79fe4e29a23d7456c1d021e16ef2",
-    "last_check": 1773691789.8056238
+    "error": "Source missing: gf/WikiMlt.gf",
+    "duration_s": 0.0,
+    "iso2": "mt",
+    "gf_lang": "Mlt",
+    "ts": 1774528504
   },
   "gf/WikiRon.gf": {
+    "hash": "",
     "status": "BROKEN",
-    "hash": "3ac33839c0831271c478b84fba73daefa7627d9dc67ca6da62c2997a269b34db",
-    "last_check": 1773691789.805628
+    "error": "Source missing: gf/WikiRon.gf",
+    "duration_s": 0.0,
+    "iso2": "ro",
+    "gf_lang": "Ron",
+    "ts": 1774528504
   }
 }

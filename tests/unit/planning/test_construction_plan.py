@@ -1,4 +1,3 @@
-```python
 # tests/unit/planning/test_construction_plan.py
 from __future__ import annotations
 
@@ -336,4 +335,4 @@ def test_validate_returns_self_for_explicit_contract_checks():
     )
 
     assert plan.validate() is plan
-```
+

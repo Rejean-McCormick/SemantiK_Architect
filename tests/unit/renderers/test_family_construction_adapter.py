@@ -1,4 +1,4 @@
-```python
+
 import json
 from pathlib import Path
 
@@ -377,4 +377,4 @@ async def test_family_alias_mapping_loads_analytic_module_for_agglutinative_prof
     )
     assert result.debug_info["family"] == "agglutinative"
     assert result.debug_info["selected_backend"] == "family"
-```
+

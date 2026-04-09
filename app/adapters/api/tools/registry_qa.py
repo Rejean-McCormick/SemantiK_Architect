@@ -1,4 +1,3 @@
-```python
 from __future__ import annotations
 
 from typing import Dict, Sequence, Tuple
@@ -563,4 +562,4 @@ def qa_registry() -> Dict[str, ToolSpec]:
             workflow_tags=_wf("qa_validation", "en_fr_cutover", "lexicon_work"),
         ),
     }
-```
+

@@ -1,6 +1,5 @@
 Use this updated version:
 
-```python id="7j4q0z"
 # tests/unit/use_cases/test_realize_text.py
 from __future__ import annotations
 
@@ -397,15 +396,3 @@ async def test_execute_many_wraps_non_domain_failures_with_index_context():
 
     with pytest.raises(RealizationError, match="index 1"):
         await RealizeText(realizer).execute_many(plans)
-```
-
-What changed for consistency with the final contract:
-
-* `lang_code` uses `en` instead of `eng`
-* `SurfaceResult` remains the canonical result target
-* `generation_time_ms` is asserted as a first-class runtime field
-* `tokens` are always asserted on successful normalized results
-* lexical-resolution and backend debug fields stay aligned with the current `RealizeText` normalization behavior
-* the tests no longer encode the older looser runtime assumptions
-
-One important note: this test file assumes `RealizeText` will preserve `generation_time_ms` when normalizing results. In the current dump, that part is not fully wired yet, so this is the **target final test file** for the code you’re about to bring into alignment.

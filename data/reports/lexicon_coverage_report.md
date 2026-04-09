@@ -1,6 +1,6 @@
 # Lexicon Coverage Report
 
-- Generated at: `2026-03-13T15:46:18Z`
+- Generated at: `2026-03-26T18:03:11Z`
 - Lexicon dir: `/mnt/c/mycode/SemantiK_Architect/SemantiK_Architect/data/lexicon`
 - Targets: core=150, conc=500, bio_min=50
 

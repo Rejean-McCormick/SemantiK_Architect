@@ -1,4 +1,3 @@
-```python
 from __future__ import annotations
 
 import importlib
@@ -719,4 +718,4 @@ __all__ = [
     "MissingRequiredRoleError",
     "FamilyRendererError",
 ]
-```
+

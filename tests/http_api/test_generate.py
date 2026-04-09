@@ -1,4 +1,4 @@
-```python
+
 # tests/http_api/test_generate.py
 from __future__ import annotations
 
@@ -346,6 +346,3 @@ def test_generate_returns_422_when_result_cannot_be_mapped_to_public_response(cl
 
     assert response.status_code == 422
     assert "text" in response.json()["detail"]
-```
-
-This aligns the test with the current public response mapper behavior, which always returns the canonical envelope with `text`, `lang_code`, `construction_id`, `renderer_backend`, `fallback_used`, `tokens`, `debug_info`, and `generation_time_ms`, and mirrors canonical fields back into `debug_info`.

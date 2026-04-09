@@ -1,4 +1,3 @@
-```python id="v95dah"
 # tests/unit/planning/test_frame_to_plan.py
 from __future__ import annotations
 
@@ -274,4 +273,4 @@ def test_plan_generic_is_deterministic_for_same_input():
     second = plan_generic(deepcopy(frames), lang_code="en", domain="auto")
 
     assert [plan.to_dict() for plan in first] == [plan.to_dict() for plan in second]
-```
+

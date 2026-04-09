@@ -1,4 +1,3 @@
-```python
 # app/core/use_cases/generate_text.py
 from __future__ import annotations
 
@@ -951,4 +950,3 @@ class GenerateText:
         if component is None:
             return None
         return component.__class__.__name__
-```

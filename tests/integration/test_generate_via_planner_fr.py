@@ -1,4 +1,3 @@
-```python
 # tests/integration/test_generate_via_planner_fr.py
 from __future__ import annotations
 
@@ -412,4 +411,4 @@ async def test_generate_via_planner_fr_is_deterministic_across_repeated_calls(
     assert len(planner.calls) == 2
     assert len(lexical_resolver.calls) == 2
     assert len(realizer.calls) == 2
-```
+
